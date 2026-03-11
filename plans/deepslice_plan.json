@@ -1,0 +1,99 @@
+{
+
+  "plan_meta": {
+
+    "plan_id": "tp-pearson-deepslice-v1",
+
+    "name": "DeepSlice Pearson Correlation Plan",
+
+    "version": "1.1.0",
+
+    "description": "Minimal Pearson correlation test plan with column validation for candidate fields."
+
+  },
+
+  "applicability": {
+
+    "dataset_formats": ["csv"],
+
+    "requires_numeric_fields": true,
+
+    "minimum_numeric_fields": 2
+
+  },
+
+  "execution_policy": {
+
+    "fail_fast": true,
+
+    "allow_skips": false,
+
+    "sample_mode": "full"
+
+  },
+
+  "metrics": [
+
+    {
+
+      "metric_id": "pearson_correlation_profile",
+
+      "label": "Pearson Correlation Profile",
+
+      "taxonomy_path": [
+
+        "dataset_metrics",
+
+        "statistical_fidelity",
+
+        "pearson_correlation"
+
+      ],
+
+      "enabled": true,
+
+      "input_requirements": {
+
+        "candidate_fields": [
+
+          "GBR (Input 6)",
+
+          "Packet Loss Rate (Reliability)",
+
+          "Packet Delay Budget (Latency)"
+
+        ],
+
+        "minimum_runnable_fields": 2
+
+      },
+
+      "calculation": {
+
+        "method": "pairwise_pearson_matrix",
+
+        "parameters": {
+
+          "missing_value_policy": "drop_pairwise"
+
+        }
+
+      },
+
+      "retention": {
+
+        "store_raw_output": true,
+
+        "store_summary": true,
+
+        "store_column_validation": true,
+
+        "comparison_key": "pearson_profile_v1"
+
+      }
+
+    }
+
+  ]
+
+}

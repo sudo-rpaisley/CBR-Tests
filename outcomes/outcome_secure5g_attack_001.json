@@ -1,0 +1,107 @@
+{
+  "status": "success",
+  "case_id": "case_secure5g_attack_001",
+  "plan_id": "tp-column-quality-secure5g-v1",
+  "metric_id": "column_quality_profile",
+  "dataset_path": "/home/rpaisley/CBR_Tests/datasets/secure5g/secure5g_attack_combined.csv",
+  "test_results": {
+    "column_quality_profile": {
+      "fields": [
+        {
+          "field": "Flow Duration",
+          "exists": true,
+          "row_count": 50000,
+          "non_null_count": 50000,
+          "non_null_ratio": 1.0,
+          "numeric_non_null_count": 50000,
+          "numeric_non_null_ratio": 1.0,
+          "unique_count": 44613,
+          "unique_ratio": 0.89226,
+          "constant_column": false,
+          "usable_for_analysis": true,
+          "reason": "usable"
+        },
+        {
+          "field": "Tot Fwd Pkts",
+          "exists": true,
+          "row_count": 50000,
+          "non_null_count": 50000,
+          "non_null_ratio": 1.0,
+          "numeric_non_null_count": 50000,
+          "numeric_non_null_ratio": 1.0,
+          "unique_count": 14,
+          "unique_ratio": 0.00028,
+          "constant_column": false,
+          "usable_for_analysis": true,
+          "reason": "usable"
+        },
+        {
+          "field": "Tot Bwd Pkts",
+          "exists": true,
+          "row_count": 50000,
+          "non_null_count": 50000,
+          "non_null_ratio": 1.0,
+          "numeric_non_null_count": 50000,
+          "numeric_non_null_ratio": 1.0,
+          "unique_count": 5,
+          "unique_ratio": 0.0001,
+          "constant_column": false,
+          "usable_for_analysis": true,
+          "reason": "usable"
+        },
+        {
+          "field": "Flow Byts/s",
+          "exists": true,
+          "row_count": 50000,
+          "non_null_count": 50000,
+          "non_null_ratio": 1.0,
+          "numeric_non_null_count": 50000,
+          "numeric_non_null_ratio": 1.0,
+          "unique_count": 1,
+          "unique_ratio": 2e-05,
+          "constant_column": true,
+          "usable_for_analysis": false,
+          "reason": "constant_column"
+        },
+        {
+          "field": "Flow Pkts/s",
+          "exists": true,
+          "row_count": 50000,
+          "non_null_count": 50000,
+          "non_null_ratio": 1.0,
+          "numeric_non_null_count": 50000,
+          "numeric_non_null_ratio": 1.0,
+          "unique_count": 44826,
+          "unique_ratio": 0.89652,
+          "constant_column": false,
+          "usable_for_analysis": true,
+          "reason": "usable"
+        },
+        {
+          "field": "Pkt Len Mean",
+          "exists": true,
+          "row_count": 50000,
+          "non_null_count": 50000,
+          "non_null_ratio": 1.0,
+          "numeric_non_null_count": 50000,
+          "numeric_non_null_ratio": 1.0,
+          "unique_count": 1,
+          "unique_ratio": 2e-05,
+          "constant_column": true,
+          "usable_for_analysis": false,
+          "reason": "constant_column"
+        }
+      ],
+      "summary": {
+        "field_count": 6,
+        "usable_field_count": 4,
+        "constant_field_count": 2,
+        "missing_field_count": 0,
+        "mean_non_null_ratio": 1.0,
+        "mean_numeric_non_null_ratio": 1.0,
+        "mean_unique_ratio": 0.2982,
+        "quality_score": 0.666667
+      }
+    }
+  }
+}

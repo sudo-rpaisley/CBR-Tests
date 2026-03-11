@@ -1,0 +1,27 @@
+{
+
+  "case_id": "case_deepslice_001",
+
+  "dataset": {
+
+    "path": "../datasets/deepslice/DeepSlice_ML_Model_Data_Public.csv",
+
+    "format": "csv",
+
+    "name": "DeepSlice"
+
+  },
+
+  "test_plan": {
+
+    "path": "../plans/deepslice_plan.json"
+
+  },
+
+  "output": {
+
+    "path": "../outcomes/outcome_deepslice_001.json"
+
+  }
+
+}

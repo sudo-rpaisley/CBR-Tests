@@ -1,0 +1,27 @@
+{
+
+  "case_id": "case_secure5g_attack_001",
+
+  "dataset": {
+
+    "path": "../datasets/secure5g/secure5g_attack_combined.csv",
+
+    "format": "csv",
+
+    "name": "Secure5G Attack Combined"
+
+  },
+
+  "test_plan": {
+
+    "path": "../plans/secure5g_plan.json"
+
+  },
+
+  "output": {
+
+    "path": "../outcomes/outcome_secure5g_attack_001.json"
+
+  }
+
+}

@@ -1,0 +1,65 @@
+{
+  "status": "success",
+  "case_id": "case_deepslice_001",
+  "plan_id": "tp-pearson-deepslice-v1",
+  "metric_id": "pearson_correlation_profile",
+  "dataset_path": "/home/rpaisley/CBR_Tests/datasets/deepslice/DeepSlice_ML_Model_Data_Public.csv",
+  "column_validation": [
+    {
+      "field": "GBR (Input 6)",
+      "exists": true,
+      "numeric_non_null_count": 0,
+      "numeric_unique_count": 0,
+      "usable_for_pearson": false,
+      "reason": "non_numeric"
+    },
+    {
+      "field": "Packet Loss Rate (Reliability)",
+      "exists": true,
+      "numeric_non_null_count": 24,
+      "numeric_unique_count": 6,
+      "usable_for_pearson": true,
+      "reason": "usable"
+    },
+    {
+      "field": "Packet Delay Budget (Latency)",
+      "exists": true,
+      "numeric_non_null_count": 6,
+      "numeric_unique_count": 4,
+      "usable_for_pearson": true,
+      "reason": "usable"
+    }
+  ],
+  "test_results": {
+    "pearson_correlation_profile": {
+      "fields": [
+        "Packet Loss Rate (Reliability)",
+        "Packet Delay Budget (Latency)"
+      ],
+      "matrix": {
+        "Packet Loss Rate (Reliability)": {
+          "Packet Loss Rate (Reliability)": 1.0,
+          "Packet Delay Budget (Latency)": -0.37701
+        },
+        "Packet Delay Budget (Latency)": {
+          "Packet Loss Rate (Reliability)": -0.37701,
+          "Packet Delay Budget (Latency)": 1.0
+        }
+      },
+      "summary": {
+        "pair_count": 1,
+        "mean_absolute_correlation": 0.37701,
+        "pairs": [
+          {
+            "fields": [
+              "Packet Loss Rate (Reliability)",
+              "Packet Delay Budget (Latency)"
+            ],
+            "value": -0.37701,
+            "overlap_non_null_count": 6
+          }
+        ]
+      }
+    }
+  }
+}
