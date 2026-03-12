@@ -104,41 +104,70 @@ def main():
     with open(plan_path, "r", encoding="utf-8") as f:
         plan = json.load(f)
 
-    if not plan.get("metrics"):
-        raise ValueError("The plan does not contain any metrics.")
+    metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
+    if not metrics:
+        raise ValueError("The plan does not contain any enabled metrics.")
 
-    if len(plan["metrics"]) != 1:
-        raise ValueError("This runner currently supports exactly one metric in the plan.")
+    execution_policy = plan.get("execution_policy", {})
+    fail_fast = execution_policy.get("fail_fast", True)
 
-    metric = plan["metrics"][0]
+    overall_status = "success"
+    test_results = {}
+    metric_results = []
+    column_validations = {}
 
-    success, metric_payload = dispatch_metric(dataset_path, metric)
+    for metric in metrics:
+        success, metric_payload = dispatch_metric(dataset_path, metric)
 
-    if not success:
-        outcome = {
-            "status": "failed",
-            "case_id": case["case_id"],
-            "plan_id": plan["plan_meta"]["plan_id"],
+        metric_record = {
             "metric_id": metric["metric_id"],
-            "dataset_path": str(dataset_path),
-            "error": metric_payload["error"]
+            "status": "success" if success else "failed"
         }
 
-        if "column_validation" in metric_payload:
-            outcome["column_validation"] = metric_payload["column_validation"]
+        if success:
+            test_results.update(metric_payload.get("test_results", {}))
+            if "column_validation" in metric_payload:
+                column_validations[metric["metric_id"]] = metric_payload["column_validation"]
+        else:
+            metric_record["error"] = metric_payload.get("error", "Unknown error")
+            if "column_validation" in metric_payload:
+                column_validations[metric["metric_id"]] = metric_payload["column_validation"]
 
-    else:
-        outcome = {
-            "status": "success",
-            "case_id": case["case_id"],
-            "plan_id": plan["plan_meta"]["plan_id"],
-            "metric_id": metric["metric_id"],
-            "dataset_path": str(dataset_path),
-            "test_results": metric_payload["test_results"]
-        }
+            if overall_status == "success":
+                overall_status = "failed"
 
-        if "column_validation" in metric_payload:
-            outcome["column_validation"] = metric_payload["column_validation"]
+            if fail_fast:
+                metric_results.append(metric_record)
+                outcome = {
+                    "status": "failed",
+                    "case_id": case["case_id"],
+                    "plan_id": plan["plan_meta"]["plan_id"],
+                    "metric_ids": [m["metric_id"] for m in metrics],
+                    "dataset_path": str(dataset_path),
+                    "metric_results": metric_results,
+                    "test_results": test_results
+                }
+                if column_validations:
+                    outcome["column_validations"] = column_validations
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(outcome, f, indent=2)
+                print(f"Done. Wrote {output_path}")
+                return
+
+        metric_results.append(metric_record)
+
+    outcome = {
+        "status": overall_status,
+        "case_id": case["case_id"],
+        "plan_id": plan["plan_meta"]["plan_id"],
+        "metric_ids": [m["metric_id"] for m in metrics],
+        "dataset_path": str(dataset_path),
+        "metric_results": metric_results,
+        "test_results": test_results
+    }
+
+    if column_validations:
+        outcome["column_validations"] = column_validations
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(outcome, f, indent=2)

@@ -1,9 +1,9 @@
 {
   "plan_meta": {
-    "plan_id": "tp-dad-timestamp-v1",
-    "name": "DAD Timestamp Coherence Plan",
+    "plan_id": "tp-dad-packet-realism-v1",
+    "name": "DAD Packet Realism Plan",
     "version": "1.0.0",
-    "description": "Packet-level timestamp coherence plan for DAD-style PCAP datasets."
+    "description": "Combined packet-level realism plan for DAD-style PCAP datasets, including timestamp coherence and protocol validity."
   },
   "applicability": {
     "dataset_formats": ["pcap"],
@@ -37,6 +37,26 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "timestamp_coherence_profile_v1"
+      }
+    },
+    {
+      "metric_id": "protocol_validity_profile",
+      "label": "Protocol Validity Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "protocol_validity"
+      ],
+      "enabled": true,
+      "input_requirements": {},
+      "calculation": {
+        "method": "pcap_protocol_scan",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "protocol_validity_profile_v1"
       }
     }
   ]
