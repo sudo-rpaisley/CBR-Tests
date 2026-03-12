@@ -1,0 +1,23 @@
+{
+  "status": "success",
+  "case_id": "case_dad_timestamp_001",
+  "plan_id": "tp-dad-timestamp-v1",
+  "metric_id": "timestamp_coherence_profile",
+  "dataset_path": "/home/rpaisley/CBR_Tests/moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap",
+  "test_results": {
+    "timestamp_coherence_profile": {
+      "packet_count": 14431,
+      "first_timestamp": 1571608802.449277,
+      "last_timestamp": 1571695198.876513,
+      "capture_duration_seconds": 86396.427236,
+      "backwards_jump_count": 1,
+      "zero_delta_count": 6,
+      "large_gap_count": 532,
+      "large_gap_threshold_seconds": 1.0,
+      "gap_count": 14429,
+      "mean_gap_seconds": 5.987693,
+      "max_gap_seconds": 300.049309,
+      "status": "warn"
+    }
+  }
+}
