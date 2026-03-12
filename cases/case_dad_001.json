@@ -6,7 +6,7 @@
     "name": "DAD PCAP"
   },
   "test_plan": {
-    "path": "../plans/dad_packet_realism_plan.json"
+    "path": "../plans/dad_plan.json"
   },
   "output": {
     "path": "../outcomes/outcome_dad_001.json"
