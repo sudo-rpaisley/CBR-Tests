@@ -1,0 +1,43 @@
+{
+  "plan_meta": {
+    "plan_id": "tp-dad-timestamp-v1",
+    "name": "DAD Timestamp Coherence Plan",
+    "version": "1.0.0",
+    "description": "Packet-level timestamp coherence plan for DAD-style PCAP datasets."
+  },
+  "applicability": {
+    "dataset_formats": ["pcap"],
+    "dataset_family": ["packet_level"],
+    "requires_numeric_fields": false,
+    "minimum_numeric_fields": 0
+  },
+  "execution_policy": {
+    "fail_fast": true,
+    "allow_skips": false,
+    "sample_mode": "full"
+  },
+  "metrics": [
+    {
+      "metric_id": "timestamp_coherence_profile",
+      "label": "Timestamp Coherence Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "temporal_realism",
+        "timestamp_coherence"
+      ],
+      "enabled": true,
+      "input_requirements": {},
+      "calculation": {
+        "method": "pcap_timestamp_scan",
+        "parameters": {
+          "large_gap_threshold_seconds": 1.0
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "timestamp_coherence_profile_v1"
+      }
+    }
+  ]
+}
