@@ -3,7 +3,7 @@
   "dataset": {
     "path": "../moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap",
     "format": "pcap",
-    "name": "DAD PCAP"
+    "name": "DAD"
   },
   "test_plan": {
     "path": "../plans/dad_plan.json"
