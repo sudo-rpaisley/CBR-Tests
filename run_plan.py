@@ -21,9 +21,9 @@ def load_tabular_dataset(dataset_path: Path) -> pd.DataFrame:
     suffix = dataset_path.suffix.lower()
 
     if suffix == ".csv":
-        df = pd.read_csv(dataset_path, skipinitialspace=True)
+        df = pd.read_csv(dataset_path, skipinitialspace=True, low_memory=False)
     elif suffix == ".tsv":
-        df = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True)
+        df = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True, low_memory=False)
     elif suffix in [".xlsx", ".xls"]:
         df = pd.read_excel(dataset_path)
     else:
