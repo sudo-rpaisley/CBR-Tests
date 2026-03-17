@@ -21,13 +21,16 @@ def load_tabular_dataset(dataset_path: Path) -> pd.DataFrame:
     suffix = dataset_path.suffix.lower()
 
     if suffix == ".csv":
-        return pd.read_csv(dataset_path)
+        df = pd.read_csv(dataset_path, skipinitialspace=True)
     elif suffix == ".tsv":
-        return pd.read_csv(dataset_path, sep="\t")
+        df = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True)
     elif suffix in [".xlsx", ".xls"]:
-        return pd.read_excel(dataset_path)
+        df = pd.read_excel(dataset_path)
     else:
         raise ValueError(f"Unsupported tabular dataset format: {suffix}")
+
+    df.columns = df.columns.str.strip()
+    return df
 
 
 def run_pearson_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
