@@ -1,7 +1,7 @@
 {
-  "case_id": "case_dad_001",
+  "case_id": "SENTINEL_DAD",
   "dataset": {
-    "path": "../moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap",
+    "path": "../datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap",
     "format": "pcap",
     "name": "DAD"
   },
