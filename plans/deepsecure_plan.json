@@ -1,0 +1,83 @@
+{
+  "plan_meta": {
+    "plan_id": "tp-deepsecure-flow-v1",
+    "name": "DeepSecure Flow Feature Plan",
+    "version": "1.0.0",
+    "description": "Flow-feature realism plan for DeepSecure/CICDDoS2019 CSV datasets using column quality and Pearson correlation."
+  },
+  "applicability": {
+    "dataset_formats": ["csv"],
+    "dataset_family": ["flow_feature"],
+    "requires_numeric_fields": true,
+    "minimum_numeric_fields": 2
+  },
+  "execution_policy": {
+    "fail_fast": true,
+    "allow_skips": false,
+    "sample_mode": "full"
+  },
+  "metrics": [
+    {
+      "metric_id": "column_quality_profile",
+      "label": "Column Quality Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "column_quality_profile"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ]
+      },
+      "calculation": {
+        "method": "column_quality_profile",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "column_quality_profile_v1"
+      }
+    },
+    {
+      "metric_id": "pearson_correlation_profile",
+      "label": "Pearson Correlation Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "statistical_fidelity",
+        "pearson_correlation"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "pairwise_pearson_matrix",
+        "parameters": {
+          "missing_value_policy": "drop_pairwise"
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "store_column_validation": true,
+        "comparison_key": "pearson_profile_v1"
+      }
+    }
+  ]
+}

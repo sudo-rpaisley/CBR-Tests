@@ -1,0 +1,14 @@
+{
+  "case_id": "case_deepsecure_drdos_dns_001",
+  "dataset": {
+    "path": "../moved_datasets/Datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv",
+    "format": "csv",
+    "name": "DeepSecure CICDDoS2019 DrDoS_DNS"
+  },
+  "test_plan": {
+    "path": "../plans/deepsecure_plan.json"
+  },
+  "output": {
+    "path": "../outcomes/outcome_deepsecure_drdos_dns_001.json"
+  }
+}
