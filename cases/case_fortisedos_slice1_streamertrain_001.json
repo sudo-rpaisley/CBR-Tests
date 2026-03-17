@@ -1,7 +1,7 @@
 {
   "case_id": "case_fortisedos_slice1_streamertrain_001",
   "dataset": {
-    "path": "../moved_datasets/Datasets/FortisEDoS/dataset_edos_k8s/slice1/slice1-streamertrain.csv",
+    "path": "../datasets/FortisEDoS/dataset_edos_k8s/slice1/slice1-streamertrain.csv",
     "format": "csv",
     "name": "FortisEDoS slice1 streamertrain"
   },
