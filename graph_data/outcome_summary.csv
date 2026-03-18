@@ -1,0 +1,7 @@
+file_name,case_id,plan_id,dataset_path,status,metric_ids
+outcome_dad_001.json,case_dad_001,tp-dad-packet-realism-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap,success,timestamp_coherence_profile|protocol_validity_profile
+outcome_dad_timestamp_001.json,case_dad_timestamp_001,tp-dad-timestamp-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap,success,
+outcome_deepsecure_drdos_dns_001.json,case_deepsecure_drdos_dns_001,tp-deepsecure-flow-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv,success,column_quality_profile|pearson_correlation_profile
+outcome_deepslice_001.json,case_deepslice_001,tp-pearson-deepslice-v1,/home/rpaisley/CBR_Tests/datasets/deepslice/DeepSlice_ML_Model_Data_Public.csv,success,
+outcome_fortisedos_slice1_streamertrain_001.json,case_fortisedos_slice1_streamertrain_001,tp-fortisedos-kpi-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/FortisEDoS/dataset_edos_k8s/slice1/slice1-streamertrain.csv,success,column_quality_profile|pearson_correlation_profile
+outcome_secure5g_attack_001.json,case_secure5g_attack_001,tp-column-quality-secure5g-v1,/home/rpaisley/CBR_Tests/datasets/secure5g/secure5g_attack_combined.csv,success,

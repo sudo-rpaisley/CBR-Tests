@@ -1,0 +1,3 @@
+file_name,case_id,plan_id,dataset_path,packet_count,capture_duration_seconds,backwards_jump_count,zero_delta_count,large_gap_count,large_gap_threshold_seconds,gap_count,mean_gap_seconds,max_gap_seconds,status
+outcome_dad_001.json,case_dad_001,tp-dad-packet-realism-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap,14431,86396.427236,1,6,532,1.0,14429,5.987693,300.049309,warn
+outcome_dad_timestamp_001.json,case_dad_timestamp_001,tp-dad-timestamp-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap,14431,86396.427236,1,6,532,1.0,14429,5.987693,300.049309,warn

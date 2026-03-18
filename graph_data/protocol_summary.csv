@@ -1,0 +1,2 @@
+file_name,case_id,plan_id,dataset_path,packet_count,valid_packet_count,protocol_validity_ratio,invalid_ip_count,invalid_port_count,protocol_mismatch_count,zero_length_packet_count,suspicious_tcp_flag_count,status
+outcome_dad_001.json,case_dad_001,tp-dad-packet-realism-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/SENTINEL/dad-master/capture_1910210000_mon.pcap,14431,14431,1.0,0,0,0,0,0,pass

@@ -1,0 +1,4 @@
+file_name,case_id,plan_id,dataset_path,pair_count,mean_absolute_correlation
+outcome_deepsecure_drdos_dns_001.json,case_deepsecure_drdos_dns_001,tp-deepsecure-flow-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv,15,0.115252
+outcome_deepslice_001.json,case_deepslice_001,tp-pearson-deepslice-v1,/home/rpaisley/CBR_Tests/datasets/deepslice/DeepSlice_ML_Model_Data_Public.csv,1,0.37701
+outcome_fortisedos_slice1_streamertrain_001.json,case_fortisedos_slice1_streamertrain_001,tp-fortisedos-kpi-v1,/home/rpaisley/CBR_Tests/moved_datasets/Datasets/FortisEDoS/dataset_edos_k8s/slice1/slice1-streamertrain.csv,36,0.672336
