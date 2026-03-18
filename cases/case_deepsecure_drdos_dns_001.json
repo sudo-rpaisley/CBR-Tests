@@ -1,7 +1,7 @@
 {
   "case_id": "case_deepsecure_drdos_dns_001",
   "dataset": {
-    "path": "../moved_datasets/Datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv",
+    "path": "../datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv",
     "format": "csv",
     "name": "DeepSecure CICDDoS2019 DrDoS_DNS"
   },
