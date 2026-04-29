@@ -1,5 +1,6 @@
 from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy
+from runner.dispatch import METRIC_REGISTRY
 
 
 def test_validate_plan_schema_rejects_missing_plan_id():
@@ -9,6 +10,11 @@ def test_validate_plan_schema_rejects_missing_plan_id():
         assert False, "expected ValueError"
     except ValueError:
         assert True
+
+
+def test_metric_registry_contains_core_metrics():
+    assert "valid_port_range_profile" in METRIC_REGISTRY
+    assert "reserved_ip_address_profile" in METRIC_REGISTRY
 
 
 def test_taxonomy_builders_basic_shape():
