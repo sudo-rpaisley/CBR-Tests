@@ -117,6 +117,19 @@ def dispatch_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
     raise ValueError(f"Unsupported metric_id: {metric_id}")
 
 
+
+
+def _print_progress(current: int, total: int, metric_id: str) -> None:
+    total = max(total, 1)
+    width = 30
+    filled = int(width * current / total)
+    bar = "#" * filled + "-" * (width - filled)
+    pct = int((current / total) * 100)
+    print(f"\rProgress [{bar}] {pct:3d}% ({current}/{total}) - {metric_id}", end="", flush=True)
+    if current >= total:
+        print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run a test plan from a case JSON."
@@ -165,8 +178,11 @@ def main():
     metric_results = []
     column_validations = {}
 
-    for metric in metrics:
+    total_metrics = len(metrics)
+    for idx, metric in enumerate(metrics, start=1):
+        _print_progress(idx - 1, total_metrics, metric["metric_id"])
         success, metric_payload = dispatch_metric(dataset_path, metric)
+        _print_progress(idx, total_metrics, metric["metric_id"])
 
         metric_record = {
             "metric_id": metric["metric_id"],
