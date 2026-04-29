@@ -16,6 +16,18 @@ from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan, append_timing_history
 from runner.execution import run_metric_with_heartbeat
 
+DEFAULT_METRIC_PREDICTIONS = {
+    "column_quality_profile": 2.0,
+    "pearson_correlation_profile": 3.0,
+    "valid_port_range_profile": 25.0,
+    "service_port_consistency_profile": 80.0,
+    "tcp_flag_consistency_profile": 20.0,
+    "handshake_plausibility_profile": 70.0,
+    "flow_duration_consistency_profile": 20.0,
+    "packet_byte_consistency_profile": 20.0,
+    "reserved_ip_address_profile": 105.0,
+}
+
 
 
 def load_tabular_dataset(dataset_path: Path) -> pd.DataFrame:
@@ -222,18 +234,6 @@ def main():
     print(f"Done. Wrote {output_path}")
     print(f"Timing history appended to {timing_history_path}")
 
-
-DEFAULT_METRIC_PREDICTIONS = {
-    "column_quality_profile": 2.0,
-    "pearson_correlation_profile": 3.0,
-    "valid_port_range_profile": 25.0,
-    "service_port_consistency_profile": 80.0,
-    "tcp_flag_consistency_profile": 20.0,
-    "handshake_plausibility_profile": 70.0,
-    "flow_duration_consistency_profile": 20.0,
-    "packet_byte_consistency_profile": 20.0,
-    "reserved_ip_address_profile": 105.0,
-}
 
 if __name__ == "__main__":
     main()
