@@ -158,6 +158,75 @@
         "store_summary": true,
         "comparison_key": "slice_identifier_consistency_profile_v1"
       }
+    },
+    {
+      "metric_id": "reserved_ip_address_profile",
+      "label": "Reserved IP Address Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "address_validity",
+        "reserved_address_misuse"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Src IP",
+          "Dst IP",
+          "Source IP",
+          "Destination IP"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_reserved_ip_validation",
+        "parameters": {
+          "count_private_as_reserved": true,
+          "count_documentation_as_reserved": true,
+          "count_link_local_as_reserved": true,
+          "count_loopback_as_reserved": true,
+          "count_multicast_as_reserved": true
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "reserved_ip_address_profile_v1"
+      }
+    },
+    {
+      "metric_id": "service_port_consistency_profile",
+      "label": "Service-Port Consistency Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "port_validity",
+        "service_port_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "port_fields": [
+          "Src Port",
+          "Dst Port"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_service_port_consistency",
+        "parameters": {
+          "service_name": "dns",
+          "expected_ports": [
+            53
+          ],
+          "match_mode": "any_port",
+          "pass_threshold": 0.95,
+          "warn_threshold": 0.75,
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "service_port_consistency_profile_v1"
+      }
     }
   ]
 }

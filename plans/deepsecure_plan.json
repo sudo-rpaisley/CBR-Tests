@@ -305,6 +305,121 @@
         "store_summary": true,
         "comparison_key": "packet_byte_consistency_profile_v1"
       }
+    },
+    {
+      "metric_id": "reserved_ip_address_profile",
+      "label": "Reserved IP Address Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "address_validity",
+        "reserved_address_misuse"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Source IP",
+          "Destination IP"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_reserved_ip_validation",
+        "parameters": {
+          "count_private_as_reserved": true,
+          "count_documentation_as_reserved": true,
+          "count_link_local_as_reserved": true,
+          "count_loopback_as_reserved": true,
+          "count_multicast_as_reserved": true
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "reserved_ip_address_profile_v1"
+      }
+    },
+    {
+      "metric_id": "valid_slice_identifier_profile",
+      "label": "Valid Slice Identifier Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "slice_metadata_integrity",
+        "valid_slice_identifier"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice"
+      },
+      "calculation": {
+        "method": "tabular_valid_slice_identifier",
+        "parameters": {
+          "allowed_slice_ids": [
+            "slice1",
+            "slice2"
+          ],
+          "case_sensitive": false,
+          "allow_numeric_equivalents": true,
+          "missing_policy": "count_invalid",
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "valid_slice_identifier_profile_v1"
+      }
+    },
+    {
+      "metric_id": "slice_identifier_consistency_profile",
+      "label": "Slice Identifier Consistency Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "slice_metadata_integrity",
+        "slice_identifier_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice",
+        "context_fields": [
+          "source_file",
+          "traffic_group",
+          "attack_type",
+          "Label"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_slice_identifier_consistency",
+        "parameters": {
+          "rules": [
+            {
+              "when_field": "source_file",
+              "operator": "contains",
+              "value": "slice1",
+              "expected_slice_ids": [
+                "slice1"
+              ]
+            },
+            {
+              "when_field": "source_file",
+              "operator": "contains",
+              "value": "slice2",
+              "expected_slice_ids": [
+                "slice2"
+              ]
+            }
+          ],
+          "case_sensitive": false,
+          "missing_policy": "count_invalid",
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "slice_identifier_consistency_profile_v1"
+      }
     }
   ]
 }
