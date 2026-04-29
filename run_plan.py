@@ -121,7 +121,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Run a test plan from a case JSON."
     )
-    parser.add_argument("--case", required=True, help="Path to the case JSON file")
+    parser.add_argument("--case", required=True, help="Path to case JSON or plan JSON file")
+    parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
+    parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
+    parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
     args = parser.parse_args()
 
     case_file = Path(args.case).resolve()
@@ -130,22 +133,25 @@ def main():
     with open(case_file, "r", encoding="utf-8") as f:
         case = json.load(f)
 
-    if "test_plan" not in case or "dataset" not in case or "output" not in case:
-        if "metrics" in case and "plan_meta" in case:
+    if "test_plan" in case and "dataset" in case and "output" in case:
+        plan_path = resolve_path(case_dir, case["test_plan"]["path"])
+        dataset_path = resolve_path(case_dir, case["dataset"]["path"])
+        output_path = resolve_path(case_dir, case["output"]["path"])
+        case_id = case.get("case_id", "unknown_case")
+        with open(plan_path, "r", encoding="utf-8") as f:
+            plan = json.load(f)
+    elif "metrics" in case and "plan_meta" in case:
+        if not args.dataset or not args.output:
             raise ValueError(
-                "The provided file appears to be a plan JSON, not a case JSON. "
-                "Use --case with a case file (for example: cases/case_deepsecure_drdos_dns_001.json)."
+                "When --case points to a plan JSON, you must also provide --dataset and --output."
             )
-        raise ValueError(
-            "Invalid case JSON: expected keys test_plan, dataset, and output."
-        )
-
-    plan_path = resolve_path(case_dir, case["test_plan"]["path"])
-    dataset_path = resolve_path(case_dir, case["dataset"]["path"])
-    output_path = resolve_path(case_dir, case["output"]["path"])
-
-    with open(plan_path, "r", encoding="utf-8") as f:
-        plan = json.load(f)
+        plan = case
+        plan_path = case_file
+        dataset_path = resolve_path(case_dir, args.dataset)
+        output_path = resolve_path(case_dir, args.output)
+        case_id = args.case_id
+    else:
+        raise ValueError("Invalid input JSON: provide a case JSON, or a plan JSON with --dataset and --output.")
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
     if not metrics:
@@ -183,7 +189,7 @@ def main():
                 metric_results.append(metric_record)
                 outcome = {
                     "status": "failed",
-                    "case_id": case["case_id"],
+                    "case_id": case_id,
                     "plan_id": plan["plan_meta"]["plan_id"],
                     "metric_ids": [m["metric_id"] for m in metrics],
                     "dataset_path": str(dataset_path),
@@ -201,7 +207,7 @@ def main():
 
     outcome = {
         "status": overall_status,
-        "case_id": case["case_id"],
+        "case_id": case_id,
         "plan_id": plan["plan_meta"]["plan_id"],
         "metric_ids": [m["metric_id"] for m in metrics],
         "dataset_path": str(dataset_path),
