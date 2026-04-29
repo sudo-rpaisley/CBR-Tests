@@ -189,9 +189,20 @@ def main():
     mode = "parallel" if workers > 1 else "serial"
     _print_phase_status("Execution", f"Starting {mode} run | metrics={total_metrics} | workers={workers}")
     if workers > 1:
-        def _parallel_progress(event, completed, total, pending, metric_id, ok):
+        def _parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds):
+            active_running = set(running_ids or [])
+            for m in metrics:
+                mid = m["metric_id"]
+                if mid in completed_statuses:
+                    continue
+                if mid in active_running:
+                    completed_statuses[mid] = "running"
+                elif completed_statuses.get(mid) == "running":
+                    completed_statuses[mid] = "pending"
             if event == "completed" and metric_id:
                 completed_statuses[metric_id] = "success" if ok else "failed"
+                if elapsed_seconds is not None:
+                    completed_durations[metric_id] = float(elapsed_seconds)
             print_live_status(
                 render_live_taxonomy(
                     metrics,

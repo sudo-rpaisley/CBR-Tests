@@ -79,16 +79,35 @@ def auto_worker_count(num_metrics: int) -> int:
 def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int, progress_callback=None) -> list[tuple[int, bool, dict]]:
     results: list[tuple[int, bool, dict]] = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
+        def _timed_call(metric_id: str, dataset_path: Path, metric: dict):
+            started = time.perf_counter()
+            ok, payload = metric_handlers[metric_id](dataset_path, metric)
+            elapsed = round(time.perf_counter() - started, 6)
+            if isinstance(payload, dict):
+                payload = dict(payload)
+                payload.setdefault("elapsed_seconds", elapsed)
+            else:
+                payload = {"value": payload, "elapsed_seconds": elapsed}
+            return ok, payload
+
         fut_map = {
-            executor.submit(metric_handlers[m["metric_id"]], dataset_path, m): i
+            executor.submit(_timed_call, m["metric_id"], dataset_path, m): i
             for i, m in enumerate(metrics)
         }
         pending = set(fut_map.keys())
         while pending:
             done, pending = wait(pending, timeout=1.0, return_when=FIRST_COMPLETED)
+            running_ids = []
+            for fut in fut_map:
+                if fut.done():
+                    continue
+                if fut.running():
+                    idx = fut_map[fut]
+                    metric_id = metrics[idx].get("metric_id", "unknown_metric")
+                    running_ids.append(metric_id)
             if not done:
                 if progress_callback is not None:
-                    progress_callback("heartbeat", len(results), len(metrics), len(pending), None, None)
+                    progress_callback("heartbeat", len(results), len(metrics), len(pending), None, None, running_ids, None)
                 continue
             for fut in done:
                 idx = fut_map[fut]
@@ -99,6 +118,7 @@ def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handler
                     ok, payload = False, {"error": str(exc)}
                 results.append((idx, ok, payload))
                 if progress_callback is not None:
-                    progress_callback("completed", len(results), len(metrics), len(pending), metric_id, ok)
+                    elapsed_seconds = payload.get("elapsed_seconds") if isinstance(payload, dict) else None
+                    progress_callback("completed", len(results), len(metrics), len(pending), metric_id, ok, running_ids, elapsed_seconds)
     results.sort(key=lambda t: t[0])
     return results
