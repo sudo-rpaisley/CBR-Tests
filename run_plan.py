@@ -32,13 +32,29 @@ DEFAULT_METRIC_PREDICTIONS = {
 
 
 
-def load_tabular_dataset(dataset_path: Path) -> pd.DataFrame:
+def load_tabular_dataset(dataset_path: Path, progress_callback=None) -> pd.DataFrame:
     suffix = dataset_path.suffix.lower()
 
     if suffix == ".csv":
-        df = pd.read_csv(dataset_path, skipinitialspace=True, low_memory=False)
+        chunk_iter = pd.read_csv(dataset_path, skipinitialspace=True, low_memory=False, chunksize=250_000)
+        chunks = []
+        total_rows = 0
+        for idx, chunk in enumerate(chunk_iter, start=1):
+            chunks.append(chunk)
+            total_rows += len(chunk)
+            if progress_callback:
+                progress_callback(idx, total_rows)
+        df = pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame()
     elif suffix == ".tsv":
-        df = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True, low_memory=False)
+        chunk_iter = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True, low_memory=False, chunksize=250_000)
+        chunks = []
+        total_rows = 0
+        for idx, chunk in enumerate(chunk_iter, start=1):
+            chunks.append(chunk)
+            total_rows += len(chunk)
+            if progress_callback:
+                progress_callback(idx, total_rows)
+        df = pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame()
     elif suffix in [".xlsx", ".xls"]:
         df = pd.read_excel(dataset_path)
     else:
@@ -120,7 +136,14 @@ def main():
         spinner_thread = threading.Thread(target=_spinner, daemon=True)
         spinner_thread.start()
         try:
-            df = load_tabular_dataset(path)
+            def _chunk_progress(chunk_idx: int, total_rows: int):
+                print(
+                    f"\r⏳ Loading dataset chunks... chunk={chunk_idx} | rows_loaded={total_rows:,}",
+                    end="",
+                    flush=True,
+                )
+
+            df = load_tabular_dataset(path, progress_callback=_chunk_progress)
             return df
         finally:
             stop["done"] = True
