@@ -151,6 +151,14 @@ def _run_metric_with_heartbeat(dataset_path: Path, metric: dict, current: int, t
                 print(f"\r\x1b[2K{line}", end="", flush=True)
 
 
+
+
+def _append_timing_history(history_path: Path, run_entry: dict) -> None:
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(history_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(run_entry) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run a test plan from a case JSON."
@@ -159,6 +167,7 @@ def main():
     parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
     parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
+    parser.add_argument("--timing-history", help="Optional JSONL file to append run/metric timing history")
     args = parser.parse_args()
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
@@ -199,6 +208,11 @@ def main():
         case_id = args.case_id
     else:
         raise ValueError("Invalid input JSON: provide a case JSON, or a plan JSON with --dataset and --output.")
+
+    if args.timing_history:
+        timing_history_path = Path(args.timing_history).expanduser().resolve()
+    else:
+        timing_history_path = output_path.parent / "timing_history.jsonl"
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
     if not metrics:
@@ -261,7 +275,15 @@ def main():
                     outcome["column_validations"] = column_validations
                 with open(output_path, "w", encoding="utf-8") as f:
                     json.dump(outcome, f, indent=2)
-                print(f"Done. Wrote {output_path}")
+                _append_timing_history(timing_history_path, {
+                    "run_started_at": outcome["run_started_at"],
+                    "run_finished_at": outcome["run_finished_at"],
+                    "run_elapsed_seconds": outcome["run_elapsed_seconds"],
+                    "case_id": outcome["case_id"],
+                    "plan_id": outcome["plan_id"],
+                    "status": outcome["status"],
+                    "metric_results": outcome["metric_results"]
+                })
                 return
 
         metric_results.append(metric_record)
@@ -289,7 +311,17 @@ def main():
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(outcome, f, indent=2)
 
+    _append_timing_history(timing_history_path, {
+        "run_started_at": outcome["run_started_at"],
+        "run_finished_at": outcome["run_finished_at"],
+        "run_elapsed_seconds": outcome["run_elapsed_seconds"],
+        "case_id": outcome["case_id"],
+        "plan_id": outcome["plan_id"],
+        "status": outcome["status"],
+        "metric_results": outcome["metric_results"]
+    })
     print(f"Done. Wrote {output_path}")
+    print(f"Timing history appended to {timing_history_path}")
 
 
 if __name__ == "__main__":
