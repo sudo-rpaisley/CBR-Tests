@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from runner.schema import validate_plan_schema
+from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, print_taxonomy_summary
+
 from tests.pearson_profile import validate_candidate_fields, compute_pearson_profile
 from tests.column_quality_profile import compute_column_quality_profile
 from tests.timestamp_coherence_profile import run_timestamp_coherence_metric
@@ -192,22 +195,6 @@ def _print_live_status(task_line: str, overall_line: str, warning_line: str | No
     print("\n".join(block_lines), end="", flush=True)
 
 
-def _print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
-    for key, value in result_taxonomy.items():
-        if key == "_metrics":
-            for metric in value:
-                status = metric.get("status", "unknown")
-                print(f"{'  ' * indent}↳ {metric.get('metric_id')} [{status}]")
-            continue
-        if isinstance(value, dict) and set(value.keys()) == {"_metrics"}:
-            for metric in value["_metrics"]:
-                status = metric.get("status", "unknown")
-                print(f"{'  ' * indent}↳ {metric.get('metric_id')} [{status}]")
-            continue
-        print(f"{'  ' * indent}↳ {key}")
-        _print_taxonomy_summary(value, indent + 1)
-
-
 def _run_metric_with_heartbeat(
     dataset_path: Path,
     metric: dict,
@@ -262,40 +249,6 @@ def _append_timing_history(history_path: Path, run_entry: dict) -> None:
     history_path.parent.mkdir(parents=True, exist_ok=True)
     with open(history_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(run_entry) + "\n")
-
-
-def _ensure_taxonomy_path(root: dict, taxonomy_path: list[str]) -> dict:
-    node = root
-    for segment in taxonomy_path:
-        node = node.setdefault(segment, {})
-    return node
-
-
-def _build_plan_taxonomy(metrics: list[dict]) -> dict:
-    taxonomy: dict = {}
-    for metric in metrics:
-        node = _ensure_taxonomy_path(taxonomy, metric.get("taxonomy_path", []))
-        node.setdefault("_metrics", []).append({
-            "metric_id": metric.get("metric_id"),
-            "label": metric.get("label"),
-            "enabled": metric.get("enabled", True),
-        })
-    return taxonomy
-
-
-def _build_result_taxonomy(metrics: list[dict], metric_results: list[dict], test_results: dict) -> dict:
-    by_metric_id = {record["metric_id"]: record for record in metric_results}
-    taxonomy: dict = {}
-    for metric in metrics:
-        metric_id = metric.get("metric_id")
-        node = _ensure_taxonomy_path(taxonomy, metric.get("taxonomy_path", []))
-        node.setdefault("_metrics", []).append({
-            "metric_id": metric_id,
-            "status": by_metric_id.get(metric_id, {}).get("status", "skipped"),
-            "result": test_results.get(metric_id),
-            "error": by_metric_id.get(metric_id, {}).get("error")
-        })
-    return taxonomy
 
 
 def _render_metric_activity_bar(elapsed: float, expected_seconds: float = 60.0, width: int = 12) -> str:
@@ -356,6 +309,8 @@ def main():
     else:
         raise ValueError("Invalid input JSON: provide a case JSON, or a plan JSON with --dataset and --output.")
 
+
+    validate_plan_schema(plan)
     if args.timing_history:
         timing_history_path = Path(args.timing_history).expanduser().resolve()
     else:
@@ -434,10 +389,10 @@ def main():
                     "plan_id": plan["plan_meta"]["plan_id"],
                     "metric_ids": [m["metric_id"] for m in metrics],
                     "dataset_path": str(dataset_path),
-                    "plan_taxonomy": _build_plan_taxonomy(metrics),
+                    "plan_taxonomy": build_plan_taxonomy(metrics),
                     "metric_results": metric_results,
                     "test_results": test_results,
-                    "result_taxonomy": _build_result_taxonomy(metrics, metric_results, test_results),
+                    "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
                     "run_started_at": run_started_at.isoformat(),
                     "run_finished_at": datetime.now(timezone.utc).isoformat(),
                     "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
@@ -459,7 +414,7 @@ def main():
                     print()
                 if not live_render_enabled:
                     print("Results by taxonomy:")
-                    _print_taxonomy_summary(outcome["result_taxonomy"])
+                    print_taxonomy_summary(outcome["result_taxonomy"])
                 return
 
         metric_results.append(metric_record)
@@ -476,10 +431,10 @@ def main():
         "plan_id": plan["plan_meta"]["plan_id"],
         "metric_ids": [m["metric_id"] for m in metrics],
         "dataset_path": str(dataset_path),
-        "plan_taxonomy": _build_plan_taxonomy(metrics),
+        "plan_taxonomy": build_plan_taxonomy(metrics),
         "metric_results": metric_results,
         "test_results": test_results,
-        "result_taxonomy": _build_result_taxonomy(metrics, metric_results, test_results),
+        "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
         "run_started_at": run_started_at.isoformat(),
         "run_finished_at": datetime.now(timezone.utc).isoformat(),
         "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
@@ -504,7 +459,7 @@ def main():
         print()
     if not live_render_enabled:
         print("Results by taxonomy:")
-        _print_taxonomy_summary(outcome["result_taxonomy"])
+        print_taxonomy_summary(outcome["result_taxonomy"])
     print(f"Done. Wrote {output_path}")
     print(f"Timing history appended to {timing_history_path}")
 
