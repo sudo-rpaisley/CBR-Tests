@@ -154,6 +154,7 @@ def _render_live_taxonomy(
             printed_nodes.add(node_tuple)
             lines.append(f"{'  ' * depth}↳ {path[depth]}")
         metric_id = metric.get("metric_id", "unknown_metric")
+        metric_prediction = completed_durations.get(metric_id, DEFAULT_METRIC_PREDICTIONS.get(metric_id, predicted_metric_total))
         if metric_id in completed_statuses:
             run_time = completed_durations.get(metric_id)
             if run_time is not None:
@@ -171,7 +172,7 @@ def _render_live_taxonomy(
             else:
                 suffix = " [running]"
         else:
-            suffix = f" [pending | 0.0/{predicted_metric_total:.0f}s]"
+            suffix = f" [pending | 0.0/{metric_prediction:.0f}s]"
         lines.append(f"{'  ' * len(path)}↳ {metric_id}{suffix}")
     return "\n".join(lines)
 
@@ -510,3 +511,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+DEFAULT_METRIC_PREDICTIONS = {
+    "column_quality_profile": 2.0,
+    "pearson_correlation_profile": 3.0,
+    "valid_port_range_profile": 25.0,
+    "service_port_consistency_profile": 80.0,
+    "tcp_flag_consistency_profile": 20.0,
+    "handshake_plausibility_profile": 70.0,
+    "flow_duration_consistency_profile": 20.0,
+    "packet_byte_consistency_profile": 20.0,
+    "reserved_ip_address_profile": 105.0,
+}
