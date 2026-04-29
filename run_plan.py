@@ -2,6 +2,7 @@ import json
 import argparse
 import time
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
 
 import pandas as pd
@@ -132,6 +133,21 @@ def _print_progress(current: int, total: int, metric_id: str) -> None:
         print()
 
 
+
+
+def _run_metric_with_heartbeat(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
+    metric_id = metric.get("metric_id", "unknown_metric")
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(dispatch_metric, dataset_path, metric)
+        heartbeat_start = time.perf_counter()
+        while True:
+            try:
+                return future.result(timeout=1.0)
+            except TimeoutError:
+                elapsed = round(time.perf_counter() - heartbeat_start, 1)
+                print(f"\r  ↳ Running {metric_id}... {elapsed}s elapsed", end="", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run a test plan from a case JSON."
@@ -188,7 +204,7 @@ def main():
         _print_progress(idx - 1, total_metrics, metric["metric_id"])
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
-        success, metric_payload = dispatch_metric(dataset_path, metric)
+        success, metric_payload = _run_metric_with_heartbeat(dataset_path, metric)
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
         _print_progress(idx, total_metrics, metric["metric_id"])
