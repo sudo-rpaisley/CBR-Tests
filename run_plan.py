@@ -144,7 +144,22 @@ def _render_progress_line(current: int, total: int, metric_id: str, elapsed: flo
     return f"Progress [{bar}] {pct:3d}% ({current}/{total}) - {metric_id}{suffix}"
 
 
-def _run_metric_with_heartbeat(dataset_path: Path, metric: dict, current: int, total: int) -> tuple[bool, dict]:
+def _print_live_status(progress_line: str, warning_line: str | None = None) -> None:
+    print(f"\r\x1b[2K{progress_line}", end="")
+    if warning_line is not None:
+        print(f"\n\x1b[2K{warning_line}", end="")
+    else:
+        print("\n\x1b[2K", end="")
+    print("\x1b[1A", end="", flush=True)
+
+
+def _run_metric_with_heartbeat(
+    dataset_path: Path,
+    metric: dict,
+    current: int,
+    total: int,
+    shutdown_requested: dict
+) -> tuple[bool, dict]:
     metric_id = metric.get("metric_id", "unknown_metric")
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(dispatch_metric, dataset_path, metric)
@@ -154,13 +169,21 @@ def _run_metric_with_heartbeat(dataset_path: Path, metric: dict, current: int, t
                 result = future.result(timeout=1.0)
                 elapsed = time.perf_counter() - heartbeat_start
                 line = _render_progress_line(current, total, metric_id, elapsed, completed=True)
-                print(f"\r\x1b[2K{line}", end="", flush=True)
-                print()
+                _print_live_status(line, None)
+                print("\n", end="")
                 return result
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
                 line = _render_progress_line(current, total, metric_id, elapsed)
-                print(f"\r\x1b[2K{line}", end="", flush=True)
+                warning_line = None
+                if shutdown_requested.get("requested"):
+                    remaining = int(max(0, shutdown_requested.get("confirm_before", 0.0) - time.time()))
+                    if remaining > 0:
+                        warning_line = (
+                            f"Stop requested. Press Ctrl+C again within {remaining}s to force quit. "
+                            "Waiting for current metric to finish..."
+                        )
+                _print_live_status(line, warning_line)
 
 
 
@@ -252,7 +275,9 @@ def main():
         metric_for_run = dict(metric)
         if shared_tabular_df is not None:
             metric_for_run["_shared_df"] = shared_tabular_df
-        success, metric_payload = _run_metric_with_heartbeat(dataset_path, metric_for_run, idx, total_metrics)
+        success, metric_payload = _run_metric_with_heartbeat(
+            dataset_path, metric_for_run, idx, total_metrics, shutdown_requested
+        )
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
 
