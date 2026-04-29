@@ -112,13 +112,22 @@ def dispatch_metric(dataset_path: Path, metric: dict, shared_df: pd.DataFrame | 
 
 
 
-def _render_overall_progress_line(current: int, total: int) -> str:
+def _render_overall_progress_line(current: int, total: int, run_elapsed: float | None = None, in_metric_elapsed: float | None = None) -> str:
     total = max(total, 1)
     width = 30
     filled = int(width * current / total)
     bar = "#" * filled + "-" * (width - filled)
     pct = int((current / total) * 100)
-    return f"Overall  [{bar}] {pct:3d}% ({current}/{total})"
+    suffix = ""
+    if run_elapsed is not None:
+        metric_fraction = 0.0
+        if in_metric_elapsed is not None:
+            metric_fraction = min(in_metric_elapsed / 60.0, 0.99)
+        progress_fraction = min(((current - 1) + metric_fraction) / total, 0.999)
+        if progress_fraction > 0:
+            predicted_total = run_elapsed / progress_fraction
+            suffix = f" | {int(run_elapsed)}/{int(predicted_total)}s"
+    return f"Overall  [{bar}] {pct:3d}% ({current}/{total}){suffix}"
 
 
 def _render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], elapsed: float | None = None, completed: bool = False) -> str:
@@ -190,7 +199,8 @@ def _run_metric_with_heartbeat(
     current: int,
     total: int,
     shutdown_requested: dict,
-    shared_df: pd.DataFrame | None = None
+    shared_df: pd.DataFrame | None = None,
+    run_start_perf: float | None = None
 ) -> tuple[bool, dict]:
     metric_id = metric.get("metric_id", "unknown_metric")
     with ThreadPoolExecutor(max_workers=1) as executor:
@@ -201,7 +211,8 @@ def _run_metric_with_heartbeat(
                 result = future.result(timeout=1.0)
                 elapsed = time.perf_counter() - heartbeat_start
                 task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, elapsed, completed=True)
-                overall_line = _render_overall_progress_line(current, total)
+                run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
+                overall_line = _render_overall_progress_line(current, total, run_elapsed, elapsed)
                 _print_live_status(task_line, overall_line, None)
                 if sys.stdout.isatty():
                     print("\n", end="")
@@ -209,7 +220,8 @@ def _run_metric_with_heartbeat(
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
                 task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, elapsed)
-                overall_line = _render_overall_progress_line(current, total)
+                run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
+                overall_line = _render_overall_progress_line(current, total, run_elapsed, elapsed)
                 warning_line = None
                 if shutdown_requested.get("requested"):
                     remaining = int(max(0, shutdown_requested.get("confirm_before", 0.0) - time.time()))
@@ -351,7 +363,7 @@ def main():
         metric_start_perf = time.perf_counter()
         try:
             success, metric_payload = _run_metric_with_heartbeat(
-                dataset_path, metric, metrics, completed_statuses, idx, total_metrics, shutdown_requested, shared_tabular_df
+                dataset_path, metric, metrics, completed_statuses, idx, total_metrics, shutdown_requested, shared_tabular_df, run_start_perf
             )
         except KeyboardInterrupt:
             overall_status = "cancelled"
