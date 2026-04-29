@@ -1,4 +1,4 @@
-from tests.service_port_consistency_profile import parse_port
+from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.service_port_consistency_profile import parse_port
 
 
 def test_parse_port_categories():

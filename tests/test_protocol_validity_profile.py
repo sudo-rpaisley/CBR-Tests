@@ -1,4 +1,4 @@
-from tests.protocol_validity_profile import classify_ip_value
+from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.valid_ip_address_profile import classify_ip_value
 
 
 def test_ipv4_values_are_classified():

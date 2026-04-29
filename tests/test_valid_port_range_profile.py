@@ -1,4 +1,4 @@
-from tests.valid_port_range_profile import parse_port, classify_port_range
+from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.valid_port_range_profile import parse_port, classify_port_range
 
 
 def test_parse_port_statuses():

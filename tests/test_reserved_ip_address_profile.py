@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from tests.reserved_ip_address_profile import run_reserved_ip_address_metric
+from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.reserved_ip_address_profile import run_reserved_ip_address_metric
 
 
 def test_reserved_ip_address_metric_counts(tmp_path: Path):
