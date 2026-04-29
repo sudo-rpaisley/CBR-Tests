@@ -182,10 +182,22 @@ def main():
     completed_durations: dict[str, float] = {}
     workers = args.workers if args.workers is not None else auto_worker_count(total_metrics)
     workers = max(1, int(workers))
+    if shared_tabular_df is not None and workers > 4:
+        workers = 4
+        _print_phase_status("Execution", "Capped workers to 4 for tabular workloads to avoid thread contention")
     mode = "parallel" if workers > 1 else "serial"
     _print_phase_status("Execution", f"Starting {mode} run | metrics={total_metrics} | workers={workers}")
     if workers > 1:
-        parallel_out = run_metrics_parallel(dataset_path, metrics, metric_handlers, workers)
+        parallel_out = run_metrics_parallel(
+            dataset_path,
+            metrics,
+            metric_handlers,
+            workers,
+            progress_callback=lambda completed, total, pending: _print_phase_status(
+                "Parallel",
+                f"completed={completed}/{total} | pending={pending}"
+            ),
+        )
         for idx0, success, metric_payload in parallel_out:
             metric = metrics[idx0]
             metric_record = {

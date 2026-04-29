@@ -1,7 +1,7 @@
 from __future__ import annotations
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
-from concurrent.futures import as_completed
+from concurrent.futures import as_completed, wait, FIRST_COMPLETED
 from pathlib import Path
 
 from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
@@ -76,19 +76,28 @@ def auto_worker_count(num_metrics: int) -> int:
     return max(1, min(num_metrics, cpu - 1 if cpu > 2 else 1))
 
 
-def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int) -> list[tuple[int, bool, dict]]:
+def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int, progress_callback=None) -> list[tuple[int, bool, dict]]:
     results: list[tuple[int, bool, dict]] = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
         fut_map = {
             executor.submit(metric_handlers[m["metric_id"]], dataset_path, m): i
             for i, m in enumerate(metrics)
         }
-        for fut in as_completed(fut_map):
-            idx = fut_map[fut]
-            try:
-                ok, payload = fut.result()
-            except Exception as exc:  # noqa: BLE001
-                ok, payload = False, {"error": str(exc)}
-            results.append((idx, ok, payload))
+        pending = set(fut_map.keys())
+        while pending:
+            done, pending = wait(pending, timeout=1.0, return_when=FIRST_COMPLETED)
+            if not done:
+                if progress_callback is not None:
+                    progress_callback(len(results), len(metrics), len(pending))
+                continue
+            for fut in done:
+                idx = fut_map[fut]
+                try:
+                    ok, payload = fut.result()
+                except Exception as exc:  # noqa: BLE001
+                    ok, payload = False, {"error": str(exc)}
+                results.append((idx, ok, payload))
+                if progress_callback is not None:
+                    progress_callback(len(results), len(metrics), len(pending))
     results.sort(key=lambda t: t[0])
     return results
