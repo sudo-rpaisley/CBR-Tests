@@ -13,7 +13,7 @@ import pandas as pd
 from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy, print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
-from runner.io import load_case_or_plan, append_timing_history
+from runner.io import load_case_or_plan
 from runner.execution import run_metric_with_heartbeat
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 
@@ -63,7 +63,6 @@ def main():
     parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
     parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
-    parser.add_argument("--timing-history", help="Optional JSONL file to append run/metric timing history")
     parser.add_argument("--taxonomy-file", help="Optional taxonomy JSON used to order metrics")
     parser.add_argument("--taxonomy-strict", action="store_true", help="Fail if enabled plan metrics are missing from taxonomy order")
     args = parser.parse_args()
@@ -83,11 +82,6 @@ def main():
     case_file = Path(args.case).resolve()
     plan, dataset_path, output_path, case_id = load_case_or_plan(case_file, args.dataset, args.output, args.case_id)
 
-
-    if args.timing_history:
-        timing_history_path = Path(args.timing_history).expanduser().resolve()
-    else:
-        timing_history_path = output_path.parent / "timing_history.jsonl"
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
     if args.taxonomy_file:
@@ -180,15 +174,6 @@ def main():
                     outcome["column_validations"] = column_validations
                 with open(output_path, "w", encoding="utf-8") as f:
                     json.dump(outcome, f, indent=2)
-                append_timing_history(timing_history_path, {
-                    "run_started_at": outcome["run_started_at"],
-                    "run_finished_at": outcome["run_finished_at"],
-                    "run_elapsed_seconds": outcome["run_elapsed_seconds"],
-                    "case_id": outcome["case_id"],
-                    "plan_id": outcome["plan_id"],
-                    "status": outcome["status"],
-                    "metric_results": outcome["metric_results"]
-                })
                 if sys.stdout.isatty():
                     print()
                 if not live_render_enabled:
@@ -226,22 +211,12 @@ def main():
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(outcome, f, indent=2)
 
-    append_timing_history(timing_history_path, {
-        "run_started_at": outcome["run_started_at"],
-        "run_finished_at": outcome["run_finished_at"],
-        "run_elapsed_seconds": outcome["run_elapsed_seconds"],
-        "case_id": outcome["case_id"],
-        "plan_id": outcome["plan_id"],
-        "status": outcome["status"],
-        "metric_results": outcome["metric_results"]
-    })
     if sys.stdout.isatty():
         print()
     if not live_render_enabled:
         print("Results by taxonomy:")
         print_taxonomy_summary(outcome["result_taxonomy"])
     print(f"Done. Wrote {output_path}")
-    print(f"Timing history appended to {timing_history_path}")
 
 
 if __name__ == "__main__":

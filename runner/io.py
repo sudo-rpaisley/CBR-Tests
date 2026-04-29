@@ -33,9 +33,3 @@ def load_case_or_plan(case_file: Path, dataset_arg: str | None, output_arg: str 
         raise ValueError('Invalid input JSON: provide a case JSON, or a plan JSON with --dataset and --output.')
 
     return plan, dataset_path, output_path, case_id
-
-
-def append_timing_history(history_path: Path, run_entry: dict) -> None:
-    history_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(history_path, 'a', encoding='utf-8') as f:
-        f.write(json.dumps(run_entry) + '\n')
