@@ -129,13 +129,18 @@ def dispatch_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
 
 
 
-def _render_progress_line(current: int, total: int, metric_id: str, elapsed: float | None = None) -> str:
+def _render_progress_line(current: int, total: int, metric_id: str, elapsed: float | None = None, completed: bool = False) -> str:
     total = max(total, 1)
     width = 30
     filled = int(width * current / total)
     bar = "#" * filled + "-" * (width - filled)
     pct = int((current / total) * 100)
-    suffix = f" | running {elapsed:.1f}s" if elapsed is not None else ""
+    if elapsed is None:
+        suffix = ""
+    elif completed:
+        suffix = f" | run time {elapsed:.1f}s"
+    else:
+        suffix = f" | running {elapsed:.1f}s"
     return f"Progress [{bar}] {pct:3d}% ({current}/{total}) - {metric_id}{suffix}"
 
 
@@ -147,7 +152,8 @@ def _run_metric_with_heartbeat(dataset_path: Path, metric: dict, current: int, t
         while True:
             try:
                 result = future.result(timeout=1.0)
-                line = _render_progress_line(current, total, metric_id)
+                elapsed = time.perf_counter() - heartbeat_start
+                line = _render_progress_line(current, total, metric_id, elapsed, completed=True)
                 print(f"\r\x1b[2K{line}", end="", flush=True)
                 print()
                 return result
