@@ -99,6 +99,11 @@ def main():
         print(f"Dataset: {dataset_name} | Size: {dataset_size_mb} MB | Path: {dataset_path}")
         print("=" * 88)
 
+    def _print_phase_status(phase: str, detail: str = ""):
+        timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        suffix = f" | {detail}" if detail else ""
+        print(f"[{timestamp}] {phase}{suffix}")
+
     def _load_with_progress(path: Path):
         stop = {"done": False}
 
@@ -123,13 +128,16 @@ def main():
             print("\r✓ Dataset loaded.                              ")
 
     _print_startup_banner()
+    _print_phase_status("Startup", "Initializing run context")
     shared_tabular_df = None
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
+        _print_phase_status("Dataset", "Loading tabular dataset")
         shared_tabular_df = _load_with_progress(dataset_path)
         print(
             f"Dataset details: rows={len(shared_tabular_df):,} | columns={shared_tabular_df.shape[1]} | "
             f"feature_sample={list(shared_tabular_df.columns[:8])}"
         )
+        _print_phase_status("Dataset", "Load complete")
     metric_handlers = build_metric_handlers(shared_tabular_df, load_tabular_dataset)
 
     if not metrics:
@@ -151,6 +159,8 @@ def main():
     completed_durations: dict[str, float] = {}
     workers = args.workers if args.workers is not None else auto_worker_count(total_metrics)
     workers = max(1, int(workers))
+    mode = "parallel" if workers > 1 else "serial"
+    _print_phase_status("Execution", f"Starting {mode} run | metrics={total_metrics} | workers={workers}")
     if workers > 1:
         parallel_out = run_metrics_parallel(dataset_path, metrics, metric_handlers, workers)
         for idx0, success, metric_payload in parallel_out:
@@ -175,6 +185,10 @@ def main():
             metric_results.append(metric_record)
             completed_statuses[metric["metric_id"]] = metric_record["status"]
             completed_durations[metric["metric_id"]] = metric_record["elapsed_seconds"]
+            _print_phase_status(
+                "Progress",
+                f"{len(metric_results)}/{total_metrics} completed | metric={metric['metric_id']} | status={metric_record['status']}"
+            )
         # finalize immediately for parallel path
         outcome = {
             "status": overall_status,
@@ -195,9 +209,11 @@ def main():
             outcome["column_validations"] = column_validations
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(outcome, f, indent=2)
+        _print_phase_status("Completed", f"Output written to {output_path}")
         print(f"Done. Wrote {output_path}")
         return
     for idx, metric in enumerate(metrics, start=1):
+        _print_phase_status("Progress", f"{idx-1}/{total_metrics} completed | running={metric['metric_id']}")
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
         try:
@@ -271,6 +287,7 @@ def main():
         metric_results.append(metric_record)
         completed_statuses[metric["metric_id"]] = metric_record["status"]
         completed_durations[metric["metric_id"]] = metric_elapsed_seconds
+        _print_phase_status("Progress", f"{idx}/{total_metrics} completed | metric={metric['metric_id']} | status={metric_record['status']}")
 
         if shutdown_requested["requested"]:
             overall_status = "cancelled"
@@ -297,6 +314,7 @@ def main():
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(outcome, f, indent=2)
+    _print_phase_status("Completed", f"Output written to {output_path}")
 
     if sys.stdout.isatty():
         print()
