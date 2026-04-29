@@ -171,7 +171,7 @@ def _render_live_taxonomy(
             else:
                 suffix = " [running]"
         else:
-            suffix = " [pending]"
+            suffix = f" [pending | 0.0/{predicted_metric_total:.0f}s]"
         lines.append(f"{'  ' * len(path)}↳ {metric_id}{suffix}")
     return "\n".join(lines)
 
