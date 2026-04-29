@@ -13,6 +13,7 @@ import pandas as pd
 from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
+from runner.progress import render_metric_activity_bar, render_overall_progress_line, print_live_status
 
 
 
@@ -45,24 +46,6 @@ def dispatch_metric_with_handlers(dataset_path: Path, metric: dict, metric_handl
     if handler is None:
         raise ValueError(f"Unsupported metric_id: {metric_id}")
     return handler(dataset_path, metric)
-
-
-def _render_overall_progress_line(current: int, total: int, run_elapsed: float | None = None, in_metric_elapsed: float | None = None) -> str:
-    total = max(total, 1)
-    width = 30
-    filled = int(width * current / total)
-    bar = "#" * filled + "-" * (width - filled)
-    pct = int((current / total) * 100)
-    suffix = ""
-    if run_elapsed is not None:
-        metric_fraction = 0.0
-        if in_metric_elapsed is not None:
-            metric_fraction = min(in_metric_elapsed / 60.0, 0.99)
-        progress_fraction = min(((current - 1) + metric_fraction) / total, 0.999)
-        if progress_fraction > 0:
-            predicted_total = run_elapsed / progress_fraction
-            suffix = f" | {int(run_elapsed)}/{int(predicted_total)}s"
-    return f"Overall  [{bar}] {pct:3d}% ({current}/{total}){suffix}"
 
 
 def _render_live_taxonomy(
@@ -101,7 +84,7 @@ def _render_live_taxonomy(
             elif elapsed is not None:
                 suffix = (
                     f" [running | {elapsed:.1f}/{predicted_metric_total:.0f}s ] "
-                    f"[{_render_metric_activity_bar(elapsed, expected_seconds=predicted_metric_total)}]"
+                    f"[{render_metric_activity_bar(elapsed, expected_seconds=predicted_metric_total)}]"
                 )
             else:
                 suffix = " [running]"
@@ -109,21 +92,6 @@ def _render_live_taxonomy(
             suffix = f" [pending | 0.0/{metric_prediction:.0f}s]"
         lines.append(f"{'  ' * len(path)}↳ {metric_id}{suffix}")
     return "\n".join(lines)
-
-
-def _print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
-    if not sys.stdout.isatty():
-        if warning_line is not None:
-            print(f"{overall_line} | {warning_line}")
-        return
-    if os.environ.get("TERM", "").lower() in {"", "dumb"}:
-        return
-
-    block_lines = task_line.splitlines() + [overall_line]
-    if warning_line is not None:
-        block_lines.append(warning_line)
-    print("\x1b[H\x1b[J", end="")
-    print("\n".join(block_lines), end="", flush=True)
 
 
 def _run_metric_with_heartbeat(
@@ -152,8 +120,8 @@ def _run_metric_with_heartbeat(
                 smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
                 task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, smoothed_total, elapsed, completed=True)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
-                overall_line = _render_overall_progress_line(current, total, run_elapsed, elapsed)
-                _print_live_status(task_line, overall_line, None)
+                overall_line = render_overall_progress_line(current, total, run_elapsed, elapsed)
+                print_live_status(task_line, overall_line, None)
                 if sys.stdout.isatty():
                     print("\n", end="")
                 return result
@@ -163,7 +131,7 @@ def _run_metric_with_heartbeat(
                 smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
                 task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, smoothed_total, elapsed)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
-                overall_line = _render_overall_progress_line(max(0, current - 1), total, run_elapsed, elapsed)
+                overall_line = render_overall_progress_line(max(0, current - 1), total, run_elapsed, elapsed)
                 warning_line = None
                 if shutdown_requested.get("requested"):
                     remaining = int(max(0, shutdown_requested.get("confirm_before", 0.0) - time.time()))
@@ -172,7 +140,7 @@ def _run_metric_with_heartbeat(
                             f"Stop requested. Press Ctrl+C again within {remaining}s to force quit. "
                             "Waiting for current metric to finish..."
                         )
-                _print_live_status(task_line, overall_line, warning_line)
+                print_live_status(task_line, overall_line, warning_line)
 
 
 
@@ -181,16 +149,6 @@ def _append_timing_history(history_path: Path, run_entry: dict) -> None:
     history_path.parent.mkdir(parents=True, exist_ok=True)
     with open(history_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(run_entry) + "\n")
-
-
-def _render_metric_activity_bar(elapsed: float, expected_seconds: float = 60.0, width: int = 12) -> str:
-    if width < 3:
-        width = 3
-    if expected_seconds <= 0:
-        expected_seconds = 60.0
-    progress = min(elapsed / expected_seconds, 0.99)
-    filled = max(1, int(progress * width))
-    return "#" * filled + "-" * (width - filled)
 
 
 def main():
