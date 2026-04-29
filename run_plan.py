@@ -221,6 +221,10 @@ def main():
         timing_history_path = output_path.parent / "timing_history.jsonl"
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
+
+    shared_tabular_df = None
+    if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
+        shared_tabular_df = load_tabular_dataset(dataset_path)
     if not metrics:
         raise ValueError("The plan does not contain any enabled metrics.")
 
@@ -239,7 +243,10 @@ def main():
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
-        success, metric_payload = _run_metric_with_heartbeat(dataset_path, metric, idx, total_metrics)
+        metric_for_run = dict(metric)
+        if shared_tabular_df is not None:
+            metric_for_run["_shared_df"] = shared_tabular_df
+        success, metric_payload = _run_metric_with_heartbeat(dataset_path, metric_for_run, idx, total_metrics)
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
 

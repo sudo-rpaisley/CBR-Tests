@@ -74,10 +74,12 @@ def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tup
     if match_mode not in {"any_port", "destination_only", "source_only", "both_ports"}:
         return False, {"error": f"Unsupported match_mode: {match_mode}"}
 
-    try:
-        df = load_tabular_dataset(dataset_path)
-    except Exception as exc:
-        return False, {"error": f"Failed to load dataset: {exc}"}
+    df = metric.get("_shared_df")
+    if df is None:
+        try:
+            df = load_tabular_dataset(dataset_path)
+        except Exception as exc:
+            return False, {"error": f"Failed to load dataset: {exc}"}
 
     existing_fields = [f for f in port_fields if f in df.columns]
     missing_fields = [f for f in port_fields if f not in df.columns]

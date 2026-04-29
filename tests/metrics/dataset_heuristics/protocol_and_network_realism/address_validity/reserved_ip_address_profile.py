@@ -69,10 +69,12 @@ def get_reserved_categories(addr) -> list[str]:
 def run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
     import pandas as pd
 
-    try:
-        df = load_tabular_dataset(dataset_path)
-    except Exception as exc:
-        return False, {"error": f"Failed to load dataset: {exc}"}
+    df = metric.get("_shared_df")
+    if df is None:
+        try:
+            df = load_tabular_dataset(dataset_path)
+        except Exception as exc:
+            return False, {"error": f"Failed to load dataset: {exc}"}
 
     candidate_fields = metric.get("input_requirements", {}).get("candidate_fields", ["Source IP", "Destination IP", "Src IP", "Dst IP"])
     checked_fields = [f for f in candidate_fields if f in df.columns]

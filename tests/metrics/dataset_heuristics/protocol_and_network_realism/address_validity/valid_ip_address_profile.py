@@ -121,7 +121,7 @@ def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool
                     valid_packet_count += 1
 
     except Exception as exc:
-        return False, {"error": f"Failed to scan PCAP protocol validity: {exc}"}
+            return False, {"error": f"Failed to scan PCAP protocol validity: {exc}"}
 
     if packet_count == 0:
         return False, {"error": "PCAP contains no packets."}

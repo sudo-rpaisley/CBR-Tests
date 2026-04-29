@@ -58,10 +58,12 @@ def run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool,
     if not candidate_fields:
         return False, {"error": "No candidate_fields were provided for valid_port_range_profile."}
 
-    try:
-        df = load_tabular_dataset(dataset_path)
-    except Exception as exc:
-        return False, {"error": f"Failed to load dataset: {exc}"}
+    df = metric.get("_shared_df")
+    if df is None:
+        try:
+            df = load_tabular_dataset(dataset_path)
+        except Exception as exc:
+            return False, {"error": f"Failed to load dataset: {exc}"}
 
     existing_fields = [field for field in candidate_fields if field in df.columns]
     missing_fields = [field for field in candidate_fields if field not in df.columns]

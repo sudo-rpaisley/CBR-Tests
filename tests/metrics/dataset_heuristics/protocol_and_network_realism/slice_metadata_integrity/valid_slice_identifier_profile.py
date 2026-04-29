@@ -51,10 +51,12 @@ def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple
     missing_policy = params.get("missing_policy", "count_invalid")
     max_examples = int(params.get("max_examples", 10))
 
-    try:
-        df = load_tabular_dataset(dataset_path)
-    except Exception as exc:
-        return False, {"error": f"Failed to load dataset: {exc}"}
+    df = metric.get("_shared_df")
+    if df is None:
+        try:
+            df = load_tabular_dataset(dataset_path)
+        except Exception as exc:
+            return False, {"error": f"Failed to load dataset: {exc}"}
 
     if slice_field not in df.columns:
         return False, {"error": "Slice field does not exist in dataset.", "missing_field": slice_field}
