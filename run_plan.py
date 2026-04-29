@@ -112,35 +112,43 @@ def dispatch_metric(dataset_path: Path, metric: dict, shared_df: pd.DataFrame | 
 
 
 
-def _render_progress_line(current: int, total: int, metric_id: str, elapsed: float | None = None, completed: bool = False) -> str:
+def _render_overall_progress_line(current: int, total: int) -> str:
     total = max(total, 1)
     width = 30
     filled = int(width * current / total)
     bar = "#" * filled + "-" * (width - filled)
     pct = int((current / total) * 100)
+    return f"Overall  [{bar}] {pct:3d}% ({current}/{total})"
+
+
+def _render_task_line(metric: dict, elapsed: float | None = None, completed: bool = False) -> str:
+    taxonomy = metric.get("taxonomy_path", [])
+    metric_id = metric.get("metric_id", "unknown_metric")
+    task_name = " > ".join(taxonomy[:-1] + [metric_id]) if taxonomy else metric_id
     if elapsed is None:
         suffix = ""
     elif completed:
-        suffix = f" | run time {elapsed:.1f}s"
+        suffix = f" | done in {elapsed:.1f}s"
     else:
         suffix = f" | running {elapsed:.1f}s [{_render_metric_activity_bar(elapsed)}]"
-    return f"Progress [{bar}] {pct:3d}% ({current}/{total}) - {metric_id}{suffix}"
+    return f"↳ {task_name}{suffix}"
 
 
-def _print_live_status(progress_line: str, warning_line: str | None = None) -> None:
+def _print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
     if not sys.stdout.isatty():
         if warning_line is not None:
-            print(f"{progress_line} | {warning_line}")
+            print(f"{task_line}\n{overall_line} | {warning_line}")
         else:
-            print(progress_line)
+            print(f"{task_line}\n{overall_line}")
         return
 
-    print(f"\r\x1b[2K{progress_line}", end="")
+    print(f"\r\x1b[2K{task_line}", end="")
+    print(f"\n\x1b[2K{overall_line}", end="")
     if warning_line is not None:
         print(f"\n\x1b[2K{warning_line}", end="")
+        print("\x1b[2A", end="", flush=True)
     else:
-        print("\n\x1b[2K", end="")
-    print("\x1b[1A", end="", flush=True)
+        print("\x1b[1A", end="", flush=True)
 
 
 def _print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
@@ -175,13 +183,15 @@ def _run_metric_with_heartbeat(
             try:
                 result = future.result(timeout=1.0)
                 elapsed = time.perf_counter() - heartbeat_start
-                line = _render_progress_line(current, total, metric_id, elapsed, completed=True)
-                _print_live_status(line, None)
+                task_line = _render_task_line(metric, elapsed, completed=True)
+                overall_line = _render_overall_progress_line(current, total)
+                _print_live_status(task_line, overall_line, None)
                 print("\n", end="")
                 return result
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
-                line = _render_progress_line(current, total, metric_id, elapsed)
+                task_line = _render_task_line(metric, elapsed)
+                overall_line = _render_overall_progress_line(current, total)
                 warning_line = None
                 if shutdown_requested.get("requested"):
                     remaining = int(max(0, shutdown_requested.get("confirm_before", 0.0) - time.time()))
@@ -190,7 +200,7 @@ def _run_metric_with_heartbeat(
                             f"Stop requested. Press Ctrl+C again within {remaining}s to force quit. "
                             "Waiting for current metric to finish..."
                         )
-                _print_live_status(line, warning_line)
+                _print_live_status(task_line, overall_line, warning_line)
 
 
 
