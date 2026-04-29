@@ -1,15 +1,33 @@
 from pathlib import Path
 from ipaddress import ip_address
 
-from scapy.utils import PcapReader
-from scapy.layers.inet import IP, TCP, UDP
-from scapy.layers.inet6 import IPv6
+
+def classify_ip_value(ip_value) -> str:
+    """
+    Classify an IP field value as one of: missing, ipv4, ipv6, invalid.
+    """
+    if ip_value is None:
+        return "missing"
+
+    text = str(ip_value).strip()
+    if text == "":
+        return "missing"
+
+    try:
+        parsed = ip_address(text)
+    except ValueError:
+        return "invalid"
+
+    if parsed.version == 4:
+        return "ipv4"
+    return "ipv6"
 
 
 def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
-    """
-    Scan a PCAP and assess basic packet/protocol validity.
-    """
+    from scapy.utils import PcapReader
+    from scapy.layers.inet import IP
+    from scapy.layers.inet6 import IPv6
+
     packet_count = 0
     valid_packet_count = 0
 
@@ -19,6 +37,18 @@ def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool
     zero_length_packet_count = 0
     suspicious_tcp_flag_count = 0
 
+    checked_row_count = 0
+    checked_address_count = 0
+    invalid_address_count = 0
+    invalid_row_count = 0
+    missing_address_count = 0
+
+    field_counts = {
+        "source_ip": {"checked": 0, "invalid": 0, "missing": 0},
+        "destination_ip": {"checked": 0, "invalid": 0, "missing": 0}
+    }
+    address_family_counts = {"ipv4": 0, "ipv6": 0, "unknown": 0}
+
     try:
         with PcapReader(str(dataset_path)) as reader:
             for pkt in reader:
@@ -26,81 +56,79 @@ def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool
                 packet_valid = True
 
                 try:
-                    pkt_len = len(pkt)
-                    if pkt_len <= 0:
+                    if len(pkt) <= 0:
                         zero_length_packet_count += 1
                         packet_valid = False
                 except Exception:
                     zero_length_packet_count += 1
                     packet_valid = False
 
+                row_checked = False
+                row_invalid = False
+
                 if IP in pkt:
+                    row_checked = True
+                    checked_row_count += 1
                     ip = pkt[IP]
-                    try:
-                        ip_address(ip.src)
-                        ip_address(ip.dst)
-                    except Exception:
-                        invalid_ip_count += 1
-                        packet_valid = False
-
-                    if TCP in pkt and ip.proto != 6:
-                        protocol_mismatch_count += 1
-                        packet_valid = False
-
-                    if UDP in pkt and ip.proto != 17:
-                        protocol_mismatch_count += 1
-                        packet_valid = False
+                    for field_name, value in (("source_ip", ip.src), ("destination_ip", ip.dst)):
+                        checked_address_count += 1
+                        field_counts[field_name]["checked"] += 1
+                        cls = classify_ip_value(value)
+                        if cls == "ipv4":
+                            address_family_counts["ipv4"] += 1
+                        elif cls == "ipv6":
+                            address_family_counts["ipv6"] += 1
+                        elif cls == "missing":
+                            missing_address_count += 1
+                            field_counts[field_name]["missing"] += 1
+                            address_family_counts["unknown"] += 1
+                        else:
+                            invalid_address_count += 1
+                            invalid_ip_count += 1
+                            field_counts[field_name]["invalid"] += 1
+                            address_family_counts["unknown"] += 1
+                            packet_valid = False
+                            row_invalid = True
 
                 elif IPv6 in pkt:
+                    row_checked = True
+                    checked_row_count += 1
                     ip6 = pkt[IPv6]
-                    try:
-                        ip_address(ip6.src)
-                        ip_address(ip6.dst)
-                    except Exception:
-                        invalid_ip_count += 1
-                        packet_valid = False
+                    for field_name, value in (("source_ip", ip6.src), ("destination_ip", ip6.dst)):
+                        checked_address_count += 1
+                        field_counts[field_name]["checked"] += 1
+                        cls = classify_ip_value(value)
+                        if cls == "ipv4":
+                            address_family_counts["ipv4"] += 1
+                        elif cls == "ipv6":
+                            address_family_counts["ipv6"] += 1
+                        elif cls == "missing":
+                            missing_address_count += 1
+                            field_counts[field_name]["missing"] += 1
+                            address_family_counts["unknown"] += 1
+                        else:
+                            invalid_address_count += 1
+                            invalid_ip_count += 1
+                            field_counts[field_name]["invalid"] += 1
+                            address_family_counts["unknown"] += 1
+                            packet_valid = False
+                            row_invalid = True
 
-                    if TCP in pkt and ip6.nh != 6:
-                        protocol_mismatch_count += 1
-                        packet_valid = False
-
-                    if UDP in pkt and ip6.nh != 17:
-                        protocol_mismatch_count += 1
-                        packet_valid = False
-
-                if TCP in pkt:
-                    tcp = pkt[TCP]
-                    if not (0 <= int(tcp.sport) <= 65535 and 0 <= int(tcp.dport) <= 65535):
-                        invalid_port_count += 1
-                        packet_valid = False
-
-                    flags_value = int(tcp.flags)
-                    syn_set = bool(flags_value & 0x02)
-                    fin_set = bool(flags_value & 0x01)
-                    if syn_set and fin_set:
-                        suspicious_tcp_flag_count += 1
-                        packet_valid = False
-
-                if UDP in pkt:
-                    udp = pkt[UDP]
-                    if not (0 <= int(udp.sport) <= 65535 and 0 <= int(udp.dport) <= 65535):
-                        invalid_port_count += 1
-                        packet_valid = False
+                if row_checked and row_invalid:
+                    invalid_row_count += 1
 
                 if packet_valid:
                     valid_packet_count += 1
 
     except Exception as exc:
-        return False, {
-            "error": f"Failed to scan PCAP protocol validity: {exc}"
-        }
+        return False, {"error": f"Failed to scan PCAP protocol validity: {exc}"}
 
     if packet_count == 0:
-        return False, {
-            "error": "PCAP contains no packets."
-        }
+        return False, {"error": "PCAP contains no packets."}
 
     protocol_validity_ratio = round(valid_packet_count / packet_count, 6)
+    invalid_address_ratio = round(invalid_address_count / checked_address_count, 6) if checked_address_count else 0.0
+    invalid_row_ratio = round(invalid_row_count / checked_row_count, 6) if checked_row_count else 0.0
 
     if protocol_validity_ratio >= 0.99:
         status = "pass"
@@ -120,6 +148,15 @@ def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool
                 "protocol_mismatch_count": protocol_mismatch_count,
                 "zero_length_packet_count": zero_length_packet_count,
                 "suspicious_tcp_flag_count": suspicious_tcp_flag_count,
+                "checked_row_count": checked_row_count,
+                "checked_address_count": checked_address_count,
+                "invalid_address_count": invalid_address_count,
+                "invalid_row_count": invalid_row_count,
+                "invalid_address_ratio": invalid_address_ratio,
+                "invalid_row_ratio": invalid_row_ratio,
+                "missing_address_count": missing_address_count,
+                "field_counts": field_counts,
+                "address_family_counts": address_family_counts,
                 "status": status
             }
         }

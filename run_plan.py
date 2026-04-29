@@ -8,6 +8,15 @@ from tests.pearson_profile import validate_candidate_fields, compute_pearson_pro
 from tests.column_quality_profile import compute_column_quality_profile
 from tests.timestamp_coherence_profile import run_timestamp_coherence_metric
 from tests.protocol_validity_profile import run_protocol_validity_metric
+from tests.reserved_ip_address_profile import run_reserved_ip_address_metric
+from tests.valid_port_range_profile import run_valid_port_range_metric
+from tests.service_port_consistency_profile import run_service_port_consistency_metric
+from tests.packet_byte_consistency_profile import run_packet_byte_consistency_metric
+from tests.flow_duration_consistency_profile import run_flow_duration_consistency_metric
+from tests.handshake_plausibility_profile import run_handshake_plausibility_metric
+from tests.tcp_flag_consistency_profile import run_tcp_flag_consistency_metric
+from tests.slice_identifier_consistency_profile import run_slice_identifier_consistency_metric
+from tests.valid_slice_identifier_profile import run_valid_slice_identifier_metric
 
 
 def resolve_path(base_dir: Path, path_str: str) -> Path:
@@ -83,6 +92,27 @@ def dispatch_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
 
     if metric_id == "protocol_validity_profile":
         return run_protocol_validity_metric(dataset_path, metric)
+
+    if metric_id == "reserved_ip_address_profile":
+        return run_reserved_ip_address_metric(dataset_path, metric)
+
+    if metric_id == "valid_port_range_profile":
+        return run_valid_port_range_metric(dataset_path, metric)
+
+    if metric_id == "service_port_consistency_profile":
+        return run_service_port_consistency_metric(dataset_path, metric)
+
+    if metric_id == "tcp_flag_consistency_profile":
+        return run_tcp_flag_consistency_metric(dataset_path, metric)
+
+    if metric_id == "handshake_plausibility_profile":
+        return run_handshake_plausibility_metric(dataset_path, metric)
+
+    if metric_id == "flow_duration_consistency_profile":
+        return run_flow_duration_consistency_metric(dataset_path, metric)
+
+    if metric_id == "packet_byte_consistency_profile":
+        return run_packet_byte_consistency_metric(dataset_path, metric)
 
     raise ValueError(f"Unsupported metric_id: {metric_id}")
 

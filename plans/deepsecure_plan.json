@@ -6,8 +6,12 @@
     "description": "Flow-feature realism plan for DeepSecure/CICDDoS2019 CSV datasets using column quality and Pearson correlation."
   },
   "applicability": {
-    "dataset_formats": ["csv"],
-    "dataset_family": ["flow_feature"],
+    "dataset_formats": [
+      "csv"
+    ],
+    "dataset_family": [
+      "flow_feature"
+    ],
     "requires_numeric_fields": true,
     "minimum_numeric_fields": 2
   },
@@ -77,6 +81,233 @@
         "store_summary": true,
         "store_column_validation": true,
         "comparison_key": "pearson_profile_v1"
+      }
+    },
+    {
+      "metric_id": "valid_port_range_profile",
+      "label": "Valid Port Range Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "protocol_validity",
+        "valid_port_range"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Source Port",
+          "Destination Port"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_port_range_validation",
+        "parameters": {
+          "valid_min_port": 0,
+          "valid_max_port": 65535
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "valid_port_range_profile_v1"
+      }
+    },
+    {
+      "metric_id": "service_port_consistency_profile",
+      "label": "Service-Port Consistency Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "protocol_validity",
+        "service_port_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "port_fields": [
+          "Source Port",
+          "Destination Port"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_service_port_consistency",
+        "parameters": {
+          "service_name": "dns",
+          "expected_ports": [
+            53
+          ],
+          "match_mode": "any_port",
+          "pass_threshold": 0.95,
+          "warn_threshold": 0.75,
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "service_port_consistency_profile_v1"
+      }
+    },
+    {
+      "metric_id": "tcp_flag_consistency_profile",
+      "label": "TCP Flag Consistency Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "protocol_validity",
+        "flow_semantics",
+        "tcp_flag_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "field_map": {
+          "protocol": "Protocol",
+          "total_fwd_packets": "Total Fwd Packets",
+          "total_bwd_packets": "Total Backward Packets",
+          "fin_flag_count": "FIN Flag Count",
+          "syn_flag_count": "SYN Flag Count",
+          "rst_flag_count": "RST Flag Count",
+          "psh_flag_count": "PSH Flag Count",
+          "ack_flag_count": "ACK Flag Count",
+          "urg_flag_count": "URG Flag Count",
+          "cwe_flag_count": "CWE Flag Count",
+          "ece_flag_count": "ECE Flag Count"
+        }
+      },
+      "calculation": {
+        "method": "tabular_tcp_flag_consistency",
+        "parameters": {
+          "tcp_protocol_values": [
+            6,
+            "6",
+            "TCP",
+            "tcp"
+          ],
+          "non_tcp_flags_must_be_zero": true,
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "tcp_flag_consistency_profile_v1"
+      }
+    },
+    {
+      "metric_id": "handshake_plausibility_profile",
+      "label": "Handshake Plausibility Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "protocol_validity",
+        "flow_semantics",
+        "handshake_plausibility"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "field_map": {
+          "protocol": "Protocol",
+          "total_fwd_packets": "Total Fwd Packets",
+          "total_bwd_packets": "Total Backward Packets",
+          "syn_flag_count": "SYN Flag Count",
+          "ack_flag_count": "ACK Flag Count",
+          "rst_flag_count": "RST Flag Count",
+          "fin_flag_count": "FIN Flag Count"
+        }
+      },
+      "calculation": {
+        "method": "tabular_handshake_plausibility",
+        "parameters": {
+          "tcp_protocol_values": [
+            6,
+            "6",
+            "TCP",
+            "tcp"
+          ],
+          "allow_syn_only": false,
+          "allow_rst_flows": true,
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "handshake_plausibility_profile_v1"
+      }
+    },
+    {
+      "metric_id": "flow_duration_consistency_profile",
+      "label": "Flow Duration Consistency Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "protocol_validity",
+        "flow_semantics",
+        "flow_duration_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "field_map": {
+          "flow_duration": "Flow Duration",
+          "flow_iat_mean": "Flow IAT Mean",
+          "flow_iat_std": "Flow IAT Std",
+          "flow_iat_max": "Flow IAT Max",
+          "flow_iat_min": "Flow IAT Min",
+          "fwd_iat_total": "Fwd IAT Total",
+          "bwd_iat_total": "Bwd IAT Total"
+        }
+      },
+      "calculation": {
+        "method": "tabular_flow_duration_consistency",
+        "parameters": {
+          "tolerance": 1e-06,
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "flow_duration_consistency_profile_v1"
+      }
+    },
+    {
+      "metric_id": "packet_byte_consistency_profile",
+      "label": "Packet-Byte Consistency Profile",
+      "taxonomy_path": [
+        "dataset_metrics",
+        "structural_and_integrity",
+        "protocol_validity",
+        "flow_semantics",
+        "packet_byte_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "field_map": {
+          "total_fwd_packets": "Total Fwd Packets",
+          "total_bwd_packets": "Total Backward Packets",
+          "total_len_fwd_packets": "Total Length of Fwd Packets",
+          "total_len_bwd_packets": "Total Length of Bwd Packets",
+          "fwd_pkt_len_min": "Fwd Packet Length Min",
+          "fwd_pkt_len_mean": "Fwd Packet Length Mean",
+          "fwd_pkt_len_max": "Fwd Packet Length Max",
+          "bwd_pkt_len_min": "Bwd Packet Length Min",
+          "bwd_pkt_len_mean": "Bwd Packet Length Mean",
+          "bwd_pkt_len_max": "Bwd Packet Length Max",
+          "packet_length_std": "Packet Length Std",
+          "packet_length_variance": "Packet Length Variance"
+        }
+      },
+      "calculation": {
+        "method": "tabular_packet_byte_consistency",
+        "parameters": {
+          "tolerance": 1e-06,
+          "variance_tolerance": 0.001,
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "packet_byte_consistency_profile_v1"
       }
     }
   ]
