@@ -14,14 +14,8 @@ from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
 from runner.progress import render_metric_activity_bar, render_overall_progress_line, print_live_status
+from runner.io import load_case_or_plan, append_timing_history
 
-
-
-def resolve_path(base_dir: Path, path_str: str) -> Path:
-    path = Path(path_str)
-    if path.is_absolute():
-        return path
-    return (base_dir / path).resolve()
 
 
 def load_tabular_dataset(dataset_path: Path) -> pd.DataFrame:
@@ -145,12 +139,6 @@ def _run_metric_with_heartbeat(
 
 
 
-def _append_timing_history(history_path: Path, run_entry: dict) -> None:
-    history_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(history_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(run_entry) + "\n")
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Run a test plan from a case JSON."
@@ -174,33 +162,9 @@ def main():
     signal.signal(signal.SIGINT, _handle_sigint)
 
     case_file = Path(args.case).resolve()
-    case_dir = case_file.parent
-
-    with open(case_file, "r", encoding="utf-8") as f:
-        case = json.load(f)
-
-    if "test_plan" in case and "dataset" in case and "output" in case:
-        plan_path = resolve_path(case_dir, case["test_plan"]["path"])
-        dataset_path = resolve_path(case_dir, case["dataset"]["path"])
-        output_path = resolve_path(case_dir, case["output"]["path"])
-        case_id = case.get("case_id", "unknown_case")
-        with open(plan_path, "r", encoding="utf-8") as f:
-            plan = json.load(f)
-    elif "metrics" in case and "plan_meta" in case:
-        if not args.dataset or not args.output:
-            raise ValueError(
-                "When --case points to a plan JSON, you must also provide --dataset and --output."
-            )
-        plan = case
-        plan_path = case_file
-        dataset_path = Path(args.dataset).expanduser().resolve()
-        output_path = Path(args.output).expanduser().resolve()
-        case_id = args.case_id
-    else:
-        raise ValueError("Invalid input JSON: provide a case JSON, or a plan JSON with --dataset and --output.")
+    plan, dataset_path, output_path, case_id = load_case_or_plan(case_file, args.dataset, args.output, args.case_id)
 
 
-    validate_plan_schema(plan)
     if args.timing_history:
         timing_history_path = Path(args.timing_history).expanduser().resolve()
     else:
@@ -293,7 +257,7 @@ def main():
                     outcome["column_validations"] = column_validations
                 with open(output_path, "w", encoding="utf-8") as f:
                     json.dump(outcome, f, indent=2)
-                _append_timing_history(timing_history_path, {
+                append_timing_history(timing_history_path, {
                     "run_started_at": outcome["run_started_at"],
                     "run_finished_at": outcome["run_finished_at"],
                     "run_elapsed_seconds": outcome["run_elapsed_seconds"],
@@ -338,7 +302,7 @@ def main():
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(outcome, f, indent=2)
 
-    _append_timing_history(timing_history_path, {
+    append_timing_history(timing_history_path, {
         "run_started_at": outcome["run_started_at"],
         "run_finished_at": outcome["run_finished_at"],
         "run_elapsed_seconds": outcome["run_elapsed_seconds"],
