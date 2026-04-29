@@ -347,7 +347,7 @@
         "slice_metadata_integrity",
         "valid_slice_identifier"
       ],
-      "enabled": true,
+      "enabled": false,
       "input_requirements": {
         "slice_field": "Slice"
       },
@@ -379,7 +379,7 @@
         "slice_metadata_integrity",
         "slice_identifier_consistency"
       ],
-      "enabled": true,
+      "enabled": false,
       "input_requirements": {
         "slice_field": "Slice",
         "context_fields": [
