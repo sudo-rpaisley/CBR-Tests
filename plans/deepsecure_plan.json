@@ -87,9 +87,9 @@
       "metric_id": "valid_port_range_profile",
       "label": "Valid Port Range Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "port_validity",
         "valid_port_range"
       ],
       "enabled": true,
@@ -116,9 +116,9 @@
       "metric_id": "service_port_consistency_profile",
       "label": "Service-Port Consistency Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "port_validity",
         "service_port_consistency"
       ],
       "enabled": true,
@@ -151,9 +151,8 @@
       "metric_id": "tcp_flag_consistency_profile",
       "label": "TCP Flag Consistency Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
         "flow_semantics",
         "tcp_flag_consistency"
       ],
@@ -196,9 +195,8 @@
       "metric_id": "handshake_plausibility_profile",
       "label": "Handshake Plausibility Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
         "flow_semantics",
         "handshake_plausibility"
       ],
@@ -238,9 +236,8 @@
       "metric_id": "flow_duration_consistency_profile",
       "label": "Flow Duration Consistency Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
         "flow_semantics",
         "flow_duration_consistency"
       ],
@@ -273,9 +270,8 @@
       "metric_id": "packet_byte_consistency_profile",
       "label": "Packet-Byte Consistency Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
         "flow_semantics",
         "packet_byte_consistency"
       ],

@@ -6,8 +6,12 @@
     "description": "Combined packet-level realism plan for DAD-style PCAP datasets, including timestamp coherence and protocol validity."
   },
   "applicability": {
-    "dataset_formats": ["pcap"],
-    "dataset_family": ["packet_level"],
+    "dataset_formats": [
+      "pcap"
+    ],
+    "dataset_family": [
+      "packet_level"
+    ],
     "requires_numeric_fields": false,
     "minimum_numeric_fields": 0
   },
@@ -43,9 +47,10 @@
       "metric_id": "protocol_validity_profile",
       "label": "Protocol Validity Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity"
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "address_validity",
+        "valid_ip_address"
       ],
       "enabled": true,
       "input_requirements": {},

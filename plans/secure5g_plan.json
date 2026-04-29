@@ -51,9 +51,9 @@
       "metric_id": "valid_port_range_profile",
       "label": "Valid Port Range Profile",
       "taxonomy_path": [
-        "dataset_metrics",
-        "structural_and_integrity",
-        "protocol_validity",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "port_validity",
         "valid_port_range"
       ],
       "enabled": true,
@@ -80,7 +80,8 @@
       "metric_id": "valid_slice_identifier_profile",
       "label": "Valid Slice Identifier Profile",
       "taxonomy_path": [
-        "dataset_metrics",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
         "slice_metadata_integrity",
         "valid_slice_identifier"
       ],
@@ -111,7 +112,8 @@
       "metric_id": "slice_identifier_consistency_profile",
       "label": "Slice Identifier Consistency Profile",
       "taxonomy_path": [
-        "dataset_metrics",
+        "dataset_heuristics",
+        "protocol_and_network_realism",
         "slice_metadata_integrity",
         "slice_identifier_consistency"
       ],
