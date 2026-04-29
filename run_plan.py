@@ -106,6 +106,8 @@ def main():
     if args.taxonomy_file:
         taxonomy_ranks = load_taxonomy_order(Path(args.taxonomy_file).expanduser().resolve())
         metrics = order_metrics_by_taxonomy(metrics, taxonomy_ranks, strict=args.taxonomy_strict)
+    if not metrics:
+        raise ValueError("The plan does not contain any enabled metrics.")
 
     def _print_startup_banner():
         dataset_name = dataset_path.name
@@ -153,6 +155,20 @@ def main():
 
     _print_startup_banner()
     _print_phase_status("Startup", "Initializing run context")
+    print_live_status(
+        render_live_taxonomy(
+            metrics,
+            "startup",
+            {},
+            {},
+            default_metric_predictions,
+            max(20.0, float(len(metrics))),
+            elapsed=0.0,
+            completed=False,
+        ),
+        render_overall_progress_line(0, len(metrics), 0.0, 0.0),
+        "Preparing dataset load...",
+    )
     shared_tabular_df = None
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
         _print_phase_status("Dataset", "Loading tabular dataset")
@@ -163,9 +179,6 @@ def main():
         )
         _print_phase_status("Dataset", "Load complete")
     metric_handlers = build_metric_handlers(shared_tabular_df, load_tabular_dataset)
-
-    if not metrics:
-        raise ValueError("The plan does not contain any enabled metrics.")
 
     execution_policy = plan.get("execution_policy", {})
     fail_fast = execution_policy.get("fail_fast", True)
