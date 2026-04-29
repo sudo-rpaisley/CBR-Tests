@@ -65,6 +65,7 @@ def main():
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
     parser.add_argument("--taxonomy-file", help="Optional taxonomy JSON used to order metrics")
     parser.add_argument("--taxonomy-strict", action="store_true", help="Fail if enabled plan metrics are missing from taxonomy order")
+    parser.add_argument("--workers", type=int, default=None, help="Optional worker count override. Use 1 to force serial execution.")
     args = parser.parse_args()
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
@@ -110,7 +111,9 @@ def main():
     total_metrics = len(metrics)
     completed_statuses: dict[str, str] = {}
     completed_durations: dict[str, float] = {}
-    workers = auto_worker_count(total_metrics)
+    parallel_enabled = bool(execution_policy.get("parallel", False))
+    workers = args.workers if args.workers is not None else (auto_worker_count(total_metrics) if parallel_enabled else 1)
+    workers = max(1, int(workers))
     if workers > 1:
         parallel_out = run_metrics_parallel(dataset_path, metrics, metric_handlers, workers)
         for idx0, success, metric_payload in parallel_out:

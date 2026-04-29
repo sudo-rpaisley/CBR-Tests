@@ -89,7 +89,17 @@ def _slice_consistency_metric(dataset_path: Path, metric: dict):
 
 
 def build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset):
-    handlers = dict(METRIC_REGISTRY)
+    handlers = {}
+    for metric_id, handler in METRIC_REGISTRY.items():
+        def _make_wrapped(h):
+            def _wrapped(dataset_path: Path, metric: dict):
+                if shared_df is None:
+                    return h(dataset_path, metric)
+                metric_with_shared = dict(metric)
+                metric_with_shared["_shared_df"] = shared_df
+                return h(dataset_path, metric_with_shared)
+            return _wrapped
+        handlers[metric_id] = _make_wrapped(handler)
     handlers.update({
         'pearson_correlation_profile': lambda dp, m: run_pearson_metric(dp, m, load_tabular_dataset, shared_df),
         'column_quality_profile': lambda dp, m: run_column_quality_metric(dp, m, load_tabular_dataset, shared_df),

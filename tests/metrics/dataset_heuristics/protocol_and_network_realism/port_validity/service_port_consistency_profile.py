@@ -36,6 +36,28 @@ def normalize_port_series(series):
     return status, parsed
 
 
+def parse_port(value):
+    if value is None:
+        return "missing", None
+
+    value_str = str(value).strip()
+    if value_str == "" or value_str.lower() == "nan":
+        return "missing", None
+
+    try:
+        numeric_value = float(value_str)
+    except ValueError:
+        return "non_integer", None
+
+    if not numeric_value.is_integer():
+        return "non_integer", None
+
+    port = int(numeric_value)
+    if 0 <= port <= 65535:
+        return "valid", port
+    return "out_of_range", port
+
+
 def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
     """
     Heuristic check of expected service ports in tabular flow data.
