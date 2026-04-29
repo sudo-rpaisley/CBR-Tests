@@ -147,7 +147,7 @@ def _run_metric_with_heartbeat(dataset_path: Path, metric: dict, current: int, t
                 return result
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
-                line = _render_progress_line(current - 1, total, metric_id, elapsed)
+                line = _render_progress_line(current, total, metric_id, elapsed)
                 print(f"\r\x1b[2K{line}", end="", flush=True)
 
 
