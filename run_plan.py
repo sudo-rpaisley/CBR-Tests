@@ -230,13 +230,14 @@ def _build_result_taxonomy(metrics: list[dict], metric_results: list[dict], test
     return taxonomy
 
 
-def _render_metric_activity_bar(elapsed: float, width: int = 12) -> str:
+def _render_metric_activity_bar(elapsed: float, expected_seconds: float = 60.0, width: int = 12) -> str:
     if width < 3:
         width = 3
-    pos = int(elapsed * 4) % (width - 1)
-    bar = ["-"] * width
-    bar[pos] = ">"
-    return "".join(bar)
+    if expected_seconds <= 0:
+        expected_seconds = 60.0
+    progress = min(elapsed / expected_seconds, 0.99)
+    filled = max(1, int(progress * width))
+    return "#" * filled + "-" * (width - filled)
 
 
 def main():
