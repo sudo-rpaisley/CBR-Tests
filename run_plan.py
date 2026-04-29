@@ -1,6 +1,7 @@
 import json
 import argparse
 import signal
+import sys
 import time
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -46,8 +47,8 @@ def load_tabular_dataset(dataset_path: Path) -> pd.DataFrame:
     return df
 
 
-def run_pearson_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
-    df = load_tabular_dataset(dataset_path)
+def run_pearson_metric(dataset_path: Path, metric: dict, shared_df: pd.DataFrame | None = None) -> tuple[bool, dict]:
+    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
 
     candidate_fields = metric["input_requirements"]["candidate_fields"]
     minimum_runnable_fields = metric["input_requirements"]["minimum_runnable_fields"]
@@ -70,8 +71,8 @@ def run_pearson_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
     }
 
 
-def run_column_quality_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
-    df = load_tabular_dataset(dataset_path)
+def run_column_quality_metric(dataset_path: Path, metric: dict, shared_df: pd.DataFrame | None = None) -> tuple[bool, dict]:
+    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
     candidate_fields = metric["input_requirements"]["candidate_fields"]
     quality_profile = compute_column_quality_profile(df, candidate_fields)
 
@@ -82,49 +83,31 @@ def run_column_quality_metric(dataset_path: Path, metric: dict) -> tuple[bool, d
     }
 
 
-def dispatch_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
+def dispatch_metric(dataset_path: Path, metric: dict, shared_df: pd.DataFrame | None = None) -> tuple[bool, dict]:
     metric_id = metric["metric_id"]
 
-    if metric_id == "pearson_correlation_profile":
-        return run_pearson_metric(dataset_path, metric)
+    metric_handlers = {
+        "pearson_correlation_profile": lambda dp, m: run_pearson_metric(dp, m, shared_df),
+        "column_quality_profile": lambda dp, m: run_column_quality_metric(dp, m, shared_df),
+        "timestamp_coherence_profile": run_timestamp_coherence_metric,
+        "protocol_validity_profile": run_protocol_validity_metric,
+        "reserved_ip_address_profile": run_reserved_ip_address_metric,
+        "valid_port_range_profile": run_valid_port_range_metric,
+        "service_port_consistency_profile": run_service_port_consistency_metric,
+        "tcp_flag_consistency_profile": run_tcp_flag_consistency_metric,
+        "handshake_plausibility_profile": run_handshake_plausibility_metric,
+        "flow_duration_consistency_profile": run_flow_duration_consistency_metric,
+        "packet_byte_consistency_profile": run_packet_byte_consistency_metric,
+        "valid_slice_identifier_profile": run_valid_slice_identifier_metric,
+        "slice_identifier_consistency_profile": run_slice_identifier_consistency_metric,
+    }
 
-    if metric_id == "column_quality_profile":
-        return run_column_quality_metric(dataset_path, metric)
+    handler = metric_handlers.get(metric_id)
+    if handler is None:
+        raise ValueError(f"Unsupported metric_id: {metric_id}")
+    return handler(dataset_path, metric)
 
-    if metric_id == "timestamp_coherence_profile":
-        return run_timestamp_coherence_metric(dataset_path, metric)
 
-    if metric_id == "protocol_validity_profile":
-        return run_protocol_validity_metric(dataset_path, metric)
-
-    if metric_id == "reserved_ip_address_profile":
-        return run_reserved_ip_address_metric(dataset_path, metric)
-
-    if metric_id == "valid_port_range_profile":
-        return run_valid_port_range_metric(dataset_path, metric)
-
-    if metric_id == "service_port_consistency_profile":
-        return run_service_port_consistency_metric(dataset_path, metric)
-
-    if metric_id == "tcp_flag_consistency_profile":
-        return run_tcp_flag_consistency_metric(dataset_path, metric)
-
-    if metric_id == "handshake_plausibility_profile":
-        return run_handshake_plausibility_metric(dataset_path, metric)
-
-    if metric_id == "flow_duration_consistency_profile":
-        return run_flow_duration_consistency_metric(dataset_path, metric)
-
-    if metric_id == "packet_byte_consistency_profile":
-        return run_packet_byte_consistency_metric(dataset_path, metric)
-
-    if metric_id == "valid_slice_identifier_profile":
-        return run_valid_slice_identifier_metric(dataset_path, metric)
-
-    if metric_id == "slice_identifier_consistency_profile":
-        return run_slice_identifier_consistency_metric(dataset_path, metric)
-
-    raise ValueError(f"Unsupported metric_id: {metric_id}")
 
 
 
@@ -145,6 +128,13 @@ def _render_progress_line(current: int, total: int, metric_id: str, elapsed: flo
 
 
 def _print_live_status(progress_line: str, warning_line: str | None = None) -> None:
+    if not sys.stdout.isatty():
+        if warning_line is not None:
+            print(f"{progress_line} | {warning_line}")
+        else:
+            print(progress_line)
+        return
+
     print(f"\r\x1b[2K{progress_line}", end="")
     if warning_line is not None:
         print(f"\n\x1b[2K{warning_line}", end="")
@@ -158,11 +148,12 @@ def _run_metric_with_heartbeat(
     metric: dict,
     current: int,
     total: int,
-    shutdown_requested: dict
+    shutdown_requested: dict,
+    shared_df: pd.DataFrame | None = None
 ) -> tuple[bool, dict]:
     metric_id = metric.get("metric_id", "unknown_metric")
     with ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(dispatch_metric, dataset_path, metric)
+        future = executor.submit(dispatch_metric, dataset_path, metric, shared_df)
         heartbeat_start = time.perf_counter()
         while True:
             try:
@@ -272,11 +263,8 @@ def main():
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
-        metric_for_run = dict(metric)
-        if shared_tabular_df is not None:
-            metric_for_run["_shared_df"] = shared_tabular_df
         success, metric_payload = _run_metric_with_heartbeat(
-            dataset_path, metric_for_run, idx, total_metrics, shutdown_requested
+            dataset_path, metric, idx, total_metrics, shutdown_requested, shared_tabular_df
         )
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
