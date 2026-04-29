@@ -137,9 +137,7 @@ def _render_task_line(metric: dict, elapsed: float | None = None, completed: boo
 def _print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
     if not sys.stdout.isatty():
         if warning_line is not None:
-            print(f"{task_line}\n{overall_line} | {warning_line}")
-        else:
-            print(f"{task_line}\n{overall_line}")
+            print(f"{overall_line} | {warning_line}")
         return
 
     print(f"\r\x1b[2K{task_line}", end="")
@@ -186,7 +184,8 @@ def _run_metric_with_heartbeat(
                 task_line = _render_task_line(metric, elapsed, completed=True)
                 overall_line = _render_overall_progress_line(current, total)
                 _print_live_status(task_line, overall_line, None)
-                print("\n", end="")
+                if sys.stdout.isatty():
+                    print("\n", end="")
                 return result
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
@@ -388,6 +387,8 @@ def main():
                     "status": outcome["status"],
                     "metric_results": outcome["metric_results"]
                 })
+                if sys.stdout.isatty():
+                    print()
                 print("Results by taxonomy:")
                 _print_taxonomy_summary(outcome["result_taxonomy"])
                 return
@@ -428,6 +429,8 @@ def main():
         "status": outcome["status"],
         "metric_results": outcome["metric_results"]
     })
+    if sys.stdout.isatty():
+        print()
     print("Results by taxonomy:")
     _print_taxonomy_summary(outcome["result_taxonomy"])
     print(f"Done. Wrote {output_path}")
