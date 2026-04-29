@@ -150,6 +150,11 @@ def _print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
                 status = metric.get("status", "unknown")
                 print(f"{'  ' * indent}↳ {metric.get('metric_id')} [{status}]")
             continue
+        if isinstance(value, dict) and set(value.keys()) == {"_metrics"}:
+            for metric in value["_metrics"]:
+                status = metric.get("status", "unknown")
+                print(f"{'  ' * indent}↳ {metric.get('metric_id')} [{status}]")
+            continue
         print(f"{'  ' * indent}↳ {key}")
         _print_taxonomy_summary(value, indent + 1)
 
