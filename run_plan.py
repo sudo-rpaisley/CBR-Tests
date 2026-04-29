@@ -247,10 +247,6 @@ def main():
             metric_results.append(metric_record)
             completed_statuses[metric["metric_id"]] = metric_record["status"]
             completed_durations[metric["metric_id"]] = metric_record["elapsed_seconds"]
-            _print_phase_status(
-                "Progress",
-                f"{len(metric_results)}/{total_metrics} completed | metric={metric['metric_id']} | status={metric_record['status']}"
-            )
         # finalize immediately for parallel path
         outcome = {
             "status": overall_status,
@@ -275,7 +271,6 @@ def main():
         print(f"Done. Wrote {output_path}")
         return
     for idx, metric in enumerate(metrics, start=1):
-        _print_phase_status("Progress", f"{idx-1}/{total_metrics} completed | running={metric['metric_id']}")
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
         try:
@@ -349,7 +344,6 @@ def main():
         metric_results.append(metric_record)
         completed_statuses[metric["metric_id"]] = metric_record["status"]
         completed_durations[metric["metric_id"]] = metric_elapsed_seconds
-        _print_phase_status("Progress", f"{idx}/{total_metrics} completed | metric={metric['metric_id']} | status={metric_record['status']}")
 
         if shutdown_requested["requested"]:
             overall_status = "cancelled"
