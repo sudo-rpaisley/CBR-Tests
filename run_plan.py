@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 from runner.schema import validate_plan_schema
-from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, print_taxonomy_summary
+from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy, print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan, append_timing_history
 from runner.execution import run_metric_with_heartbeat
@@ -170,6 +170,7 @@ def main():
                     "plan_taxonomy": build_plan_taxonomy(metrics),
                     "metric_results": metric_results,
                     "test_results": test_results,
+                    "test_results_taxonomy": build_test_results_taxonomy(metrics, test_results),
                     "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
                     "run_started_at": run_started_at.isoformat(),
                     "run_finished_at": datetime.now(timezone.utc).isoformat(),
@@ -212,6 +213,7 @@ def main():
         "plan_taxonomy": build_plan_taxonomy(metrics),
         "metric_results": metric_results,
         "test_results": test_results,
+        "test_results_taxonomy": build_test_results_taxonomy(metrics, test_results),
         "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
         "run_started_at": run_started_at.isoformat(),
         "run_finished_at": datetime.now(timezone.utc).isoformat(),

@@ -34,6 +34,18 @@ def build_result_taxonomy(metrics: list[dict], metric_results: list[dict], test_
     return taxonomy
 
 
+def build_test_results_taxonomy(metrics: list[dict], test_results: dict) -> dict:
+    taxonomy: dict = {}
+    for metric in metrics:
+        metric_id = metric.get('metric_id')
+        node = ensure_taxonomy_path(taxonomy, metric.get('taxonomy_path', []))
+        node.setdefault('_results', []).append({
+            'metric_id': metric_id,
+            'result': test_results.get(metric_id)
+        })
+    return taxonomy
+
+
 def print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
     for key, value in result_taxonomy.items():
         if key == '_metrics':
