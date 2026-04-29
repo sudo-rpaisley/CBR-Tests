@@ -317,6 +317,7 @@ def main():
     args = parser.parse_args()
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
+    live_render_enabled = sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"}
 
     def _handle_sigint(_signum, _frame):
         shutdown_requested["requested"] = True
@@ -453,8 +454,9 @@ def main():
                 })
                 if sys.stdout.isatty():
                     print()
-                print("Results by taxonomy:")
-                _print_taxonomy_summary(outcome["result_taxonomy"])
+                if not live_render_enabled:
+                    print("Results by taxonomy:")
+                    _print_taxonomy_summary(outcome["result_taxonomy"])
                 return
 
         metric_results.append(metric_record)
@@ -497,8 +499,9 @@ def main():
     })
     if sys.stdout.isatty():
         print()
-    print("Results by taxonomy:")
-    _print_taxonomy_summary(outcome["result_taxonomy"])
+    if not live_render_enabled:
+        print("Results by taxonomy:")
+        _print_taxonomy_summary(outcome["result_taxonomy"])
     print(f"Done. Wrote {output_path}")
     print(f"Timing history appended to {timing_history_path}")
 
