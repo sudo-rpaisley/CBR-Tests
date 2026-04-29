@@ -1,5 +1,7 @@
 import json
 import argparse
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -173,6 +175,9 @@ def main():
     execution_policy = plan.get("execution_policy", {})
     fail_fast = execution_policy.get("fail_fast", True)
 
+    run_started_at = datetime.now(timezone.utc)
+    run_start_perf = time.perf_counter()
+
     overall_status = "success"
     test_results = {}
     metric_results = []
@@ -181,12 +186,19 @@ def main():
     total_metrics = len(metrics)
     for idx, metric in enumerate(metrics, start=1):
         _print_progress(idx - 1, total_metrics, metric["metric_id"])
+        metric_started_at = datetime.now(timezone.utc)
+        metric_start_perf = time.perf_counter()
         success, metric_payload = dispatch_metric(dataset_path, metric)
+        metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
+        metric_finished_at = datetime.now(timezone.utc)
         _print_progress(idx, total_metrics, metric["metric_id"])
 
         metric_record = {
             "metric_id": metric["metric_id"],
-            "status": "success" if success else "failed"
+            "status": "success" if success else "failed",
+            "started_at": metric_started_at.isoformat(),
+            "finished_at": metric_finished_at.isoformat(),
+            "elapsed_seconds": metric_elapsed_seconds
         }
 
         if success:
@@ -210,7 +222,10 @@ def main():
                     "metric_ids": [m["metric_id"] for m in metrics],
                     "dataset_path": str(dataset_path),
                     "metric_results": metric_results,
-                    "test_results": test_results
+                    "test_results": test_results,
+                    "run_started_at": run_started_at.isoformat(),
+                    "run_finished_at": datetime.now(timezone.utc).isoformat(),
+                    "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
                 }
                 if column_validations:
                     outcome["column_validations"] = column_validations
@@ -228,7 +243,10 @@ def main():
         "metric_ids": [m["metric_id"] for m in metrics],
         "dataset_path": str(dataset_path),
         "metric_results": metric_results,
-        "test_results": test_results
+        "test_results": test_results,
+        "run_started_at": run_started_at.isoformat(),
+        "run_finished_at": datetime.now(timezone.utc).isoformat(),
+        "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
     }
 
     if column_validations:
