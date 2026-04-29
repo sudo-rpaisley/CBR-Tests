@@ -185,6 +185,40 @@ def _append_timing_history(history_path: Path, run_entry: dict) -> None:
         f.write(json.dumps(run_entry) + "\n")
 
 
+def _ensure_taxonomy_path(root: dict, taxonomy_path: list[str]) -> dict:
+    node = root
+    for segment in taxonomy_path:
+        node = node.setdefault(segment, {})
+    return node
+
+
+def _build_plan_taxonomy(metrics: list[dict]) -> dict:
+    taxonomy: dict = {}
+    for metric in metrics:
+        node = _ensure_taxonomy_path(taxonomy, metric.get("taxonomy_path", []))
+        node.setdefault("_metrics", []).append({
+            "metric_id": metric.get("metric_id"),
+            "label": metric.get("label"),
+            "enabled": metric.get("enabled", True),
+        })
+    return taxonomy
+
+
+def _build_result_taxonomy(metrics: list[dict], metric_results: list[dict], test_results: dict) -> dict:
+    by_metric_id = {record["metric_id"]: record for record in metric_results}
+    taxonomy: dict = {}
+    for metric in metrics:
+        metric_id = metric.get("metric_id")
+        node = _ensure_taxonomy_path(taxonomy, metric.get("taxonomy_path", []))
+        node.setdefault("_metrics", []).append({
+            "metric_id": metric_id,
+            "status": by_metric_id.get(metric_id, {}).get("status", "not_run"),
+            "result": test_results.get(metric_id),
+            "error": by_metric_id.get(metric_id, {}).get("error")
+        })
+    return taxonomy
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run a test plan from a case JSON."
@@ -297,8 +331,10 @@ def main():
                     "plan_id": plan["plan_meta"]["plan_id"],
                     "metric_ids": [m["metric_id"] for m in metrics],
                     "dataset_path": str(dataset_path),
+                    "plan_taxonomy": _build_plan_taxonomy(metrics),
                     "metric_results": metric_results,
                     "test_results": test_results,
+                    "result_taxonomy": _build_result_taxonomy(metrics, metric_results, test_results),
                     "run_started_at": run_started_at.isoformat(),
                     "run_finished_at": datetime.now(timezone.utc).isoformat(),
                     "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
@@ -330,8 +366,10 @@ def main():
         "plan_id": plan["plan_meta"]["plan_id"],
         "metric_ids": [m["metric_id"] for m in metrics],
         "dataset_path": str(dataset_path),
+        "plan_taxonomy": _build_plan_taxonomy(metrics),
         "metric_results": metric_results,
         "test_results": test_results,
+        "result_taxonomy": _build_result_taxonomy(metrics, metric_results, test_results),
         "run_started_at": run_started_at.isoformat(),
         "run_finished_at": datetime.now(timezone.utc).isoformat(),
         "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
