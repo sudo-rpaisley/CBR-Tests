@@ -136,16 +136,12 @@ def _render_live_taxonomy(
     current_metric_id: str,
     completed_statuses: dict[str, str],
     completed_durations: dict[str, float],
-    duration_priors: dict[str, float],
+    predicted_metric_total: float,
     elapsed: float | None = None,
     completed: bool = False
 ) -> str:
     lines: list[str] = []
     printed_nodes: set[tuple[str, ...]] = set()
-    predicted_metric_total = duration_priors.get(current_metric_id, (
-        sum(completed_durations.values()) / len(completed_durations)
-        if completed_durations else 20.0
-    ))
     predicted_metric_total = max(1.0, predicted_metric_total)
     if elapsed is not None:
         predicted_metric_total = max(predicted_metric_total, elapsed)
@@ -217,7 +213,6 @@ def _run_metric_with_heartbeat(
     metrics: list[dict],
     completed_statuses: dict[str, str],
     completed_durations: dict[str, float],
-    duration_priors: dict[str, float],
     current: int,
     total: int,
     shutdown_requested: dict,
@@ -228,11 +223,14 @@ def _run_metric_with_heartbeat(
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(dispatch_metric, dataset_path, metric, shared_df)
         heartbeat_start = time.perf_counter()
+        smoothed_total = 20.0
         while True:
             try:
                 result = future.result(timeout=1.0)
                 elapsed = time.perf_counter() - heartbeat_start
-                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, duration_priors, elapsed, completed=True)
+                instant_total = max(elapsed + 1.0, elapsed * 1.2, 20.0)
+                smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
+                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, smoothed_total, elapsed, completed=True)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = _render_overall_progress_line(current, total, run_elapsed, elapsed)
                 _print_live_status(task_line, overall_line, None)
@@ -241,7 +239,9 @@ def _run_metric_with_heartbeat(
                 return result
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
-                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, duration_priors, elapsed)
+                instant_total = max(elapsed + 1.0, elapsed * 1.2, 20.0)
+                smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
+                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, smoothed_total, elapsed)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = _render_overall_progress_line(max(0, current - 1), total, run_elapsed, elapsed)
                 warning_line = None
@@ -261,32 +261,6 @@ def _append_timing_history(history_path: Path, run_entry: dict) -> None:
     history_path.parent.mkdir(parents=True, exist_ok=True)
     with open(history_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(run_entry) + "\n")
-
-
-def _load_metric_duration_priors(history_path: Path, plan_id: str, limit: int = 200) -> dict[str, float]:
-    if not history_path.exists():
-        return {}
-    lines = history_path.read_text(encoding="utf-8").splitlines()[-limit:]
-    samples: dict[str, list[float]] = {}
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if row.get("plan_id") != plan_id:
-            continue
-        for metric in row.get("metric_results", []):
-            metric_id = metric.get("metric_id")
-            elapsed = metric.get("elapsed_seconds")
-            if metric_id and isinstance(elapsed, (int, float)) and elapsed > 0:
-                samples.setdefault(metric_id, []).append(float(elapsed))
-    priors: dict[str, float] = {}
-    for metric_id, values in samples.items():
-        values = sorted(values)
-        priors[metric_id] = values[len(values) // 2]
-    return priors
 
 
 def _ensure_taxonomy_path(root: dict, taxonomy_path: list[str]) -> dict:
@@ -385,7 +359,6 @@ def main():
         timing_history_path = Path(args.timing_history).expanduser().resolve()
     else:
         timing_history_path = output_path.parent / "timing_history.jsonl"
-    duration_priors = _load_metric_duration_priors(timing_history_path, plan["plan_meta"]["plan_id"])
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
 
@@ -414,7 +387,7 @@ def main():
         metric_start_perf = time.perf_counter()
         try:
             success, metric_payload = _run_metric_with_heartbeat(
-                dataset_path, metric, metrics, completed_statuses, completed_durations, duration_priors, idx, total_metrics, shutdown_requested, shared_tabular_df, run_start_perf
+                dataset_path, metric, metrics, completed_statuses, completed_durations, idx, total_metrics, shutdown_requested, shared_tabular_df, run_start_perf
             )
         except KeyboardInterrupt:
             overall_status = "cancelled"
