@@ -185,13 +185,9 @@ def _print_live_status(task_line: str, overall_line: str, warning_line: str | No
     block_lines = task_line.splitlines() + [overall_line]
     if warning_line is not None:
         block_lines.append(warning_line)
-    for idx, line in enumerate(block_lines):
-        prefix = "\r" if idx == 0 else "\n"
-        print(f"{prefix}\x1b[2K{line}", end="")
-    if len(block_lines) > 1:
-        print(f"\x1b[{len(block_lines)-1}A", end="", flush=True)
-    else:
-        print("", end="", flush=True)
+    # Redraw the whole block each heartbeat to avoid duplicated/stale lines.
+    print("\x1b[H\x1b[J", end="")
+    print("\n".join(block_lines), end="", flush=True)
 
 
 def _print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
