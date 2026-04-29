@@ -1,6 +1,7 @@
 from __future__ import annotations
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from concurrent.futures import as_completed
 from pathlib import Path
 
 from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
@@ -67,3 +68,27 @@ def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[di
                 if shutdown_requested.get('requested'):
                     warning_line = 'Stop requested. Cancelling current task and pending tasks...'
                 print_live_status(task_line, overall_line, warning_line)
+
+
+def auto_worker_count(num_metrics: int) -> int:
+    import os
+    cpu = os.cpu_count() or 2
+    return max(1, min(num_metrics, cpu - 1 if cpu > 2 else 1))
+
+
+def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int) -> list[tuple[int, bool, dict]]:
+    results: list[tuple[int, bool, dict]] = []
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        fut_map = {
+            executor.submit(metric_handlers[m["metric_id"]], dataset_path, m): i
+            for i, m in enumerate(metrics)
+        }
+        for fut in as_completed(fut_map):
+            idx = fut_map[fut]
+            try:
+                ok, payload = fut.result()
+            except Exception as exc:  # noqa: BLE001
+                ok, payload = False, {"error": str(exc)}
+            results.append((idx, ok, payload))
+    results.sort(key=lambda t: t[0])
+    return results

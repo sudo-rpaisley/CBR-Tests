@@ -14,7 +14,7 @@ from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy, print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan
-from runner.execution import run_metric_with_heartbeat
+from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 
 DEFAULT_METRIC_PREDICTIONS = {
@@ -110,6 +110,53 @@ def main():
     total_metrics = len(metrics)
     completed_statuses: dict[str, str] = {}
     completed_durations: dict[str, float] = {}
+    workers = auto_worker_count(total_metrics)
+    if workers > 1:
+        parallel_out = run_metrics_parallel(dataset_path, metrics, metric_handlers, workers)
+        for idx0, success, metric_payload in parallel_out:
+            metric = metrics[idx0]
+            metric_record = {
+                "metric_id": metric["metric_id"],
+                "status": "success" if success else "failed",
+                "started_at": run_started_at.isoformat(),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "elapsed_seconds": metric_payload.get("elapsed_seconds", 0.0),
+            }
+            if success:
+                test_results.update(metric_payload.get("test_results", {}))
+                if "column_validation" in metric_payload:
+                    column_validations[metric["metric_id"]] = metric_payload["column_validation"]
+            else:
+                metric_record["error"] = metric_payload.get("error", "Unknown error")
+                overall_status = "failed" if overall_status == "success" else overall_status
+                if fail_fast:
+                    metric_results.append(metric_record)
+                    break
+            metric_results.append(metric_record)
+            completed_statuses[metric["metric_id"]] = metric_record["status"]
+            completed_durations[metric["metric_id"]] = metric_record["elapsed_seconds"]
+        # finalize immediately for parallel path
+        outcome = {
+            "status": overall_status,
+            "case_id": case_id,
+            "plan_id": plan["plan_meta"]["plan_id"],
+            "metric_ids": [m["metric_id"] for m in metrics],
+            "dataset_path": str(dataset_path),
+            "plan_taxonomy": build_plan_taxonomy(metrics),
+            "metric_results": metric_results,
+            "test_results": test_results,
+            "test_results_taxonomy": build_test_results_taxonomy(metrics, test_results),
+            "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
+            "run_started_at": run_started_at.isoformat(),
+            "run_finished_at": datetime.now(timezone.utc).isoformat(),
+            "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
+        }
+        if column_validations:
+            outcome["column_validations"] = column_validations
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(outcome, f, indent=2)
+        print(f"Done. Wrote {output_path}")
+        return
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
