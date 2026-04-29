@@ -67,6 +67,7 @@ def main():
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
     live_render_enabled = sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"}
+    default_metric_predictions = dict(DEFAULT_METRIC_PREDICTIONS)
 
     def _handle_sigint(_signum, _frame):
         shutdown_requested["requested"] = True
@@ -114,7 +115,7 @@ def main():
         metric_start_perf = time.perf_counter()
         try:
             success, metric_payload = run_metric_with_heartbeat(
-                dataset_path, metric, metrics, completed_statuses, completed_durations, idx, total_metrics, shutdown_requested, run_start_perf, metric_handlers, DEFAULT_METRIC_PREDICTIONS
+                dataset_path, metric, metrics, completed_statuses, completed_durations, idx, total_metrics, shutdown_requested, run_start_perf, metric_handlers, default_metric_predictions
             )
         except KeyboardInterrupt:
             overall_status = "cancelled"
