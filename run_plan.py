@@ -123,7 +123,7 @@ def _render_progress_line(current: int, total: int, metric_id: str, elapsed: flo
     elif completed:
         suffix = f" | run time {elapsed:.1f}s"
     else:
-        suffix = f" | running {elapsed:.1f}s"
+        suffix = f" | running {elapsed:.1f}s [{_render_metric_activity_bar(elapsed)}]"
     return f"Progress [{bar}] {pct:3d}% ({current}/{total}) - {metric_id}{suffix}"
 
 
@@ -141,6 +141,17 @@ def _print_live_status(progress_line: str, warning_line: str | None = None) -> N
     else:
         print("\n\x1b[2K", end="")
     print("\x1b[1A", end="", flush=True)
+
+
+def _print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
+    for key, value in result_taxonomy.items():
+        if key == "_metrics":
+            for metric in value:
+                status = metric.get("status", "unknown")
+                print(f"{'  ' * indent}↳ {metric.get('metric_id')} [{status}]")
+            continue
+        print(f"{'  ' * indent}↳ {key}")
+        _print_taxonomy_summary(value, indent + 1)
 
 
 def _run_metric_with_heartbeat(
@@ -212,11 +223,20 @@ def _build_result_taxonomy(metrics: list[dict], metric_results: list[dict], test
         node = _ensure_taxonomy_path(taxonomy, metric.get("taxonomy_path", []))
         node.setdefault("_metrics", []).append({
             "metric_id": metric_id,
-            "status": by_metric_id.get(metric_id, {}).get("status", "not_run"),
+            "status": by_metric_id.get(metric_id, {}).get("status", "skipped"),
             "result": test_results.get(metric_id),
             "error": by_metric_id.get(metric_id, {}).get("error")
         })
     return taxonomy
+
+
+def _render_metric_activity_bar(elapsed: float, width: int = 12) -> str:
+    if width < 3:
+        width = 3
+    pos = int(elapsed * 4) % (width - 1)
+    bar = ["-"] * width
+    bar[pos] = ">"
+    return "".join(bar)
 
 
 def main():
@@ -352,6 +372,8 @@ def main():
                     "status": outcome["status"],
                     "metric_results": outcome["metric_results"]
                 })
+                print("Results by taxonomy:")
+                _print_taxonomy_summary(outcome["result_taxonomy"])
                 return
 
         metric_results.append(metric_record)
@@ -390,6 +412,8 @@ def main():
         "status": outcome["status"],
         "metric_results": outcome["metric_results"]
     })
+    print("Results by taxonomy:")
+    _print_taxonomy_summary(outcome["result_taxonomy"])
     print(f"Done. Wrote {output_path}")
     print(f"Timing history appended to {timing_history_path}")
 
