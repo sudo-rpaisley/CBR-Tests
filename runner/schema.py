@@ -18,3 +18,12 @@ def validate_plan_schema(plan: dict) -> None:
             raise ValueError(f'Metric at index {i} missing metric_id.')
         if 'taxonomy_path' in metric and not isinstance(metric['taxonomy_path'], list):
             raise ValueError(f"Metric {metric['metric_id']} taxonomy_path must be a list.")
+        if 'input_requirements' in metric and not isinstance(metric['input_requirements'], dict):
+            raise ValueError(f"Metric {metric['metric_id']} input_requirements must be an object.")
+        if 'calculation' in metric:
+            if not isinstance(metric['calculation'], dict):
+                raise ValueError(f"Metric {metric['metric_id']} calculation must be an object.")
+            if 'method' not in metric['calculation']:
+                raise ValueError(f"Metric {metric['metric_id']} calculation.method is required.")
+        if not metric.get('taxonomy_path'):
+            raise ValueError(f"Metric {metric['metric_id']} must include a non-empty taxonomy_path.")
