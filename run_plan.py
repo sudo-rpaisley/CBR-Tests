@@ -223,8 +223,6 @@ def main():
     print(f"Timing history appended to {timing_history_path}")
 
 
-if __name__ == "__main__":
-    main()
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
     "pearson_correlation_profile": 3.0,
@@ -236,3 +234,6 @@ DEFAULT_METRIC_PREDICTIONS = {
     "packet_byte_consistency_profile": 20.0,
     "reserved_ip_address_profile": 105.0,
 }
+
+if __name__ == "__main__":
+    main()
