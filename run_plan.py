@@ -15,7 +15,8 @@ from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy, print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan
-from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel
+from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel, render_live_taxonomy
+from runner.progress import render_overall_progress_line, print_live_status
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 
 DEFAULT_METRIC_PREDICTIONS = {
@@ -188,15 +189,37 @@ def main():
     mode = "parallel" if workers > 1 else "serial"
     _print_phase_status("Execution", f"Starting {mode} run | metrics={total_metrics} | workers={workers}")
     if workers > 1:
+        def _parallel_progress(event, completed, total, pending, metric_id, ok):
+            if event == "completed" and metric_id:
+                completed_statuses[metric_id] = "success" if ok else "failed"
+            print_live_status(
+                render_live_taxonomy(
+                    metrics,
+                    metric_id if metric_id else "parallel_batch",
+                    completed_statuses,
+                    completed_durations,
+                    default_metric_predictions,
+                    max(20.0, float(total)),
+                    elapsed=(time.perf_counter() - run_start_perf),
+                    completed=False,
+                ),
+                render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None),
+                None,
+            )
+            if not live_render_enabled:
+                detail = (
+                    f"completed={completed}/{total} | pending={pending}"
+                    if event == "heartbeat"
+                    else f"completed metric={metric_id} status={'success' if ok else 'failed'}"
+                )
+                _print_phase_status("Parallel", detail)
+
         parallel_out = run_metrics_parallel(
             dataset_path,
             metrics,
             metric_handlers,
             workers,
-            progress_callback=lambda completed, total, pending: _print_phase_status(
-                "Parallel",
-                f"completed={completed}/{total} | pending={pending}"
-            ),
+            progress_callback=_parallel_progress,
         )
         for idx0, success, metric_payload in parallel_out:
             metric = metrics[idx0]

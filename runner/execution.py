@@ -88,16 +88,17 @@ def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handler
             done, pending = wait(pending, timeout=1.0, return_when=FIRST_COMPLETED)
             if not done:
                 if progress_callback is not None:
-                    progress_callback(len(results), len(metrics), len(pending))
+                    progress_callback("heartbeat", len(results), len(metrics), len(pending), None, None)
                 continue
             for fut in done:
                 idx = fut_map[fut]
+                metric_id = metrics[idx].get("metric_id", "unknown_metric")
                 try:
                     ok, payload = fut.result()
                 except Exception as exc:  # noqa: BLE001
                     ok, payload = False, {"error": str(exc)}
                 results.append((idx, ok, payload))
                 if progress_callback is not None:
-                    progress_callback(len(results), len(metrics), len(pending))
+                    progress_callback("completed", len(results), len(metrics), len(pending), metric_id, ok)
     results.sort(key=lambda t: t[0])
     return results
