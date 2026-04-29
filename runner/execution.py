@@ -7,7 +7,7 @@ from pathlib import Path
 from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
 
 
-def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False) -> str:
+def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False, running_elapsed: dict[str, float] | None = None) -> str:
     lines: list[str] = []
     printed_nodes: set[tuple[str, ...]] = set()
     predicted_metric_total = max(1.0, predicted_metric_total)
@@ -23,7 +23,10 @@ def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_
             lines.append(f"{'  ' * depth}↳ {path[depth]}")
         metric_id = metric.get('metric_id', 'unknown_metric')
         metric_prediction = completed_durations.get(metric_id, default_predictions.get(metric_id, predicted_metric_total))
-        if metric_id in completed_statuses:
+        if metric_id in completed_statuses and completed_statuses[metric_id] == "running":
+            run_elapsed = (running_elapsed or {}).get(metric_id, 0.0)
+            suffix = f" [{colorize_status('running')} | {run_elapsed:.1f}/{metric_prediction:.0f}s ] [{render_metric_activity_bar(run_elapsed, expected_seconds=metric_prediction)}]"
+        elif metric_id in completed_statuses:
             run_time = completed_durations.get(metric_id)
             status_text = colorize_status(completed_statuses[metric_id])
             suffix = f" [{status_text} | run time {run_time:.1f}s]" if run_time is not None else f" [{status_text}]"
