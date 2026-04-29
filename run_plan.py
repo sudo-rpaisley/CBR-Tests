@@ -130,7 +130,14 @@ def _render_overall_progress_line(current: int, total: int, run_elapsed: float |
     return f"Overall  [{bar}] {pct:3d}% ({current}/{total}){suffix}"
 
 
-def _render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], elapsed: float | None = None, completed: bool = False) -> str:
+def _render_live_taxonomy(
+    metrics: list[dict],
+    current_metric_id: str,
+    completed_statuses: dict[str, str],
+    completed_durations: dict[str, float],
+    elapsed: float | None = None,
+    completed: bool = False
+) -> str:
     lines: list[str] = []
     printed_nodes: set[tuple[str, ...]] = set()
     for metric in metrics:
@@ -143,7 +150,11 @@ def _render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed
             lines.append(f"{'  ' * depth}↳ {path[depth]}")
         metric_id = metric.get("metric_id", "unknown_metric")
         if metric_id in completed_statuses:
-            suffix = f" [{completed_statuses[metric_id]}]"
+            run_time = completed_durations.get(metric_id)
+            if run_time is not None:
+                suffix = f" [{completed_statuses[metric_id]} | run time {run_time:.1f}s]"
+            else:
+                suffix = f" [{completed_statuses[metric_id]}]"
         elif metric_id == current_metric_id:
             if completed:
                 suffix = f" [success] | done in {elapsed:.1f}s"
@@ -196,6 +207,7 @@ def _run_metric_with_heartbeat(
     metric: dict,
     metrics: list[dict],
     completed_statuses: dict[str, str],
+    completed_durations: dict[str, float],
     current: int,
     total: int,
     shutdown_requested: dict,
@@ -210,7 +222,7 @@ def _run_metric_with_heartbeat(
             try:
                 result = future.result(timeout=1.0)
                 elapsed = time.perf_counter() - heartbeat_start
-                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, elapsed, completed=True)
+                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, elapsed, completed=True)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = _render_overall_progress_line(current, total, run_elapsed, elapsed)
                 _print_live_status(task_line, overall_line, None)
@@ -219,7 +231,7 @@ def _run_metric_with_heartbeat(
                 return result
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
-                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, elapsed)
+                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, elapsed)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = _render_overall_progress_line(current, total, run_elapsed, elapsed)
                 warning_line = None
@@ -358,12 +370,13 @@ def main():
 
     total_metrics = len(metrics)
     completed_statuses: dict[str, str] = {}
+    completed_durations: dict[str, float] = {}
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
         try:
             success, metric_payload = _run_metric_with_heartbeat(
-                dataset_path, metric, metrics, completed_statuses, idx, total_metrics, shutdown_requested, shared_tabular_df, run_start_perf
+                dataset_path, metric, metrics, completed_statuses, completed_durations, idx, total_metrics, shutdown_requested, shared_tabular_df, run_start_perf
             )
         except KeyboardInterrupt:
             overall_status = "cancelled"
@@ -376,6 +389,7 @@ def main():
                 "error": "Cancelled by user"
             })
             completed_statuses[metric["metric_id"]] = "cancelled"
+            completed_durations[metric["metric_id"]] = round(time.perf_counter() - metric_start_perf, 6)
             break
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
@@ -437,6 +451,7 @@ def main():
 
         metric_results.append(metric_record)
         completed_statuses[metric["metric_id"]] = metric_record["status"]
+        completed_durations[metric["metric_id"]] = metric_elapsed_seconds
 
         if shutdown_requested["requested"]:
             overall_status = "cancelled"
