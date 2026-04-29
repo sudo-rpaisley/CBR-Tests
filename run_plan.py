@@ -123,30 +123,32 @@ def dispatch_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
 
 
 
-def _print_progress(current: int, total: int, metric_id: str) -> None:
+def _render_progress_line(current: int, total: int, metric_id: str, elapsed: float | None = None) -> str:
     total = max(total, 1)
     width = 30
     filled = int(width * current / total)
     bar = "#" * filled + "-" * (width - filled)
     pct = int((current / total) * 100)
-    print(f"\rProgress [{bar}] {pct:3d}% ({current}/{total}) - {metric_id}", end="", flush=True)
-    if current >= total:
-        print()
+    suffix = f" | running {elapsed:.1f}s" if elapsed is not None else ""
+    return f"Progress [{bar}] {pct:3d}% ({current}/{total}) - {metric_id}{suffix}"
 
 
-
-
-def _run_metric_with_heartbeat(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
+def _run_metric_with_heartbeat(dataset_path: Path, metric: dict, current: int, total: int) -> tuple[bool, dict]:
     metric_id = metric.get("metric_id", "unknown_metric")
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(dispatch_metric, dataset_path, metric)
         heartbeat_start = time.perf_counter()
         while True:
             try:
-                return future.result(timeout=1.0)
+                result = future.result(timeout=1.0)
+                line = _render_progress_line(current, total, metric_id)
+                print(f"\r\x1b[2K{line}", end="", flush=True)
+                print()
+                return result
             except TimeoutError:
-                elapsed = round(time.perf_counter() - heartbeat_start, 1)
-                print(f"\r  ↳ Running {metric_id}... {elapsed}s elapsed", end="", flush=True)
+                elapsed = time.perf_counter() - heartbeat_start
+                line = _render_progress_line(current - 1, total, metric_id, elapsed)
+                print(f"\r\x1b[2K{line}", end="", flush=True)
 
 
 def main():
@@ -215,13 +217,11 @@ def main():
 
     total_metrics = len(metrics)
     for idx, metric in enumerate(metrics, start=1):
-        _print_progress(idx - 1, total_metrics, metric["metric_id"])
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
-        success, metric_payload = _run_metric_with_heartbeat(dataset_path, metric)
+        success, metric_payload = _run_metric_with_heartbeat(dataset_path, metric, idx, total_metrics)
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
-        _print_progress(idx, total_metrics, metric["metric_id"])
 
         metric_record = {
             "metric_id": metric["metric_id"],
