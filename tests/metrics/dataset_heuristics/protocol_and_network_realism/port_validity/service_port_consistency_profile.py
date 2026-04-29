@@ -18,26 +18,22 @@ def load_tabular_dataset(dataset_path: Path):
     return df
 
 
-def parse_port(value):
-    if value is None:
-        return "missing", None
+def normalize_port_series(series):
+    import pandas as pd
 
-    value_str = str(value).strip()
-    if value_str == "" or value_str.lower() == "nan":
-        return "missing", None
+    raw = series.astype("string").str.strip()
+    missing_mask = raw.isna() | (raw == "") | (raw.str.lower() == "nan")
+    numeric = pd.to_numeric(raw, errors="coerce")
+    integer_mask = numeric.notna() & (numeric % 1 == 0)
+    in_range_mask = integer_mask & numeric.between(0, 65535)
 
-    try:
-        numeric_value = float(value_str)
-    except ValueError:
-        return "non_integer", None
+    status = pd.Series("non_integer", index=series.index, dtype="string")
+    status = status.mask(missing_mask, "missing")
+    status = status.mask(integer_mask & ~in_range_mask, "out_of_range")
+    status = status.mask(in_range_mask, "valid")
 
-    if not numeric_value.is_integer():
-        return "non_integer", None
-
-    port = int(numeric_value)
-    if 0 <= port <= 65535:
-        return "valid", port
-    return "out_of_range", port
+    parsed = numeric.where(integer_mask).astype("Int64")
+    return status, parsed
 
 
 def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
@@ -113,68 +109,77 @@ def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tup
     mismatch_examples = []
     invalid_port_examples = []
 
-    for idx, row in df.iterrows():
-        row_ports = {}
-        row_valid_ports = {}
-        row_missing_all = True
-        row_has_invalid = False
+    parsed_ports = {}
+    status_by_field = {}
+    for field in existing_fields:
+        status, parsed = normalize_port_series(df[field])
+        status_by_field[field] = status
+        parsed_ports[field] = parsed
 
+        missing_mask = status == "missing"
+        valid_mask = status == "valid"
+        invalid_mask = ~(missing_mask | valid_mask)
+
+        missing_port_count += int(missing_mask.sum())
+        valid_port_count += int(valid_mask.sum())
+        invalid_port_count += int(invalid_mask.sum())
+        checked_port_count += int((~missing_mask).sum())
+
+    all_missing_mask = None
+    any_invalid_mask = None
+    for field in existing_fields:
+        missing_mask = status_by_field[field] == "missing"
+        invalid_mask = ~missing_mask & (status_by_field[field] != "valid")
+        all_missing_mask = missing_mask if all_missing_mask is None else (all_missing_mask & missing_mask)
+        any_invalid_mask = invalid_mask if any_invalid_mask is None else (any_invalid_mask | invalid_mask)
+
+    missing_port_row_count = int(all_missing_mask.sum())
+    invalid_port_row_count = int((~all_missing_mask & any_invalid_mask).sum())
+    checked_rows_mask = ~all_missing_mask & ~any_invalid_mask
+    checked_row_count = int(checked_rows_mask.sum())
+
+    if match_mode == "any_port":
+        match_mask = None
         for field in existing_fields:
-            status, port = parse_port(row[field])
-            if status == "missing":
-                missing_port_count += 1
-                continue
+            candidate = parsed_ports[field].isin(expected_port_set)
+            match_mask = candidate if match_mask is None else (match_mask | candidate)
+    elif match_mode == "destination_only":
+        match_mask = parsed_ports[destination_field].isin(expected_port_set)
+    elif match_mode == "source_only":
+        match_mask = parsed_ports[source_field].isin(expected_port_set)
+    else:
+        match_mask = parsed_ports[source_field].isin(expected_port_set) & parsed_ports[destination_field].isin(expected_port_set)
 
-            row_missing_all = False
-            checked_port_count += 1
+    matching_row_count = int((checked_rows_mask & match_mask).sum())
+    mismatching_row_count = int((checked_rows_mask & ~match_mask).sum())
 
-            if status == "valid":
-                valid_port_count += 1
-                row_ports[field] = port
-                row_valid_ports[field] = port
-            else:
-                invalid_port_count += 1
-                row_has_invalid = True
-                if len(invalid_port_examples) < max_examples:
-                    invalid_port_examples.append({
-                        "row_index": int(idx) if isinstance(idx, int) else str(idx),
-                        "field": field,
-                        "value": str(row[field]).strip(),
-                        "reason": status,
-                    })
-
-        if row_missing_all:
-            missing_port_row_count += 1
-            continue
-
-        if row_has_invalid:
-            invalid_port_row_count += 1
-            continue
-
-        checked_row_count += 1
-
-        if match_mode == "any_port":
-            row_matches = any(port in expected_port_set for port in row_valid_ports.values())
-        elif match_mode == "destination_only":
-            row_matches = row_valid_ports.get(destination_field) in expected_port_set
-        elif match_mode == "source_only":
-            row_matches = row_valid_ports.get(source_field) in expected_port_set
-        else:
-            row_matches = (
-                row_valid_ports.get(source_field) in expected_port_set
-                and row_valid_ports.get(destination_field) in expected_port_set
-            )
-
-        if row_matches:
-            matching_row_count += 1
-        else:
-            mismatching_row_count += 1
-            if len(mismatch_examples) < max_examples:
-                mismatch_examples.append({
+    invalid_rows = df[~all_missing_mask & any_invalid_mask]
+    for idx, row in invalid_rows.head(max_examples).iterrows():
+        for field in existing_fields:
+            status = status_by_field[field].loc[idx]
+            if status not in {"missing", "valid"}:
+                invalid_port_examples.append({
                     "row_index": int(idx) if isinstance(idx, int) else str(idx),
-                    "ports": row_ports,
-                    "reason": "expected_service_port_not_found",
+                    "field": field,
+                    "value": str(row[field]).strip(),
+                    "reason": str(status),
                 })
+                if len(invalid_port_examples) >= max_examples:
+                    break
+        if len(invalid_port_examples) >= max_examples:
+            break
+
+    mismatch_rows = df[checked_rows_mask & ~match_mask]
+    for idx, row in mismatch_rows.head(max_examples).iterrows():
+        ports = {}
+        for field in existing_fields:
+            if status_by_field[field].loc[idx] == "valid":
+                ports[field] = int(parsed_ports[field].loc[idx])
+        mismatch_examples.append({
+            "row_index": int(idx) if isinstance(idx, int) else str(idx),
+            "ports": ports,
+            "reason": "expected_service_port_not_found",
+        })
 
     service_port_match_ratio = round(matching_row_count / checked_row_count, 6) if checked_row_count else 0.0
     service_port_mismatch_ratio = round(mismatching_row_count / checked_row_count, 6) if checked_row_count else 0.0
