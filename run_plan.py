@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 import time
+import threading
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
@@ -89,9 +90,46 @@ def main():
         taxonomy_ranks = load_taxonomy_order(Path(args.taxonomy_file).expanduser().resolve())
         metrics = order_metrics_by_taxonomy(metrics, taxonomy_ranks, strict=args.taxonomy_strict)
 
+    def _print_startup_banner():
+        dataset_name = dataset_path.name
+        dataset_size = dataset_path.stat().st_size if dataset_path.exists() else 0
+        dataset_size_mb = round(dataset_size / (1024 * 1024), 2)
+        print("=" * 88)
+        print(f"Starting run: case_id={case_id} | plan_id={plan['plan_meta']['plan_id']}")
+        print(f"Dataset: {dataset_name} | Size: {dataset_size_mb} MB | Path: {dataset_path}")
+        print("=" * 88)
+
+    def _load_with_progress(path: Path):
+        stop = {"done": False}
+
+        def _spinner():
+            frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+            idx = 0
+            start = time.perf_counter()
+            while not stop["done"]:
+                elapsed = time.perf_counter() - start
+                print(f"\r{frames[idx % len(frames)]} Loading dataset... {elapsed:0.1f}s", end="", flush=True)
+                idx += 1
+                time.sleep(0.1)
+
+        spinner_thread = threading.Thread(target=_spinner, daemon=True)
+        spinner_thread.start()
+        try:
+            df = load_tabular_dataset(path)
+            return df
+        finally:
+            stop["done"] = True
+            spinner_thread.join(timeout=0.3)
+            print("\r✓ Dataset loaded.                              ")
+
+    _print_startup_banner()
     shared_tabular_df = None
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
-        shared_tabular_df = load_tabular_dataset(dataset_path)
+        shared_tabular_df = _load_with_progress(dataset_path)
+        print(
+            f"Dataset details: rows={len(shared_tabular_df):,} | columns={shared_tabular_df.shape[1]} | "
+            f"feature_sample={list(shared_tabular_df.columns[:8])}"
+        )
     metric_handlers = build_metric_handlers(shared_tabular_df, load_tabular_dataset)
 
     if not metrics:
@@ -111,8 +149,7 @@ def main():
     total_metrics = len(metrics)
     completed_statuses: dict[str, str] = {}
     completed_durations: dict[str, float] = {}
-    parallel_enabled = bool(execution_policy.get("parallel", False))
-    workers = args.workers if args.workers is not None else (auto_worker_count(total_metrics) if parallel_enabled else 1)
+    workers = args.workers if args.workers is not None else auto_worker_count(total_metrics)
     workers = max(1, int(workers))
     if workers > 1:
         parallel_out = run_metrics_parallel(dataset_path, metrics, metric_handlers, workers)
