@@ -140,6 +140,11 @@ def _render_live_taxonomy(
 ) -> str:
     lines: list[str] = []
     printed_nodes: set[tuple[str, ...]] = set()
+    predicted_metric_total = (
+        sum(completed_durations.values()) / len(completed_durations)
+        if completed_durations else 20.0
+    )
+    predicted_metric_total = max(1.0, predicted_metric_total)
     for metric in metrics:
         path = metric.get("taxonomy_path", [])
         for depth in range(len(path)):
@@ -159,7 +164,10 @@ def _render_live_taxonomy(
             if completed:
                 suffix = f" [success] | done in {elapsed:.1f}s"
             elif elapsed is not None:
-                suffix = f" [running] {elapsed:.1f}s [{_render_metric_activity_bar(elapsed)}]"
+                suffix = (
+                    f" [running | {elapsed:.1f}/{predicted_metric_total:.0f}s ] "
+                    f"[{_render_metric_activity_bar(elapsed, expected_seconds=predicted_metric_total)}]"
+                )
             else:
                 suffix = " [running]"
         else:
