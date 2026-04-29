@@ -1,5 +1,6 @@
 import json
 import argparse
+import signal
 import time
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -158,6 +159,19 @@ def main():
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
     args = parser.parse_args()
 
+    shutdown_requested = {"requested": False, "confirm_before": 0.0}
+
+    def _handle_sigint(_signum, _frame):
+        now = time.time()
+        if shutdown_requested["requested"] and now <= shutdown_requested["confirm_before"]:
+            print("\nForced stop confirmed. Exiting immediately.")
+            raise KeyboardInterrupt
+        shutdown_requested["requested"] = True
+        shutdown_requested["confirm_before"] = now + 5.0
+        print("\nStop requested. Press Ctrl+C again within 5 seconds to force quit, or wait for current metric to finish.")
+
+    signal.signal(signal.SIGINT, _handle_sigint)
+
     case_file = Path(args.case).resolve()
     case_dir = case_file.parent
 
@@ -251,6 +265,10 @@ def main():
                 return
 
         metric_results.append(metric_record)
+
+        if shutdown_requested["requested"]:
+            overall_status = "cancelled"
+            break
 
     outcome = {
         "status": overall_status,
