@@ -237,7 +237,7 @@ def _run_metric_with_heartbeat(
                 elapsed = time.perf_counter() - heartbeat_start
                 task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, elapsed)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
-                overall_line = _render_overall_progress_line(current, total, run_elapsed, elapsed)
+                overall_line = _render_overall_progress_line(max(0, current - 1), total, run_elapsed, elapsed)
                 warning_line = None
                 if shutdown_requested.get("requested"):
                     remaining = int(max(0, shutdown_requested.get("confirm_before", 0.0) - time.time()))
