@@ -4,7 +4,6 @@ import os
 import signal
 import sys
 import time
-import threading
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
@@ -124,34 +123,26 @@ def main():
         print(f"[{timestamp}] {phase}{suffix}")
 
     def _load_with_progress(path: Path):
-        stop = {"done": False}
+        started = time.perf_counter()
 
-        def _spinner():
-            frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-            idx = 0
-            start = time.perf_counter()
-            while not stop["done"]:
-                elapsed = time.perf_counter() - start
-                print(f"\r{frames[idx % len(frames)]} Loading dataset... {elapsed:0.1f}s", end="", flush=True)
-                idx += 1
-                time.sleep(0.1)
+        def _chunk_progress(chunk_idx: int, total_rows: int):
+            elapsed = time.perf_counter() - started
+            print_live_status(
+                render_live_taxonomy(
+                    metrics,
+                    "dataset_loading",
+                    {},
+                    {},
+                    default_metric_predictions,
+                    max(20.0, float(len(metrics))),
+                    elapsed=0.0,
+                    completed=False,
+                ),
+                render_overall_progress_line(0, len(metrics), 0.0, 0.0),
+                f"Preparing dataset load... {elapsed:0.1f}s | chunk={chunk_idx} | rows_loaded={total_rows:,}",
+            )
 
-        spinner_thread = threading.Thread(target=_spinner, daemon=True)
-        spinner_thread.start()
-        try:
-            def _chunk_progress(chunk_idx: int, total_rows: int):
-                print(
-                    f"\r⏳ Loading dataset chunks... chunk={chunk_idx} | rows_loaded={total_rows:,}",
-                    end="",
-                    flush=True,
-                )
-
-            df = load_tabular_dataset(path, progress_callback=_chunk_progress)
-            return df
-        finally:
-            stop["done"] = True
-            spinner_thread.join(timeout=0.3)
-            print("\r✓ Dataset loaded.                              ")
+        return load_tabular_dataset(path, progress_callback=_chunk_progress)
 
     _print_startup_banner()
     _print_phase_status("Startup", "Initializing run context")
