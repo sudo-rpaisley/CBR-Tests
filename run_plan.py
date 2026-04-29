@@ -146,6 +146,8 @@ def _render_live_taxonomy(
         if completed_durations else 20.0
     )
     predicted_metric_total = max(1.0, predicted_metric_total)
+    if elapsed is not None:
+        predicted_metric_total = max(predicted_metric_total, elapsed)
     for metric in metrics:
         path = metric.get("taxonomy_path", [])
         for depth in range(len(path)):
