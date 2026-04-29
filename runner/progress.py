@@ -2,6 +2,28 @@ from __future__ import annotations
 import os
 import sys
 
+ANSI_RESET = "\x1b[0m"
+ANSI_COLORS = {
+    "success": "\x1b[32m",
+    "running": "\x1b[34m",
+    "pending": "\x1b[33m",
+    "failed": "\x1b[31m",
+    "cancelled": "\x1b[31m",
+}
+
+
+def supports_color() -> bool:
+    return sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"} and "NO_COLOR" not in os.environ
+
+
+def colorize_status(status: str) -> str:
+    if not supports_color():
+        return status
+    color = ANSI_COLORS.get(status.lower())
+    if not color:
+        return status
+    return f"{color}{status}{ANSI_RESET}"
+
 
 def render_metric_activity_bar(elapsed: float, expected_seconds: float = 60.0, width: int = 12) -> str:
     if width < 3:
@@ -36,7 +58,7 @@ def print_live_status(task_line: str, overall_line: str, warning_line: str | Non
         if warning_line is not None:
             print(f"{overall_line} | {warning_line}")
         return
-    if os.environ.get("TERM", "").lower() in {"", "dumb"}:
+    if not supports_color():
         return
     block_lines = task_line.splitlines() + [overall_line]
     if warning_line is not None:

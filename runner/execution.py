@@ -3,7 +3,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
 
-from runner.progress import render_metric_activity_bar, render_overall_progress_line, print_live_status
+from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
 
 
 def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False) -> str:
@@ -24,16 +24,17 @@ def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_
         metric_prediction = completed_durations.get(metric_id, default_predictions.get(metric_id, predicted_metric_total))
         if metric_id in completed_statuses:
             run_time = completed_durations.get(metric_id)
-            suffix = f" [{completed_statuses[metric_id]} | run time {run_time:.1f}s]" if run_time is not None else f" [{completed_statuses[metric_id]}]"
+            status_text = colorize_status(completed_statuses[metric_id])
+            suffix = f" [{status_text} | run time {run_time:.1f}s]" if run_time is not None else f" [{status_text}]"
         elif metric_id == current_metric_id:
             if completed:
-                suffix = f" [success] | done in {elapsed:.1f}s"
+                suffix = f" [{colorize_status('success')}] | done in {elapsed:.1f}s"
             elif elapsed is not None:
-                suffix = f" [running | {elapsed:.1f}/{predicted_metric_total:.0f}s ] [{render_metric_activity_bar(elapsed, expected_seconds=predicted_metric_total)}]"
+                suffix = f" [{colorize_status('running')} | {elapsed:.1f}/{predicted_metric_total:.0f}s ] [{render_metric_activity_bar(elapsed, expected_seconds=predicted_metric_total)}]"
             else:
-                suffix = ' [running]'
+                suffix = f" [{colorize_status('running')}]"
         else:
-            suffix = f" [pending | 0.0/{metric_prediction:.0f}s]"
+            suffix = f" [{colorize_status('pending')} | 0.0/{metric_prediction:.0f}s]"
         lines.append(f"{'  ' * len(path)}↳ {metric_id}{suffix}")
     return '\n'.join(lines)
 
