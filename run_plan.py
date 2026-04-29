@@ -118,6 +118,12 @@ def dispatch_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
     if metric_id == "packet_byte_consistency_profile":
         return run_packet_byte_consistency_metric(dataset_path, metric)
 
+    if metric_id == "valid_slice_identifier_profile":
+        return run_valid_slice_identifier_metric(dataset_path, metric)
+
+    if metric_id == "slice_identifier_consistency_profile":
+        return run_slice_identifier_consistency_metric(dataset_path, metric)
+
     raise ValueError(f"Unsupported metric_id: {metric_id}")
 
 
