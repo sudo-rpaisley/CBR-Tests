@@ -124,14 +124,18 @@ def _render_overall_progress_line(current: int, total: int) -> str:
 def _render_task_line(metric: dict, elapsed: float | None = None, completed: bool = False) -> str:
     taxonomy = metric.get("taxonomy_path", [])
     metric_id = metric.get("metric_id", "unknown_metric")
-    task_name = " > ".join(taxonomy[:-1] + [metric_id]) if taxonomy else metric_id
+    hierarchy = taxonomy[:-1] if taxonomy else []
     if elapsed is None:
         suffix = ""
     elif completed:
         suffix = f" | done in {elapsed:.1f}s"
     else:
         suffix = f" | running {elapsed:.1f}s [{_render_metric_activity_bar(elapsed)}]"
-    return f"↳ {task_name}{suffix}"
+    lines = []
+    for depth, segment in enumerate(hierarchy):
+        lines.append(f"{'  ' * depth}↳ {segment}")
+    lines.append(f"{'  ' * len(hierarchy)}↳ {metric_id}{suffix}")
+    return "\n".join(lines)
 
 
 def _print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
@@ -140,13 +144,16 @@ def _print_live_status(task_line: str, overall_line: str, warning_line: str | No
             print(f"{overall_line} | {warning_line}")
         return
 
-    print(f"\r\x1b[2K{task_line}", end="")
-    print(f"\n\x1b[2K{overall_line}", end="")
+    block_lines = task_line.splitlines() + [overall_line]
     if warning_line is not None:
-        print(f"\n\x1b[2K{warning_line}", end="")
-        print("\x1b[2A", end="", flush=True)
+        block_lines.append(warning_line)
+    for idx, line in enumerate(block_lines):
+        prefix = "\r" if idx == 0 else "\n"
+        print(f"{prefix}\x1b[2K{line}", end="")
+    if len(block_lines) > 1:
+        print(f"\x1b[{len(block_lines)-1}A", end="", flush=True)
     else:
-        print("\x1b[1A", end="", flush=True)
+        print("", end="", flush=True)
 
 
 def _print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
