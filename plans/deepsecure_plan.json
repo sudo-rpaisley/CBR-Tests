@@ -421,5 +421,113 @@
         "comparison_key": "slice_identifier_consistency_profile_v1"
       }
     }
-  ]
+  ],
+  "plan_taxonomy": {
+    "dataset_metrics": {
+      "structural_and_integrity": {
+        "column_quality_profile": {
+          "_metrics": [
+            {
+              "metric_id": "column_quality_profile",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "statistical_fidelity": {
+        "pearson_correlation": {
+          "_metrics": [
+            {
+              "metric_id": "pearson_correlation_profile",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "dataset_heuristics": {
+      "protocol_and_network_realism": {
+        "port_validity": {
+          "valid_port_range": {
+            "_metrics": [
+              {
+                "metric_id": "valid_port_range_profile",
+                "enabled": true
+              }
+            ]
+          },
+          "service_port_consistency": {
+            "_metrics": [
+              {
+                "metric_id": "service_port_consistency_profile",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "flow_semantics": {
+          "tcp_flag_consistency": {
+            "_metrics": [
+              {
+                "metric_id": "tcp_flag_consistency_profile",
+                "enabled": true
+              }
+            ]
+          },
+          "handshake_plausibility": {
+            "_metrics": [
+              {
+                "metric_id": "handshake_plausibility_profile",
+                "enabled": true
+              }
+            ]
+          },
+          "flow_duration_consistency": {
+            "_metrics": [
+              {
+                "metric_id": "flow_duration_consistency_profile",
+                "enabled": true
+              }
+            ]
+          },
+          "packet_byte_consistency": {
+            "_metrics": [
+              {
+                "metric_id": "packet_byte_consistency_profile",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "address_validity": {
+          "reserved_address_misuse": {
+            "_metrics": [
+              {
+                "metric_id": "reserved_ip_address_profile",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "slice_metadata_integrity": {
+          "valid_slice_identifier": {
+            "_metrics": [
+              {
+                "metric_id": "valid_slice_identifier_profile",
+                "enabled": false
+              }
+            ]
+          },
+          "slice_identifier_consistency": {
+            "_metrics": [
+              {
+                "metric_id": "slice_identifier_consistency_profile",
+                "enabled": false
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
 }

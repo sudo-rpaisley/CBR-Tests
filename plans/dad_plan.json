@@ -64,5 +64,33 @@
         "comparison_key": "protocol_validity_profile_v1"
       }
     }
-  ]
+  ],
+  "plan_taxonomy": {
+    "dataset_metrics": {
+      "temporal_realism": {
+        "timestamp_coherence": {
+          "_metrics": [
+            {
+              "metric_id": "timestamp_coherence_profile",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "dataset_heuristics": {
+      "protocol_and_network_realism": {
+        "address_validity": {
+          "valid_ip_address": {
+            "_metrics": [
+              {
+                "metric_id": "protocol_validity_profile",
+                "enabled": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
 }
