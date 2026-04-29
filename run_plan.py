@@ -287,13 +287,10 @@ def main():
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
 
     def _handle_sigint(_signum, _frame):
-        now = time.time()
-        if shutdown_requested["requested"] and now <= shutdown_requested["confirm_before"]:
-            print("\nForced stop confirmed. Exiting immediately.")
-            raise KeyboardInterrupt
         shutdown_requested["requested"] = True
-        shutdown_requested["confirm_before"] = now + 5.0
-        print("\nStop requested. Press Ctrl+C again within 5 seconds to force quit, or wait for current metric to finish.")
+        shutdown_requested["confirm_before"] = time.time()
+        print("\nStop requested. Cancelling current task and pending tasks...")
+        raise KeyboardInterrupt
 
     signal.signal(signal.SIGINT, _handle_sigint)
 
@@ -352,9 +349,22 @@ def main():
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
-        success, metric_payload = _run_metric_with_heartbeat(
-            dataset_path, metric, metrics, completed_statuses, idx, total_metrics, shutdown_requested, shared_tabular_df
-        )
+        try:
+            success, metric_payload = _run_metric_with_heartbeat(
+                dataset_path, metric, metrics, completed_statuses, idx, total_metrics, shutdown_requested, shared_tabular_df
+            )
+        except KeyboardInterrupt:
+            overall_status = "cancelled"
+            metric_results.append({
+                "metric_id": metric["metric_id"],
+                "status": "cancelled",
+                "started_at": metric_started_at.isoformat(),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "elapsed_seconds": round(time.perf_counter() - metric_start_perf, 6),
+                "error": "Cancelled by user"
+            })
+            completed_statuses[metric["metric_id"]] = "cancelled"
+            break
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
 
