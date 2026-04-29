@@ -1,97 +1,296 @@
 {
-
   "plan_meta": {
-
     "plan_id": "tp-column-quality-secure5g-v1",
-
     "name": "Secure5G Column Quality Plan",
-
     "version": "1.0.0",
-
     "description": "Column quality profile for merged Secure5G flow-feature CSV datasets."
-
   },
-
   "applicability": {
-
-    "dataset_formats": ["csv"],
-
+    "dataset_formats": [
+      "csv"
+    ],
     "requires_numeric_fields": false,
-
     "minimum_numeric_fields": 0
-
   },
-
   "execution_policy": {
-
     "fail_fast": true,
-
     "allow_skips": false,
-
     "sample_mode": "full"
-
   },
-
   "metrics": [
-
     {
-
       "metric_id": "column_quality_profile",
-
       "label": "Column Quality Profile",
-
       "taxonomy_path": [
-
         "dataset_metrics",
-
         "structural_and_integrity",
-
         "column_quality_profile"
-
       ],
-
       "enabled": true,
-
       "input_requirements": {
-
         "candidate_fields": [
-
           "Flow Duration",
-
           "Tot Fwd Pkts",
-
           "Tot Bwd Pkts",
-
           "Flow Byts/s",
-
           "Flow Pkts/s",
-
           "Pkt Len Mean"
-
         ]
-
       },
-
       "calculation": {
-
         "method": "column_quality_profile",
-
         "parameters": {}
-
       },
-
       "retention": {
-
         "store_raw_output": true,
-
         "store_summary": true,
-
         "comparison_key": "column_quality_profile_v1"
-
       }
-
+    },
+    {
+      "metric_id": "valid_port_range_profile",
+      "label": "Valid Port Range Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "port_validity",
+        "valid_port_range"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Src Port",
+          "Dst Port"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_port_range_validation",
+        "parameters": {
+          "valid_min_port": 0,
+          "valid_max_port": 65535
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "valid_port_range_profile_v1"
+      }
+    },
+    {
+      "metric_id": "valid_slice_identifier_profile",
+      "label": "Valid Slice Identifier Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "slice_metadata_integrity",
+        "valid_slice_identifier"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice"
+      },
+      "calculation": {
+        "method": "tabular_valid_slice_identifier",
+        "parameters": {
+          "allowed_slice_ids": [
+            "slice1",
+            "slice2"
+          ],
+          "case_sensitive": false,
+          "allow_numeric_equivalents": true,
+          "missing_policy": "count_invalid",
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "valid_slice_identifier_profile_v1"
+      }
+    },
+    {
+      "metric_id": "slice_identifier_consistency_profile",
+      "label": "Slice Identifier Consistency Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "slice_metadata_integrity",
+        "slice_identifier_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice",
+        "context_fields": [
+          "source_file",
+          "traffic_group",
+          "attack_type",
+          "Label"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_slice_identifier_consistency",
+        "parameters": {
+          "rules": [
+            {
+              "when_field": "source_file",
+              "operator": "contains",
+              "value": "slice1",
+              "expected_slice_ids": [
+                "slice1"
+              ]
+            },
+            {
+              "when_field": "source_file",
+              "operator": "contains",
+              "value": "slice2",
+              "expected_slice_ids": [
+                "slice2"
+              ]
+            }
+          ],
+          "case_sensitive": false,
+          "missing_policy": "count_invalid",
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "slice_identifier_consistency_profile_v1"
+      }
+    },
+    {
+      "metric_id": "reserved_ip_address_profile",
+      "label": "Reserved IP Address Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "address_validity",
+        "reserved_address_misuse"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Src IP",
+          "Dst IP",
+          "Source IP",
+          "Destination IP"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_reserved_ip_validation",
+        "parameters": {
+          "count_private_as_reserved": true,
+          "count_documentation_as_reserved": true,
+          "count_link_local_as_reserved": true,
+          "count_loopback_as_reserved": true,
+          "count_multicast_as_reserved": true
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "reserved_ip_address_profile_v1"
+      }
+    },
+    {
+      "metric_id": "service_port_consistency_profile",
+      "label": "Service-Port Consistency Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "port_validity",
+        "service_port_consistency"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "port_fields": [
+          "Src Port",
+          "Dst Port"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_service_port_consistency",
+        "parameters": {
+          "service_name": "dns",
+          "expected_ports": [
+            53
+          ],
+          "match_mode": "any_port",
+          "pass_threshold": 0.95,
+          "warn_threshold": 0.75,
+          "max_examples": 10
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "service_port_consistency_profile_v1"
+      }
     }
-
-  ]
-
+  ],
+  "plan_taxonomy": {
+    "dataset_metrics": {
+      "structural_and_integrity": {
+        "column_quality_profile": {
+          "_metrics": [
+            {
+              "metric_id": "column_quality_profile",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "dataset_heuristics": {
+      "protocol_and_network_realism": {
+        "port_validity": {
+          "valid_port_range": {
+            "_metrics": [
+              {
+                "metric_id": "valid_port_range_profile",
+                "enabled": true
+              }
+            ]
+          },
+          "service_port_consistency": {
+            "_metrics": [
+              {
+                "metric_id": "service_port_consistency_profile",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "slice_metadata_integrity": {
+          "valid_slice_identifier": {
+            "_metrics": [
+              {
+                "metric_id": "valid_slice_identifier_profile",
+                "enabled": true
+              }
+            ]
+          },
+          "slice_identifier_consistency": {
+            "_metrics": [
+              {
+                "metric_id": "slice_identifier_consistency_profile",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "address_validity": {
+          "reserved_address_misuse": {
+            "_metrics": [
+              {
+                "metric_id": "reserved_ip_address_profile",
+                "enabled": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
 }
