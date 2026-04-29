@@ -130,6 +130,16 @@ def main():
     with open(case_file, "r", encoding="utf-8") as f:
         case = json.load(f)
 
+    if "test_plan" not in case or "dataset" not in case or "output" not in case:
+        if "metrics" in case and "plan_meta" in case:
+            raise ValueError(
+                "The provided file appears to be a plan JSON, not a case JSON. "
+                "Use --case with a case file (for example: cases/case_deepsecure_drdos_dns_001.json)."
+            )
+        raise ValueError(
+            "Invalid case JSON: expected keys test_plan, dataset, and output."
+        )
+
     plan_path = resolve_path(case_dir, case["test_plan"]["path"])
     dataset_path = resolve_path(case_dir, case["dataset"]["path"])
     output_path = resolve_path(case_dir, case["output"]["path"])
