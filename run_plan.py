@@ -289,8 +289,8 @@ def main():
             outcome["column_validations"] = column_validations
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(outcome, f, indent=2)
-        _print_phase_status("Completed", f"Output written to {output_path}")
-        print(f"Done. Wrote {output_path}")
+        _print_phase_status("Completed")
+        print(f"Wrote {output_path}")
         return
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
@@ -392,14 +392,14 @@ def main():
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(outcome, f, indent=2)
-    _print_phase_status("Completed", f"Output written to {output_path}")
+    _print_phase_status("Completed")
 
     if sys.stdout.isatty():
         print()
     if not live_render_enabled:
         print("Results by taxonomy:")
         print_taxonomy_summary(outcome["result_taxonomy"])
-    print(f"Done. Wrote {output_path}")
+    print(f"Wrote {output_path}")
 
 
 if __name__ == "__main__":
