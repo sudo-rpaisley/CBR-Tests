@@ -206,13 +206,6 @@ def main():
                 render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None),
                 None,
             )
-            if not live_render_enabled:
-                detail = (
-                    f"completed={completed}/{total} | pending={pending}"
-                    if event == "heartbeat"
-                    else f"completed metric={metric_id} status={'success' if ok else 'failed'}"
-                )
-                _print_phase_status("Parallel", detail)
 
         parallel_out = run_metrics_parallel(
             dataset_path,
