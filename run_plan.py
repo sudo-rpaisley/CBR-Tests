@@ -1,5 +1,6 @@
 import json
 import argparse
+import os
 import signal
 import sys
 import time
@@ -181,11 +182,12 @@ def _print_live_status(task_line: str, overall_line: str, warning_line: str | No
         if warning_line is not None:
             print(f"{overall_line} | {warning_line}")
         return
+    if os.environ.get("TERM", "").lower() in {"", "dumb"}:
+        return
 
     block_lines = task_line.splitlines() + [overall_line]
     if warning_line is not None:
         block_lines.append(warning_line)
-    # Redraw the whole block each heartbeat to avoid duplicated/stale lines.
     print("\x1b[H\x1b[J", end="")
     print("\n".join(block_lines), end="", flush=True)
 
