@@ -15,6 +15,7 @@ from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, print_ta
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan, append_timing_history
 from runner.execution import run_metric_with_heartbeat
+from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
@@ -63,6 +64,8 @@ def main():
     parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
     parser.add_argument("--timing-history", help="Optional JSONL file to append run/metric timing history")
+    parser.add_argument("--taxonomy-file", help="Optional taxonomy JSON used to order metrics")
+    parser.add_argument("--taxonomy-strict", action="store_true", help="Fail if enabled plan metrics are missing from taxonomy order")
     args = parser.parse_args()
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
@@ -87,6 +90,9 @@ def main():
         timing_history_path = output_path.parent / "timing_history.jsonl"
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
+    if args.taxonomy_file:
+        taxonomy_ranks = load_taxonomy_order(Path(args.taxonomy_file).expanduser().resolve())
+        metrics = order_metrics_by_taxonomy(metrics, taxonomy_ranks, strict=args.taxonomy_strict)
 
     shared_tabular_df = None
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
