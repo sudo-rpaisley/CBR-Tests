@@ -121,20 +121,30 @@ def _render_overall_progress_line(current: int, total: int) -> str:
     return f"Overall  [{bar}] {pct:3d}% ({current}/{total})"
 
 
-def _render_task_line(metric: dict, elapsed: float | None = None, completed: bool = False) -> str:
-    taxonomy = metric.get("taxonomy_path", [])
-    metric_id = metric.get("metric_id", "unknown_metric")
-    hierarchy = taxonomy[:-1] if taxonomy else []
-    if elapsed is None:
-        suffix = ""
-    elif completed:
-        suffix = f" | done in {elapsed:.1f}s"
-    else:
-        suffix = f" | running {elapsed:.1f}s [{_render_metric_activity_bar(elapsed)}]"
-    lines = []
-    for depth, segment in enumerate(hierarchy):
-        lines.append(f"{'  ' * depth}↳ {segment}")
-    lines.append(f"{'  ' * len(hierarchy)}↳ {metric_id}{suffix}")
+def _render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], elapsed: float | None = None, completed: bool = False) -> str:
+    lines: list[str] = []
+    printed_nodes: set[tuple[str, ...]] = set()
+    for metric in metrics:
+        path = metric.get("taxonomy_path", [])
+        for depth in range(len(path)):
+            node_tuple = tuple(path[: depth + 1])
+            if node_tuple in printed_nodes:
+                continue
+            printed_nodes.add(node_tuple)
+            lines.append(f"{'  ' * depth}↳ {path[depth]}")
+        metric_id = metric.get("metric_id", "unknown_metric")
+        if metric_id in completed_statuses:
+            suffix = f" [{completed_statuses[metric_id]}]"
+        elif metric_id == current_metric_id:
+            if completed:
+                suffix = f" [success] | done in {elapsed:.1f}s"
+            elif elapsed is not None:
+                suffix = f" [running] {elapsed:.1f}s [{_render_metric_activity_bar(elapsed)}]"
+            else:
+                suffix = " [running]"
+        else:
+            suffix = " [pending]"
+        lines.append(f"{'  ' * len(path)}↳ {metric_id}{suffix}")
     return "\n".join(lines)
 
 
@@ -175,6 +185,8 @@ def _print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None:
 def _run_metric_with_heartbeat(
     dataset_path: Path,
     metric: dict,
+    metrics: list[dict],
+    completed_statuses: dict[str, str],
     current: int,
     total: int,
     shutdown_requested: dict,
@@ -188,7 +200,7 @@ def _run_metric_with_heartbeat(
             try:
                 result = future.result(timeout=1.0)
                 elapsed = time.perf_counter() - heartbeat_start
-                task_line = _render_task_line(metric, elapsed, completed=True)
+                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, elapsed, completed=True)
                 overall_line = _render_overall_progress_line(current, total)
                 _print_live_status(task_line, overall_line, None)
                 if sys.stdout.isatty():
@@ -196,7 +208,7 @@ def _run_metric_with_heartbeat(
                 return result
             except TimeoutError:
                 elapsed = time.perf_counter() - heartbeat_start
-                task_line = _render_task_line(metric, elapsed)
+                task_line = _render_live_taxonomy(metrics, metric_id, completed_statuses, elapsed)
                 overall_line = _render_overall_progress_line(current, total)
                 warning_line = None
                 if shutdown_requested.get("requested"):
@@ -336,11 +348,12 @@ def main():
     column_validations = {}
 
     total_metrics = len(metrics)
+    completed_statuses: dict[str, str] = {}
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
         success, metric_payload = _run_metric_with_heartbeat(
-            dataset_path, metric, idx, total_metrics, shutdown_requested, shared_tabular_df
+            dataset_path, metric, metrics, completed_statuses, idx, total_metrics, shutdown_requested, shared_tabular_df
         )
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
         metric_finished_at = datetime.now(timezone.utc)
@@ -401,6 +414,7 @@ def main():
                 return
 
         metric_results.append(metric_record)
+        completed_statuses[metric["metric_id"]] = metric_record["status"]
 
         if shutdown_requested["requested"]:
             overall_status = "cancelled"
