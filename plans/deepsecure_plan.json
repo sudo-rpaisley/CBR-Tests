@@ -84,6 +84,38 @@
       }
     },
     {
+      "metric_id": "reserved_ip_address_profile",
+      "label": "Reserved IP Address Profile",
+      "taxonomy_path": [
+        "dataset_heuristics",
+        "protocol_and_network_realism",
+        "address_validity",
+        "reserved_address_misuse"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Source IP",
+          "Destination IP"
+        ]
+      },
+      "calculation": {
+        "method": "tabular_reserved_ip_validation",
+        "parameters": {
+          "count_private_as_reserved": true,
+          "count_documentation_as_reserved": true,
+          "count_link_local_as_reserved": true,
+          "count_loopback_as_reserved": true,
+          "count_multicast_as_reserved": true
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "reserved_ip_address_profile_v1"
+      }
+    },
+    {
       "metric_id": "valid_port_range_profile",
       "label": "Valid Port Range Profile",
       "taxonomy_path": [
@@ -304,38 +336,6 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "packet_byte_consistency_profile_v1"
-      }
-    },
-    {
-      "metric_id": "reserved_ip_address_profile",
-      "label": "Reserved IP Address Profile",
-      "taxonomy_path": [
-        "dataset_heuristics",
-        "protocol_and_network_realism",
-        "address_validity",
-        "reserved_address_misuse"
-      ],
-      "enabled": true,
-      "input_requirements": {
-        "candidate_fields": [
-          "Source IP",
-          "Destination IP"
-        ]
-      },
-      "calculation": {
-        "method": "tabular_reserved_ip_validation",
-        "parameters": {
-          "count_private_as_reserved": true,
-          "count_documentation_as_reserved": true,
-          "count_link_local_as_reserved": true,
-          "count_loopback_as_reserved": true,
-          "count_multicast_as_reserved": true
-        }
-      },
-      "retention": {
-        "store_raw_output": true,
-        "store_summary": true,
-        "comparison_key": "reserved_ip_address_profile_v1"
       }
     },
     {
