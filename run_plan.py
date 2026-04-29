@@ -147,8 +147,8 @@ def main():
             )
         plan = case
         plan_path = case_file
-        dataset_path = resolve_path(case_dir, args.dataset)
-        output_path = resolve_path(case_dir, args.output)
+        dataset_path = Path(args.dataset).expanduser().resolve()
+        output_path = Path(args.output).expanduser().resolve()
         case_id = args.case_id
     else:
         raise ValueError("Invalid input JSON: provide a case JSON, or a plan JSON with --dataset and --output.")
