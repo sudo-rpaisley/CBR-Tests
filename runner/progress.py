@@ -10,6 +10,7 @@ ANSI_COLORS = {
     "failed": "\x1b[31m",
     "cancelled": "\x1b[31m",
 }
+LIVE_HEADER_LINES: list[str] = []
 
 
 def supports_color() -> bool:
@@ -54,7 +55,10 @@ def render_overall_progress_line(current: int, total: int, run_elapsed: float | 
 
 
 def print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
+    header_block = "\n".join(LIVE_HEADER_LINES).rstrip()
     if not sys.stdout.isatty() or not supports_color():
+        if header_block:
+            print(header_block)
         print(task_line)
         print(overall_line)
         if warning_line is not None:
@@ -64,4 +68,11 @@ def print_live_status(task_line: str, overall_line: str, warning_line: str | Non
     if warning_line is not None:
         block_lines.append(warning_line)
     print("\x1b[H\x1b[J", end="")
+    if header_block:
+        print(header_block)
     print("\n".join(block_lines), end="", flush=True)
+
+
+def set_live_header(lines: list[str]) -> None:
+    global LIVE_HEADER_LINES
+    LIVE_HEADER_LINES = list(lines)

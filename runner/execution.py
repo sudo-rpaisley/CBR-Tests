@@ -25,7 +25,8 @@ def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_
         metric_prediction = completed_durations.get(metric_id, default_predictions.get(metric_id, predicted_metric_total))
         if metric_id in completed_statuses and completed_statuses[metric_id] == "running":
             run_elapsed = (running_elapsed or {}).get(metric_id, 0.0)
-            suffix = f" [{colorize_status('running')} | {run_elapsed:.1f}/{metric_prediction:.0f}s ] [{render_metric_activity_bar(run_elapsed, expected_seconds=metric_prediction)}]"
+            expected = max(metric_prediction, run_elapsed + 1.0)
+            suffix = f" [{colorize_status('running')} | {run_elapsed:.1f}/{expected:.0f}s ] [{render_metric_activity_bar(run_elapsed, expected_seconds=expected)}]"
         elif metric_id in completed_statuses:
             run_time = completed_durations.get(metric_id)
             status_text = colorize_status(completed_statuses[metric_id])

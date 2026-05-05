@@ -15,7 +15,7 @@ from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_te
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan
 from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel, render_live_taxonomy
-from runner.progress import render_overall_progress_line, print_live_status
+from runner.progress import render_overall_progress_line, print_live_status, set_live_header
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 
 DEFAULT_METRIC_PREDICTIONS = {
@@ -111,6 +111,14 @@ def main():
     def _print_title_box(lines: list[str]):
         width = 108
         print("=" * width)
+
+    def _build_title_box_lines(lines: list[str]) -> list[str]:
+        width = 108
+        framed = ["=" * width]
+        for line in lines:
+            framed.append(f"| {line[:width-4].ljust(width-4)} |")
+        framed.append("=" * width)
+        return framed
         for line in lines:
             print(f"| {line[:width-4].ljust(width-4)} |")
         print("=" * width)
@@ -126,6 +134,13 @@ def main():
             f"Source Path: {dataset_path}",
             f"Destination Output: {output_path}",
         ])
+        set_live_header(_build_title_box_lines([
+            f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+            f"Case ID: {case_id}",
+            f"Source Dataset: {dataset_name} ({dataset_size_mb} MB)",
+            f"Source Path: {dataset_path}",
+            f"Destination Output: {output_path}",
+        ]))
 
     def _print_phase_status(phase: str, detail: str = ""):
         timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
@@ -185,6 +200,15 @@ def main():
             f"Source Field: {source_field}",
             f"Destination Field: {destination_field}",
         ])
+        set_live_header(_build_title_box_lines([
+            f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+            f"Case ID: {case_id}",
+            f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]}",
+            f"Source Field: {source_field}",
+            f"Destination Field: {destination_field}",
+            f"Source Path: {dataset_path}",
+            f"Destination Output: {output_path}",
+        ]))
         print(
             f"Dataset details: rows={len(shared_tabular_df):,} | columns={shared_tabular_df.shape[1]} | "
             f"feature_sample={list(shared_tabular_df.columns[:8])}"
