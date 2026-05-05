@@ -108,14 +108,24 @@ def main():
     if not metrics:
         raise ValueError("The plan does not contain any enabled metrics.")
 
+    def _print_title_box(lines: list[str]):
+        width = 108
+        print("=" * width)
+        for line in lines:
+            print(f"| {line[:width-4].ljust(width-4)} |")
+        print("=" * width)
+
     def _print_startup_banner():
         dataset_name = dataset_path.name
         dataset_size = dataset_path.stat().st_size if dataset_path.exists() else 0
         dataset_size_mb = round(dataset_size / (1024 * 1024), 2)
-        print("=" * 88)
-        print(f"Starting run: case_id={case_id} | plan_id={plan['plan_meta']['plan_id']}")
-        print(f"Dataset: {dataset_name} | Size: {dataset_size_mb} MB | Path: {dataset_path}")
-        print("=" * 88)
+        _print_title_box([
+            f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+            f"Case ID: {case_id}",
+            f"Source Dataset: {dataset_name} ({dataset_size_mb} MB)",
+            f"Source Path: {dataset_path}",
+            f"Destination Output: {output_path}",
+        ])
 
     def _print_phase_status(phase: str, detail: str = ""):
         timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
@@ -164,6 +174,17 @@ def main():
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
         _print_phase_status("Dataset", "Loading tabular dataset")
         shared_tabular_df = _load_with_progress(dataset_path)
+        source_candidates = ["Source IP", "Src IP", "source_ip", "src_ip"]
+        destination_candidates = ["Destination IP", "Dst IP", "destination_ip", "dst_ip"]
+        source_field = next((c for c in source_candidates if c in shared_tabular_df.columns), "n/a")
+        destination_field = next((c for c in destination_candidates if c in shared_tabular_df.columns), "n/a")
+        _print_title_box([
+            "Dataset Summary",
+            f"Rows: {len(shared_tabular_df):,}",
+            f"Columns: {shared_tabular_df.shape[1]}",
+            f"Source Field: {source_field}",
+            f"Destination Field: {destination_field}",
+        ])
         print(
             f"Dataset details: rows={len(shared_tabular_df):,} | columns={shared_tabular_df.shape[1]} | "
             f"feature_sample={list(shared_tabular_df.columns[:8])}"
