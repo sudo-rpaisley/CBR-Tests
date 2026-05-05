@@ -209,11 +209,6 @@ def main():
             f"Source Path: {dataset_path}",
             f"Destination Output: {output_path}",
         ]))
-        print(
-            f"Dataset details: rows={len(shared_tabular_df):,} | columns={shared_tabular_df.shape[1]} | "
-            f"feature_sample={list(shared_tabular_df.columns[:8])}"
-        )
-        _print_phase_status("Dataset", "Load complete")
     metric_handlers = build_metric_handlers(shared_tabular_df, load_tabular_dataset)
 
     execution_policy = plan.get("execution_policy", {})
@@ -234,9 +229,22 @@ def main():
     workers = max(1, int(workers))
     if shared_tabular_df is not None and workers > 4:
         workers = 4
-        _print_phase_status("Execution", "Capped workers to 4 for tabular workloads to avoid thread contention")
     mode = "parallel" if workers > 1 else "serial"
-    _print_phase_status("Execution", f"Starting {mode} run | metrics={total_metrics} | workers={workers}")
+    if shared_tabular_df is not None:
+        source_candidates = ["Source IP", "Src IP", "source_ip", "src_ip"]
+        destination_candidates = ["Destination IP", "Dst IP", "destination_ip", "dst_ip"]
+        source_field = next((c for c in source_candidates if c in shared_tabular_df.columns), "n/a")
+        destination_field = next((c for c in destination_candidates if c in shared_tabular_df.columns), "n/a")
+        set_live_header(_build_title_box_lines([
+            f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+            f"Case ID: {case_id}",
+            f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]} | Metrics: {total_metrics}",
+            f"Execution: {mode} | Workers: {workers}",
+            f"Source Field: {source_field}",
+            f"Destination Field: {destination_field}",
+            f"Source Path: {dataset_path}",
+            f"Destination Output: {output_path}",
+        ]))
     if workers > 1:
         running_started_at: dict[str, float] = {}
         def _parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds):
@@ -326,7 +334,6 @@ def main():
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(outcome, f, indent=2)
         _print_phase_status("Completed")
-        print(f"Wrote {output_path}")
         return
     for idx, metric in enumerate(metrics, start=1):
         metric_started_at = datetime.now(timezone.utc)
@@ -435,7 +442,6 @@ def main():
     if not live_render_enabled:
         print("Results by taxonomy:")
         print_taxonomy_summary(outcome["result_taxonomy"])
-    print(f"Wrote {output_path}")
 
 
 if __name__ == "__main__":
