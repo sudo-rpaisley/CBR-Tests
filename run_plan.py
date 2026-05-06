@@ -66,11 +66,8 @@ def main():
         raise ValueError("The plan does not contain any enabled metrics.")
 
     def _print_title_box(lines: list[str]):
-        for line in _build_title_box_lines(lines):
+        for line in build_title_box_lines(lines):
             print(line)
-
-    def _build_title_box_lines(lines: list[str], status_lines: list[str] | None = None) -> list[str]:
-        return build_title_box_lines(lines, status_lines)
 
     def _base_header_lines(include_dataset_size: bool = False) -> list[str]:
         return build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size)
@@ -178,7 +175,7 @@ def main():
     mode = "parallel" if workers > 1 else "serial"
     if shared_tabular_df is not None:
         source_field, destination_field = detect_ip_fields(shared_tabular_df)
-        set_live_header(_build_title_box_lines([
+        update_live_header([
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
             f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]} | Metrics: {total_metrics}",
@@ -187,7 +184,7 @@ def main():
             f"Destination Field: {destination_field}",
             f"Source Path: {dataset_path}",
             f"Destination Output: {output_path}",
-        ]))
+        ])
     if workers > 1:
         running_started_at: dict[str, float] = {}
         def _parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds):
@@ -217,7 +214,7 @@ def main():
                 for mid, started_at in running_started_at.items()
             }
             overall_header = render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None)
-            set_live_header(_build_title_box_lines([
+            update_live_header([
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
                 f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]}" if shared_tabular_df is not None else f"Metrics: {total}",
@@ -227,7 +224,7 @@ def main():
                 f"Status: {'Stopping' if event == 'stopping' else f'Running ({mode})'}",
                 f"Overall Progress: {completed}/{total} metrics completed",
                 overall_header,
-            ]))
+            ])
             print_live_status(
                 render_live_taxonomy(
                     metrics,
@@ -284,7 +281,7 @@ def main():
         return
     for idx, metric in enumerate(metrics, start=1):
         while control_state.get("pause_requested") and not control_state.get("cancel_requested"):
-            set_live_header(_build_title_box_lines([
+            update_live_header([
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
                 f"Source Path: {dataset_path}",
@@ -293,7 +290,7 @@ def main():
                 "Status: Paused",
                 f"Overall Progress: {idx-1}/{total_metrics} metrics completed",
                 "Send SIGUSR2 to resume or Ctrl-C to cancel",
-            ]))
+            ])
             time.sleep(0.2)
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
