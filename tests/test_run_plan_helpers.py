@@ -5,6 +5,7 @@ from runner.run_plan_helpers import (
     build_base_header_lines,
     build_outcome,
     build_title_box_lines,
+    configure_signal_handlers,
     detect_ip_fields,
 )
 
@@ -68,3 +69,16 @@ def test_build_outcome_contains_expected_fields():
     assert outcome["plan_id"] == "plan_1"
     assert outcome["metric_ids"] == ["m1"]
     assert outcome["column_validations"]["m1"]["ok"] is True
+
+
+def test_configure_signal_handlers_registers_sigint(monkeypatch):
+    calls = []
+
+    def _fake_signal(sig, handler):
+        calls.append((sig, handler))
+
+    monkeypatch.setattr("runner.run_plan_helpers.signal.signal", _fake_signal)
+    control_state = {"pause_requested": False, "cancel_requested": False}
+    shutdown_requested = {"requested": False, "confirm_before": 0.0}
+    configure_signal_handlers(control_state, shutdown_requested)
+    assert any(call[0].name == "SIGINT" for call in calls)

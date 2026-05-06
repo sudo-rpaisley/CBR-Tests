@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import signal
 import sys
 import time
 from datetime import datetime, timezone
@@ -14,7 +13,14 @@ from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_m
 from runner.progress import render_overall_progress_line, print_live_status, set_live_header
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.tabular import load_tabular_dataset
-from runner.run_plan_helpers import build_base_header_lines, build_outcome, build_title_box_lines, detect_ip_fields, write_outcome
+from runner.run_plan_helpers import (
+    build_base_header_lines,
+    build_outcome,
+    build_title_box_lines,
+    configure_signal_handlers,
+    detect_ip_fields,
+    write_outcome,
+)
 
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
@@ -55,25 +61,7 @@ def main():
     live_render_enabled = sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"}
     default_metric_predictions = dict(DEFAULT_METRIC_PREDICTIONS)
 
-    def _handle_sigint(_signum, _frame):
-        control_state["cancel_requested"] = True
-        shutdown_requested["requested"] = True
-        shutdown_requested["confirm_before"] = time.time()
-        print("\nStop requested. Cancelling current task and pending tasks...")
-
-    def _handle_sigusr1(_signum, _frame):
-        control_state["pause_requested"] = True
-        print("\nPause requested (SIGUSR1). Send SIGUSR2 to resume.")
-
-    def _handle_sigusr2(_signum, _frame):
-        control_state["pause_requested"] = False
-        print("\nResume requested (SIGUSR2).")
-
-    signal.signal(signal.SIGINT, _handle_sigint)
-    if hasattr(signal, "SIGUSR1"):
-        signal.signal(signal.SIGUSR1, _handle_sigusr1)
-    if hasattr(signal, "SIGUSR2"):
-        signal.signal(signal.SIGUSR2, _handle_sigusr2)
+    configure_signal_handlers(control_state, shutdown_requested)
 
     case_file = Path(args.case).resolve()
     plan, dataset_path, output_path, case_id = load_case_or_plan(case_file, args.dataset, args.output, args.case_id)

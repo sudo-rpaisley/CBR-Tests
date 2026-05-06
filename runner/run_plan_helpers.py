@@ -1,4 +1,5 @@
 import json
+import signal
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -85,3 +86,25 @@ def build_base_header_lines(
         f"Destination Output: {output_path}",
     ])
     return lines
+
+
+def configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None:
+    def _handle_sigint(_signum, _frame):
+        control_state["cancel_requested"] = True
+        shutdown_requested["requested"] = True
+        shutdown_requested["confirm_before"] = time.time()
+        print("\nStop requested. Cancelling current task and pending tasks...")
+
+    def _handle_sigusr1(_signum, _frame):
+        control_state["pause_requested"] = True
+        print("\nPause requested (SIGUSR1). Send SIGUSR2 to resume.")
+
+    def _handle_sigusr2(_signum, _frame):
+        control_state["pause_requested"] = False
+        print("\nResume requested (SIGUSR2).")
+
+    signal.signal(signal.SIGINT, _handle_sigint)
+    if hasattr(signal, "SIGUSR1"):
+        signal.signal(signal.SIGUSR1, _handle_sigusr1)
+    if hasattr(signal, "SIGUSR2"):
+        signal.signal(signal.SIGUSR2, _handle_sigusr2)
