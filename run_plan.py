@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -90,6 +91,7 @@ def main():
             elapsed = time.perf_counter() - started
             overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0)
             compact_overall_header = overall_header.replace("Overall  ", "", 1)
+            compact_overall_header = re.sub(r"\s+\(\d+/\d+\)", "", compact_overall_header, count=1)
             base_lines = _base_header_lines()
             update_live_header(base_lines, [
                 f"Status: Loading dataset",
@@ -210,6 +212,7 @@ def main():
             }
             overall_header = render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None)
             compact_overall_header = overall_header.replace("Overall  ", "", 1)
+            compact_overall_header = re.sub(r"\s+\(\d+/\d+\)", "", compact_overall_header, count=1)
             update_live_header([
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
