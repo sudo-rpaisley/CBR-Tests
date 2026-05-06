@@ -284,7 +284,6 @@ def main():
             ], [
                 f"Status: {'Stopping' if event == 'stopping' else f'Running ({mode})'}",
                 f"Overall Progress: {completed}/{total} metrics completed",
-                f"Pending Metrics: {pending}",
                 overall_header,
             ]))
             print_live_status(
