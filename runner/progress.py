@@ -56,15 +56,19 @@ def render_overall_progress_line(current: int, total: int, run_elapsed: float | 
 
 def print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
     header_block = "\n".join(LIVE_HEADER_LINES).rstrip()
+    overall_line = overall_line or ""
     if not sys.stdout.isatty() or not supports_color():
         if header_block:
             print(header_block)
         print(task_line)
-        print(overall_line)
+        if overall_line:
+            print(overall_line)
         if warning_line is not None:
             print(warning_line)
         return
-    block_lines = task_line.splitlines() + [overall_line]
+    block_lines = task_line.splitlines()
+    if overall_line:
+        block_lines.append(overall_line)
     if warning_line is not None:
         block_lines.append(warning_line)
     print("\x1b[H\x1b[J", end="")

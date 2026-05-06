@@ -137,6 +137,7 @@ def main():
 
         def _chunk_progress(chunk_idx: int, total_rows: int):
             elapsed = time.perf_counter() - started
+            overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0)
             base_lines = [
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
@@ -147,6 +148,7 @@ def main():
                 f"Status: Loading dataset",
                 f"Elapsed: {elapsed:0.1f}s | Chunk: {chunk_idx} | Rows Loaded: {total_rows:,}",
                 f"Overall Progress: 0/{len(metrics)} metrics completed",
+                overall_header,
             ]))
             print_live_status(
                 render_live_taxonomy(
@@ -159,8 +161,8 @@ def main():
                     elapsed=0.0,
                     completed=False,
                 ),
-                render_overall_progress_line(0, len(metrics), 0.0, 0.0),
-                f"Preparing dataset load... {elapsed:0.1f}s | chunk={chunk_idx} | rows_loaded={total_rows:,}",
+                "",
+                None,
             )
 
         return load_tabular_dataset(path, progress_callback=_chunk_progress)
@@ -178,8 +180,8 @@ def main():
             elapsed=0.0,
             completed=False,
         ),
-        render_overall_progress_line(0, len(metrics), 0.0, 0.0),
-        "Preparing dataset load...",
+        "",
+        None,
     )
     shared_tabular_df = None
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
@@ -267,6 +269,7 @@ def main():
                 mid: (time.perf_counter() - started_at)
                 for mid, started_at in running_started_at.items()
             }
+            overall_header = render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None)
             set_live_header(_build_title_box_lines([
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
@@ -277,6 +280,7 @@ def main():
                 f"Status: Running ({mode})",
                 f"Overall Progress: {completed}/{total} metrics completed",
                 f"Pending Metrics: {pending}",
+                overall_header,
             ]))
             print_live_status(
                 render_live_taxonomy(
@@ -290,7 +294,7 @@ def main():
                     completed=False,
                     running_elapsed=running_elapsed,
                 ),
-                render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None),
+                "",
                 None,
             )
 
