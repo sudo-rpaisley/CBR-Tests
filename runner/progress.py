@@ -12,7 +12,6 @@ ANSI_COLORS = {
     "cancelled": "\x1b[31m",
 }
 LIVE_HEADER_LINES: list[str] = []
-LIVE_RENDERED_LINE_COUNT = 0
 
 
 def supports_color() -> bool:
@@ -57,7 +56,6 @@ def render_overall_progress_line(current: int, total: int, run_elapsed: float | 
 
 
 def print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
-    global LIVE_RENDERED_LINE_COUNT
     header_block = "\n".join(LIVE_HEADER_LINES).rstrip()
     overall_line = overall_line or ""
     if not sys.stdout.isatty() or not supports_color():
@@ -68,24 +66,16 @@ def print_live_status(task_line: str, overall_line: str, warning_line: str | Non
             print(overall_line)
         if warning_line is not None:
             print(warning_line)
-        LIVE_RENDERED_LINE_COUNT = 0
         return
     block_lines = task_line.splitlines()
     if overall_line:
         block_lines.append(overall_line)
     if warning_line is not None:
         block_lines.append(warning_line)
-    lines_to_render = []
+    print("\x1b[H\x1b[J", end="")
     if header_block:
-        lines_to_render.extend(header_block.splitlines())
-    lines_to_render.extend(block_lines)
-    if LIVE_RENDERED_LINE_COUNT > 0:
-        print(f"\x1b[{LIVE_RENDERED_LINE_COUNT}F", end="")
-        for _ in range(LIVE_RENDERED_LINE_COUNT):
-            print("\x1b[2K\x1b[1E", end="")
-        print(f"\x1b[{LIVE_RENDERED_LINE_COUNT}F", end="")
-    print("\n".join(lines_to_render), end="", flush=True)
-    LIVE_RENDERED_LINE_COUNT = max(1, len(lines_to_render))
+        print(header_block)
+    print("\n".join(block_lines), end="", flush=True)
 
 
 def set_live_header(lines: list[str]) -> None:
