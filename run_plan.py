@@ -134,13 +134,6 @@ def main():
         _print_phase_status("Dataset", "Loading tabular dataset")
         shared_tabular_df = _load_with_progress(dataset_path)
         source_field, destination_field = detect_ip_fields(shared_tabular_df)
-        _print_title_box([
-            "Dataset Summary",
-            f"Rows: {len(shared_tabular_df):,}",
-            f"Columns: {shared_tabular_df.shape[1]}",
-            f"Source Field: {source_field}",
-            f"Destination Field: {destination_field}",
-        ])
         update_live_header([
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
