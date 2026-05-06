@@ -1,21 +1,20 @@
-import json
 import argparse
+import json
 import os
 import signal
 import sys
 import time
 from datetime import datetime, timezone
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
 
-from runner.schema import validate_plan_schema
-from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy, print_taxonomy_summary
+from runner.taxonomy import print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan
 from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel, render_live_taxonomy
 from runner.progress import render_overall_progress_line, print_live_status, set_live_header
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.tabular import load_tabular_dataset
+from runner.run_plan_helpers import build_base_header_lines, build_outcome, build_title_box_lines, detect_ip_fields, write_outcome
 
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
@@ -28,7 +27,6 @@ DEFAULT_METRIC_PREDICTIONS = {
     "packet_byte_consistency_profile": 20.0,
     "reserved_ip_address_profile": 105.0,
 }
-
 
 
 def dispatch_metric_with_handlers(dataset_path: Path, metric: dict, metric_handlers: dict) -> tuple[bool, dict]:
@@ -89,42 +87,18 @@ def main():
         raise ValueError("The plan does not contain any enabled metrics.")
 
     def _print_title_box(lines: list[str]):
-        width = 108
-        print("=" * width)
+        for line in _build_title_box_lines(lines):
+            print(line)
 
     def _build_title_box_lines(lines: list[str], status_lines: list[str] | None = None) -> list[str]:
-        width = 108
-        framed = ["=" * width]
-        for line in lines:
-            framed.append(f"| {line[:width-4].ljust(width-4)} |")
-        if status_lines:
-            framed.append(f"| {'-' * (width-4)} |")
-            for s in status_lines:
-                framed.append(f"| {s[:width-4].ljust(width-4)} |")
-        framed.append("=" * width)
-        return framed
-        for line in lines:
-            print(f"| {line[:width-4].ljust(width-4)} |")
-        print("=" * width)
+        return build_title_box_lines(lines, status_lines)
+
+    def _base_header_lines(include_dataset_size: bool = False) -> list[str]:
+        return build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size)
 
     def _print_startup_banner():
-        dataset_name = dataset_path.name
-        dataset_size = dataset_path.stat().st_size if dataset_path.exists() else 0
-        dataset_size_mb = round(dataset_size / (1024 * 1024), 2)
-        _print_title_box([
-            f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
-            f"Case ID: {case_id}",
-            f"Source Dataset: {dataset_name} ({dataset_size_mb} MB)",
-            f"Source Path: {dataset_path}",
-            f"Destination Output: {output_path}",
-        ])
-        base_lines = [
-            f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
-            f"Case ID: {case_id}",
-            f"Source Dataset: {dataset_name} ({dataset_size_mb} MB)",
-            f"Source Path: {dataset_path}",
-            f"Destination Output: {output_path}",
-        ]
+        base_lines = _base_header_lines(include_dataset_size=True)
+        _print_title_box(base_lines)
         set_live_header(_build_title_box_lines(base_lines, ["Status: Initializing run context"]))
 
     def _print_phase_status(phase: str, detail: str = ""):
@@ -138,12 +112,7 @@ def main():
         def _chunk_progress(chunk_idx: int, total_rows: int):
             elapsed = time.perf_counter() - started
             overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0)
-            base_lines = [
-                f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
-                f"Case ID: {case_id}",
-                f"Source Path: {dataset_path}",
-                f"Destination Output: {output_path}",
-            ]
+            base_lines = _base_header_lines()
             set_live_header(_build_title_box_lines(base_lines, [
                 f"Status: Loading dataset",
                 f"Elapsed: {elapsed:0.1f}s | Chunk: {chunk_idx} | Rows Loaded: {total_rows:,}",
@@ -187,10 +156,7 @@ def main():
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
         _print_phase_status("Dataset", "Loading tabular dataset")
         shared_tabular_df = _load_with_progress(dataset_path)
-        source_candidates = ["Source IP", "Src IP", "source_ip", "src_ip"]
-        destination_candidates = ["Destination IP", "Dst IP", "destination_ip", "dst_ip"]
-        source_field = next((c for c in source_candidates if c in shared_tabular_df.columns), "n/a")
-        destination_field = next((c for c in destination_candidates if c in shared_tabular_df.columns), "n/a")
+        source_field, destination_field = detect_ip_fields(shared_tabular_df)
         _print_title_box([
             "Dataset Summary",
             f"Rows: {len(shared_tabular_df):,}",
@@ -232,10 +198,7 @@ def main():
         workers = 4
     mode = "parallel" if workers > 1 else "serial"
     if shared_tabular_df is not None:
-        source_candidates = ["Source IP", "Src IP", "source_ip", "src_ip"]
-        destination_candidates = ["Destination IP", "Dst IP", "destination_ip", "dst_ip"]
-        source_field = next((c for c in source_candidates if c in shared_tabular_df.columns), "n/a")
-        destination_field = next((c for c in destination_candidates if c in shared_tabular_df.columns), "n/a")
+        source_field, destination_field = detect_ip_fields(shared_tabular_df)
         set_live_header(_build_title_box_lines([
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
@@ -333,25 +296,11 @@ def main():
             completed_statuses[metric["metric_id"]] = metric_record["status"]
             completed_durations[metric["metric_id"]] = metric_record["elapsed_seconds"]
         # finalize immediately for parallel path
-        outcome = {
-            "status": overall_status,
-            "case_id": case_id,
-            "plan_id": plan["plan_meta"]["plan_id"],
-            "metric_ids": [m["metric_id"] for m in metrics],
-            "dataset_path": str(dataset_path),
-            "plan_taxonomy": build_plan_taxonomy(metrics),
-            "metric_results": metric_results,
-            "test_results": test_results,
-            "test_results_taxonomy": build_test_results_taxonomy(metrics, test_results),
-            "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
-            "run_started_at": run_started_at.isoformat(),
-            "run_finished_at": datetime.now(timezone.utc).isoformat(),
-            "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
-        }
-        if column_validations:
-            outcome["column_validations"] = column_validations
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(outcome, f, indent=2)
+        outcome = build_outcome(
+            overall_status, case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
+            metric_results, test_results, run_started_at, run_start_perf, column_validations
+        )
+        write_outcome(output_path, outcome)
         _print_phase_status("Completed")
         return
     for idx, metric in enumerate(metrics, start=1):
@@ -411,25 +360,11 @@ def main():
 
             if fail_fast:
                 metric_results.append(metric_record)
-                outcome = {
-                    "status": "failed",
-                    "case_id": case_id,
-                    "plan_id": plan["plan_meta"]["plan_id"],
-                    "metric_ids": [m["metric_id"] for m in metrics],
-                    "dataset_path": str(dataset_path),
-                    "plan_taxonomy": build_plan_taxonomy(metrics),
-                    "metric_results": metric_results,
-                    "test_results": test_results,
-                    "test_results_taxonomy": build_test_results_taxonomy(metrics, test_results),
-                    "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
-                    "run_started_at": run_started_at.isoformat(),
-                    "run_finished_at": datetime.now(timezone.utc).isoformat(),
-                    "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
-                }
-                if column_validations:
-                    outcome["column_validations"] = column_validations
-                with open(output_path, "w", encoding="utf-8") as f:
-                    json.dump(outcome, f, indent=2)
+                outcome = build_outcome(
+                    "failed", case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
+                    metric_results, test_results, run_started_at, run_start_perf, column_validations
+                )
+                write_outcome(output_path, outcome)
                 if sys.stdout.isatty():
                     print()
                 if not live_render_enabled:
@@ -445,27 +380,11 @@ def main():
             overall_status = "cancelled"
             break
 
-    outcome = {
-        "status": overall_status,
-        "case_id": case_id,
-        "plan_id": plan["plan_meta"]["plan_id"],
-        "metric_ids": [m["metric_id"] for m in metrics],
-        "dataset_path": str(dataset_path),
-        "plan_taxonomy": build_plan_taxonomy(metrics),
-        "metric_results": metric_results,
-        "test_results": test_results,
-        "test_results_taxonomy": build_test_results_taxonomy(metrics, test_results),
-        "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
-        "run_started_at": run_started_at.isoformat(),
-        "run_finished_at": datetime.now(timezone.utc).isoformat(),
-        "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6)
-    }
-
-    if column_validations:
-        outcome["column_validations"] = column_validations
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(outcome, f, indent=2)
+    outcome = build_outcome(
+        overall_status, case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
+        metric_results, test_results, run_started_at, run_start_perf, column_validations
+    )
+    write_outcome(output_path, outcome)
     _print_phase_status("Completed")
 
     if sys.stdout.isatty():
