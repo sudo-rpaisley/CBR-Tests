@@ -1,0 +1,61 @@
+{
+  "dataset_metrics": {
+    "structural_and_integrity": {
+      "column_quality_profile": {
+        "_metrics": ["column_quality_profile"]
+      }
+    },
+    "statistical_fidelity": {
+      "pearson_correlation": {
+        "_metrics": ["pearson_correlation_profile"]
+      }
+    },
+    "temporal_realism": {
+      "timestamp_coherence": {
+        "_metrics": ["timestamp_coherence_profile"]
+      }
+    }
+  },
+  "dataset_heuristics": {
+    "protocol_and_network_realism": {
+      "address_validity": {
+        "valid_ip_address": {
+          "_metrics": ["protocol_validity_profile"]
+        },
+        "reserved_address_misuse": {
+          "_metrics": ["reserved_ip_address_profile"]
+        }
+      },
+      "port_validity": {
+        "valid_port_range": {
+          "_metrics": ["valid_port_range_profile"]
+        },
+        "service_port_consistency": {
+          "_metrics": ["service_port_consistency_profile"]
+        }
+      },
+      "flow_semantics": {
+        "tcp_flag_consistency": {
+          "_metrics": ["tcp_flag_consistency_profile"]
+        },
+        "handshake_plausibility": {
+          "_metrics": ["handshake_plausibility_profile"]
+        },
+        "flow_duration_consistency": {
+          "_metrics": ["flow_duration_consistency_profile"]
+        },
+        "packet_byte_consistency": {
+          "_metrics": ["packet_byte_consistency_profile"]
+        }
+      },
+      "slice_metadata_integrity": {
+        "valid_slice_identifier": {
+          "_metrics": ["valid_slice_identifier_profile"]
+        },
+        "slice_identifier_consistency": {
+          "_metrics": ["slice_identifier_consistency_profile"]
+        }
+      }
+    }
+  }
+}
