@@ -208,6 +208,7 @@ def main():
                 for mid, started_at in running_started_at.items()
             }
             overall_header = render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None)
+            compact_overall_header = overall_header.replace("Overall  ", "", 1)
             update_live_header([
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
@@ -217,7 +218,7 @@ def main():
             ], [
                 f"Status: {'Stopping' if event == 'stopping' else f'Running ({mode})'}",
                 f"Overall Progress: {completed}/{total} metrics completed",
-                overall_header,
+                compact_overall_header,
             ])
             print_live_status(
                 render_live_taxonomy(
