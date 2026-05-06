@@ -88,6 +88,10 @@ def main():
     if not metrics:
         raise ValueError("The plan does not contain any enabled metrics.")
 
+    def _print_title_box(lines: list[str]):
+        width = 108
+        print("=" * width)
+
     def _build_title_box_lines(lines: list[str], status_lines: list[str] | None = None) -> list[str]:
         width = 108
         framed = ["=" * width]
@@ -99,11 +103,21 @@ def main():
                 framed.append(f"| {s[:width-4].ljust(width-4)} |")
         framed.append("=" * width)
         return framed
+        for line in lines:
+            print(f"| {line[:width-4].ljust(width-4)} |")
+        print("=" * width)
 
     def _print_startup_banner():
         dataset_name = dataset_path.name
         dataset_size = dataset_path.stat().st_size if dataset_path.exists() else 0
         dataset_size_mb = round(dataset_size / (1024 * 1024), 2)
+        _print_title_box([
+            f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+            f"Case ID: {case_id}",
+            f"Source Dataset: {dataset_name} ({dataset_size_mb} MB)",
+            f"Source Path: {dataset_path}",
+            f"Destination Output: {output_path}",
+        ])
         base_lines = [
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
@@ -123,7 +137,7 @@ def main():
 
         def _chunk_progress(chunk_idx: int, total_rows: int):
             elapsed = time.perf_counter() - started
-            overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0).replace("Overall  ", "", 1)
+            overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0)
             base_lines = [
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
@@ -261,7 +275,6 @@ def main():
                 for mid, started_at in running_started_at.items()
             }
             overall_header = render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None)
-            overall_header = overall_header.replace("Overall  ", "", 1)
             set_live_header(_build_title_box_lines([
                 f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
                 f"Case ID: {case_id}",
