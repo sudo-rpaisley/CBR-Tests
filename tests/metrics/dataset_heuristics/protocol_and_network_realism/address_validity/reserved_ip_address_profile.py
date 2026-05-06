@@ -1,5 +1,6 @@
 from pathlib import Path
 from ipaddress import ip_address, ip_network
+from runner.tabular import load_tabular_dataset
 
 
 
@@ -15,21 +16,6 @@ IPV6_DOC_NETS = [
 SHARED_ADDRESS_SPACE = ip_network("100.64.0.0/10")
 BENCHMARKING_NET = ip_network("198.18.0.0/15")
 IPV4_MAPPED_NET = ip_network("::ffff:0:0/96")
-
-
-def load_tabular_dataset(dataset_path: Path):
-    import pandas as pd
-    suffix = dataset_path.suffix.lower()
-    if suffix == ".csv":
-        df = pd.read_csv(dataset_path, skipinitialspace=True, low_memory=False)
-    elif suffix == ".tsv":
-        df = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True, low_memory=False)
-    elif suffix in [".xlsx", ".xls"]:
-        df = pd.read_excel(dataset_path)
-    else:
-        raise ValueError(f"Unsupported tabular dataset format: {suffix}")
-    df.columns = df.columns.str.strip()
-    return df
 
 
 def get_reserved_categories(addr) -> list[str]:

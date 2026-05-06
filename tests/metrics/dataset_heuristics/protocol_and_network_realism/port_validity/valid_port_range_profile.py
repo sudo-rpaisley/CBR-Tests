@@ -1,22 +1,5 @@
 from pathlib import Path
-
-
-def load_tabular_dataset(dataset_path: Path):
-    import pandas as pd
-
-    suffix = dataset_path.suffix.lower()
-
-    if suffix == ".csv":
-        df = pd.read_csv(dataset_path, skipinitialspace=True, low_memory=False)
-    elif suffix == ".tsv":
-        df = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True, low_memory=False)
-    elif suffix in [".xlsx", ".xls"]:
-        df = pd.read_excel(dataset_path)
-    else:
-        raise ValueError(f"Unsupported tabular dataset format: {suffix}")
-
-    df.columns = df.columns.str.strip()
-    return df
+from runner.tabular import load_tabular_dataset
 
 
 def parse_port(value):

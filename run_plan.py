@@ -8,8 +8,6 @@ from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
 
-import pandas as pd
-
 from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy, print_taxonomy_summary
 from runner.dispatch import build_metric_handlers
@@ -17,6 +15,7 @@ from runner.io import load_case_or_plan
 from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel, render_live_taxonomy
 from runner.progress import render_overall_progress_line, print_live_status, set_live_header
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
+from runner.tabular import load_tabular_dataset
 
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
@@ -30,38 +29,6 @@ DEFAULT_METRIC_PREDICTIONS = {
     "reserved_ip_address_profile": 105.0,
 }
 
-
-
-def load_tabular_dataset(dataset_path: Path, progress_callback=None) -> pd.DataFrame:
-    suffix = dataset_path.suffix.lower()
-
-    if suffix == ".csv":
-        chunk_iter = pd.read_csv(dataset_path, skipinitialspace=True, low_memory=False, chunksize=250_000)
-        chunks = []
-        total_rows = 0
-        for idx, chunk in enumerate(chunk_iter, start=1):
-            chunks.append(chunk)
-            total_rows += len(chunk)
-            if progress_callback:
-                progress_callback(idx, total_rows)
-        df = pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame()
-    elif suffix == ".tsv":
-        chunk_iter = pd.read_csv(dataset_path, sep="\t", skipinitialspace=True, low_memory=False, chunksize=250_000)
-        chunks = []
-        total_rows = 0
-        for idx, chunk in enumerate(chunk_iter, start=1):
-            chunks.append(chunk)
-            total_rows += len(chunk)
-            if progress_callback:
-                progress_callback(idx, total_rows)
-        df = pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame()
-    elif suffix in [".xlsx", ".xls"]:
-        df = pd.read_excel(dataset_path)
-    else:
-        raise ValueError(f"Unsupported tabular dataset format: {suffix}")
-
-    df.columns = df.columns.str.strip()
-    return df
 
 
 def dispatch_metric_with_handlers(dataset_path: Path, metric: dict, metric_handlers: dict) -> tuple[bool, dict]:
@@ -86,16 +53,29 @@ def main():
     args = parser.parse_args()
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
+    control_state = {"pause_requested": False, "cancel_requested": False}
     live_render_enabled = sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"}
     default_metric_predictions = dict(DEFAULT_METRIC_PREDICTIONS)
 
     def _handle_sigint(_signum, _frame):
+        control_state["cancel_requested"] = True
         shutdown_requested["requested"] = True
         shutdown_requested["confirm_before"] = time.time()
         print("\nStop requested. Cancelling current task and pending tasks...")
-        raise KeyboardInterrupt
+
+    def _handle_sigusr1(_signum, _frame):
+        control_state["pause_requested"] = True
+        print("\nPause requested (SIGUSR1). Send SIGUSR2 to resume.")
+
+    def _handle_sigusr2(_signum, _frame):
+        control_state["pause_requested"] = False
+        print("\nResume requested (SIGUSR2).")
 
     signal.signal(signal.SIGINT, _handle_sigint)
+    if hasattr(signal, "SIGUSR1"):
+        signal.signal(signal.SIGUSR1, _handle_sigusr1)
+    if hasattr(signal, "SIGUSR2"):
+        signal.signal(signal.SIGUSR2, _handle_sigusr2)
 
     case_file = Path(args.case).resolve()
     plan, dataset_path, output_path, case_id = load_case_or_plan(case_file, args.dataset, args.output, args.case_id)
@@ -112,11 +92,15 @@ def main():
         width = 108
         print("=" * width)
 
-    def _build_title_box_lines(lines: list[str]) -> list[str]:
+    def _build_title_box_lines(lines: list[str], status_lines: list[str] | None = None) -> list[str]:
         width = 108
         framed = ["=" * width]
         for line in lines:
             framed.append(f"| {line[:width-4].ljust(width-4)} |")
+        if status_lines:
+            framed.append(f"| {'-' * (width-4)} |")
+            for s in status_lines:
+                framed.append(f"| {s[:width-4].ljust(width-4)} |")
         framed.append("=" * width)
         return framed
         for line in lines:
@@ -134,13 +118,14 @@ def main():
             f"Source Path: {dataset_path}",
             f"Destination Output: {output_path}",
         ])
-        set_live_header(_build_title_box_lines([
+        base_lines = [
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
             f"Source Dataset: {dataset_name} ({dataset_size_mb} MB)",
             f"Source Path: {dataset_path}",
             f"Destination Output: {output_path}",
-        ]))
+        ]
+        set_live_header(_build_title_box_lines(base_lines, ["Status: Initializing run context"]))
 
     def _print_phase_status(phase: str, detail: str = ""):
         timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
@@ -152,6 +137,19 @@ def main():
 
         def _chunk_progress(chunk_idx: int, total_rows: int):
             elapsed = time.perf_counter() - started
+            overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0)
+            base_lines = [
+                f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+                f"Case ID: {case_id}",
+                f"Source Path: {dataset_path}",
+                f"Destination Output: {output_path}",
+            ]
+            set_live_header(_build_title_box_lines(base_lines, [
+                f"Status: Loading dataset",
+                f"Elapsed: {elapsed:0.1f}s | Chunk: {chunk_idx} | Rows Loaded: {total_rows:,}",
+                f"Overall Progress: 0/{len(metrics)} metrics completed",
+                overall_header,
+            ]))
             print_live_status(
                 render_live_taxonomy(
                     metrics,
@@ -163,8 +161,8 @@ def main():
                     elapsed=0.0,
                     completed=False,
                 ),
-                render_overall_progress_line(0, len(metrics), 0.0, 0.0),
-                f"Preparing dataset load... {elapsed:0.1f}s | chunk={chunk_idx} | rows_loaded={total_rows:,}",
+                "",
+                None,
             )
 
         return load_tabular_dataset(path, progress_callback=_chunk_progress)
@@ -182,8 +180,8 @@ def main():
             elapsed=0.0,
             completed=False,
         ),
-        render_overall_progress_line(0, len(metrics), 0.0, 0.0),
-        "Preparing dataset load...",
+        "",
+        None,
     )
     shared_tabular_df = None
     if dataset_path.suffix.lower() in {".csv", ".tsv", ".xlsx", ".xls"}:
@@ -208,6 +206,9 @@ def main():
             f"Destination Field: {destination_field}",
             f"Source Path: {dataset_path}",
             f"Destination Output: {output_path}",
+        ], [
+            "Status: Dataset loaded",
+            f"Overall Progress: 0/{len(metrics)} metrics completed",
         ]))
     metric_handlers = build_metric_handlers(shared_tabular_df, load_tabular_dataset)
 
@@ -249,6 +250,11 @@ def main():
         running_started_at: dict[str, float] = {}
         def _parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds):
             active_running = set(running_ids or [])
+            if event == "stopping":
+                for m in metrics:
+                    mid = m["metric_id"]
+                    if mid not in completed_statuses:
+                        completed_statuses[mid] = "stopping"
             for m in metrics:
                 mid = m["metric_id"]
                 if mid in completed_statuses:
@@ -268,6 +274,18 @@ def main():
                 mid: (time.perf_counter() - started_at)
                 for mid, started_at in running_started_at.items()
             }
+            overall_header = render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None)
+            set_live_header(_build_title_box_lines([
+                f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+                f"Case ID: {case_id}",
+                f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]}" if shared_tabular_df is not None else f"Metrics: {total}",
+                f"Source Path: {dataset_path}",
+                f"Destination Output: {output_path}",
+            ], [
+                f"Status: {'Stopping' if event == 'stopping' else f'Running ({mode})'}",
+                f"Overall Progress: {completed}/{total} metrics completed",
+                overall_header,
+            ]))
             print_live_status(
                 render_live_taxonomy(
                     metrics,
@@ -280,7 +298,7 @@ def main():
                     completed=False,
                     running_elapsed=running_elapsed,
                 ),
-                render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None),
+                "",
                 None,
             )
 
@@ -290,6 +308,7 @@ def main():
             metric_handlers,
             workers,
             progress_callback=_parallel_progress,
+            control_state=control_state,
         )
         for idx0, success, metric_payload in parallel_out:
             metric = metrics[idx0]
@@ -336,6 +355,18 @@ def main():
         _print_phase_status("Completed")
         return
     for idx, metric in enumerate(metrics, start=1):
+        while control_state.get("pause_requested") and not control_state.get("cancel_requested"):
+            set_live_header(_build_title_box_lines([
+                f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
+                f"Case ID: {case_id}",
+                f"Source Path: {dataset_path}",
+                f"Destination Output: {output_path}",
+            ], [
+                "Status: Paused",
+                f"Overall Progress: {idx-1}/{total_metrics} metrics completed",
+                "Send SIGUSR2 to resume or Ctrl-C to cancel",
+            ]))
+            time.sleep(0.2)
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
         try:

@@ -80,9 +80,10 @@ def auto_worker_count(num_metrics: int) -> int:
     return max(1, min(num_metrics, cpu - 1 if cpu > 2 else 1))
 
 
-def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int, progress_callback=None) -> list[tuple[int, bool, dict]]:
+def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int, progress_callback=None, control_state: dict | None = None) -> list[tuple[int, bool, dict]]:
     results: list[tuple[int, bool, dict]] = []
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=workers)
+    try:
         def _timed_call(metric_id: str, dataset_path: Path, metric: dict):
             started = time.perf_counter()
             ok, payload = metric_handlers[metric_id](dataset_path, metric)
@@ -100,6 +101,18 @@ def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handler
         }
         pending = set(fut_map.keys())
         while pending:
+            if control_state and control_state.get("cancel_requested"):
+                for fut in pending:
+                    fut.cancel()
+                if progress_callback is not None:
+                    progress_callback("stopping", len(results), len(metrics), len(pending), None, None, [], None)
+                executor.shutdown(wait=False, cancel_futures=True)
+                break
+            if control_state and control_state.get("pause_requested"):
+                if progress_callback is not None:
+                    progress_callback("paused", len(results), len(metrics), len(pending), None, None, [], None)
+                time.sleep(0.2)
+                continue
             done, pending = wait(pending, timeout=1.0, return_when=FIRST_COMPLETED)
             running_ids = []
             for fut in fut_map:
@@ -124,5 +137,7 @@ def run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handler
                 if progress_callback is not None:
                     elapsed_seconds = payload.get("elapsed_seconds") if isinstance(payload, dict) else None
                     progress_callback("completed", len(results), len(metrics), len(pending), metric_id, ok, running_ids, elapsed_seconds)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
     results.sort(key=lambda t: t[0])
     return results
