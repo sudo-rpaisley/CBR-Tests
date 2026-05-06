@@ -8,6 +8,7 @@ from runner.run_plan_helpers import (
     configure_signal_handlers,
     detect_ip_fields,
     parse_run_plan_args,
+    update_live_header,
 )
 
 
@@ -90,3 +91,16 @@ def test_parse_run_plan_args_reads_required_case(monkeypatch):
     args = parse_run_plan_args()
     assert args.case == "case.json"
     assert args.case_id == "ad_hoc_case"
+
+
+def test_update_live_header_formats_and_forwards(monkeypatch):
+    captured = {}
+
+    def _fake_set_live_header(lines):
+        captured["lines"] = lines
+
+    monkeypatch.setattr("runner.run_plan_helpers.set_live_header", _fake_set_live_header)
+    update_live_header(["A"], ["B"], width=12)
+    assert captured["lines"][0] == "=" * 12
+    assert any("A" in line for line in captured["lines"])
+    assert any("B" in line for line in captured["lines"])

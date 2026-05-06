@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy
+from runner.progress import set_live_header
 
 SOURCE_FIELD_CANDIDATES = ("Source IP", "Src IP", "source_ip", "src_ip")
 DESTINATION_FIELD_CANDIDATES = ("Destination IP", "Dst IP", "destination_ip", "dst_ip")
@@ -130,3 +131,11 @@ def parse_run_plan_args() -> argparse.Namespace:
         help="Optional worker count override. Use 1 to force serial execution.",
     )
     return parser.parse_args()
+
+
+def update_live_header(
+    lines: list[str],
+    status_lines: list[str] | None = None,
+    width: int = 108,
+) -> None:
+    set_live_header(build_title_box_lines(lines, status_lines, width=width))

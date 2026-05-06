@@ -19,6 +19,7 @@ from runner.run_plan_helpers import (
     configure_signal_handlers,
     detect_ip_fields,
     parse_run_plan_args,
+    update_live_header,
     write_outcome,
 )
 
@@ -77,7 +78,7 @@ def main():
     def _print_startup_banner():
         base_lines = _base_header_lines(include_dataset_size=True)
         _print_title_box(base_lines)
-        set_live_header(_build_title_box_lines(base_lines, ["Status: Initializing run context"]))
+        update_live_header(base_lines, ["Status: Initializing run context"])
 
     def _print_phase_status(phase: str, detail: str = ""):
         timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
@@ -91,12 +92,12 @@ def main():
             elapsed = time.perf_counter() - started
             overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0)
             base_lines = _base_header_lines()
-            set_live_header(_build_title_box_lines(base_lines, [
+            update_live_header(base_lines, [
                 f"Status: Loading dataset",
                 f"Elapsed: {elapsed:0.1f}s | Chunk: {chunk_idx} | Rows Loaded: {total_rows:,}",
                 f"Overall Progress: 0/{len(metrics)} metrics completed",
                 overall_header,
-            ]))
+            ])
             print_live_status(
                 render_live_taxonomy(
                     metrics,
@@ -142,7 +143,7 @@ def main():
             f"Source Field: {source_field}",
             f"Destination Field: {destination_field}",
         ])
-        set_live_header(_build_title_box_lines([
+        update_live_header([
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
             f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]}",
@@ -153,7 +154,7 @@ def main():
         ], [
             "Status: Dataset loaded",
             f"Overall Progress: 0/{len(metrics)} metrics completed",
-        ]))
+        ])
     metric_handlers = build_metric_handlers(shared_tabular_df, load_tabular_dataset)
 
     execution_policy = plan.get("execution_policy", {})
