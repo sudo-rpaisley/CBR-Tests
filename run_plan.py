@@ -89,12 +89,13 @@ def main():
         def _chunk_progress(chunk_idx: int, total_rows: int):
             elapsed = time.perf_counter() - started
             overall_header = render_overall_progress_line(0, len(metrics), 0.0, 0.0)
+            compact_overall_header = overall_header.replace("Overall  ", "", 1)
             base_lines = _base_header_lines()
             update_live_header(base_lines, [
                 f"Status: Loading dataset",
                 f"Elapsed: {elapsed:0.1f}s | Chunk: {chunk_idx} | Rows Loaded: {total_rows:,}",
                 f"Overall Progress: 0/{len(metrics)} metrics completed",
-                overall_header,
+                compact_overall_header,
             ])
             print_live_status(
                 render_live_taxonomy(
