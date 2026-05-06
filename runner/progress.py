@@ -72,7 +72,8 @@ def print_live_status(task_line: str, overall_line: str, warning_line: str | Non
         block_lines.append(overall_line)
     if warning_line is not None:
         block_lines.append(warning_line)
-    print("\x1b[H\x1b[J", end="")
+    # Move cursor to home without full-screen clear to reduce visible flicker.
+    print("\x1b[H", end="")
     if header_block:
         print(header_block)
     print("\n".join(block_lines), end="", flush=True)
