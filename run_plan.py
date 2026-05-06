@@ -250,6 +250,11 @@ def main():
         running_started_at: dict[str, float] = {}
         def _parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds):
             active_running = set(running_ids or [])
+            if event == "stopping":
+                for m in metrics:
+                    mid = m["metric_id"]
+                    if mid not in completed_statuses:
+                        completed_statuses[mid] = "stopping"
             for m in metrics:
                 mid = m["metric_id"]
                 if mid in completed_statuses:
@@ -277,7 +282,7 @@ def main():
                 f"Source Path: {dataset_path}",
                 f"Destination Output: {output_path}",
             ], [
-                f"Status: Running ({mode})",
+                f"Status: {'Stopping' if event == 'stopping' else f'Running ({mode})'}",
                 f"Overall Progress: {completed}/{total} metrics completed",
                 f"Pending Metrics: {pending}",
                 overall_header,

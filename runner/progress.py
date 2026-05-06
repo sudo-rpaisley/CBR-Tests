@@ -7,6 +7,7 @@ ANSI_COLORS = {
     "success": "\x1b[32m",
     "running": "\x1b[34m",
     "pending": "\x1b[33m",
+    "stopping": "\x1b[33m",
     "failed": "\x1b[31m",
     "cancelled": "\x1b[31m",
 }
