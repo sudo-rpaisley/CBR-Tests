@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 import sys
@@ -19,6 +18,7 @@ from runner.run_plan_helpers import (
     build_title_box_lines,
     configure_signal_handlers,
     detect_ip_fields,
+    parse_run_plan_args,
     write_outcome,
 )
 
@@ -44,17 +44,7 @@ def dispatch_metric_with_handlers(dataset_path: Path, metric: dict, metric_handl
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Run a test plan from a case JSON."
-    )
-    parser.add_argument("--case", required=True, help="Path to case JSON or plan JSON file")
-    parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
-    parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
-    parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
-    parser.add_argument("--taxonomy-file", help="Optional taxonomy JSON used to order metrics")
-    parser.add_argument("--taxonomy-strict", action="store_true", help="Fail if enabled plan metrics are missing from taxonomy order")
-    parser.add_argument("--workers", type=int, default=None, help="Optional worker count override. Use 1 to force serial execution.")
-    args = parser.parse_args()
+    args = parse_run_plan_args()
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
     control_state = {"pause_requested": False, "cancel_requested": False}

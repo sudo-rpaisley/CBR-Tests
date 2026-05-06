@@ -1,3 +1,4 @@
+import argparse
 import json
 import signal
 import time
@@ -108,3 +109,24 @@ def configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> 
         signal.signal(signal.SIGUSR1, _handle_sigusr1)
     if hasattr(signal, "SIGUSR2"):
         signal.signal(signal.SIGUSR2, _handle_sigusr2)
+
+
+def parse_run_plan_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run a test plan from a case JSON.")
+    parser.add_argument("--case", required=True, help="Path to case JSON or plan JSON file")
+    parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
+    parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
+    parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
+    parser.add_argument("--taxonomy-file", help="Optional taxonomy JSON used to order metrics")
+    parser.add_argument(
+        "--taxonomy-strict",
+        action="store_true",
+        help="Fail if enabled plan metrics are missing from taxonomy order",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="Optional worker count override. Use 1 to force serial execution.",
+    )
+    return parser.parse_args()

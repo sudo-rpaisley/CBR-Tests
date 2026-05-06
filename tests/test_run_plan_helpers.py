@@ -7,6 +7,7 @@ from runner.run_plan_helpers import (
     build_title_box_lines,
     configure_signal_handlers,
     detect_ip_fields,
+    parse_run_plan_args,
 )
 
 
@@ -82,3 +83,10 @@ def test_configure_signal_handlers_registers_sigint(monkeypatch):
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
     configure_signal_handlers(control_state, shutdown_requested)
     assert any(call[0].name == "SIGINT" for call in calls)
+
+
+def test_parse_run_plan_args_reads_required_case(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["run_plan.py", "--case", "case.json"])
+    args = parse_run_plan_args()
+    assert args.case == "case.json"
+    assert args.case_id == "ad_hoc_case"
