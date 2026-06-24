@@ -16,7 +16,8 @@ Primary entrypoint:
 ## Requirements
 
 - Python 3.11+
-- Dependencies installed in your environment (for example via your project’s requirements/venv process).
+- Runtime dependencies installed with `python -m pip install -r requirements.txt`.
+- Test/development dependencies installed with `python -m pip install -r requirements-dev.txt`.
 
 ## Quick start
 

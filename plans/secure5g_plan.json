@@ -227,6 +227,262 @@
         "store_summary": true,
         "comparison_key": "slice_identifier_consistency_profile_v1"
       }
+    },
+    {
+      "metric_id": "missing_value_ratio",
+      "label": "Missing Value Ratio",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "data_quality",
+        "missing_value_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Tot Fwd Pkts",
+          "Tot Bwd Pkts",
+          "Flow Byts/s",
+          "Flow Pkts/s",
+          "Pkt Len Mean"
+        ]
+      },
+      "calculation": {
+        "method": "missing_value_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "missing_value_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "duplicate_row_ratio",
+      "label": "Duplicate Row Ratio",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "data_quality",
+        "duplicate_row_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "subset_fields": [
+          "Src IP",
+          "Dst IP",
+          "Src Port",
+          "Dst Port",
+          "Flow Duration"
+        ]
+      },
+      "calculation": {
+        "method": "duplicate_row_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "duplicate_row_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "label_coverage_ratio",
+      "label": "Label Coverage Ratio",
+      "taxonomy_path": [
+        "label_fidelity",
+        "label_completeness",
+        "label_coverage_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "label_field": "Label"
+      },
+      "calculation": {
+        "method": "label_coverage_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "label_coverage_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "class_imbalance_score",
+      "label": "Class Imbalance Score",
+      "taxonomy_path": [
+        "label_fidelity",
+        "label_distribution",
+        "class_imbalance_score"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "label_field": "Label"
+      },
+      "calculation": {
+        "method": "class_imbalance_score",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "class_imbalance_score_v1"
+      }
+    },
+    {
+      "metric_id": "per_slice_sample_coverage_ratio",
+      "label": "Per-Slice Sample Coverage Ratio",
+      "taxonomy_path": [
+        "slice_representation",
+        "slice_coverage",
+        "per_slice_sample_coverage_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice",
+        "expected_slice_ids": [
+          "slice1",
+          "slice2"
+        ]
+      },
+      "calculation": {
+        "method": "per_slice_sample_coverage_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "per_slice_sample_coverage_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "per_slice_feature_coverage_ratio",
+      "label": "Per-Slice Feature Coverage Ratio",
+      "taxonomy_path": [
+        "slice_representation",
+        "slice_coverage",
+        "per_slice_feature_coverage_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice",
+        "candidate_fields": [
+          "Flow Duration",
+          "Tot Fwd Pkts",
+          "Tot Bwd Pkts",
+          "Flow Byts/s",
+          "Flow Pkts/s",
+          "Pkt Len Mean"
+        ]
+      },
+      "calculation": {
+        "method": "per_slice_feature_coverage_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "per_slice_feature_coverage_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "per_slice_class_coverage_ratio",
+      "label": "Per-Slice Class Coverage Ratio",
+      "taxonomy_path": [
+        "slice_representation",
+        "slice_coverage",
+        "per_slice_class_coverage_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice",
+        "label_field": "Label"
+      },
+      "calculation": {
+        "method": "per_slice_class_coverage_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "per_slice_class_coverage_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "slice_distribution_imbalance_score",
+      "label": "Slice Distribution Imbalance Score",
+      "taxonomy_path": [
+        "slice_representation",
+        "slice_balance",
+        "slice_distribution_imbalance_score"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice"
+      },
+      "calculation": {
+        "method": "slice_distribution_imbalance_score",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "slice_distribution_imbalance_score_v1"
+      }
+    },
+    {
+      "metric_id": "cross_slice_duplicate_overlap_ratio",
+      "label": "Cross-Slice Duplicate Overlap Ratio",
+      "taxonomy_path": [
+        "slice_representation",
+        "slice_isolation",
+        "cross_slice_duplicate_overlap_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice",
+        "subset_fields": [
+          "Src IP",
+          "Dst IP",
+          "Src Port",
+          "Dst Port"
+        ]
+      },
+      "calculation": {
+        "method": "cross_slice_duplicate_overlap_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "cross_slice_duplicate_overlap_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "cross_slice_identifier_leakage_ratio",
+      "label": "Cross-Slice Identifier Leakage Ratio",
+      "taxonomy_path": [
+        "slice_representation",
+        "slice_isolation",
+        "cross_slice_identifier_leakage_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "slice_field": "Slice",
+        "identifier_fields": [
+          "Src IP",
+          "Dst IP"
+        ]
+      },
+      "calculation": {
+        "method": "cross_slice_identifier_leakage_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "cross_slice_identifier_leakage_ratio_v1"
+      }
     }
   ],
   "plan_taxonomy": {
@@ -236,6 +492,7 @@
           "_metrics": [
             {
               "metric_id": "column_quality_profile",
+              "label": "Column Quality Profile",
               "enabled": true
             }
           ]
@@ -244,11 +501,23 @@
     },
     "dataset_heuristics": {
       "protocol_and_network_realism": {
+        "address_validity": {
+          "reserved_address_misuse": {
+            "_metrics": [
+              {
+                "metric_id": "reserved_ip_address_profile",
+                "label": "Reserved IP Address Profile",
+                "enabled": true
+              }
+            ]
+          }
+        },
         "port_validity": {
           "valid_port_range": {
             "_metrics": [
               {
                 "metric_id": "valid_port_range_profile",
+                "label": "Valid Port Range Profile",
                 "enabled": true
               }
             ]
@@ -257,6 +526,7 @@
             "_metrics": [
               {
                 "metric_id": "service_port_consistency_profile",
+                "label": "Service-Port Consistency Profile",
                 "enabled": true
               }
             ]
@@ -267,6 +537,7 @@
             "_metrics": [
               {
                 "metric_id": "valid_slice_identifier_profile",
+                "label": "Valid Slice Identifier Profile",
                 "enabled": true
               }
             ]
@@ -275,20 +546,119 @@
             "_metrics": [
               {
                 "metric_id": "slice_identifier_consistency_profile",
+                "label": "Slice Identifier Consistency Profile",
                 "enabled": true
               }
             ]
           }
+        }
+      }
+    },
+    "statistical_fidelity": {
+      "data_quality": {
+        "missing_value_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "missing_value_ratio",
+              "label": "Missing Value Ratio",
+              "enabled": true
+            }
+          ]
         },
-        "address_validity": {
-          "reserved_address_misuse": {
-            "_metrics": [
-              {
-                "metric_id": "reserved_ip_address_profile",
-                "enabled": true
-              }
-            ]
-          }
+        "duplicate_row_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "duplicate_row_ratio",
+              "label": "Duplicate Row Ratio",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "label_fidelity": {
+      "label_completeness": {
+        "label_coverage_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "label_coverage_ratio",
+              "label": "Label Coverage Ratio",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "label_distribution": {
+        "class_imbalance_score": {
+          "_metrics": [
+            {
+              "metric_id": "class_imbalance_score",
+              "label": "Class Imbalance Score",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "slice_representation": {
+      "slice_coverage": {
+        "per_slice_sample_coverage_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "per_slice_sample_coverage_ratio",
+              "label": "Per-Slice Sample Coverage Ratio",
+              "enabled": true
+            }
+          ]
+        },
+        "per_slice_feature_coverage_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "per_slice_feature_coverage_ratio",
+              "label": "Per-Slice Feature Coverage Ratio",
+              "enabled": true
+            }
+          ]
+        },
+        "per_slice_class_coverage_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "per_slice_class_coverage_ratio",
+              "label": "Per-Slice Class Coverage Ratio",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "slice_balance": {
+        "slice_distribution_imbalance_score": {
+          "_metrics": [
+            {
+              "metric_id": "slice_distribution_imbalance_score",
+              "label": "Slice Distribution Imbalance Score",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "slice_isolation": {
+        "cross_slice_duplicate_overlap_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "cross_slice_duplicate_overlap_ratio",
+              "label": "Cross-Slice Duplicate Overlap Ratio",
+              "enabled": true
+            }
+          ]
+        },
+        "cross_slice_identifier_leakage_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "cross_slice_identifier_leakage_ratio",
+              "label": "Cross-Slice Identifier Leakage Ratio",
+              "enabled": true
+            }
+          ]
         }
       }
     }
