@@ -51,6 +51,74 @@ python run_plan.py --case cases/example_case.json
 - `--workers`: optional worker override.
   - `1` forces serial mode.
   - `>1` uses parallel mode.
+- `--field-translation`: optional translation JSON path. Overrides sidecar lookup.
+- `--no-update-field-translation`: run without creating or updating sidecar translation templates.
+- `--field-translation-dry-run`: validate translations/templates and report skipped metrics without running metrics.
+- `--field-translation-report`: optional JSON report path for field availability and skipped metric details.
+- `--field-translation-text-report`: optional text report path for a human-readable field translation summary.
+- `--field-translation-markdown-report`: optional Markdown report path for field translation validation details.
+- `--yes-field-translation-sidecar`: create/update sidecars without an interactive yes/no prompt.
+
+
+## Dataset field translations
+
+Datasets can use different column names for the same concepts. Add a small JSON
+translation file per dataset so metrics can keep using the plan's canonical field
+names. The runner resolves canonical test fields to supplied dataset columns at
+metric dispatch time; it does not rename or rewrite the loaded dataset columns.
+Translation files use one standard shape: `test_to_dataset_fields`. The key is
+the canonical test/plan field, and the value is the supplied dataset column:
+
+```json
+{
+  "schema_version": 1,
+  "test_to_dataset_fields": {
+    "Source IP": "Src IP",
+    "Destination IP": "Dst IP",
+    "Source Port": "Src Port",
+    "Destination Port": "Dst Port"
+  }
+}
+```
+
+By default, the runner looks for a sidecar file next to the dataset named
+`<dataset-stem>.field_translation.json`. If a sidecar needs to be created or
+updated, interactive runs prompt for yes/no confirmation. Non-interactive runs
+skip the update unless `--yes-field-translation-sidecar` is provided. The
+generated sidecar uses `test_to_dataset_fields` so every canonical field
+required by the enabled plan metrics is listed for users to fill in:
+
+```json
+{
+  "test_to_dataset_fields": {
+    "Source IP": "",
+    "Destination IP": "",
+    "timestamp": ""
+  }
+}
+```
+
+If a sidecar already exists, it is only updated when enabled metrics require a
+field that is not already listed in the template. To run without creating or
+updating sidecars, pass `--no-update-field-translation`.
+
+Reference a non-sidecar translation file from a case with
+`dataset.field_translation.path`:
+
+```json
+{
+  "dataset": {
+    "path": "../datasets/example.csv",
+    "field_translation": {"path": "../field_translations/example.json"}
+  }
+}
+```
+
+When running a plan directly, pass `--field-translation <path>`. Use `--field-translation-dry-run` to create/update templates, report missing mappings, and exit before metrics run. Add `--field-translation-report <path>` to write the machine-readable validation report, `--field-translation-text-report <path>` to write a human-readable summary, and `--field-translation-markdown-report <path>` to write a Markdown report.
+
+The runner also auto-detects common aliases and Wireshark/tshark packet headings in tabular exports, such as `Src IP`, `source_ip`, `frame.time_epoch`, `ip.src`, `ip.dst`, `tcp.srcport`, and `tcp.dstport`, and maps them to the canonical fields used by the tests. Generated sidecar templates are pre-populated with those detected headings when possible and include `schema_version`, `field_metadata`, and per-field `mapping_source` values so users can see what was auto-filled versus left as a template. Explicit translation files still take precedence over auto-detected headings. Raw `.pcap`/`.pcapng` inputs continue to be handled directly by packet-aware metrics.
+
+Metrics can declare explicit field needs with `field_requirements`, using `required` and `optional` lists. Missing required fields cause that metric to be skipped with a warning while other runnable metrics continue. Skipped metrics are included in the outcome JSON and, when `--field-translation-report` is provided, in the report file. Example translation files live under `examples/field_translations/`; cases are not modified to point at examples by default. See `docs/field_translation_workflows.md` for common commands, `docs/field_translation_metric_audit.md` for metric authoring guidance, and `docs/field_translation_sidecar_schema.md` for the sidecar schema reference.
 
 ## Execution behavior
 

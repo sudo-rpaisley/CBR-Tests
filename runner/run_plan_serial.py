@@ -25,6 +25,8 @@ def run_serial_metrics(
     run_start_perf: float,
     completed_statuses: dict,
     completed_durations: dict,
+    skipped_metrics: list[dict] | None = None,
+    all_metrics: list[dict] | None = None,
 ):
     overall_status = "success"
     test_results = {}
@@ -90,7 +92,7 @@ def run_serial_metrics(
                 metric_results.append(metric_record)
                 outcome = build_outcome(
                     "failed", case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
-                    metric_results, test_results, run_started_at, run_start_perf, column_validations
+                    metric_results, test_results, run_started_at, run_start_perf, column_validations, skipped_metrics=skipped_metrics, all_metrics=all_metrics
                 )
                 write_outcome(output_path, outcome)
                 if sys.stdout.isatty():
@@ -110,6 +112,6 @@ def run_serial_metrics(
 
     outcome = build_outcome(
         overall_status, case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
-        metric_results, test_results, run_started_at, run_start_perf, column_validations
+        metric_results, test_results, run_started_at, run_start_perf, column_validations, skipped_metrics=skipped_metrics, all_metrics=all_metrics
     )
     return False, outcome

@@ -45,6 +45,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "column_quality_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Byts/s",
+          "Flow Duration",
+          "Flow Pkts/s",
+          "Pkt Len Mean",
+          "Tot Bwd Pkts",
+          "Tot Fwd Pkts"
+        ],
+        "optional": []
       }
     },
     {
@@ -79,6 +90,15 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "reserved_ip_address_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Destination IP",
+          "Dst IP",
+          "Source IP",
+          "Src IP"
+        ],
+        "optional": []
       }
     },
     {
@@ -108,6 +128,13 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "valid_port_range_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Dst Port",
+          "Src Port"
+        ],
+        "optional": []
       }
     },
     {
@@ -143,6 +170,13 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "service_port_consistency_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Dst Port",
+          "Src Port"
+        ],
+        "optional": []
       }
     },
     {
@@ -175,6 +209,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "valid_slice_identifier_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Slice"
+        ],
+        "optional": []
       }
     },
     {
@@ -226,6 +266,16 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "slice_identifier_consistency_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Label",
+          "Slice",
+          "attack_type",
+          "source_file",
+          "traffic_group"
+        ],
+        "optional": []
       }
     },
     {
@@ -255,6 +305,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "missing_value_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Byts/s",
+          "Flow Duration",
+          "Flow Pkts/s",
+          "Pkt Len Mean",
+          "Tot Bwd Pkts",
+          "Tot Fwd Pkts"
+        ],
+        "optional": []
       }
     },
     {
@@ -283,6 +344,16 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "duplicate_row_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Dst IP",
+          "Dst Port",
+          "Flow Duration",
+          "Src IP",
+          "Src Port"
+        ],
+        "optional": []
       }
     },
     {
@@ -305,6 +376,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "label_coverage_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Label"
+        ],
+        "optional": []
       }
     },
     {
@@ -327,6 +404,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "class_imbalance_score_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Label"
+        ],
+        "optional": []
       }
     },
     {
@@ -353,6 +436,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "per_slice_sample_coverage_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Slice"
+        ],
+        "optional": []
       }
     },
     {
@@ -383,6 +472,18 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "per_slice_feature_coverage_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Byts/s",
+          "Flow Duration",
+          "Flow Pkts/s",
+          "Pkt Len Mean",
+          "Slice",
+          "Tot Bwd Pkts",
+          "Tot Fwd Pkts"
+        ],
+        "optional": []
       }
     },
     {
@@ -406,6 +507,13 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "per_slice_class_coverage_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Label",
+          "Slice"
+        ],
+        "optional": []
       }
     },
     {
@@ -428,6 +536,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "slice_distribution_imbalance_score_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Slice"
+        ],
+        "optional": []
       }
     },
     {
@@ -456,6 +570,16 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "cross_slice_duplicate_overlap_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Dst IP",
+          "Dst Port",
+          "Slice",
+          "Src IP",
+          "Src Port"
+        ],
+        "optional": []
       }
     },
     {
@@ -482,6 +606,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "cross_slice_identifier_leakage_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Dst IP",
+          "Slice",
+          "Src IP"
+        ],
+        "optional": []
       }
     }
   ],

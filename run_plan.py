@@ -14,6 +14,22 @@ from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_m
 from runner.progress import render_overall_progress_line, print_live_status, set_live_header
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.tabular import load_tabular_dataset
+from runner.field_translation import (
+    available_translated_fields,
+    default_field_translation_path,
+    detect_standard_pcap_field_translation_for_dataset,
+    ensure_field_translation_file,
+    load_field_translation,
+    merge_field_translations,
+    metrics_missing_required_fields,
+    read_tabular_dataset_columns,
+    build_field_translation_report,
+    format_field_translation_markdown_report,
+    format_field_translation_report,
+    metrics_missing_optional_fields,
+    write_field_translation_report,
+    write_text_report,
+)
 from runner.run_plan_helpers import (
     build_base_header_lines,
     build_outcome,
@@ -46,6 +62,19 @@ def dispatch_metric_with_handlers(dataset_path: Path, metric: dict, metric_handl
     return handler(dataset_path, metric)
 
 
+def _confirm_sidecar_update(action: str, path: Path, args) -> bool:
+    if args.no_update_field_translation:
+        return False
+    if args.yes_field_translation_sidecar or args.field_translation_dry_run:
+        return True
+    if not sys.stdin.isatty():
+        print(f"WARNING: Field translation sidecar {action} skipped in non-interactive mode: {path}")
+        print("         Re-run with --yes-field-translation-sidecar to allow this update.")
+        return False
+    answer = input(f"Field translation sidecar {path} needs to be {action}. Continue? [y/N] ").strip().lower()
+    return answer in {"y", "yes"}
+
+
 def main():
     args = parse_run_plan_args()
 
@@ -57,15 +86,112 @@ def main():
     configure_signal_handlers(control_state, shutdown_requested)
 
     case_file = Path(args.case).resolve()
-    plan, dataset_path, output_path, case_id = load_case_or_plan(case_file, args.dataset, args.output, args.case_id)
-
+    plan, dataset_path, output_path, case_id, translation_path = load_case_or_plan(
+        case_file, args.dataset, args.output, args.case_id, args.field_translation
+    )
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
+    all_enabled_metrics = list(metrics)
     if args.taxonomy_file:
         taxonomy_ranks = load_taxonomy_order(Path(args.taxonomy_file).expanduser().resolve())
         metrics = order_metrics_by_taxonomy(metrics, taxonomy_ranks, strict=args.taxonomy_strict)
+        all_enabled_metrics = list(metrics)
     if not metrics:
         raise ValueError("The plan does not contain any enabled metrics.")
+
+    dataset_columns = read_tabular_dataset_columns(dataset_path)
+    detected_translation = detect_standard_pcap_field_translation_for_dataset(dataset_path)
+    explicit_translation_path = translation_path is not None
+    sidecar_status = "explicit" if explicit_translation_path else "none"
+    if translation_path is None:
+        sidecar_path = default_field_translation_path(dataset_path)
+        if sidecar_path.exists():
+            translation_path = sidecar_path
+            sidecar_status = "existing"
+        elif _confirm_sidecar_update("created", sidecar_path, args):
+            translation_path = ensure_field_translation_file(
+                dataset_path=dataset_path,
+                plan=plan,
+                detected_dataset_to_test=detected_translation,
+            )
+            sidecar_status = "created" if translation_path is not None else "none"
+
+    explicit_translation = load_field_translation(translation_path)
+    field_translation = merge_field_translations(detected_translation, explicit_translation)
+
+    if not explicit_translation_path and translation_path is not None:
+        if _confirm_sidecar_update("updated", translation_path, args):
+            before_payload = translation_path.read_text(encoding="utf-8") if translation_path.exists() else None
+            ensure_field_translation_file(
+                dataset_path=dataset_path,
+                plan=plan,
+                detected_dataset_to_test=detected_translation,
+            )
+            after_payload = translation_path.read_text(encoding="utf-8") if translation_path.exists() else None
+            if sidecar_status != "created":
+                sidecar_status = "updated" if before_payload != after_payload else "unchanged"
+        elif sidecar_status == "none":
+            sidecar_status = "suppressed"
+
+    skipped_metrics = {}
+    missing_optional_fields = {}
+    if dataset_columns:
+        available_fields = available_translated_fields(dataset_columns, field_translation)
+        skipped_metrics = metrics_missing_required_fields(metrics, available_fields)
+        missing_optional_fields = metrics_missing_optional_fields(metrics, available_fields)
+        if skipped_metrics:
+            use_color = sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"}
+            yellow = "\033[33m" if use_color else ""
+            reset = "\033[0m" if use_color else ""
+            print(f"{yellow}WARNING: Skipping metrics with missing required field mappings:{reset}")
+            for metric_id, missing_fields in skipped_metrics.items():
+                print(f"  {yellow}[SKIPPED]{reset} {metric_id}: {', '.join(missing_fields)}")
+            metrics = [m for m in metrics if m["metric_id"] not in skipped_metrics]
+            if not metrics and not args.field_translation_dry_run:
+                raise ValueError("No enabled metrics can run because required field mappings are missing.")
+
+    field_translation_report = None
+    if dataset_columns:
+        field_translation_report = build_field_translation_report(
+            dataset_path=dataset_path,
+            translation_path=translation_path,
+            plan=plan,
+            metrics=all_enabled_metrics,
+            available_fields=available_fields if dataset_columns else set(),
+            skipped_metrics=skipped_metrics,
+            dataset_columns=dataset_columns,
+            detected_translation=detected_translation,
+            explicit_translation=explicit_translation,
+            field_translation=field_translation,
+            sidecar_status=sidecar_status,
+            missing_optional_fields=missing_optional_fields,
+        )
+        human_report = format_field_translation_report(
+            field_translation_report,
+            use_color=sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"},
+        )
+        if args.field_translation_report:
+            write_field_translation_report(Path(args.field_translation_report).expanduser().resolve(), field_translation_report)
+        if args.field_translation_text_report:
+            write_text_report(Path(args.field_translation_text_report).expanduser().resolve(), human_report)
+        if args.field_translation_markdown_report:
+            write_text_report(
+                Path(args.field_translation_markdown_report).expanduser().resolve(),
+                format_field_translation_markdown_report(field_translation_report),
+            )
+
+    if args.field_translation_dry_run:
+        if translation_path is not None:
+            print(f"Field translation file: {translation_path}")
+        else:
+            print("Field translation file: n/a")
+        if field_translation_report:
+            print(human_report)
+        if skipped_metrics:
+            print("Dry run complete: some metrics would be skipped due to missing field mappings.")
+        else:
+            print("Dry run complete: all enabled metrics have required field mappings.")
+        return
 
     def _print_title_box(lines: list[str]):
         for line in build_title_box_lines(lines):
@@ -114,7 +240,7 @@ def main():
                 None,
             )
 
-        return load_tabular_dataset(path, progress_callback=_chunk_progress)
+        return load_tabular_dataset(path, progress_callback=_chunk_progress, field_translation=field_translation)
 
     _print_startup_banner()
     _print_phase_status("Startup", "Initializing run context")
@@ -149,7 +275,10 @@ def main():
             "Status: Dataset loaded",
             f"Overall Progress: 0/{len(metrics)} metrics completed",
         ])
-    metric_handlers = build_metric_handlers(shared_tabular_df, load_tabular_dataset)
+    def _load_dataset_for_metric(path: Path):
+        return load_tabular_dataset(path, field_translation=field_translation)
+
+    metric_handlers = build_metric_handlers(shared_tabular_df, _load_dataset_for_metric, field_translation)
 
     execution_policy = plan.get("execution_policy", {})
     fail_fast = execution_policy.get("fail_fast", True)
@@ -273,7 +402,9 @@ def main():
         # finalize immediately for parallel path
         outcome = build_outcome(
             overall_status, case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
-            metric_results, test_results, run_started_at, run_start_perf, column_validations
+            metric_results, test_results, run_started_at, run_start_perf, column_validations,
+            skipped_metrics=[{"metric_id": mid, "status": "skipped", "reason": "missing_field_mappings", "missing_fields": fields} for mid, fields in skipped_metrics.items()],
+            all_metrics=all_enabled_metrics,
         )
         write_outcome(output_path, outcome)
         _print_phase_status("Completed")
@@ -294,6 +425,8 @@ def main():
         run_start_perf=run_start_perf,
         completed_statuses=completed_statuses,
         completed_durations=completed_durations,
+        skipped_metrics=[{"metric_id": mid, "status": "skipped", "reason": "missing_field_mappings", "missing_fields": fields} for mid, fields in skipped_metrics.items()],
+        all_metrics=all_enabled_metrics,
     )
     if early_returned:
         return

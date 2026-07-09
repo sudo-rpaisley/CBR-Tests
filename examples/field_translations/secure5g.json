@@ -1,0 +1,13 @@
+{
+  "description": "Translate Secure5G CSV columns into field names used by the Secure5G test plan.",
+  "test_to_dataset_fields": {
+    "Source IP": "Src IP",
+    "Destination IP": "Dst IP",
+    "Source Port": "Src Port",
+    "Destination Port": "Dst Port",
+    "timestamp": "Timestamp",
+    "label": "Label",
+    "slice": "Slice"
+  },
+  "schema_version": 1
+}

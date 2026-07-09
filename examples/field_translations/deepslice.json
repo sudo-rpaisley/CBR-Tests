@@ -1,0 +1,9 @@
+{
+  "description": "Translate DeepSlice CSV columns into field names used by the DeepSlice test plan.",
+  "test_to_dataset_fields": {
+    "slice": "Slice",
+    "label": "Label",
+    "timestamp": "Timestamp"
+  },
+  "schema_version": 1
+}
