@@ -1,99 +1,373 @@
 {
-
   "plan_meta": {
-
     "plan_id": "tp-pearson-deepslice-v1",
-
     "name": "DeepSlice Pearson Correlation Plan",
-
     "version": "1.1.0",
-
     "description": "Minimal Pearson correlation test plan with column validation for candidate fields."
-
   },
-
   "applicability": {
-
-    "dataset_formats": ["csv"],
-
+    "dataset_formats": [
+      "csv"
+    ],
     "requires_numeric_fields": true,
-
     "minimum_numeric_fields": 2
-
   },
-
   "execution_policy": {
-
     "fail_fast": true,
-
     "allow_skips": false,
-
     "sample_mode": "full"
-
   },
-
   "metrics": [
-
     {
-
       "metric_id": "pearson_correlation_profile",
-
       "label": "Pearson Correlation Profile",
-
       "taxonomy_path": [
-
         "dataset_metrics",
-
         "statistical_fidelity",
-
         "pearson_correlation"
-
       ],
-
       "enabled": true,
-
       "input_requirements": {
-
         "candidate_fields": [
-
           "GBR (Input 6)",
-
           "Packet Loss Rate (Reliability)",
-
           "Packet Delay Budget (Latency)"
-
         ],
-
         "minimum_runnable_fields": 2
-
       },
-
       "calculation": {
-
         "method": "pairwise_pearson_matrix",
-
         "parameters": {
-
           "missing_value_policy": "drop_pairwise"
-
         }
-
       },
-
       "retention": {
-
         "store_raw_output": true,
-
         "store_summary": true,
-
         "store_column_validation": true,
-
         "comparison_key": "pearson_profile_v1"
-
       }
-
+    },
+    {
+      "metric_id": "missing_value_ratio",
+      "label": "Missing Value Ratio",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "data_quality",
+        "missing_value_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ]
+      },
+      "calculation": {
+        "method": "missing_value_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "missing_value_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "duplicate_row_ratio",
+      "label": "Duplicate Row Ratio",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "data_quality",
+        "duplicate_row_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "subset_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ]
+      },
+      "calculation": {
+        "method": "duplicate_row_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "duplicate_row_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "spearman_correlation_matrix_deviation",
+      "label": "Spearman Correlation Matrix Deviation",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "dependency_fidelity",
+        "spearman_correlation_matrix_deviation"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "spearman_correlation_matrix_deviation",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "spearman_correlation_matrix_deviation_v1"
+      }
+    },
+    {
+      "metric_id": "distance_correlation_matrix_deviation",
+      "label": "Distance Correlation Matrix Deviation",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "dependency_fidelity",
+        "distance_correlation_matrix_deviation"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "distance_correlation_matrix_deviation",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "distance_correlation_matrix_deviation_v1"
+      }
+    },
+    {
+      "metric_id": "kolmogorov_smirnov_feature_divergence",
+      "label": "Kolmogorov-Smirnov Feature Divergence",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "kolmogorov_smirnov_feature_divergence"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "kolmogorov_smirnov_feature_divergence",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "kolmogorov_smirnov_feature_divergence_v1"
+      }
+    },
+    {
+      "metric_id": "wasserstein_feature_distance",
+      "label": "Wasserstein Feature Distance",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "wasserstein_feature_distance"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "wasserstein_feature_distance",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "wasserstein_feature_distance_v1"
+      }
+    },
+    {
+      "metric_id": "energy_distance",
+      "label": "Energy Distance",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "energy_distance"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "energy_distance",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "energy_distance_v1"
+      }
+    },
+    {
+      "metric_id": "maximum_mean_discrepancy",
+      "label": "Maximum Mean Discrepancy",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "maximum_mean_discrepancy"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "GBR (Input 6)",
+          "Packet Loss Rate (Reliability)",
+          "Packet Delay Budget (Latency)"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "maximum_mean_discrepancy",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "maximum_mean_discrepancy_v1"
+      }
     }
-
-  ]
-
+  ],
+  "plan_taxonomy": {
+    "dataset_metrics": {
+      "statistical_fidelity": {
+        "pearson_correlation": {
+          "_metrics": [
+            {
+              "metric_id": "pearson_correlation_profile",
+              "label": "Pearson Correlation Profile",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "statistical_fidelity": {
+      "data_quality": {
+        "missing_value_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "missing_value_ratio",
+              "label": "Missing Value Ratio",
+              "enabled": true
+            }
+          ]
+        },
+        "duplicate_row_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "duplicate_row_ratio",
+              "label": "Duplicate Row Ratio",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "dependency_fidelity": {
+        "spearman_correlation_matrix_deviation": {
+          "_metrics": [
+            {
+              "metric_id": "spearman_correlation_matrix_deviation",
+              "label": "Spearman Correlation Matrix Deviation",
+              "enabled": true
+            }
+          ]
+        },
+        "distance_correlation_matrix_deviation": {
+          "_metrics": [
+            {
+              "metric_id": "distance_correlation_matrix_deviation",
+              "label": "Distance Correlation Matrix Deviation",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "distributional_fidelity": {
+        "kolmogorov_smirnov_feature_divergence": {
+          "_metrics": [
+            {
+              "metric_id": "kolmogorov_smirnov_feature_divergence",
+              "label": "Kolmogorov-Smirnov Feature Divergence",
+              "enabled": true
+            }
+          ]
+        },
+        "wasserstein_feature_distance": {
+          "_metrics": [
+            {
+              "metric_id": "wasserstein_feature_distance",
+              "label": "Wasserstein Feature Distance",
+              "enabled": true
+            }
+          ]
+        },
+        "energy_distance": {
+          "_metrics": [
+            {
+              "metric_id": "energy_distance",
+              "label": "Energy Distance",
+              "enabled": true
+            }
+          ]
+        },
+        "maximum_mean_discrepancy": {
+          "_metrics": [
+            {
+              "metric_id": "maximum_mean_discrepancy",
+              "label": "Maximum Mean Discrepancy",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    }
+  }
 }

@@ -420,6 +420,466 @@
         "store_summary": true,
         "comparison_key": "slice_identifier_consistency_profile_v1"
       }
+    },
+    {
+      "metric_id": "missing_value_ratio",
+      "label": "Missing Value Ratio",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "data_quality",
+        "missing_value_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ]
+      },
+      "calculation": {
+        "method": "missing_value_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "missing_value_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "duplicate_row_ratio",
+      "label": "Duplicate Row Ratio",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "data_quality",
+        "duplicate_row_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "subset_fields": [
+          "Source IP",
+          "Destination IP",
+          "Source Port",
+          "Destination Port",
+          "Protocol",
+          "Flow Duration"
+        ]
+      },
+      "calculation": {
+        "method": "duplicate_row_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "duplicate_row_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "spearman_correlation_matrix_deviation",
+      "label": "Spearman Correlation Matrix Deviation",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "dependency_fidelity",
+        "spearman_correlation_matrix_deviation"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "spearman_correlation_matrix_deviation",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "spearman_correlation_matrix_deviation_v1"
+      }
+    },
+    {
+      "metric_id": "distance_correlation_matrix_deviation",
+      "label": "Distance Correlation Matrix Deviation",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "dependency_fidelity",
+        "distance_correlation_matrix_deviation"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "distance_correlation_matrix_deviation",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "distance_correlation_matrix_deviation_v1"
+      }
+    },
+    {
+      "metric_id": "kolmogorov_smirnov_feature_divergence",
+      "label": "Kolmogorov-Smirnov Feature Divergence",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "kolmogorov_smirnov_feature_divergence"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "kolmogorov_smirnov_feature_divergence",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "kolmogorov_smirnov_feature_divergence_v1"
+      }
+    },
+    {
+      "metric_id": "wasserstein_feature_distance",
+      "label": "Wasserstein Feature Distance",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "wasserstein_feature_distance"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "wasserstein_feature_distance",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "wasserstein_feature_distance_v1"
+      }
+    },
+    {
+      "metric_id": "energy_distance",
+      "label": "Energy Distance",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "energy_distance"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "energy_distance",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "energy_distance_v1"
+      }
+    },
+    {
+      "metric_id": "maximum_mean_discrepancy",
+      "label": "Maximum Mean Discrepancy",
+      "taxonomy_path": [
+        "statistical_fidelity",
+        "distributional_fidelity",
+        "maximum_mean_discrepancy"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "Flow Duration",
+          "Total Fwd Packets",
+          "Total Backward Packets",
+          "Flow Bytes/s",
+          "Flow Packets/s",
+          "Packet Length Mean"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "calculation": {
+        "method": "maximum_mean_discrepancy",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "maximum_mean_discrepancy_v1"
+      }
+    },
+    {
+      "metric_id": "label_coverage_ratio",
+      "label": "Label Coverage Ratio",
+      "taxonomy_path": [
+        "label_fidelity",
+        "label_completeness",
+        "label_coverage_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "label_field": "Label"
+      },
+      "calculation": {
+        "method": "label_coverage_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "label_coverage_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "class_imbalance_score",
+      "label": "Class Imbalance Score",
+      "taxonomy_path": [
+        "label_fidelity",
+        "label_distribution",
+        "class_imbalance_score"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "label_field": "Label"
+      },
+      "calculation": {
+        "method": "class_imbalance_score",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "class_imbalance_score_v1"
+      }
+    },
+    {
+      "metric_id": "timestamp_parse_success_ratio",
+      "label": "Timestamp Parse Success Ratio",
+      "taxonomy_path": [
+        "temporal_metrics",
+        "temporal_consistency",
+        "timestamp_parse_success_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "timestamp_field": "Timestamp"
+      },
+      "calculation": {
+        "method": "timestamp_parse_success_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "timestamp_parse_success_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "non_negative_duration_ratio",
+      "label": "Non-Negative Duration Ratio",
+      "taxonomy_path": [
+        "temporal_metrics",
+        "temporal_consistency",
+        "non_negative_duration_ratio"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "duration_field": "Flow Duration"
+      },
+      "calculation": {
+        "method": "non_negative_duration_ratio",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "non_negative_duration_ratio_v1"
+      }
+    },
+    {
+      "metric_id": "inter_arrival_time_distribution_divergence",
+      "label": "Inter-Arrival Time Distribution Divergence",
+      "taxonomy_path": [
+        "temporal_metrics",
+        "temporal_behaviour_realism",
+        "traffic_dynamics",
+        "inter_arrival_time_distribution_divergence"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "timestamp_field": "Timestamp"
+      },
+      "calculation": {
+        "method": "inter_arrival_time_distribution_divergence",
+        "parameters": {
+          "minimum_sample_size": 2
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "inter_arrival_time_distribution_divergence_v1"
+      }
+    },
+    {
+      "metric_id": "burstiness_coefficient_deviation",
+      "label": "Burstiness Coefficient Deviation",
+      "taxonomy_path": [
+        "temporal_metrics",
+        "temporal_behaviour_realism",
+        "traffic_dynamics",
+        "burstiness_coefficient_deviation"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "timestamp_field": "Timestamp"
+      },
+      "calculation": {
+        "method": "burstiness_coefficient_deviation",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "burstiness_coefficient_deviation_v1"
+      }
+    },
+    {
+      "metric_id": "hourly_activity_distribution_divergence",
+      "label": "Hourly Activity Distribution Divergence",
+      "taxonomy_path": [
+        "temporal_metrics",
+        "temporal_behaviour_realism",
+        "periodicity",
+        "hourly_activity_distribution_divergence"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "timestamp_field": "Timestamp"
+      },
+      "calculation": {
+        "method": "hourly_activity_distribution_divergence",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "hourly_activity_distribution_divergence_v1"
+      }
+    },
+    {
+      "metric_id": "diurnal_pattern_similarity_score",
+      "label": "Diurnal Pattern Similarity Score",
+      "taxonomy_path": [
+        "temporal_metrics",
+        "temporal_behaviour_realism",
+        "periodicity",
+        "diurnal_pattern_similarity_score"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "timestamp_field": "Timestamp"
+      },
+      "calculation": {
+        "method": "diurnal_pattern_similarity_score",
+        "parameters": {}
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "diurnal_pattern_similarity_score_v1"
+      }
+    },
+    {
+      "metric_id": "periodicity_preservation_score",
+      "label": "Periodicity Preservation Score",
+      "taxonomy_path": [
+        "temporal_metrics",
+        "temporal_behaviour_realism",
+        "periodicity",
+        "periodicity_preservation_score"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "timestamp_field": "Timestamp"
+      },
+      "calculation": {
+        "method": "periodicity_preservation_score",
+        "parameters": {
+          "lags": [
+            1,
+            24
+          ]
+        }
+      },
+      "retention": {
+        "store_raw_output": true,
+        "store_summary": true,
+        "comparison_key": "periodicity_preservation_score_v1"
+      }
     }
   ],
   "plan_taxonomy": {
@@ -429,6 +889,7 @@
           "_metrics": [
             {
               "metric_id": "column_quality_profile",
+              "label": "Column Quality Profile",
               "enabled": true
             }
           ]
@@ -439,6 +900,7 @@
           "_metrics": [
             {
               "metric_id": "pearson_correlation_profile",
+              "label": "Pearson Correlation Profile",
               "enabled": true
             }
           ]
@@ -447,11 +909,23 @@
     },
     "dataset_heuristics": {
       "protocol_and_network_realism": {
+        "address_validity": {
+          "reserved_address_misuse": {
+            "_metrics": [
+              {
+                "metric_id": "reserved_ip_address_profile",
+                "label": "Reserved IP Address Profile",
+                "enabled": true
+              }
+            ]
+          }
+        },
         "port_validity": {
           "valid_port_range": {
             "_metrics": [
               {
                 "metric_id": "valid_port_range_profile",
+                "label": "Valid Port Range Profile",
                 "enabled": true
               }
             ]
@@ -460,6 +934,7 @@
             "_metrics": [
               {
                 "metric_id": "service_port_consistency_profile",
+                "label": "Service-Port Consistency Profile",
                 "enabled": true
               }
             ]
@@ -470,6 +945,7 @@
             "_metrics": [
               {
                 "metric_id": "tcp_flag_consistency_profile",
+                "label": "TCP Flag Consistency Profile",
                 "enabled": true
               }
             ]
@@ -478,6 +954,7 @@
             "_metrics": [
               {
                 "metric_id": "handshake_plausibility_profile",
+                "label": "Handshake Plausibility Profile",
                 "enabled": true
               }
             ]
@@ -486,6 +963,7 @@
             "_metrics": [
               {
                 "metric_id": "flow_duration_consistency_profile",
+                "label": "Flow Duration Consistency Profile",
                 "enabled": true
               }
             ]
@@ -494,16 +972,7 @@
             "_metrics": [
               {
                 "metric_id": "packet_byte_consistency_profile",
-                "enabled": true
-              }
-            ]
-          }
-        },
-        "address_validity": {
-          "reserved_address_misuse": {
-            "_metrics": [
-              {
-                "metric_id": "reserved_ip_address_profile",
+                "label": "Packet-Byte Consistency Profile",
                 "enabled": true
               }
             ]
@@ -514,6 +983,7 @@
             "_metrics": [
               {
                 "metric_id": "valid_slice_identifier_profile",
+                "label": "Valid Slice Identifier Profile",
                 "enabled": false
               }
             ]
@@ -522,7 +992,185 @@
             "_metrics": [
               {
                 "metric_id": "slice_identifier_consistency_profile",
+                "label": "Slice Identifier Consistency Profile",
                 "enabled": false
+              }
+            ]
+          }
+        }
+      }
+    },
+    "statistical_fidelity": {
+      "data_quality": {
+        "missing_value_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "missing_value_ratio",
+              "label": "Missing Value Ratio",
+              "enabled": true
+            }
+          ]
+        },
+        "duplicate_row_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "duplicate_row_ratio",
+              "label": "Duplicate Row Ratio",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "dependency_fidelity": {
+        "spearman_correlation_matrix_deviation": {
+          "_metrics": [
+            {
+              "metric_id": "spearman_correlation_matrix_deviation",
+              "label": "Spearman Correlation Matrix Deviation",
+              "enabled": true
+            }
+          ]
+        },
+        "distance_correlation_matrix_deviation": {
+          "_metrics": [
+            {
+              "metric_id": "distance_correlation_matrix_deviation",
+              "label": "Distance Correlation Matrix Deviation",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "distributional_fidelity": {
+        "kolmogorov_smirnov_feature_divergence": {
+          "_metrics": [
+            {
+              "metric_id": "kolmogorov_smirnov_feature_divergence",
+              "label": "Kolmogorov-Smirnov Feature Divergence",
+              "enabled": true
+            }
+          ]
+        },
+        "wasserstein_feature_distance": {
+          "_metrics": [
+            {
+              "metric_id": "wasserstein_feature_distance",
+              "label": "Wasserstein Feature Distance",
+              "enabled": true
+            }
+          ]
+        },
+        "energy_distance": {
+          "_metrics": [
+            {
+              "metric_id": "energy_distance",
+              "label": "Energy Distance",
+              "enabled": true
+            }
+          ]
+        },
+        "maximum_mean_discrepancy": {
+          "_metrics": [
+            {
+              "metric_id": "maximum_mean_discrepancy",
+              "label": "Maximum Mean Discrepancy",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "label_fidelity": {
+      "label_completeness": {
+        "label_coverage_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "label_coverage_ratio",
+              "label": "Label Coverage Ratio",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "label_distribution": {
+        "class_imbalance_score": {
+          "_metrics": [
+            {
+              "metric_id": "class_imbalance_score",
+              "label": "Class Imbalance Score",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    },
+    "temporal_metrics": {
+      "temporal_consistency": {
+        "timestamp_parse_success_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "timestamp_parse_success_ratio",
+              "label": "Timestamp Parse Success Ratio",
+              "enabled": true
+            }
+          ]
+        },
+        "non_negative_duration_ratio": {
+          "_metrics": [
+            {
+              "metric_id": "non_negative_duration_ratio",
+              "label": "Non-Negative Duration Ratio",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "temporal_behaviour_realism": {
+        "traffic_dynamics": {
+          "inter_arrival_time_distribution_divergence": {
+            "_metrics": [
+              {
+                "metric_id": "inter_arrival_time_distribution_divergence",
+                "label": "Inter-Arrival Time Distribution Divergence",
+                "enabled": true
+              }
+            ]
+          },
+          "burstiness_coefficient_deviation": {
+            "_metrics": [
+              {
+                "metric_id": "burstiness_coefficient_deviation",
+                "label": "Burstiness Coefficient Deviation",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "periodicity": {
+          "hourly_activity_distribution_divergence": {
+            "_metrics": [
+              {
+                "metric_id": "hourly_activity_distribution_divergence",
+                "label": "Hourly Activity Distribution Divergence",
+                "enabled": true
+              }
+            ]
+          },
+          "diurnal_pattern_similarity_score": {
+            "_metrics": [
+              {
+                "metric_id": "diurnal_pattern_similarity_score",
+                "label": "Diurnal Pattern Similarity Score",
+                "enabled": true
+              }
+            ]
+          },
+          "periodicity_preservation_score": {
+            "_metrics": [
+              {
+                "metric_id": "periodicity_preservation_score",
+                "label": "Periodicity Preservation Score",
+                "enabled": true
               }
             ]
           }

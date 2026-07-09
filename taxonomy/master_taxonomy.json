@@ -1,61 +1,379 @@
 {
-  "dataset_metrics": {
-    "structural_and_integrity": {
-      "column_quality_profile": {
-        "_metrics": ["column_quality_profile"]
-      }
-    },
-    "statistical_fidelity": {
-      "pearson_correlation": {
-        "_metrics": ["pearson_correlation_profile"]
-      }
-    },
-    "temporal_realism": {
-      "timestamp_coherence": {
-        "_metrics": ["timestamp_coherence_profile"]
-      }
-    }
-  },
   "dataset_heuristics": {
     "protocol_and_network_realism": {
       "address_validity": {
-        "valid_ip_address": {
-          "_metrics": ["protocol_validity_profile"]
+        "valid_ip_address_ratio": {
+          "_metrics": [
+            "protocol_validity_profile"
+          ]
         },
-        "reserved_address_misuse": {
-          "_metrics": ["reserved_ip_address_profile"]
+        "reserved_address_misuse_ratio": {
+          "_metrics": [
+            "reserved_ip_address_profile"
+          ]
         }
       },
       "port_validity": {
-        "valid_port_range": {
-          "_metrics": ["valid_port_range_profile"]
+        "valid_port_range_ratio": {
+          "_metrics": [
+            "valid_port_range_profile"
+          ]
         },
-        "service_port_consistency": {
-          "_metrics": ["service_port_consistency_profile"]
+        "service_port_consistency_ratio": {
+          "_metrics": [
+            "service_port_consistency_profile"
+          ]
         }
       },
       "flow_semantics": {
-        "tcp_flag_consistency": {
-          "_metrics": ["tcp_flag_consistency_profile"]
+        "tcp_flag_consistency_ratio": {
+          "_metrics": [
+            "tcp_flag_consistency_profile"
+          ]
         },
-        "handshake_plausibility": {
-          "_metrics": ["handshake_plausibility_profile"]
+        "handshake_plausibility_ratio": {
+          "_metrics": [
+            "handshake_plausibility_profile"
+          ]
         },
-        "flow_duration_consistency": {
-          "_metrics": ["flow_duration_consistency_profile"]
+        "flow_duration_consistency_ratio": {
+          "_metrics": [
+            "flow_duration_consistency_profile"
+          ]
         },
-        "packet_byte_consistency": {
-          "_metrics": ["packet_byte_consistency_profile"]
+        "packet_byte_consistency_ratio": {
+          "_metrics": [
+            "packet_byte_consistency_profile"
+          ]
         }
       },
       "slice_metadata_integrity": {
-        "valid_slice_identifier": {
-          "_metrics": ["valid_slice_identifier_profile"]
+        "valid_slice_identifier_ratio": {
+          "_metrics": [
+            "valid_slice_identifier_profile"
+          ]
         },
-        "slice_identifier_consistency": {
-          "_metrics": ["slice_identifier_consistency_profile"]
+        "slice_identifier_consistency_ratio": {
+          "_metrics": [
+            "slice_identifier_consistency_profile"
+          ]
         }
       }
+    }
+  },
+  "temporal_metrics": {
+    "temporal_consistency": {
+      "timestamp_coherence_profile": {
+        "_metrics": [
+          "timestamp_coherence_profile"
+        ]
+      },
+      "timestamp_parse_success_ratio": {
+        "_metrics": [
+          "timestamp_parse_success_ratio"
+        ]
+      },
+      "start_end_timestamp_consistency_ratio": {
+        "_metrics": [
+          "start_end_timestamp_consistency_ratio"
+        ]
+      },
+      "non_negative_duration_ratio": {
+        "_metrics": [
+          "non_negative_duration_ratio"
+        ]
+      }
+    },
+    "temporal_behaviour_realism": {
+      "traffic_dynamics": {
+        "inter_arrival_time_distribution_divergence": {
+          "_metrics": [
+            "inter_arrival_time_distribution_divergence"
+          ]
+        },
+        "burstiness_coefficient_deviation": {
+          "_metrics": [
+            "burstiness_coefficient_deviation"
+          ]
+        }
+      },
+      "periodicity": {
+        "hourly_activity_distribution_divergence": {
+          "_metrics": [
+            "hourly_activity_distribution_divergence"
+          ]
+        },
+        "diurnal_pattern_similarity_score": {
+          "_metrics": [
+            "diurnal_pattern_similarity_score"
+          ]
+        },
+        "periodicity_preservation_score": {
+          "_metrics": [
+            "periodicity_preservation_score"
+          ]
+        }
+      }
+    }
+  },
+  "statistical_fidelity": {
+    "distributional_fidelity": {
+      "kolmogorov_smirnov_feature_divergence": {
+        "_metrics": [
+          "kolmogorov_smirnov_feature_divergence"
+        ]
+      },
+      "wasserstein_feature_distance": {
+        "_metrics": [
+          "wasserstein_feature_distance"
+        ]
+      },
+      "energy_distance": {
+        "_metrics": [
+          "energy_distance"
+        ]
+      },
+      "maximum_mean_discrepancy": {
+        "_metrics": [
+          "maximum_mean_discrepancy"
+        ]
+      }
+    },
+    "dependency_fidelity": {
+      "pearson_correlation_matrix_deviation": {
+        "_metrics": [
+          "pearson_correlation_profile"
+        ]
+      },
+      "spearman_correlation_matrix_deviation": {
+        "_metrics": [
+          "spearman_correlation_matrix_deviation"
+        ]
+      },
+      "distance_correlation_matrix_deviation": {
+        "_metrics": [
+          "distance_correlation_matrix_deviation"
+        ]
+      }
+    },
+    "data_quality": {
+      "column_quality_profile": {
+        "_metrics": [
+          "column_quality_profile"
+        ]
+      },
+      "missing_value_ratio": {
+        "_metrics": [
+          "missing_value_ratio"
+        ]
+      },
+      "duplicate_row_ratio": {
+        "_metrics": [
+          "duplicate_row_ratio"
+        ]
+      }
+    }
+  },
+  "slice_representation": {
+    "slice_coverage": {
+      "per_slice_sample_coverage_ratio": {
+        "_metrics": [
+          "per_slice_sample_coverage_ratio"
+        ]
+      },
+      "per_slice_feature_coverage_ratio": {
+        "_metrics": [
+          "per_slice_feature_coverage_ratio"
+        ]
+      },
+      "per_slice_class_coverage_ratio": {
+        "_metrics": [
+          "per_slice_class_coverage_ratio"
+        ]
+      }
+    },
+    "slice_balance": {
+      "slice_distribution_imbalance_score": {
+        "_metrics": [
+          "slice_distribution_imbalance_score"
+        ]
+      }
+    },
+    "slice_isolation": {
+      "cross_slice_duplicate_overlap_ratio": {
+        "_metrics": [
+          "cross_slice_duplicate_overlap_ratio"
+        ]
+      },
+      "cross_slice_identifier_leakage_ratio": {
+        "_metrics": [
+          "cross_slice_identifier_leakage_ratio"
+        ]
+      }
+    }
+  },
+  "label_fidelity": {
+    "label_completeness": {
+      "label_coverage_ratio": {
+        "_metrics": [
+          "label_coverage_ratio"
+        ]
+      },
+      "per_slice_label_coverage_ratio": {
+        "_metrics": [
+          "per_slice_label_coverage_ratio"
+        ]
+      }
+    },
+    "label_distribution": {
+      "per_slice_label_entropy_score": {
+        "_metrics": [
+          "per_slice_label_entropy_score"
+        ]
+      },
+      "class_imbalance_score": {
+        "_metrics": [
+          "class_imbalance_score"
+        ]
+      }
+    },
+    "temporal_label_correctness": {
+      "attack_window_alignment_score": {
+        "_metrics": [
+          "attack_window_alignment_score"
+        ]
+      },
+      "pre_post_attack_label_bleed_ratio": {
+        "_metrics": [
+          "pre_post_attack_label_bleed_ratio"
+        ]
+      }
+    },
+    "split_integrity": {
+      "train_test_duplicate_overlap_ratio": {
+        "_metrics": [
+          "train_test_duplicate_overlap_ratio"
+        ]
+      },
+      "train_test_identifier_contamination_ratio": {
+        "_metrics": [
+          "train_test_identifier_contamination_ratio"
+        ]
+      }
+    }
+  },
+  "reference_model_comparison": {
+    "distributional_similarity": {
+      "feature_wise_wasserstein_distance_from_reference": {
+        "_metrics": [
+          "feature_wise_wasserstein_distance_from_reference"
+        ]
+      },
+      "feature_wise_ks_statistic_from_reference": {
+        "_metrics": [
+          "feature_wise_ks_statistic_from_reference"
+        ]
+      },
+      "feature_wise_energy_distance_from_reference": {
+        "_metrics": [
+          "feature_wise_energy_distance_from_reference"
+        ]
+      },
+      "feature_set_mmd_score_from_reference": {
+        "_metrics": [
+          "feature_set_mmd_score_from_reference"
+        ]
+      }
+    },
+    "dependency_structure_similarity": {
+      "pearson_matrix_deviation_from_reference": {
+        "_metrics": [
+          "pearson_matrix_deviation_from_reference"
+        ]
+      },
+      "spearman_matrix_deviation_from_reference": {
+        "_metrics": [
+          "spearman_matrix_deviation_from_reference"
+        ]
+      },
+      "distance_correlation_matrix_deviation_from_reference": {
+        "_metrics": [
+          "distance_correlation_matrix_deviation_from_reference"
+        ]
+      }
+    },
+    "temporal_profile_similarity": {
+      "inter_arrival_distribution_divergence_from_reference": {
+        "_metrics": [
+          "inter_arrival_distribution_divergence_from_reference"
+        ]
+      },
+      "burstiness_deviation_from_reference": {
+        "_metrics": [
+          "burstiness_deviation_from_reference"
+        ]
+      },
+      "hourly_activity_divergence_from_reference": {
+        "_metrics": [
+          "hourly_activity_divergence_from_reference"
+        ]
+      }
+    },
+    "slice_profile_similarity": {
+      "slice_proportion_deviation_from_reference": {
+        "_metrics": [
+          "slice_proportion_deviation_from_reference"
+        ]
+      },
+      "per_slice_class_divergence_from_reference": {
+        "_metrics": [
+          "per_slice_class_divergence_from_reference"
+        ]
+      },
+      "per_slice_feature_distribution_deviation_from_reference": {
+        "_metrics": [
+          "per_slice_feature_distribution_deviation_from_reference"
+        ]
+      }
+    },
+    "protocol_behaviour_similarity": {
+      "protocol_mix_divergence_from_reference": {
+        "_metrics": [
+          "protocol_mix_divergence_from_reference"
+        ]
+      },
+      "port_use_divergence_from_reference": {
+        "_metrics": [
+          "port_use_divergence_from_reference"
+        ]
+      },
+      "flow_statistic_deviation_from_reference": {
+        "_metrics": [
+          "flow_statistic_deviation_from_reference"
+        ]
+      }
+    }
+  },
+  "task_based_validation": {
+    "benchmark_model_accuracy": {
+      "_metrics": [
+        "benchmark_model_accuracy"
+      ]
+    },
+    "benchmark_model_precision": {
+      "_metrics": [
+        "benchmark_model_precision"
+      ]
+    },
+    "benchmark_model_recall": {
+      "_metrics": [
+        "benchmark_model_recall"
+      ]
+    },
+    "benchmark_model_f1_score": {
+      "_metrics": [
+        "benchmark_model_f1_score"
+      ]
     }
   }
 }
