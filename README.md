@@ -119,10 +119,12 @@ When running a plan directly, pass `--field-translation <path>`. Use `--field-tr
 
 The runner also auto-detects common aliases and Wireshark/tshark packet headings in tabular exports, such as `Src IP`, `source_ip`, `frame.time_epoch`, `ip.src`, `ip.dst`, `tcp.srcport`, and `tcp.dstport`, and maps them to the canonical fields used by the tests. Generated sidecar templates are pre-populated with those detected headings when possible and include `schema_version`, `field_metadata`, and per-field `mapping_source` values so users can see what was auto-filled versus left as a template. Explicit translation files still take precedence over auto-detected headings. Raw `.pcap`/`.pcapng` inputs continue to be handled directly by packet-aware metrics.
 
-Metrics can declare explicit field needs with `field_requirements`, using `required` and `optional` lists. Missing required fields cause that metric to be skipped with a warning while other runnable metrics continue. Skipped metrics are included in the outcome JSON and, when `--field-translation-report` is provided, in the report file. Example translation files live under `examples/field_translations/`; cases are not modified to point at examples by default. See `docs/field_translation_workflows.md` for common commands, `docs/field_translation_metric_audit.md` for metric authoring guidance, and `docs/field_translation_sidecar_schema.md` for the sidecar schema reference.
+Metrics can declare explicit field needs with `field_requirements`, using `required` and `optional` lists. Missing required fields cause that metric to be skipped with a warning while other runnable metrics continue. Skipped metrics are included in the outcome JSON and, when `--field-translation-report` is provided, in the report file. Example translation files live under `examples/field_translations/`; cases are not modified to point at examples by default. See `docs/run_plan_controls.md` for all runner controls, `docs/field_translation_workflows.md` for common translation commands, `docs/field_translation_metric_audit.md` for metric authoring guidance, and `docs/field_translation_sidecar_schema.md` for the sidecar schema reference.
 
 
 ### Live display modes
+
+See `docs/run_plan_controls.md` for the complete control reference and `docs/run_telemetry.md` for the shared telemetry model.
 
 Large plans can produce more live taxonomy rows than fit in a tmux pane. The default `--display compact` mode shows branch counts, active/attention metrics, and recent completions instead of every metric. Use `--display full` to restore the original full taxonomy list, `--display quiet` for minimal output, or `--display interactive` to request the Textual-style interactive workflow. Interactive mode currently falls back to the compact live view while the full expand/collapse TUI is built out. The compact view is backed by shared run telemetry so branch counts, skipped metrics, attention items, and recent events can also feed future reports and interactive displays.
 
@@ -149,10 +151,12 @@ Large plans can produce more live taxonomy rows than fit in a tmux pane. The def
 In TTY terminals with color support, the runner displays:
 
 - Header block (run title, paths, status)
-- Taxonomy tree with metric status
+- Taxonomy or compact branch summary with metric status
+- Active/attention metrics in compact mode
+- Recent completed metrics and recent telemetry events in compact mode
 - Overall progress line
 
-If output is non-TTY, it falls back to plain printed lines.
+If output is non-TTY, it falls back to plain printed lines. Use `--display quiet` to suppress live taxonomy/status redraws.
 
 ## Outcome JSON
 

@@ -119,6 +119,8 @@ This document tracks follow-up fixes, hardening work, and feature ideas for data
 - Add an explanation of raw PCAP versus PCAP CSV export behavior.
 - Add a sidecar schema reference.
 - Add a report schema reference.
+- Keep `docs/run_plan_controls.md` updated when CLI flags or operator controls change.
+- Keep `docs/run_telemetry.md` updated when telemetry/event fields change.
 
 ## Product decisions to revisit
 
