@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from runner.execution import render_live_taxonomy, run_metric_with_heartbeat
+from runner.execution import run_metric_with_heartbeat
+from runner.live_rendering import render_live_taxonomy
 
 
 def test_render_live_taxonomy_status_labels():

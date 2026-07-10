@@ -38,6 +38,23 @@ If your case JSON already references the plan, dataset, and output, just pass `-
 python run_plan.py --case cases/example_case.json
 ```
 
+
+## Documentation map
+
+- `docs/run_plan_controls.md`: complete CLI/control/display/report reference.
+- `docs/plan_schema.md`: plan JSON schema and metric object reference.
+- `docs/case_schema.md`: case JSON schema and path resolution rules.
+- `docs/outcome_schema.md`: outcome JSON structure.
+- `docs/field_translation_sidecar_schema.md`: sidecar schema.
+- `docs/field_translation_report_schema.md`: field translation report structure.
+- `docs/field_translation_workflows.md`: common translation and display commands.
+- `docs/dataset_inputs.md`: supported dataset/input formats and auto-detection notes.
+- `docs/display_modes.md`: compact/full/quiet/interactive display behavior.
+- `docs/run_telemetry.md`: shared telemetry model for live display and future reports.
+- `docs/adding_metrics.md`: metric author checklist.
+- `docs/metric_catalog.md`: high-level metric catalog.
+- `docs/troubleshooting.md`: common problems and fixes.
+
 ## CLI options
 
 `run_plan.py` supports:
