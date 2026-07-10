@@ -10,19 +10,11 @@ from runner.taxonomy import print_taxonomy_summary
 from runner.run_plan_serial import run_serial_metrics
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan
-from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel
-from runner.live_rendering import render_live_taxonomy
+from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel, render_live_taxonomy
 from runner.progress import render_overall_progress_line, print_live_status, set_live_header, set_live_output_enabled
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.tabular import load_tabular_dataset
 from runner.telemetry import RunState
-from runner.field_translation_reports import (
-    build_field_translation_report,
-    format_field_translation_markdown_report,
-    format_field_translation_report,
-    write_field_translation_report,
-    write_text_report,
-)
 from runner.field_translation import (
     available_translated_fields,
     default_field_translation_path,
@@ -32,7 +24,12 @@ from runner.field_translation import (
     merge_field_translations,
     metrics_missing_required_fields,
     read_tabular_dataset_columns,
+    build_field_translation_report,
+    format_field_translation_markdown_report,
+    format_field_translation_report,
     metrics_missing_optional_fields,
+    write_field_translation_report,
+    write_text_report,
 )
 from runner.run_plan_helpers import (
     build_base_header_lines,

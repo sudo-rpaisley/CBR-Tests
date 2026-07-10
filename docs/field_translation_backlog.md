@@ -112,17 +112,13 @@ This document tracks follow-up fixes, hardening work, and feature ideas for data
 
 ## Documentation backlog
 
-- Keep docs current as features evolve:
-  - `docs/plan_schema.md`
-  - `docs/case_schema.md`
-  - `docs/outcome_schema.md`
-  - `docs/field_translation_report_schema.md`
-  - `docs/troubleshooting.md`
-  - `docs/dataset_inputs.md`
-  - `docs/adding_metrics.md`
-  - `docs/display_modes.md`
-  - `docs/metric_catalog.md`
-  - `examples/field_translations/README.md`
+- Add a quick-start guide for translation sidecars.
+- Add a guide for metric authors explaining `field_requirements`.
+- Add a troubleshooting section for skipped metrics.
+- Add examples for common dataset families.
+- Add an explanation of raw PCAP versus PCAP CSV export behavior.
+- Add a sidecar schema reference.
+- Add a report schema reference.
 - Keep `docs/run_plan_controls.md` updated when CLI flags or operator controls change.
 - Keep `docs/run_telemetry.md` updated when telemetry/event fields change.
 

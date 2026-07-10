@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from runner.telemetry import RunState
-from runner.live_rendering import render_live_taxonomy
+from runner.execution import render_live_taxonomy
 
 
 def _state():

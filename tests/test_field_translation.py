@@ -305,7 +305,7 @@ def test_translate_metric_fields_resolves_without_renaming_dataframe_columns():
 
 
 def test_build_field_translation_report_tracks_skipped_metrics(tmp_path):
-    from runner.field_translation_reports import build_field_translation_report
+    from runner.field_translation import build_field_translation_report
 
     dataset_path = tmp_path / "dataset.csv"
     translation_path = tmp_path / "dataset.field_translation.json"
@@ -366,7 +366,7 @@ def test_validate_field_translation_payload_rejects_metadata_for_unknown_fields(
 
 
 def test_field_translation_report_includes_suggestions_and_markdown():
-    from runner.field_translation_reports import build_field_translation_report, format_field_translation_markdown_report
+    from runner.field_translation import build_field_translation_report, format_field_translation_markdown_report
 
     metric = {"metric_id": "m1", "field_requirements": {"required": ["Source IP"], "optional": ["Destination IP"]}}
     report = build_field_translation_report(
