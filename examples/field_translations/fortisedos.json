@@ -1,0 +1,13 @@
+{
+  "description": "Translate FortiSeDoS CSV columns into field names used by the FortiSeDoS test plan.",
+  "test_to_dataset_fields": {
+    "Source IP": "Src IP",
+    "Destination IP": "Dst IP",
+    "Source Port": "Src Port",
+    "Destination Port": "Dst Port",
+    "timestamp": "Timestamp",
+    "label": "Label",
+    "slice": "Slice"
+  },
+  "schema_version": 1
+}

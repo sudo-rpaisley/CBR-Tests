@@ -52,6 +52,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "column_quality_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -88,6 +102,20 @@
         "store_summary": true,
         "store_column_validation": true,
         "comparison_key": "pearson_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -120,6 +148,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "missing_value_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -152,6 +194,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "duplicate_row_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -187,6 +243,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "spearman_correlation_matrix_deviation_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -222,6 +292,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "distance_correlation_matrix_deviation_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -257,6 +341,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "kolmogorov_smirnov_feature_divergence_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -292,6 +390,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "wasserstein_feature_distance_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -327,6 +439,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "energy_distance_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     },
     {
@@ -362,6 +488,20 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "maximum_mean_discrepancy_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "cpu_usage",
+          "cpu_usage_sys",
+          "cpu_usage_user",
+          "http_requests_rate",
+          "http_response_time_200",
+          "mem_usage",
+          "net_in_bytes",
+          "net_out_bytes",
+          "sockets_avg"
+        ],
+        "optional": []
       }
     }
   ],

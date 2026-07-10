@@ -48,6 +48,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "column_quality_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -81,6 +92,17 @@
         "store_summary": true,
         "store_column_validation": true,
         "comparison_key": "pearson_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -113,6 +135,13 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "reserved_ip_address_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Destination IP",
+          "Source IP"
+        ],
+        "optional": []
       }
     },
     {
@@ -142,6 +171,13 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "valid_port_range_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Destination Port",
+          "Source Port"
+        ],
+        "optional": []
       }
     },
     {
@@ -177,6 +213,13 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "service_port_consistency_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Destination Port",
+          "Source Port"
+        ],
+        "optional": []
       }
     },
     {
@@ -221,6 +264,22 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "tcp_flag_consistency_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "ACK Flag Count",
+          "CWE Flag Count",
+          "ECE Flag Count",
+          "FIN Flag Count",
+          "PSH Flag Count",
+          "Protocol",
+          "RST Flag Count",
+          "SYN Flag Count",
+          "Total Backward Packets",
+          "Total Fwd Packets",
+          "URG Flag Count"
+        ],
+        "optional": []
       }
     },
     {
@@ -262,6 +321,18 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "handshake_plausibility_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "ACK Flag Count",
+          "FIN Flag Count",
+          "Protocol",
+          "RST Flag Count",
+          "SYN Flag Count",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -296,6 +367,18 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "flow_duration_consistency_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Bwd IAT Total",
+          "Flow Duration",
+          "Flow IAT Max",
+          "Flow IAT Mean",
+          "Flow IAT Min",
+          "Flow IAT Std",
+          "Fwd IAT Total"
+        ],
+        "optional": []
       }
     },
     {
@@ -336,6 +419,23 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "packet_byte_consistency_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Bwd Packet Length Max",
+          "Bwd Packet Length Mean",
+          "Bwd Packet Length Min",
+          "Fwd Packet Length Max",
+          "Fwd Packet Length Mean",
+          "Fwd Packet Length Min",
+          "Packet Length Std",
+          "Packet Length Variance",
+          "Total Backward Packets",
+          "Total Fwd Packets",
+          "Total Length of Bwd Packets",
+          "Total Length of Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -368,6 +468,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "valid_slice_identifier_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Slice"
+        ],
+        "optional": []
       }
     },
     {
@@ -419,6 +525,16 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "slice_identifier_consistency_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Label",
+          "Slice",
+          "attack_type",
+          "source_file",
+          "traffic_group"
+        ],
+        "optional": []
       }
     },
     {
@@ -448,6 +564,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "missing_value_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -477,6 +604,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "duplicate_row_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Destination IP",
+          "Destination Port",
+          "Flow Duration",
+          "Protocol",
+          "Source IP",
+          "Source Port"
+        ],
+        "optional": []
       }
     },
     {
@@ -509,6 +647,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "spearman_correlation_matrix_deviation_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -541,6 +690,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "distance_correlation_matrix_deviation_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -573,6 +733,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "kolmogorov_smirnov_feature_divergence_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -605,6 +776,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "wasserstein_feature_distance_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -637,6 +819,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "energy_distance_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -669,6 +862,17 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "maximum_mean_discrepancy_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Bytes/s",
+          "Flow Duration",
+          "Flow Packets/s",
+          "Packet Length Mean",
+          "Total Backward Packets",
+          "Total Fwd Packets"
+        ],
+        "optional": []
       }
     },
     {
@@ -691,6 +895,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "label_coverage_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Label"
+        ],
+        "optional": []
       }
     },
     {
@@ -713,6 +923,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "class_imbalance_score_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Label"
+        ],
+        "optional": []
       }
     },
     {
@@ -735,6 +951,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "timestamp_parse_success_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Timestamp"
+        ],
+        "optional": []
       }
     },
     {
@@ -757,6 +979,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "non_negative_duration_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Flow Duration"
+        ],
+        "optional": []
       }
     },
     {
@@ -782,6 +1010,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "inter_arrival_time_distribution_divergence_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Timestamp"
+        ],
+        "optional": []
       }
     },
     {
@@ -805,6 +1039,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "burstiness_coefficient_deviation_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Timestamp"
+        ],
+        "optional": []
       }
     },
     {
@@ -828,6 +1068,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "hourly_activity_distribution_divergence_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Timestamp"
+        ],
+        "optional": []
       }
     },
     {
@@ -851,6 +1097,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "diurnal_pattern_similarity_score_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Timestamp"
+        ],
+        "optional": []
       }
     },
     {
@@ -879,6 +1131,12 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "periodicity_preservation_score_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "Timestamp"
+        ],
+        "optional": []
       }
     }
   ],

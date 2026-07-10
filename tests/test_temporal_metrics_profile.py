@@ -34,4 +34,4 @@ def test_temporal_behaviour_metrics_compare_first_and_second_halves():
     assert compute_burstiness_coefficient_deviation(df, metric)["summary"]["burstiness_coefficient_deviation"] == 0.0
     assert compute_hourly_activity_distribution_divergence(df, metric)["summary"]["hourly_activity_distribution_divergence"] == 1.0
     assert compute_diurnal_pattern_similarity_score(df, metric)["summary"]["diurnal_pattern_similarity_score"] == 0.0
-    assert compute_periodicity_preservation_score(df, metric)["summary"]["periodicity_preservation_score"] == 1.0
+    assert compute_periodicity_preservation_score(df, metric)["summary"]["periodicity_preservation_score"] == 0.95

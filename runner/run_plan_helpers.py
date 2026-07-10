@@ -23,24 +23,30 @@ def build_outcome(
     run_started_at: datetime,
     run_start_perf: float,
     column_validations: dict,
+    skipped_metrics: list[dict] | None = None,
+    all_metrics: list[dict] | None = None,
 ) -> dict:
+    taxonomy_metrics = all_metrics or metrics
     outcome = {
         "status": status,
         "case_id": case_id,
         "plan_id": plan_id,
-        "metric_ids": [m["metric_id"] for m in metrics],
+        "metric_ids": [m["metric_id"] for m in taxonomy_metrics],
         "dataset_path": str(dataset_path),
-        "plan_taxonomy": build_plan_taxonomy(metrics),
+        "plan_taxonomy": build_plan_taxonomy(taxonomy_metrics),
         "metric_results": metric_results,
         "test_results": test_results,
-        "test_results_taxonomy": build_test_results_taxonomy(metrics, test_results),
-        "result_taxonomy": build_result_taxonomy(metrics, metric_results, test_results),
+        "test_results_taxonomy": build_test_results_taxonomy(taxonomy_metrics, test_results),
+        "result_taxonomy": build_result_taxonomy(taxonomy_metrics, metric_results, test_results),
         "run_started_at": run_started_at.isoformat(),
         "run_finished_at": datetime.now(timezone.utc).isoformat(),
         "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6),
     }
     if column_validations:
         outcome["column_validations"] = column_validations
+    if skipped_metrics:
+        outcome["skipped_metrics"] = skipped_metrics
+        outcome["metric_results"].extend(skipped_metrics)
     return outcome
 
 
@@ -118,6 +124,34 @@ def parse_run_plan_args() -> argparse.Namespace:
     parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
     parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
+    parser.add_argument("--field-translation", help="Optional JSON file mapping dataset column names to test field names")
+    parser.add_argument(
+        "--no-update-field-translation",
+        action="store_true",
+        help="Run without creating or updating dataset sidecar field translation templates",
+    )
+    parser.add_argument(
+        "--field-translation-dry-run",
+        action="store_true",
+        help="Validate/generate field translations and report skipped metrics without running metrics",
+    )
+    parser.add_argument(
+        "--field-translation-report",
+        help="Optional JSON report path for field translation validation and skipped metric details",
+    )
+    parser.add_argument(
+        "--yes-field-translation-sidecar",
+        action="store_true",
+        help="Create or update sidecar field translation templates without prompting",
+    )
+    parser.add_argument(
+        "--field-translation-text-report",
+        help="Optional text report path for a human-readable field translation summary",
+    )
+    parser.add_argument(
+        "--field-translation-markdown-report",
+        help="Optional Markdown report path for field translation validation details",
+    )
     parser.add_argument("--taxonomy-file", help="Optional taxonomy JSON used to order metrics")
     parser.add_argument(
         "--taxonomy-strict",
@@ -129,6 +163,15 @@ def parse_run_plan_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Optional worker count override. Use 1 to force serial execution.",
+    )
+    parser.add_argument(
+        "--display",
+        choices=("compact", "full", "quiet", "interactive"),
+        default="compact",
+        help=(
+            "Live display mode: compact fits tmux panes, full shows every metric, "
+            "quiet suppresses live taxonomy updates, and interactive reserves the Textual TUI mode."
+        ),
     )
     return parser.parse_args()
 

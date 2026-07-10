@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from runner.execution import render_live_taxonomy, run_metric_with_heartbeat
+from runner.execution import run_metric_with_heartbeat
+from runner.live_rendering import render_live_taxonomy
 
 
 def test_render_live_taxonomy_status_labels():
@@ -43,3 +44,26 @@ def test_run_metric_with_heartbeat_executes_handler():
     )
     assert ok is True
     assert payload["test_results"]["m1"]["ok"] is True
+
+
+def test_render_live_taxonomy_compact_summarizes_branches():
+    metrics = [
+        {"metric_id": "m1", "taxonomy_path": ["branch_a"]},
+        {"metric_id": "m2", "taxonomy_path": ["branch_a"]},
+        {"metric_id": "m3", "taxonomy_path": ["branch_b"]},
+    ]
+    txt = render_live_taxonomy(
+        metrics=metrics,
+        current_metric_id="m2",
+        completed_statuses={"m1": "success"},
+        completed_durations={"m1": 1.2},
+        default_predictions={"m2": 20.0},
+        predicted_metric_total=20.0,
+        elapsed=5.0,
+        display_mode="compact",
+    )
+    assert "Taxonomy summary" in txt
+    assert "branch_a" in txt
+    assert "success: 1" in txt
+    assert "running: 1" in txt
+    assert "m2 [running | 5.0/20s ]" in txt

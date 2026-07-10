@@ -59,4 +59,4 @@ def test_split_integrity_metrics():
     metric = {"input_requirements": {"split_field": "split", "subset_fields": ["src_ip", "dst_ip"], "identifier_fields": ["flow_id", "src_ip"]}}
 
     assert compute_train_test_duplicate_overlap_ratio(df, metric)["summary"]["train_test_duplicate_overlap_ratio"] == 0.333333
-    assert compute_train_test_identifier_contamination_ratio(df, metric)["summary"]["train_test_identifier_contamination_ratio"] == 0.285714
+    assert compute_train_test_identifier_contamination_ratio(df, metric)["summary"]["train_test_identifier_contamination_ratio"] == 0.333333

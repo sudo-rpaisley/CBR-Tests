@@ -1,50 +1,14 @@
 from __future__ import annotations
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
-from concurrent.futures import as_completed, wait, FIRST_COMPLETED
+from concurrent.futures import wait, FIRST_COMPLETED
 from pathlib import Path
 
-from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
+from runner.live_rendering import render_live_taxonomy
+from runner.progress import render_overall_progress_line, print_live_status
 
 
-def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False, running_elapsed: dict[str, float] | None = None) -> str:
-    lines: list[str] = []
-    printed_nodes: set[tuple[str, ...]] = set()
-    predicted_metric_total = max(1.0, predicted_metric_total)
-    if elapsed is not None:
-        predicted_metric_total = max(predicted_metric_total, elapsed)
-    for metric in metrics:
-        path = metric.get('taxonomy_path', [])
-        for depth in range(len(path)):
-            node_tuple = tuple(path[: depth + 1])
-            if node_tuple in printed_nodes:
-                continue
-            printed_nodes.add(node_tuple)
-            lines.append(f"{'  ' * depth}↳ {path[depth]}")
-        metric_id = metric.get('metric_id', 'unknown_metric')
-        metric_prediction = completed_durations.get(metric_id, default_predictions.get(metric_id, predicted_metric_total))
-        if metric_id in completed_statuses and completed_statuses[metric_id] == "running":
-            run_elapsed = (running_elapsed or {}).get(metric_id, 0.0)
-            expected = max(metric_prediction, run_elapsed + 1.0)
-            suffix = f" [{colorize_status('running')} | {run_elapsed:.1f}/{expected:.0f}s ] [{render_metric_activity_bar(run_elapsed, expected_seconds=expected)}]"
-        elif metric_id in completed_statuses:
-            run_time = completed_durations.get(metric_id)
-            status_text = colorize_status(completed_statuses[metric_id])
-            suffix = f" [{status_text} | run time {run_time:.1f}s]" if run_time is not None else f" [{status_text}]"
-        elif metric_id == current_metric_id:
-            if completed:
-                suffix = f" [{colorize_status('success')}] | done in {elapsed:.1f}s"
-            elif elapsed is not None:
-                suffix = f" [{colorize_status('running')} | {elapsed:.1f}/{predicted_metric_total:.0f}s ] [{render_metric_activity_bar(elapsed, expected_seconds=predicted_metric_total)}]"
-            else:
-                suffix = f" [{colorize_status('running')}]"
-        else:
-            suffix = f" [{colorize_status('pending')} | 0.0/{metric_prediction:.0f}s]"
-        lines.append(f"{'  ' * len(path)}↳ {metric_id}{suffix}")
-    return '\n'.join(lines)
-
-
-def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[dict], completed_statuses: dict[str, str], completed_durations: dict[str, float], current: int, total: int, shutdown_requested: dict, run_start_perf: float | None, metric_handlers: dict, default_predictions: dict[str, float]):
+def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[dict], completed_statuses: dict[str, str], completed_durations: dict[str, float], current: int, total: int, shutdown_requested: dict, run_start_perf: float | None, metric_handlers: dict, default_predictions: dict[str, float], display_mode: str = "full", max_lines: int | None = None):
     metric_id = metric.get('metric_id', 'unknown_metric')
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(lambda: metric_handlers[metric_id](dataset_path, metric))
@@ -56,7 +20,7 @@ def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[di
                 elapsed = time.perf_counter() - heartbeat_start
                 instant_total = max(elapsed + 1.0, elapsed * 1.2, 20.0)
                 smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
-                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed, completed=True)
+                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed, completed=True, display_mode=display_mode, max_lines=max_lines)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = render_overall_progress_line(current, total, run_elapsed, elapsed)
                 print_live_status(task_line, overall_line, None)
@@ -65,7 +29,7 @@ def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[di
                 elapsed = time.perf_counter() - heartbeat_start
                 instant_total = max(elapsed + 1.0, elapsed * 1.2, 20.0)
                 smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
-                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed)
+                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed, display_mode=display_mode, max_lines=max_lines)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = render_overall_progress_line(max(0, current - 1), total, run_elapsed, elapsed)
                 warning_line = None

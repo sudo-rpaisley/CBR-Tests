@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def load_tabular_dataset(dataset_path: Path, progress_callback=None):
+def load_tabular_dataset(dataset_path: Path, progress_callback=None, field_translation: dict[str, str] | None = None):
     import pandas as pd
 
     suffix = dataset_path.suffix.lower()
