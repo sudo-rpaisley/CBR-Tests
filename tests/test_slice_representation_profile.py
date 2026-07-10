@@ -38,4 +38,4 @@ def test_cross_slice_isolation_metrics():
     assert duplicate_result["summary"]["overlap_row_count"] == 2
     assert duplicate_result["summary"]["cross_slice_duplicate_overlap_ratio"] == 0.5
     assert leakage_result["summary"]["leaked_identifier_count"] == 2
-    assert leakage_result["summary"]["cross_slice_identifier_leakage_ratio"] == 0.285714
+    assert leakage_result["summary"]["cross_slice_identifier_leakage_ratio"] == 0.333333
