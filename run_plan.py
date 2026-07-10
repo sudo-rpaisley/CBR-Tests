@@ -11,7 +11,7 @@ from runner.run_plan_serial import run_serial_metrics
 from runner.dispatch import build_metric_handlers
 from runner.io import load_case_or_plan
 from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_metrics_parallel, render_live_taxonomy
-from runner.progress import render_overall_progress_line, print_live_status, set_live_header
+from runner.progress import render_overall_progress_line, print_live_status, set_live_header, set_live_output_enabled
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.tabular import load_tabular_dataset
 from runner.field_translation import (
@@ -40,6 +40,8 @@ from runner.run_plan_helpers import (
     update_live_header,
     write_outcome,
 )
+
+DISPLAY_FALLBACK_NOTICE = "Interactive display requested; using compact live view until the Textual TUI is available."
 
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
@@ -80,10 +82,19 @@ def main():
 
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
     control_state = {"pause_requested": False, "cancel_requested": False}
-    live_render_enabled = sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"}
+    live_render_enabled = (
+        args.display != "quiet"
+        and sys.stdout.isatty()
+        and os.environ.get("TERM", "").lower() not in {"", "dumb"}
+    )
     default_metric_predictions = dict(DEFAULT_METRIC_PREDICTIONS)
 
     configure_signal_handlers(control_state, shutdown_requested)
+    display_mode = "compact" if args.display == "interactive" else args.display
+    display_max_lines = 24 if display_mode == "compact" else None
+    set_live_output_enabled(args.display != "quiet")
+    if args.display == "interactive":
+        print(DISPLAY_FALLBACK_NOTICE)
 
     case_file = Path(args.case).resolve()
     plan, dataset_path, output_path, case_id, translation_path = load_case_or_plan(
@@ -237,6 +248,8 @@ def main():
                     max(20.0, float(len(metrics))),
                     elapsed=0.0,
                     completed=False,
+                    display_mode=display_mode,
+                    max_lines=display_max_lines,
                 ),
                 "",
                 None,
@@ -256,6 +269,8 @@ def main():
             max(20.0, float(len(metrics))),
             elapsed=0.0,
             completed=False,
+            display_mode=display_mode,
+            max_lines=display_max_lines,
         ),
         "",
         None,
@@ -366,6 +381,8 @@ def main():
                     elapsed=(time.perf_counter() - run_start_perf),
                     completed=False,
                     running_elapsed=running_elapsed,
+                    display_mode=display_mode,
+                    max_lines=display_max_lines,
                 ),
                 "",
                 None,
@@ -429,6 +446,8 @@ def main():
         completed_durations=completed_durations,
         skipped_metrics=[{"metric_id": mid, "status": "skipped", "reason": "missing_field_mappings", "missing_fields": fields} for mid, fields in skipped_metrics.items()],
         all_metrics=all_enabled_metrics,
+        display_mode=display_mode,
+        display_max_lines=display_max_lines,
     )
     if early_returned:
         return

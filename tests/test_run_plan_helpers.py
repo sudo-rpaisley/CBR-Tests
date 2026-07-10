@@ -91,6 +91,7 @@ def test_parse_run_plan_args_reads_required_case(monkeypatch):
     args = parse_run_plan_args()
     assert args.case == "case.json"
     assert args.case_id == "ad_hoc_case"
+    assert args.display == "compact"
 
 
 def test_update_live_header_formats_and_forwards(monkeypatch):

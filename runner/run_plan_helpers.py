@@ -164,6 +164,15 @@ def parse_run_plan_args() -> argparse.Namespace:
         default=None,
         help="Optional worker count override. Use 1 to force serial execution.",
     )
+    parser.add_argument(
+        "--display",
+        choices=("compact", "full", "quiet", "interactive"),
+        default="compact",
+        help=(
+            "Live display mode: compact fits tmux panes, full shows every metric, "
+            "quiet suppresses live taxonomy updates, and interactive reserves the Textual TUI mode."
+        ),
+    )
     return parser.parse_args()
 
 

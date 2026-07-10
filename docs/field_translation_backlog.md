@@ -127,3 +127,10 @@ This document tracks follow-up fixes, hardening work, and feature ideas for data
 - Should examples remain in the repo, move to a separate examples package, or be generated from validated datasets?
 - Should translation reports be written by default in CI workflows?
 - Should field translation become its own command rather than flags on `run_plan.py`?
+
+
+## Live display follow-ups
+
+- Build the full Textual live dashboard with expandable taxonomy branches, keyboard navigation, and persistent expand/collapse state.
+- Add clickable or key-driven filters for running, failed, skipped, and recently completed metrics.
+- Preserve compact mode as the default fallback for tmux, CI, and terminals without Textual support.

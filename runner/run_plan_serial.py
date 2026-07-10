@@ -27,6 +27,8 @@ def run_serial_metrics(
     completed_durations: dict,
     skipped_metrics: list[dict] | None = None,
     all_metrics: list[dict] | None = None,
+    display_mode: str = "full",
+    display_max_lines: int | None = None,
 ):
     overall_status = "success"
     test_results = {}
@@ -52,7 +54,8 @@ def run_serial_metrics(
         try:
             success, metric_payload = run_metric_with_heartbeat(
                 dataset_path, metric, metrics, completed_statuses, completed_durations, idx, total_metrics,
-                shutdown_requested, run_start_perf, metric_handlers, default_metric_predictions
+                shutdown_requested, run_start_perf, metric_handlers, default_metric_predictions,
+                display_mode=display_mode, max_lines=display_max_lines
             )
         except KeyboardInterrupt:
             overall_status = "cancelled"

@@ -1,13 +1,129 @@
 from __future__ import annotations
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
-from concurrent.futures import as_completed, wait, FIRST_COMPLETED
+from concurrent.futures import wait, FIRST_COMPLETED
 from pathlib import Path
 
 from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
 
 
-def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False, running_elapsed: dict[str, float] | None = None) -> str:
+def _metric_status_line(
+    metric_id: str,
+    status: str,
+    duration: float | None = None,
+    elapsed: float | None = None,
+    expected: float | None = None,
+) -> str:
+    status_text = colorize_status(status)
+    if status == "running" and elapsed is not None and expected is not None:
+        return f"{metric_id} [{status_text} | {elapsed:.1f}/{expected:.0f}s ] [{render_metric_activity_bar(elapsed, expected_seconds=expected)}]"
+    if duration is not None:
+        return f"{metric_id} [{status_text} | run time {duration:.1f}s]"
+    return f"{metric_id} [{status_text}]"
+
+
+def _metric_display_status(metric_id: str, current_metric_id: str, completed_statuses: dict[str, str]) -> str:
+    if metric_id in completed_statuses:
+        return completed_statuses[metric_id]
+    if metric_id == current_metric_id:
+        return "running"
+    return "pending"
+
+
+def render_compact_taxonomy(
+    metrics: list[dict],
+    current_metric_id: str,
+    completed_statuses: dict[str, str],
+    completed_durations: dict[str, float],
+    default_predictions: dict[str, float],
+    predicted_metric_total: float,
+    elapsed: float | None = None,
+    running_elapsed: dict[str, float] | None = None,
+    max_lines: int | None = 24,
+) -> str:
+    """Render a screen-friendly taxonomy summary with attention items expanded."""
+    branch_counts: dict[str, dict[str, int]] = {}
+    status_counts = {"success": 0, "running": 0, "failed": 0, "pending": 0, "stopping": 0, "cancelled": 0}
+    attention: list[str] = []
+    recent: list[str] = []
+    running_elapsed = running_elapsed or {}
+    predicted_metric_total = max(1.0, predicted_metric_total)
+
+    for metric in metrics:
+        metric_id = metric.get("metric_id", "unknown_metric")
+        path = metric.get("taxonomy_path", []) or ["uncategorized"]
+        branch = str(path[0])
+        status = _metric_display_status(metric_id, current_metric_id, completed_statuses)
+        if status == "running" and elapsed is not None and metric_id == current_metric_id and metric_id not in running_elapsed:
+            run_elapsed = elapsed
+        else:
+            run_elapsed = running_elapsed.get(metric_id, 0.0)
+        status_counts[status] = status_counts.get(status, 0) + 1
+        branch_counts.setdefault(
+            branch,
+            {"total": 0, "success": 0, "running": 0, "failed": 0, "pending": 0, "stopping": 0, "cancelled": 0},
+        )
+        branch_counts[branch]["total"] += 1
+        branch_counts[branch][status] = branch_counts[branch].get(status, 0) + 1
+
+        if status in {"running", "failed", "stopping", "cancelled"}:
+            expected = max(
+                completed_durations.get(metric_id, default_predictions.get(metric_id, predicted_metric_total)),
+                run_elapsed + 1.0,
+            )
+            attention.append("  " + _metric_status_line(metric_id, status, completed_durations.get(metric_id), run_elapsed, expected))
+        elif status == "success":
+            recent.append("  " + _metric_status_line(metric_id, status, completed_durations.get(metric_id)))
+
+    lines = [
+        "Taxonomy summary",
+        "  " + " | ".join(f"{name}: {count}" for name, count in status_counts.items() if count),
+        "",
+        "Branches",
+    ]
+    for branch, counts in branch_counts.items():
+        detail = ", ".join(f"{key} {value}" for key, value in counts.items() if key != "total" and value)
+        prefix = "▾" if counts.get("running") or counts.get("failed") else "▸"
+        lines.append(f"  {prefix} {branch}: {detail} / {counts['total']} total")
+
+    if attention:
+        lines.extend(["", "Active / attention"] + attention[:8])
+    if recent:
+        lines.extend(["", "Recently completed"] + recent[-5:])
+
+    total_lines = len(lines)
+    if max_lines is not None and max_lines > 0 and total_lines > max_lines:
+        visible = max(1, max_lines - 1)
+        hidden = total_lines - visible
+        lines = lines[:visible] + [f"... {hidden} lines hidden; use --display full for all metrics."]
+    return "\n".join(lines)
+
+
+def render_live_taxonomy(
+    metrics: list[dict],
+    current_metric_id: str,
+    completed_statuses: dict[str, str],
+    completed_durations: dict[str, float],
+    default_predictions: dict[str, float],
+    predicted_metric_total: float,
+    elapsed: float | None = None,
+    completed: bool = False,
+    running_elapsed: dict[str, float] | None = None,
+    display_mode: str = "full",
+    max_lines: int | None = None,
+) -> str:
+    if display_mode in {"compact", "interactive"}:
+        return render_compact_taxonomy(
+            metrics,
+            current_metric_id,
+            completed_statuses,
+            completed_durations,
+            default_predictions,
+            predicted_metric_total,
+            elapsed=elapsed,
+            running_elapsed=running_elapsed,
+            max_lines=max_lines or 24,
+        )
     lines: list[str] = []
     printed_nodes: set[tuple[str, ...]] = set()
     predicted_metric_total = max(1.0, predicted_metric_total)
@@ -44,7 +160,7 @@ def render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_
     return '\n'.join(lines)
 
 
-def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[dict], completed_statuses: dict[str, str], completed_durations: dict[str, float], current: int, total: int, shutdown_requested: dict, run_start_perf: float | None, metric_handlers: dict, default_predictions: dict[str, float]):
+def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[dict], completed_statuses: dict[str, str], completed_durations: dict[str, float], current: int, total: int, shutdown_requested: dict, run_start_perf: float | None, metric_handlers: dict, default_predictions: dict[str, float], display_mode: str = "full", max_lines: int | None = None):
     metric_id = metric.get('metric_id', 'unknown_metric')
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(lambda: metric_handlers[metric_id](dataset_path, metric))
@@ -56,7 +172,7 @@ def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[di
                 elapsed = time.perf_counter() - heartbeat_start
                 instant_total = max(elapsed + 1.0, elapsed * 1.2, 20.0)
                 smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
-                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed, completed=True)
+                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed, completed=True, display_mode=display_mode, max_lines=max_lines)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = render_overall_progress_line(current, total, run_elapsed, elapsed)
                 print_live_status(task_line, overall_line, None)
@@ -65,7 +181,7 @@ def run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[di
                 elapsed = time.perf_counter() - heartbeat_start
                 instant_total = max(elapsed + 1.0, elapsed * 1.2, 20.0)
                 smoothed_total = max(elapsed, 0.7 * smoothed_total + 0.3 * instant_total)
-                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed)
+                task_line = render_live_taxonomy(metrics, metric_id, completed_statuses, completed_durations, default_predictions, smoothed_total, elapsed, display_mode=display_mode, max_lines=max_lines)
                 run_elapsed = (time.perf_counter() - run_start_perf) if run_start_perf is not None else None
                 overall_line = render_overall_progress_line(max(0, current - 1), total, run_elapsed, elapsed)
                 warning_line = None

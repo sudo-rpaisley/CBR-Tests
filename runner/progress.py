@@ -12,6 +12,7 @@ ANSI_COLORS = {
     "cancelled": "\x1b[31m",
 }
 LIVE_HEADER_LINES: list[str] = []
+LIVE_OUTPUT_ENABLED = True
 
 
 def supports_color() -> bool:
@@ -56,6 +57,8 @@ def render_overall_progress_line(current: int, total: int, run_elapsed: float | 
 
 
 def print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None:
+    if not LIVE_OUTPUT_ENABLED:
+        return
     header_block = "\n".join(LIVE_HEADER_LINES).rstrip()
     overall_line = overall_line or ""
     if not sys.stdout.isatty() or not supports_color():
@@ -81,3 +84,8 @@ def print_live_status(task_line: str, overall_line: str, warning_line: str | Non
 def set_live_header(lines: list[str]) -> None:
     global LIVE_HEADER_LINES
     LIVE_HEADER_LINES = list(lines)
+
+
+def set_live_output_enabled(enabled: bool) -> None:
+    global LIVE_OUTPUT_ENABLED
+    LIVE_OUTPUT_ENABLED = bool(enabled)
