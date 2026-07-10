@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from concurrent.futures import wait, FIRST_COMPLETED
 from pathlib import Path
 
+from runner.telemetry import RunState
 from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
 
 
@@ -29,6 +30,64 @@ def _metric_display_status(metric_id: str, current_metric_id: str, completed_sta
         return "running"
     return "pending"
 
+
+
+def render_compact_run_state(
+    run_state: RunState,
+    default_predictions: dict[str, float],
+    running_elapsed: dict[str, float] | None = None,
+    max_lines: int | None = 24,
+) -> str:
+    """Render a compact dashboard from centralized run telemetry."""
+    running_elapsed = running_elapsed or {}
+    status_counts = run_state.status_counts()
+    lines = [
+        "Taxonomy summary",
+        "  " + " | ".join(f"{name}: {count}" for name, count in status_counts.items() if count),
+        "",
+        "Branches",
+    ]
+    for branch, counts in run_state.branch_summaries().items():
+        detail = ", ".join(f"{key} {value}" for key, value in counts.items() if key != "total" and value)
+        prefix = "▾" if counts.get("running") or counts.get("failed") or counts.get("skipped") else "▸"
+        lines.append(f"  {prefix} {branch}: {detail} / {counts['total']} total")
+
+    attention = run_state.attention_metrics()
+    if attention:
+        lines.extend(["", "Active / attention"])
+        for metric in attention[:8]:
+            elapsed = running_elapsed.get(metric.metric_id)
+            expected = None
+            if metric.status == "running":
+                elapsed = elapsed or 0.0
+                expected = max(default_predictions.get(metric.metric_id, 20.0), elapsed + 1.0)
+            line = "  " + _metric_status_line(
+                metric.metric_id,
+                metric.status,
+                duration=metric.elapsed_seconds,
+                elapsed=elapsed,
+                expected=expected,
+            )
+            if metric.missing_fields:
+                line += f" | missing: {', '.join(metric.missing_fields)}"
+            lines.append(line)
+
+    recent = run_state.recent_completed(limit=5)
+    if recent:
+        lines.extend(["", "Recently completed"])
+        lines.extend("  " + _metric_status_line(metric.metric_id, metric.status, duration=metric.elapsed_seconds) for metric in recent)
+
+    if run_state.events:
+        lines.extend(["", "Recent events"])
+        for event in run_state.events[-3:]:
+            lines.append(f"  {event.timestamp.strftime('%H:%M:%S')} {event.message}")
+
+    total_lines = len(lines)
+    if max_lines is not None and max_lines > 0 and total_lines > max_lines:
+        visible = max(1, max_lines - 1)
+        hidden = total_lines - visible
+        lines = lines[:visible] + [f"... {hidden} lines hidden; use --display full for all metrics."]
+    return "\n".join(lines)
 
 def render_compact_taxonomy(
     metrics: list[dict],
@@ -111,7 +170,15 @@ def render_live_taxonomy(
     running_elapsed: dict[str, float] | None = None,
     display_mode: str = "full",
     max_lines: int | None = None,
+    run_state: RunState | None = None,
 ) -> str:
+    if display_mode in {"compact", "interactive"} and run_state is not None:
+        return render_compact_run_state(
+            run_state,
+            default_predictions,
+            running_elapsed=running_elapsed,
+            max_lines=max_lines or 24,
+        )
     if display_mode in {"compact", "interactive"}:
         return render_compact_taxonomy(
             metrics,

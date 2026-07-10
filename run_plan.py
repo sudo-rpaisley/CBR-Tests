@@ -14,6 +14,7 @@ from runner.execution import auto_worker_count, run_metric_with_heartbeat, run_m
 from runner.progress import render_overall_progress_line, print_live_status, set_live_header, set_live_output_enabled
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.tabular import load_tabular_dataset
+from runner.telemetry import RunState
 from runner.field_translation import (
     available_translated_fields,
     default_field_translation_path,
@@ -112,6 +113,15 @@ def main():
     if not metrics:
         raise ValueError("The plan does not contain any enabled metrics.")
 
+    run_state = RunState.from_plan(
+        case_id=case_id,
+        plan=plan,
+        metrics=all_enabled_metrics,
+        dataset_path=dataset_path,
+        output_path=output_path,
+        started_at=datetime.now(timezone.utc),
+    )
+
     dataset_columns = read_tabular_dataset_columns(dataset_path)
     detected_translation = detect_standard_pcap_field_translation_for_dataset(dataset_path)
     explicit_translation_path = translation_path is not None
@@ -159,6 +169,7 @@ def main():
             print(f"{yellow}WARNING: Skipping metrics with missing required field mappings:{reset}")
             for metric_id, missing_fields in skipped_metrics.items():
                 print(f"  {yellow}[SKIPPED]{reset} {metric_id}: {', '.join(missing_fields)}")
+                run_state.mark_skipped(metric_id, missing_fields)
             metrics = [m for m in metrics if m["metric_id"] not in skipped_metrics]
             if not metrics and not args.field_translation_dry_run:
                 raise ValueError("No enabled metrics can run because required field mappings are missing.")
@@ -250,6 +261,7 @@ def main():
                     completed=False,
                     display_mode=display_mode,
                     max_lines=display_max_lines,
+                    run_state=run_state,
                 ),
                 "",
                 None,
@@ -271,6 +283,7 @@ def main():
             completed=False,
             display_mode=display_mode,
             max_lines=display_max_lines,
+            run_state=run_state,
         ),
         "",
         None,
@@ -344,6 +357,7 @@ def main():
                 if mid in active_running:
                     completed_statuses[mid] = "running"
                     running_started_at.setdefault(mid, time.perf_counter())
+                    run_state.mark_running(mid)
                 elif completed_statuses.get(mid) == "running":
                     completed_statuses[mid] = "pending"
                     running_started_at.pop(mid, None)
@@ -352,6 +366,11 @@ def main():
                 running_started_at.pop(metric_id, None)
                 if elapsed_seconds is not None:
                     completed_durations[metric_id] = float(elapsed_seconds)
+                run_state.mark_completed(
+                    metric_id,
+                    "success" if ok else "failed",
+                    elapsed_seconds=float(elapsed_seconds) if elapsed_seconds is not None else None,
+                )
             running_elapsed = {
                 mid: (time.perf_counter() - started_at)
                 for mid, started_at in running_started_at.items()
@@ -383,6 +402,7 @@ def main():
                     running_elapsed=running_elapsed,
                     display_mode=display_mode,
                     max_lines=display_max_lines,
+                    run_state=run_state,
                 ),
                 "",
                 None,
@@ -448,6 +468,7 @@ def main():
         all_metrics=all_enabled_metrics,
         display_mode=display_mode,
         display_max_lines=display_max_lines,
+        run_state=run_state,
     )
     if early_returned:
         return

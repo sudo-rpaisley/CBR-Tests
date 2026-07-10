@@ -124,7 +124,7 @@ Metrics can declare explicit field needs with `field_requirements`, using `requi
 
 ### Live display modes
 
-Large plans can produce more live taxonomy rows than fit in a tmux pane. The default `--display compact` mode shows branch counts, active/attention metrics, and recent completions instead of every metric. Use `--display full` to restore the original full taxonomy list, `--display quiet` for minimal output, or `--display interactive` to request the Textual-style interactive workflow. Interactive mode currently falls back to the compact live view while the full expand/collapse TUI is built out.
+Large plans can produce more live taxonomy rows than fit in a tmux pane. The default `--display compact` mode shows branch counts, active/attention metrics, and recent completions instead of every metric. Use `--display full` to restore the original full taxonomy list, `--display quiet` for minimal output, or `--display interactive` to request the Textual-style interactive workflow. Interactive mode currently falls back to the compact live view while the full expand/collapse TUI is built out. The compact view is backed by shared run telemetry so branch counts, skipped metrics, attention items, and recent events can also feed future reports and interactive displays.
 
 ## Execution behavior
 
