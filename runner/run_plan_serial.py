@@ -6,6 +6,7 @@ from pathlib import Path
 from runner.execution import run_metric_with_heartbeat
 from runner.run_plan_helpers import build_outcome, write_outcome, update_live_header
 from runner.taxonomy import print_taxonomy_summary
+from runner.telemetry import RunState
 
 
 def run_serial_metrics(
@@ -25,6 +26,11 @@ def run_serial_metrics(
     run_start_perf: float,
     completed_statuses: dict,
     completed_durations: dict,
+    skipped_metrics: list[dict] | None = None,
+    all_metrics: list[dict] | None = None,
+    display_mode: str = "full",
+    display_max_lines: int | None = None,
+    run_state: RunState | None = None,
 ):
     overall_status = "success"
     test_results = {}
@@ -47,10 +53,13 @@ def run_serial_metrics(
             time.sleep(0.2)
         metric_started_at = datetime.now(timezone.utc)
         metric_start_perf = time.perf_counter()
+        if run_state is not None:
+            run_state.mark_running(metric["metric_id"], started_at=metric_started_at)
         try:
             success, metric_payload = run_metric_with_heartbeat(
                 dataset_path, metric, metrics, completed_statuses, completed_durations, idx, total_metrics,
-                shutdown_requested, run_start_perf, metric_handlers, default_metric_predictions
+                shutdown_requested, run_start_perf, metric_handlers, default_metric_predictions,
+                display_mode=display_mode, max_lines=display_max_lines
             )
         except KeyboardInterrupt:
             overall_status = "cancelled"
@@ -64,6 +73,13 @@ def run_serial_metrics(
             })
             completed_statuses[metric["metric_id"]] = "cancelled"
             completed_durations[metric["metric_id"]] = round(time.perf_counter() - metric_start_perf, 6)
+            if run_state is not None:
+                run_state.mark_completed(
+                    metric["metric_id"],
+                    "cancelled",
+                    elapsed_seconds=completed_durations[metric["metric_id"]],
+                    error="Cancelled by user",
+                )
             break
 
         metric_elapsed_seconds = round(time.perf_counter() - metric_start_perf, 6)
@@ -90,7 +106,7 @@ def run_serial_metrics(
                 metric_results.append(metric_record)
                 outcome = build_outcome(
                     "failed", case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
-                    metric_results, test_results, run_started_at, run_start_perf, column_validations
+                    metric_results, test_results, run_started_at, run_start_perf, column_validations, skipped_metrics=skipped_metrics, all_metrics=all_metrics
                 )
                 write_outcome(output_path, outcome)
                 if sys.stdout.isatty():
@@ -103,6 +119,14 @@ def run_serial_metrics(
         metric_results.append(metric_record)
         completed_statuses[metric["metric_id"]] = metric_record["status"]
         completed_durations[metric["metric_id"]] = metric_elapsed_seconds
+        if run_state is not None:
+            run_state.mark_completed(
+                metric["metric_id"],
+                metric_record["status"],
+                elapsed_seconds=metric_elapsed_seconds,
+                error=metric_record.get("error"),
+                finished_at=metric_finished_at,
+            )
 
         if shutdown_requested["requested"]:
             overall_status = "cancelled"
@@ -110,6 +134,6 @@ def run_serial_metrics(
 
     outcome = build_outcome(
         overall_status, case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
-        metric_results, test_results, run_started_at, run_start_perf, column_validations
+        metric_results, test_results, run_started_at, run_start_perf, column_validations, skipped_metrics=skipped_metrics, all_metrics=all_metrics
     )
     return False, outcome

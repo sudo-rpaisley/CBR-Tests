@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from tests.pearson_profile import validate_candidate_fields, compute_pearson_profile
+from runner.field_translation import translate_metric_fields
 from tests.spearman_profile import validate_spearman_candidate_fields, compute_spearman_profile
 from tests.column_quality_profile import compute_column_quality_profile
 from tests.data_quality_profile import compute_missing_value_ratio, compute_duplicate_row_ratio
@@ -239,8 +240,9 @@ TABULAR_COMPUTE_METRICS = {
 }
 
 
-def _wrap_registered_handler(handler, shared_df: pd.DataFrame | None):
+def _wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None):
     def _wrapped(dataset_path: Path, metric: dict):
+        metric = translate_metric_fields(metric, field_translation or {}, shared_df.columns if shared_df is not None else None)
         if shared_df is None:
             return handler(dataset_path, metric)
         metric_with_shared = dict(metric)
@@ -249,25 +251,27 @@ def _wrap_registered_handler(handler, shared_df: pd.DataFrame | None):
     return _wrapped
 
 
-def _make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset):
-    return lambda dp, m: run_tabular_metric(dp, m, load_tabular_dataset, shared_df, metric_id, compute_fn)
+def _make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None):
+    return lambda dp, m: run_tabular_metric(dp, translate_metric_fields(m, field_translation or {}, shared_df.columns if shared_df is not None else None), load_tabular_dataset, shared_df, metric_id, compute_fn)
 
 
-def build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset):
+def build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None):
     handlers = {
-        metric_id: _wrap_registered_handler(handler, shared_df)
+        metric_id: _wrap_registered_handler(handler, shared_df, field_translation)
         for metric_id, handler in METRIC_REGISTRY.items()
     }
+    def _tm(metric: dict):
+        return translate_metric_fields(metric, field_translation or {}, shared_df.columns if shared_df is not None else None)
     handlers.update({
-        'pearson_correlation_profile': lambda dp, m: run_pearson_metric(dp, m, load_tabular_dataset, shared_df),
-        'spearman_correlation_matrix_deviation': lambda dp, m: run_spearman_metric(dp, m, load_tabular_dataset, shared_df),
-        'column_quality_profile': lambda dp, m: run_column_quality_metric(dp, m, load_tabular_dataset, shared_df),
-        'missing_value_ratio': lambda dp, m: run_missing_value_metric(dp, m, load_tabular_dataset, shared_df),
-        'duplicate_row_ratio': lambda dp, m: run_duplicate_row_metric(dp, m, load_tabular_dataset, shared_df),
-        'distance_correlation_matrix_deviation': lambda dp, m: run_distance_correlation_metric(dp, m, load_tabular_dataset, shared_df),
+        'pearson_correlation_profile': lambda dp, m: run_pearson_metric(dp, _tm(m), load_tabular_dataset, shared_df),
+        'spearman_correlation_matrix_deviation': lambda dp, m: run_spearman_metric(dp, _tm(m), load_tabular_dataset, shared_df),
+        'column_quality_profile': lambda dp, m: run_column_quality_metric(dp, _tm(m), load_tabular_dataset, shared_df),
+        'missing_value_ratio': lambda dp, m: run_missing_value_metric(dp, _tm(m), load_tabular_dataset, shared_df),
+        'duplicate_row_ratio': lambda dp, m: run_duplicate_row_metric(dp, _tm(m), load_tabular_dataset, shared_df),
+        'distance_correlation_matrix_deviation': lambda dp, m: run_distance_correlation_metric(dp, _tm(m), load_tabular_dataset, shared_df),
     })
     handlers.update({
-        metric_id: _make_tabular_compute_handler(metric_id, compute_fn, shared_df, load_tabular_dataset)
+        metric_id: _make_tabular_compute_handler(metric_id, compute_fn, shared_df, load_tabular_dataset, field_translation)
         for metric_id, compute_fn in TABULAR_COMPUTE_METRICS.items()
     })
     return handlers

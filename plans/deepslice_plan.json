@@ -46,6 +46,14 @@
         "store_summary": true,
         "store_column_validation": true,
         "comparison_key": "pearson_profile_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -72,6 +80,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "missing_value_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -98,6 +114,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "duplicate_row_ratio_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -127,6 +151,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "spearman_correlation_matrix_deviation_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -156,6 +188,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "distance_correlation_matrix_deviation_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -185,6 +225,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "kolmogorov_smirnov_feature_divergence_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -214,6 +262,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "wasserstein_feature_distance_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -243,6 +299,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "energy_distance_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     },
     {
@@ -272,6 +336,14 @@
         "store_raw_output": true,
         "store_summary": true,
         "comparison_key": "maximum_mean_discrepancy_v1"
+      },
+      "field_requirements": {
+        "required": [
+          "GBR (Input 6)",
+          "Packet Delay Budget (Latency)",
+          "Packet Loss Rate (Reliability)"
+        ],
+        "optional": []
       }
     }
   ],
