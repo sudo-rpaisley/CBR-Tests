@@ -89,6 +89,8 @@ def main():
     plan, dataset_path, output_path, case_id, translation_path = load_case_or_plan(
         case_file, args.dataset, args.output, args.case_id, args.field_translation
     )
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Dataset does not exist: {dataset_path}")
 
     metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
     all_enabled_metrics = list(metrics)

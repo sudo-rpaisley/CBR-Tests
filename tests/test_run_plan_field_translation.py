@@ -106,3 +106,30 @@ def test_no_update_field_translation_does_not_create_sidecar(tmp_path):
     )
 
     assert not (tmp_path / "dataset.field_translation.json").exists()
+
+
+def test_field_translation_dry_run_fails_for_missing_dataset(tmp_path):
+    dataset = tmp_path / "missing.csv"
+    plan = tmp_path / "plan.json"
+    output = tmp_path / "out.json"
+    _write_plan(plan)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "run_plan.py"),
+            "--case",
+            str(plan),
+            "--dataset",
+            str(dataset),
+            "--output",
+            str(output),
+            "--field-translation-dry-run",
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode != 0
+    assert f"Dataset does not exist: {dataset}" in result.stderr
