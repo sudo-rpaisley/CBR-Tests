@@ -142,15 +142,18 @@ def test_report_fields_explain_each_report_format():
     assert "Markdown" in markdown_report.help
 
 
-def test_result_sections_include_expandable_failed_metrics(tmp_path):
+def test_result_sections_include_expandable_human_readable_metric_results(tmp_path):
     output = tmp_path / "outcome.json"
     output.write_text(
-        '{"metric_results": [{"metric_id": "m1", "status": "failed", "error": "boom"}]}',
+        '{"metric_results": [{"metric_id": "m1", "status": "failed", "error": "boom", "elapsed_seconds": 1.25}, {"metric_id": "m2", "status": "success", "elapsed_seconds": 2.0}], "test_results": {"m2": {"summary": {"ratio": 0.95}}}}',
         encoding="utf-8",
     )
 
-    sections = build_result_sections({"dry_run": False, "status": "failed", "output_path": str(output), "metrics_total": 1, "skipped_count": 0})
+    sections = build_result_sections({"dry_run": False, "status": "failed", "output_path": str(output), "metrics_total": 2, "skipped_count": 0})
 
     assert sections[0].title == "Summary"
-    assert sections[1].title == "Failed metrics (1)"
-    assert sections[1].lines == ["m1: boom"]
+    assert sections[1].title == "Human-readable metric results (2)"
+    assert "m1 | status=failed | elapsed=1.2s | detail=boom" in sections[1].lines
+    assert "m2 | status=success | elapsed=2.0s | ratio=0.95" in sections[1].lines
+    assert any(section.title == "Successful metrics (1)" for section in sections)
+    assert any(section.title == "Failed metrics (1)" for section in sections)

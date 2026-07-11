@@ -319,31 +319,85 @@ class ResultSection:
     expanded: bool = False
 
 
-def _load_outcome_summary(output_path: str | None) -> tuple[list[str], list[str]]:
+def _load_outcome_payload(output_path: str | None) -> dict:
     if not output_path:
-        return [], []
+        return {}
     path = Path(output_path)
     if not path.exists():
-        return [], []
-    payload = json.loads(path.read_text(encoding="utf-8"))
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _scalar_summary_items(payload: object, limit: int = 4) -> list[str]:
+    if not isinstance(payload, dict):
+        return []
+    source = payload.get("summary") if isinstance(payload.get("summary"), dict) else payload
+    items: list[str] = []
+    for key, value in source.items():
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            items.append(f"{key}={value}")
+        if len(items) >= limit:
+            break
+    return items
+
+
+def _test_result_for_metric(test_results: dict, metric_id: str) -> object:
+    if metric_id in test_results:
+        return test_results[metric_id]
+    for value in test_results.values():
+        if isinstance(value, dict) and metric_id in value:
+            return value[metric_id]
+    return None
+
+
+def _metric_result_line(metric: dict, test_results: dict) -> str:
+    metric_id = metric.get("metric_id", "unknown_metric")
+    status = metric.get("status", "unknown")
+    elapsed = metric.get("elapsed_seconds")
+    parts = [metric_id, f"status={status}"]
+    if elapsed is not None:
+        parts.append(f"elapsed={float(elapsed):.1f}s")
+    reason = metric.get("reason") or metric.get("error") or metric.get("message")
+    if reason:
+        parts.append(f"detail={reason}")
+    summary_items = _scalar_summary_items(_test_result_for_metric(test_results, metric_id))
+    if summary_items:
+        parts.append("; ".join(summary_items))
+    return " | ".join(parts)
+
+
+def _outcome_result_sections(output_path: str | None) -> tuple[list[str], list[str], list[str], list[str]]:
+    payload = _load_outcome_payload(output_path)
+    metric_results = payload.get("metric_results", []) if isinstance(payload, dict) else []
+    test_results = payload.get("test_results", {}) if isinstance(payload, dict) else {}
+    readable: list[str] = []
     failed: list[str] = []
     skipped: list[str] = []
-    for metric in payload.get("metric_results", []):
-        metric_id = metric.get("metric_id", "unknown_metric")
+    success: list[str] = []
+    for metric in metric_results:
+        line = _metric_result_line(metric, test_results)
+        readable.append(line)
         status = metric.get("status", "unknown")
-        reason = metric.get("reason") or metric.get("error") or metric.get("message") or "no detail recorded"
         if status == "failed":
-            failed.append(f"{metric_id}: {reason}")
+            failed.append(line)
         elif status == "skipped":
-            skipped.append(f"{metric_id}: {reason}")
-    return failed, skipped
+            skipped.append(line)
+        elif status == "success":
+            success.append(line)
+    if not readable and isinstance(test_results, dict):
+        readable = [f"{key}: {', '.join(_scalar_summary_items(value)) or 'result available'}" for key, value in test_results.items()]
+    return readable, success, failed, skipped
 
 
 def build_result_sections(result: dict | None) -> list[ResultSection]:
     result = result or {}
     summary = [line for line in _result_lines(result, None) if line and not line.endswith("program") and not line.startswith("Enter/") and not line.startswith("r:")]
-    failed, skipped = _load_outcome_summary(result.get("output_path"))
+    readable, success, failed, skipped = _outcome_result_sections(result.get("output_path"))
     sections = [ResultSection("Summary", summary, True)]
+    if readable:
+        sections.append(ResultSection(f"Human-readable metric results ({len(readable)})", readable, False))
+    if success:
+        sections.append(ResultSection(f"Successful metrics ({len(success)})", success, False))
     if failed:
         sections.append(ResultSection(f"Failed metrics ({len(failed)})", failed, False))
     if skipped:
