@@ -1,9 +1,80 @@
 from __future__ import annotations
 
+import atexit
+import select
 import shutil
+import sys
+import termios
+import tty
 
 from runner.telemetry import RunState
 from runner.progress import colorize_status, render_metric_activity_bar
+
+
+_KEYBOARD_ENABLED = False
+_OLD_TERMIOS = None
+_INTERACTIVE_STATE = {"selected_branch": 0, "expanded_branches": set()}
+
+
+def enable_interactive_keyboard() -> None:
+    global _KEYBOARD_ENABLED, _OLD_TERMIOS
+    if _KEYBOARD_ENABLED or not sys.stdin.isatty():
+        return
+    _OLD_TERMIOS = termios.tcgetattr(sys.stdin.fileno())
+    tty.setcbreak(sys.stdin.fileno())
+    _KEYBOARD_ENABLED = True
+    atexit.register(disable_interactive_keyboard)
+
+
+def disable_interactive_keyboard() -> None:
+    global _KEYBOARD_ENABLED, _OLD_TERMIOS
+    if not _KEYBOARD_ENABLED or _OLD_TERMIOS is None:
+        return
+    termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, _OLD_TERMIOS)
+    _KEYBOARD_ENABLED = False
+
+
+def _read_key() -> str | None:
+    if not _KEYBOARD_ENABLED:
+        return None
+    readable, _, _ = select.select([sys.stdin], [], [], 0)
+    if not readable:
+        return None
+    char = sys.stdin.read(1)
+    if char == "\x1b":
+        readable, _, _ = select.select([sys.stdin], [], [], 0)
+        if readable and sys.stdin.read(1) == "[":
+            readable, _, _ = select.select([sys.stdin], [], [], 0)
+            if readable:
+                code = sys.stdin.read(1)
+                return {"A": "up", "B": "down"}.get(code)
+        return "escape"
+    if char in {"k", "K"}:
+        return "up"
+    if char in {"j", "J"}:
+        return "down"
+    if char in {"\r", "\n", " "}:
+        return "toggle"
+    return None
+
+
+def _update_interactive_state(branches: list[str]) -> None:
+    if not branches:
+        return
+    key = _read_key()
+    if key == "up":
+        _INTERACTIVE_STATE["selected_branch"] = max(0, int(_INTERACTIVE_STATE["selected_branch"]) - 1)
+    elif key == "down":
+        _INTERACTIVE_STATE["selected_branch"] = min(len(branches) - 1, int(_INTERACTIVE_STATE["selected_branch"]) + 1)
+    elif key == "toggle":
+        selected = branches[int(_INTERACTIVE_STATE["selected_branch"])]
+        expanded = _INTERACTIVE_STATE["expanded_branches"]
+        if selected in expanded:
+            expanded.remove(selected)
+        else:
+            expanded.add(selected)
+    if int(_INTERACTIVE_STATE["selected_branch"]) >= len(branches):
+        _INTERACTIVE_STATE["selected_branch"] = len(branches) - 1
 
 
 def _metric_status_line(
@@ -100,13 +171,44 @@ def render_interactive_run_state(
         _tui_border(width, "├", "─", "┤", "Branches"),
     ]
 
-    branch_lines = []
-    for branch, branch_counts in run_state.branch_summaries().items():
+    branch_summaries = run_state.branch_summaries()
+    branch_names = list(branch_summaries)
+    _INTERACTIVE_STATE["expanded_branches"].update(
+        branch
+        for branch, branch_counts in branch_summaries.items()
+        if branch_counts.get("running") or branch_counts.get("failed") or branch_counts.get("skipped")
+    )
+    _update_interactive_state(branch_names)
+    selected_branch = int(_INTERACTIVE_STATE["selected_branch"])
+    expanded_branches = _INTERACTIVE_STATE["expanded_branches"]
+    lines.append(_tui_row("Controls: ↑/↓ select branch • Enter/Space expand/collapse • Ctrl-C cancel", width))
+    for index, (branch, branch_counts) in enumerate(branch_summaries.items()):
         detail = ", ".join(f"{key} {value}" for key, value in branch_counts.items() if key != "total" and value)
-        has_attention = branch_counts.get("running") or branch_counts.get("failed") or branch_counts.get("skipped")
-        prefix = "▾" if has_attention else "▸"
-        branch_lines.append(f"{prefix} {branch}: {detail} / {branch_counts['total']} total")
-    lines.extend(_tui_row(line, width) for line in branch_lines[:8])
+        prefix = "▾" if branch in expanded_branches else "▸"
+        selector = ">" if index == selected_branch else " "
+        lines.append(_tui_row(f"{selector} {prefix} {branch}: {detail} / {branch_counts['total']} total", width))
+        if branch in expanded_branches:
+            branch_metrics = [metric for metric in run_state.metrics.values() if metric.branch == branch]
+            for metric in branch_metrics[:10]:
+                elapsed = running_elapsed.get(metric.metric_id)
+                expected = None
+                if metric.status == "running":
+                    elapsed = elapsed or 0.0
+                    expected = max(default_predictions.get(metric.metric_id, 20.0), elapsed + 1.0)
+                metric_line = "    " + _metric_status_line(
+                    metric.metric_id,
+                    metric.status,
+                    duration=metric.elapsed_seconds,
+                    elapsed=elapsed,
+                    expected=expected,
+                )
+                if metric.missing_fields:
+                    metric_line += f" | missing: {', '.join(metric.missing_fields)}"
+                if metric.error:
+                    metric_line += f" | error: {metric.error}"
+                lines.append(_tui_row(metric_line, width))
+            if len(branch_metrics) > 10:
+                lines.append(_tui_row(f"    … {len(branch_metrics) - 10} more metrics in this branch", width))
 
     attention = run_state.attention_metrics()
     if attention:

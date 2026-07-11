@@ -25,8 +25,10 @@ Suppresses live taxonomy/status redraws. Use in CI, scripts, or logs where live 
 
 Shows an ANSI terminal dashboard with boxed sections for run metadata, overall
 progress, branch summaries, active/attention metrics, recently completed metrics,
-and recent events. The dashboard uses the current terminal size and redraws in
-place when stdout is an interactive terminal.
+and recent events. During a TUI-launched interactive run, use ↑/↓ to select a
+branch and Enter/Space to expand or collapse its metric rows. The dashboard uses
+the current terminal size and redraws in place when stdout is an interactive
+terminal.
 
 ## Operator controls
 

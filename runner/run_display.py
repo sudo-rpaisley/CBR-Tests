@@ -5,6 +5,7 @@ import re
 import sys
 from datetime import datetime, timezone
 
+from runner.live_rendering import disable_interactive_keyboard, enable_interactive_keyboard
 from runner.progress import set_live_output_enabled
 from runner.run_plan_helpers import build_title_box_lines
 
@@ -18,6 +19,10 @@ def configure_display(args) -> tuple[bool, str, int | None]:
     )
     display_mode = args.display
     display_max_lines = 24 if display_mode == "compact" else None
+    if args.display == "interactive" and live_render_enabled:
+        enable_interactive_keyboard()
+    else:
+        disable_interactive_keyboard()
     set_live_output_enabled(args.display != "quiet")
     return live_render_enabled, display_mode, display_max_lines
 
