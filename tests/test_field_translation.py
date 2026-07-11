@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from runner.field_translation import FieldTranslationError, load_field_translation
@@ -366,7 +365,11 @@ def test_validate_field_translation_payload_rejects_metadata_for_unknown_fields(
 
 
 def test_field_translation_report_includes_suggestions_and_markdown():
-    from runner.field_translation import build_field_translation_report, format_field_translation_markdown_report
+    from runner.field_translation import (
+        build_field_translation_report,
+        format_field_translation_markdown_report,
+        format_field_translation_report,
+    )
 
     metric = {"metric_id": "m1", "field_requirements": {"required": ["Source IP"], "optional": ["Destination IP"]}}
     report = build_field_translation_report(
@@ -382,8 +385,14 @@ def test_field_translation_report_includes_suggestions_and_markdown():
     )
 
     markdown = format_field_translation_markdown_report(report)
+    text = format_field_translation_report(report)
 
     assert report["sidecar_status"] == "suppressed"
     assert report["unused_dataset_columns"] == ["bytes", "dst_ip", "src_ip"]
     assert report["metrics"]["m1"]["missing_optional_fields"] == ["Destination IP"]
+    assert "Unused dataset columns (3):" in text
+    assert "bytes" in text
+    assert "dst_ip" in text
+    assert "src_ip" in text
+    assert "Unused dataset columns: bytes, dst_ip, src_ip" not in text
     assert "| `m1` | skipped | Source IP | Destination IP |" in markdown

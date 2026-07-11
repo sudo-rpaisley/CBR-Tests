@@ -105,6 +105,28 @@ def write_field_translation_report(path: Path, report: dict) -> None:
         f.write("\n")
 
 
+def format_column_section(title: str, items: list[str], *, indent: int = 2, max_width: int = 100) -> list[str]:
+    """Format a long list as readable fixed-width columns."""
+    if not items:
+        return []
+
+    prefix = " " * indent
+    available_width = max(20, max_width - indent)
+    cell_width = min(max(max(len(item) for item in items) + 2, 18), available_width)
+    column_count = max(1, available_width // cell_width)
+    row_count = (len(items) + column_count - 1) // column_count
+    lines = [f"{title} ({len(items)}):"]
+
+    for row in range(row_count):
+        cells = []
+        for column in range(column_count):
+            index = column * row_count + row
+            if index < len(items):
+                cells.append(items[index].ljust(cell_width))
+        lines.append(prefix + "".join(cells).rstrip())
+    return lines
+
+
 def format_field_translation_report(report: dict, use_color: bool = False) -> str:
     """Format a field translation report for humans."""
     yellow = "\033[33m" if use_color else ""
@@ -129,7 +151,7 @@ def format_field_translation_report(report: dict, use_color: bool = False) -> st
         else:
             lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}")
     skipped = report.get("skipped_metrics", [])
-    lines.extend(["", f"Skipped metric count: {len(skipped)}"] )
+    lines.extend(["", f"Skipped metric count: {len(skipped)}"])
     detected = report.get("detected_mappings", {})
     explicit = report.get("explicit_mappings", {})
     if detected:
@@ -147,7 +169,7 @@ def format_field_translation_report(report: dict, use_color: bool = False) -> st
             lines.append(f"  {field}: {', '.join(columns)}")
     unused = report.get("unused_dataset_columns", [])
     if unused:
-        lines.append(f"Unused dataset columns: {', '.join(unused)}")
+        lines.extend(["", *format_column_section("Unused dataset columns", unused)])
     return "\n".join(lines)
 
 

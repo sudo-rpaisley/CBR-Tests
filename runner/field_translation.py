@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from runner.field_translation_reports import format_column_section
+
 PCAP_FIELD_CANDIDATES: dict[str, tuple[str, ...]] = {
     "timestamp": ("frame.time_epoch", "frame.time", "timestamp", "time"),
     "Source IP": ("ip.src", "ipv6.src"),
@@ -561,7 +563,7 @@ def format_field_translation_report(report: dict, use_color: bool = False) -> st
         else:
             lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}")
     skipped = report.get("skipped_metrics", [])
-    lines.extend(["", f"Skipped metric count: {len(skipped)}"] )
+    lines.extend(["", f"Skipped metric count: {len(skipped)}"])
     detected = report.get("detected_mappings", {})
     explicit = report.get("explicit_mappings", {})
     if detected:
@@ -579,7 +581,7 @@ def format_field_translation_report(report: dict, use_color: bool = False) -> st
             lines.append(f"  {field}: {', '.join(columns)}")
     unused = report.get("unused_dataset_columns", [])
     if unused:
-        lines.append(f"Unused dataset columns: {', '.join(unused)}")
+        lines.extend(["", *format_column_section("Unused dataset columns", unused)])
     return "\n".join(lines)
 
 
