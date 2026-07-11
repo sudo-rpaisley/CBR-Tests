@@ -231,23 +231,62 @@ def format_column_section(title: str, items: list[str], *, indent: int = 2, max_
     return [f"{title} ({len(items)}):", *format_column_grid(items, indent=indent, max_width=max_width)]
 
 
+def _metric_detail_entry(metric_id: str, details: dict) -> str:
+    """Format a metric name with any available status details."""
+    details_text = []
+    missing = details.get("missing_fields", [])
+    optional = details.get("missing_optional_fields", [])
+    error = details.get("error")
+    if missing:
+        details_text.append(f"missing {', '.join(missing)}")
+    if optional:
+        details_text.append(f"optional missing {', '.join(optional)}")
+    if error:
+        details_text.append(str(error))
+    if details_text:
+        return f"{metric_id}: {'; '.join(details_text)}"
+    return metric_id
+
+
+def _status_title(status: str) -> str:
+    return status.replace("_", " ").strip().title() or "Unknown"
+
+
 def format_metric_section(report: dict, use_color: bool = False, *, max_width: int | None = None) -> list[str]:
-    """Format metric statuses as a terminal-width-aware grid."""
-    yellow = "\033[33m" if use_color else ""
-    green = "\033[32m" if use_color else ""
-    reset = "\033[0m" if use_color else ""
-    metric_lines = []
+    """Format metric statuses as non-empty category sections."""
+    runnable: list[str] = []
+    runnable_with_optional_missing: list[str] = []
+    skipped: list[str] = []
+    other_statuses: dict[str, list[str]] = {}
+
     for metric_id, details in sorted(report.get("metrics", {}).items()):
         status = details.get("status", "unknown")
-        missing = details.get("missing_fields", [])
         optional = details.get("missing_optional_fields", [])
-        if status == "skipped":
-            metric_lines.append(f"{yellow}[SKIPPED]{reset} {metric_id}: missing {', '.join(missing)}")
-        elif optional:
-            metric_lines.append(f"{green}[RUNNABLE]{reset} {metric_id}: optional missing {', '.join(optional)}")
+        if status == "runnable" and optional:
+            runnable_with_optional_missing.append(_metric_detail_entry(metric_id, details))
+        elif status == "runnable":
+            runnable.append(metric_id)
+        elif status == "skipped":
+            skipped.append(_metric_detail_entry(metric_id, details))
         else:
-            metric_lines.append(f"{green}[RUNNABLE]{reset} {metric_id}")
-    return ["Metrics:", *format_column_grid(metric_lines, max_width=max_width)]
+            other_statuses.setdefault(status, []).append(_metric_detail_entry(metric_id, details))
+
+    lines = ["Metrics:"]
+    if runnable:
+        lines.extend(format_column_section("Runnable metrics", runnable, max_width=max_width))
+    if runnable_with_optional_missing:
+        lines.extend(
+            format_column_section(
+                "Runnable metrics with missing optional fields",
+                runnable_with_optional_missing,
+                max_width=max_width,
+            )
+        )
+    if skipped:
+        lines.extend(format_column_section("Skipped metrics", skipped, max_width=max_width))
+    for status, items in sorted(other_statuses.items()):
+        lines.extend(format_column_section(f"{_status_title(status)} metrics", items, max_width=max_width))
+    return lines
 
 
 def format_field_translation_report(report: dict, use_color: bool = False) -> str:

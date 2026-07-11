@@ -424,7 +424,7 @@ def test_format_column_section_uses_terminal_width_fallback(monkeypatch):
     assert lines == ["Unused dataset columns (3):", "  alpha             beta              gamma"]
 
 
-def test_format_metric_section_uses_column_grid():
+def test_format_metric_section_uses_category_grid_without_repeated_status_labels():
     from runner.field_translation_reports import _display_width, format_metric_section
 
     report = {
@@ -437,8 +437,40 @@ def test_format_metric_section_uses_column_grid():
     lines = format_metric_section(report, max_width=120)
 
     assert lines[0] == "Metrics:"
-    assert lines[1].count("[RUNNABLE]") > 1
-    assert all(_display_width(line) <= 120 for line in lines[1:])
+    assert lines[1] == "Runnable metrics (8):"
+    assert lines[2].count("metric_") > 1
+    assert "[RUNNABLE]" not in "\n".join(lines)
+    assert all(_display_width(line) <= 120 for line in lines[2:])
+
+
+def test_format_metric_section_omits_empty_categories():
+    from runner.field_translation_reports import format_metric_section
+
+    report = {
+        "metrics": {
+            "good_metric": {"status": "runnable", "missing_fields": [], "missing_optional_fields": []},
+            "partial_metric": {
+                "status": "runnable",
+                "missing_fields": [],
+                "missing_optional_fields": ["Destination IP"],
+            },
+            "skipped_metric": {"status": "skipped", "missing_fields": ["Source IP"], "missing_optional_fields": []},
+            "error_metric": {"status": "error", "error": "could not load reference"},
+        }
+    }
+
+    text = "\n".join(format_metric_section(report, max_width=100))
+
+    assert "Runnable metrics (1):" in text
+    assert "Runnable metrics with missing optional fields (1):" in text
+    assert "partial_metric:" in text
+    assert "optional missing" in text
+    assert "Destination IP" in text
+    assert "Skipped metrics (1):" in text
+    assert "skipped_metric: missing Source IP" in text
+    assert "Error metrics (1):" in text
+    assert "error_metric: could not load reference" in text
+    assert "Unknown metrics" not in text
 
 
 def test_field_translation_report_includes_suggestions_and_markdown():
