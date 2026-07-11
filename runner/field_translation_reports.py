@@ -183,15 +183,8 @@ def _wrap_display_width(value: str, width: int) -> list[str]:
     return lines or [value]
 
 
-def format_column_section(title: str, items: list[str], *, indent: int = 2, max_width: int | None = None) -> list[str]:
-    """Format a long list as readable fixed-width columns.
-
-    By default, use the current terminal width so the report displays as many
-    columns as will fit on the user's display. Long names are wrapped inside
-    cells, and width calculations use terminal display width for better Unicode
-    alignment. A ``max_width`` can still be provided by tests or callers that
-    need deterministic wrapping.
-    """
+def format_column_grid(items: list[str], *, indent: int = 2, max_width: int | None = None) -> list[str]:
+    """Format values as a display-width-aware grid without a section title."""
     if not items:
         return []
 
@@ -206,7 +199,7 @@ def format_column_section(title: str, items: list[str], *, indent: int = 2, max_
     cell_width = min(max(widest_segment + 2, 18), available_width)
     column_count = max(1, available_width // cell_width)
     row_count = (len(items) + column_count - 1) // column_count
-    lines = [f"{title} ({len(items)}):"]
+    lines: list[str] = []
 
     for row in range(row_count):
         row_cells = []
@@ -224,29 +217,49 @@ def format_column_section(title: str, items: list[str], *, indent: int = 2, max_
     return lines
 
 
-def format_field_translation_report(report: dict, use_color: bool = False) -> str:
-    """Format a field translation report for humans."""
+def format_column_section(title: str, items: list[str], *, indent: int = 2, max_width: int | None = None) -> list[str]:
+    """Format a long list as a readable fixed-width column section.
+
+    By default, use the current terminal width so the report displays as many
+    columns as will fit on the user's display. Long names are wrapped inside
+    cells, and width calculations use terminal display width for better Unicode
+    alignment. A ``max_width`` can still be provided by tests or callers that
+    need deterministic wrapping.
+    """
+    if not items:
+        return []
+    return [f"{title} ({len(items)}):", *format_column_grid(items, indent=indent, max_width=max_width)]
+
+
+def format_metric_section(report: dict, use_color: bool = False, *, max_width: int | None = None) -> list[str]:
+    """Format metric statuses as a terminal-width-aware grid."""
     yellow = "\033[33m" if use_color else ""
     green = "\033[32m" if use_color else ""
     reset = "\033[0m" if use_color else ""
+    metric_lines = []
+    for metric_id, details in sorted(report.get("metrics", {}).items()):
+        status = details.get("status", "unknown")
+        missing = details.get("missing_fields", [])
+        optional = details.get("missing_optional_fields", [])
+        if status == "skipped":
+            metric_lines.append(f"{yellow}[SKIPPED]{reset} {metric_id}: missing {', '.join(missing)}")
+        elif optional:
+            metric_lines.append(f"{green}[RUNNABLE]{reset} {metric_id}: optional missing {', '.join(optional)}")
+        else:
+            metric_lines.append(f"{green}[RUNNABLE]{reset} {metric_id}")
+    return ["Metrics:", *format_column_grid(metric_lines, max_width=max_width)]
+
+
+def format_field_translation_report(report: dict, use_color: bool = False) -> str:
+    """Format a field translation report for humans."""
     lines = [
         "Field translation report",
         f"Dataset: {report.get('dataset')}",
         f"Translation file: {report.get('translation_file') or 'n/a'}",
         f"Sidecar status: {report.get('sidecar_status', 'unknown')}",
         "",
-        "Metrics:",
+        *format_metric_section(report, use_color=use_color),
     ]
-    for metric_id, details in sorted(report.get("metrics", {}).items()):
-        status = details.get("status", "unknown")
-        missing = details.get("missing_fields", [])
-        optional = details.get("missing_optional_fields", [])
-        if status == "skipped":
-            lines.append(f"  {yellow}[SKIPPED]{reset} {metric_id}: missing {', '.join(missing)}")
-        elif optional:
-            lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}: optional missing {', '.join(optional)}")
-        else:
-            lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}")
     skipped = report.get("skipped_metrics", [])
     lines.extend(["", f"Skipped metric count: {len(skipped)}"])
     detected = report.get("detected_mappings", {})

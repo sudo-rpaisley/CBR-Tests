@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from runner.field_translation_reports import format_column_section
+from runner.field_translation_reports import format_column_section, format_metric_section
 
 PCAP_FIELD_CANDIDATES: dict[str, tuple[str, ...]] = {
     "timestamp": ("frame.time_epoch", "frame.time", "timestamp", "time"),
@@ -544,27 +544,14 @@ def write_field_translation_report(path: Path, report: dict) -> None:
 
 def format_field_translation_report(report: dict, use_color: bool = False) -> str:
     """Format a field translation report for humans."""
-    yellow = "\033[33m" if use_color else ""
-    green = "\033[32m" if use_color else ""
-    reset = "\033[0m" if use_color else ""
     lines = [
         "Field translation report",
         f"Dataset: {report.get('dataset')}",
         f"Translation file: {report.get('translation_file') or 'n/a'}",
         f"Sidecar status: {report.get('sidecar_status', 'unknown')}",
         "",
-        "Metrics:",
+        *format_metric_section(report, use_color=use_color),
     ]
-    for metric_id, details in sorted(report.get("metrics", {}).items()):
-        status = details.get("status", "unknown")
-        missing = details.get("missing_fields", [])
-        optional = details.get("missing_optional_fields", [])
-        if status == "skipped":
-            lines.append(f"  {yellow}[SKIPPED]{reset} {metric_id}: missing {', '.join(missing)}")
-        elif optional:
-            lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}: optional missing {', '.join(optional)}")
-        else:
-            lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}")
     skipped = report.get("skipped_metrics", [])
     lines.extend(["", f"Skipped metric count: {len(skipped)}"])
     detected = report.get("detected_mappings", {})

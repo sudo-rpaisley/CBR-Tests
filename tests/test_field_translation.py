@@ -424,6 +424,23 @@ def test_format_column_section_uses_terminal_width_fallback(monkeypatch):
     assert lines == ["Unused dataset columns (3):", "  alpha             beta              gamma"]
 
 
+def test_format_metric_section_uses_column_grid():
+    from runner.field_translation_reports import _display_width, format_metric_section
+
+    report = {
+        "metrics": {
+            f"metric_{index}": {"status": "runnable", "missing_fields": [], "missing_optional_fields": []}
+            for index in range(8)
+        }
+    }
+
+    lines = format_metric_section(report, max_width=120)
+
+    assert lines[0] == "Metrics:"
+    assert lines[1].count("[RUNNABLE]") > 1
+    assert all(_display_width(line) <= 120 for line in lines[1:])
+
+
 def test_field_translation_report_includes_suggestions_and_markdown():
     from runner.field_translation import (
         build_field_translation_report,
