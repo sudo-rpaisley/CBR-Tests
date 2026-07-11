@@ -126,10 +126,20 @@ def run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, s
 
 
 def run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
+    source_df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
     candidate_fields = metric['input_requirements']['candidate_fields']
+    available_fields = [field for field in candidate_fields if field in source_df.columns]
+    df = source_df[available_fields].copy() if available_fields else source_df.iloc[:, 0:0].copy()
+    parameters = metric.get('calculation', {}).get('parameters', {})
+    max_rows = int(parameters.get('max_rows', 5000))
+    sampled_row_count = len(df)
+    if max_rows > 0 and len(df) > max_rows:
+        df = df.sample(n=max_rows, random_state=int(parameters.get('random_state', 0))).sort_index()
+        sampled_row_count = len(df)
     minimum_runnable_fields = metric['input_requirements'].get('minimum_runnable_fields', 2)
     result = compute_distance_correlation_profile(df, candidate_fields)
+    result['profile']['summary']['sampled_row_count'] = sampled_row_count
+    result['profile']['summary']['source_row_count'] = len(source_df)
     runnable_fields = result['profile']['fields']
     if len(runnable_fields) < minimum_runnable_fields:
         return False, {'column_validation': result['column_validation'], 'error': 'Not enough usable numeric columns to compute distance correlation.'}

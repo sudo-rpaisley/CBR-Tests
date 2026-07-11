@@ -21,8 +21,10 @@ def run_handshake_plausibility_metric(dataset_path: Path, metric: dict) -> tuple
     field_map=metric.get("input_requirements",{}).get("field_map",{})
     req=["protocol","total_fwd_packets","total_bwd_packets","syn_flag_count","ack_flag_count","rst_flag_count","fin_flag_count"]
     if any(k not in field_map for k in req): return False,{"error":"Missing required fields for handshake_plausibility_profile.","missing_fields":[k for k in req if k not in field_map]}
-    try: df=load_tabular_dataset(dataset_path)
-    except Exception as exc: return False,{"error":f"Failed to load dataset: {exc}"}
+    df=metric.get("_shared_df")
+    if df is None:
+        try: df=load_tabular_dataset(dataset_path)
+        except Exception as exc: return False,{"error":f"Failed to load dataset: {exc}"}
     miss=[field_map[k] for k in req if field_map[k] not in df.columns]
     if miss: return False,{"error":"Missing required fields for handshake_plausibility_profile.","missing_fields":miss}
     p=metric.get("calculation",{}).get("parameters",{})

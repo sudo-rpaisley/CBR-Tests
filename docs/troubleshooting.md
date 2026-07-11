@@ -41,3 +41,12 @@ Use `--display compact` for a one-screen summary or `--display quiet` for minima
 ## I do not want files created or changed near datasets
 
 Use `--no-update-field-translation`. Existing sidecars can still be loaded, but new sidecars will not be created or updated.
+
+## Run ends with `Killed` near the last metrics
+
+A bare `Killed` line usually means the operating system terminated Python, most often because the process exceeded available memory. Large tabular runs are most at risk when expensive metrics run late in parallel. Two safeguards are in place:
+
+- Registered metrics that can use the already-loaded shared dataframe should avoid reloading the same multi-million-row CSV.
+- Distance-correlation metrics sample rows by default before building pairwise distance matrices, because the full algorithm grows quadratically with row count.
+
+If this still happens, re-run from the TUI or CLI with `--workers 1` to reduce concurrent memory pressure, or lower the distance-correlation `calculation.parameters.max_rows` value in the plan.
