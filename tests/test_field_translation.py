@@ -364,6 +364,66 @@ def test_validate_field_translation_payload_rejects_metadata_for_unknown_fields(
         })
 
 
+def test_format_column_section_uses_terminal_width(monkeypatch):
+    from os import terminal_size
+
+    from runner.field_translation_reports import format_column_section
+
+    items = [f"long dataset col {index}" for index in range(10)]
+
+    monkeypatch.setattr(
+        "runner.field_translation_reports.shutil.get_terminal_size",
+        lambda fallback: terminal_size((120, 24)),
+    )
+
+    wide_lines = format_column_section("Unused dataset columns", items)
+    fixed_lines = format_column_section("Unused dataset columns", items, max_width=80)
+
+    assert len(wide_lines) < len(fixed_lines)
+    assert wide_lines[1].count("long dataset col") > fixed_lines[1].count("long dataset col")
+
+
+def test_format_column_section_wraps_long_names():
+    from runner.field_translation_reports import _display_width, format_column_section
+
+    long_name = "This is a very long dataset column name that should wrap cleanly"
+
+    lines = format_column_section("Unused dataset columns", [long_name, "short"], max_width=50)
+
+    assert "This is a very long dataset column name that" not in "\n".join(lines)
+    assert any("should wrap cleanly" in line for line in lines)
+    assert all(_display_width(line) <= 50 for line in lines[1:])
+
+
+def test_format_column_section_uses_display_width_for_unicode_padding():
+    from runner.field_translation_reports import _display_ljust, _display_width
+
+    padded = _display_ljust("列名", 6)
+
+    assert _display_width("列名") == 4
+    assert padded == "列名  "
+    assert _display_width(padded) == 6
+
+
+def test_format_column_section_uses_terminal_width_fallback(monkeypatch):
+    from os import terminal_size
+
+    from runner.field_translation_reports import format_column_section
+
+    fallback_values = []
+
+    def fake_get_terminal_size(fallback):
+        fallback_values.append(fallback)
+        return terminal_size(fallback)
+
+    monkeypatch.setattr("runner.field_translation_reports.shutil.get_terminal_size", fake_get_terminal_size)
+
+    lines = format_column_section("Unused dataset columns", ["alpha", "beta", "gamma"])
+
+    assert fallback_values == [(100, 24)]
+    assert lines == ["Unused dataset columns (3):", "  alpha             beta              gamma"]
+
+
 def test_field_translation_report_includes_suggestions_and_markdown():
     from runner.field_translation import (
         build_field_translation_report,

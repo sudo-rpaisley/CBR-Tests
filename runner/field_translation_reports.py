@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
+import unicodedata
 from pathlib import Path
 
 SIDECAR_SCHEMA_VERSION = 1
@@ -108,25 +111,116 @@ def write_field_translation_report(path: Path, report: dict) -> None:
         f.write("\n")
 
 
-def format_column_section(title: str, items: list[str], *, indent: int = 2, max_width: int = 100) -> list[str]:
-    """Format a long list as readable fixed-width columns."""
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+MAX_COLUMN_CELL_WIDTH = 40
+
+
+def _display_width(value: str) -> int:
+    """Return terminal display width for a string, ignoring ANSI escapes."""
+    width = 0
+    for character in ANSI_ESCAPE_RE.sub("", value):
+        if unicodedata.combining(character):
+            continue
+        width += 2 if unicodedata.east_asian_width(character) in {"F", "W"} else 1
+    return width
+
+
+def _display_ljust(value: str, width: int) -> str:
+    """Left-pad based on display width rather than Python character count."""
+    return value + " " * max(0, width - _display_width(value))
+
+
+def _split_display_width(value: str, width: int) -> list[str]:
+    """Split a string into display-width-limited chunks."""
+    if width <= 0 or not value:
+        return [value]
+
+    chunks: list[str] = []
+    current: list[str] = []
+    current_width = 0
+    for character in value:
+        if unicodedata.combining(character):
+            character_width = 0
+        elif unicodedata.east_asian_width(character) in {"F", "W"}:
+            character_width = 2
+        else:
+            character_width = 1
+        if current and current_width + character_width > width:
+            chunks.append("".join(current))
+            current = []
+            current_width = 0
+        current.append(character)
+        current_width += character_width
+    if current:
+        chunks.append("".join(current))
+    return chunks or [""]
+
+
+def _wrap_display_width(value: str, width: int) -> list[str]:
+    """Wrap a value on spaces when possible, falling back to display-width chunks."""
+    if _display_width(value) <= width:
+        return [value]
+
+    lines: list[str] = []
+    current = ""
+    for word in value.split(" "):
+        if not word:
+            continue
+        candidate = word if not current else f"{current} {word}"
+        if _display_width(candidate) <= width:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+        if _display_width(word) > width:
+            word_chunks = _split_display_width(word, width)
+            lines.extend(word_chunks[:-1])
+            current = word_chunks[-1]
+        else:
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [value]
+
+
+def format_column_section(title: str, items: list[str], *, indent: int = 2, max_width: int | None = None) -> list[str]:
+    """Format a long list as readable fixed-width columns.
+
+    By default, use the current terminal width so the report displays as many
+    columns as will fit on the user's display. Long names are wrapped inside
+    cells, and width calculations use terminal display width for better Unicode
+    alignment. A ``max_width`` can still be provided by tests or callers that
+    need deterministic wrapping.
+    """
     if not items:
         return []
 
+    if max_width is None:
+        max_width = shutil.get_terminal_size(fallback=(100, 24)).columns
+
     prefix = " " * indent
     available_width = max(20, max_width - indent)
-    cell_width = min(max(max(len(item) for item in items) + 2, 18), available_width)
+    wrap_width = min(MAX_COLUMN_CELL_WIDTH, available_width)
+    wrapped_items = [_wrap_display_width(item, wrap_width) for item in items]
+    widest_segment = max(_display_width(segment) for item in wrapped_items for segment in item)
+    cell_width = min(max(widest_segment + 2, 18), available_width)
     column_count = max(1, available_width // cell_width)
     row_count = (len(items) + column_count - 1) // column_count
     lines = [f"{title} ({len(items)}):"]
 
     for row in range(row_count):
-        cells = []
+        row_cells = []
         for column in range(column_count):
             index = column * row_count + row
-            if index < len(items):
-                cells.append(items[index].ljust(cell_width))
-        lines.append(prefix + "".join(cells).rstrip())
+            if index < len(wrapped_items):
+                row_cells.append(wrapped_items[index])
+        row_height = max(len(cell) for cell in row_cells)
+        for cell_line in range(row_height):
+            cells = []
+            for cell in row_cells:
+                segment = cell[cell_line] if cell_line < len(cell) else ""
+                cells.append(_display_ljust(segment, cell_width))
+            lines.append(prefix + "".join(cells).rstrip())
     return lines
 
 
