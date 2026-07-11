@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from runner.field_translation_reports import format_column_section
+
 PCAP_FIELD_CANDIDATES: dict[str, tuple[str, ...]] = {
     "timestamp": ("frame.time_epoch", "frame.time", "timestamp", "time"),
     "Source IP": ("ip.src", "ipv6.src"),
@@ -493,7 +495,10 @@ def build_field_translation_report(
 ) -> dict:
     """Build a machine-readable field translation validation report."""
     usage = collect_field_requirements(plan)
+    dataset_column_set = set(dataset_columns or [])
     mapped_sources = set((field_translation or {}).keys())
+    directly_used_columns = dataset_column_set & set(usage)
+    unused_dataset_columns = sorted(dataset_column_set - mapped_sources - directly_used_columns)
     missing_fields = sorted({field for fields in skipped_metrics.values() for field in fields})
     optional_missing = missing_optional_fields or {}
     optional_missing_fields = sorted({field for fields in optional_missing.values() for field in fields})
@@ -503,7 +508,7 @@ def build_field_translation_report(
         "translation_file": str(translation_path) if translation_path else None,
         "sidecar_status": sidecar_status or "unknown",
         "dataset_columns": sorted(dataset_columns or []),
-        "unused_dataset_columns": sorted(set(dataset_columns or []) - mapped_sources),
+        "unused_dataset_columns": unused_dataset_columns,
         "available_fields": sorted(available_fields),
         "detected_mappings": dict(sorted((detected_translation or {}).items())),
         "explicit_mappings": dict(sorted((explicit_translation or {}).items())),
@@ -561,7 +566,7 @@ def format_field_translation_report(report: dict, use_color: bool = False) -> st
         else:
             lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}")
     skipped = report.get("skipped_metrics", [])
-    lines.extend(["", f"Skipped metric count: {len(skipped)}"] )
+    lines.extend(["", f"Skipped metric count: {len(skipped)}"])
     detected = report.get("detected_mappings", {})
     explicit = report.get("explicit_mappings", {})
     if detected:
@@ -579,7 +584,7 @@ def format_field_translation_report(report: dict, use_color: bool = False) -> st
             lines.append(f"  {field}: {', '.join(columns)}")
     unused = report.get("unused_dataset_columns", [])
     if unused:
-        lines.append(f"Unused dataset columns: {', '.join(unused)}")
+        lines.extend(["", *format_column_section("Unused dataset columns", unused)])
     return "\n".join(lines)
 
 
