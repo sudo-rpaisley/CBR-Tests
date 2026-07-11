@@ -177,12 +177,14 @@ def parse_run_plan_args() -> argparse.Namespace:
         ),
     )
     args = parser.parse_args()
+    args.tui_session = bool(args.tui)
     if args.tui:
         if "--display" not in sys.argv:
             args.display = "interactive"
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             raise SystemExit("error: --tui requires an interactive terminal")
         args = launch_tui(args)
+        args.tui_session = True
     validate_required_run_args(args)
     return args
 

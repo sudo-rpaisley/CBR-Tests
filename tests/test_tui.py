@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from runner.tui import apply_tui_fields, build_default_tui_fields, describe_tui_field, list_file_browser_entries, validate_required_run_args
+from runner.tui import _result_lines, apply_tui_fields, build_default_tui_fields, describe_tui_field, detected_max_workers, list_file_browser_entries, validate_required_run_args
 
 
 def _args(**overrides):
@@ -97,3 +97,28 @@ def test_describe_tui_field_explains_selected_field_actions():
     assert description[1] == "Selected: Dataset file"
     assert any("CSV/TSV/XLSX/PCAP" in line for line in description)
     assert description[-1] == "How: Press Enter to browse files, or press e to type/paste a path."
+
+
+def test_worker_field_shows_detected_max_workers():
+    fields = build_default_tui_fields(_args())
+    worker_field = next(field for field in fields if field.name == "workers")
+
+    description = describe_tui_field(worker_field)
+
+    assert detected_max_workers() >= 1
+    assert "detected maximum" in worker_field.help
+    assert description[-1] == "How: Press Enter or e to type a value."
+
+
+def test_post_dry_run_result_lines_offer_run_action():
+    lines = _result_lines({"dry_run": True, "status": "ready", "output_path": "out.json", "metrics_total": 2, "skipped_count": 0}, _args())
+
+    assert lines[0] == "Dry run complete"
+    assert "r: run now using these settings" in lines
+    assert "Enter/m: back to setup menu" in lines
+
+
+def test_post_dry_run_result_lines_show_attention_for_skips():
+    lines = _result_lines({"dry_run": True, "status": "needs_attention", "output_path": "out.json", "metrics_total": 2, "skipped_count": 1}, _args())
+
+    assert "Attention: 1 metric(s) skipped or blocked by missing fields" in lines

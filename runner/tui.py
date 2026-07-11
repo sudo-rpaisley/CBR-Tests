@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import curses
+import os
 from curses import textpad
 from dataclasses import dataclass
 from pathlib import Path
 
 
 DISPLAY_MODES = ("compact", "full", "quiet", "interactive")
+
+
+def detected_max_workers() -> int:
+    return max(1, os.cpu_count() or 1)
 
 
 @dataclass
@@ -67,7 +72,7 @@ def build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiFie
         TuiField("output", "Outcome JSON", "text", args.output or "outcomes/outcome_tui.json", (), "Where the run result JSON should be written. Case files may already provide this.", "Required inputs"),
         TuiField("case_id", "Ad-hoc case ID", "text", args.case_id or "ad_hoc_case", (), "Label written to the outcome when you run a plan directly instead of a case.", "Required inputs"),
         TuiField("display", "Live display mode", "choice", args.display or "interactive", DISPLAY_MODES, "Choose how much progress detail to show after the run starts.", "Execution"),
-        TuiField("workers", "Worker count", "int", "" if args.workers is None else str(args.workers), (), "Leave blank for automatic worker selection; enter 1 for serial execution.", "Execution"),
+        TuiField("workers", "Worker count", "int", "" if args.workers is None else str(args.workers), (), "Leave blank for automatic worker selection; enter 1 for serial execution. The detected maximum is shown beside this field.", "Execution"),
         TuiField("taxonomy_file", "Metric order file", "choice", args.taxonomy_file or "", taxonomy_choices, "Optional taxonomy JSON that controls metric ordering.", "Taxonomy"),
         TuiField("taxonomy_strict", "Require taxonomy coverage", "bool", bool(args.taxonomy_strict), (), "When enabled, fail if the taxonomy order omits enabled metrics.", "Taxonomy"),
         TuiField("field_translation", "Field translation JSON", "choice", args.field_translation or "", translation_choices, "Optional mapping from dataset column names to canonical test field names.", "Field translation"),
@@ -100,6 +105,9 @@ def validate_required_run_args(args) -> None:
 def _format_value(field: TuiField) -> str:
     if field.kind == "bool":
         return "Yes" if field.value else "No"
+    if field.name == "workers":
+        value = str(field.value or "").strip() or "auto"
+        return f"{value} / max {detected_max_workers()} detected"
     value = str(field.value or "")
     return value if value else "(blank)"
 
@@ -249,3 +257,69 @@ def launch_tui(args, repo_root: Path | None = None):
     if selected is None:
         raise SystemExit("TUI cancelled")
     return apply_tui_fields(args, selected)
+
+
+def _result_lines(result: dict | None, args) -> list[str]:
+    result = result or {}
+    title = "Dry run complete" if result.get("dry_run") else "Run complete"
+    lines = [title]
+    if result.get("status"):
+        lines.append(f"Status: {result['status']}")
+    if result.get("output_path"):
+        lines.append(f"Outcome: {result['output_path']}")
+    if result.get("metrics_total") is not None:
+        lines.append(f"Metrics: {result.get('metrics_total', 0)} total")
+    if result.get("skipped_count"):
+        lines.append(f"Attention: {result['skipped_count']} metric(s) skipped or blocked by missing fields")
+    elif result.get("dry_run"):
+        lines.append("Dry-run validation did not report missing required fields.")
+    lines.append("")
+    lines.append("Enter/m: back to setup menu")
+    if result.get("dry_run"):
+        lines.append("r: run now using these settings")
+    lines.append("q: quit program")
+    return lines
+
+
+def _confirm_run_after_errors(stdscr, skipped_count: int) -> bool:
+    while True:
+        stdscr.erase()
+        height, width = stdscr.getmaxyx()
+        lines = [
+            "Dry run found issues",
+            f"{skipped_count} metric(s) may be skipped or blocked by missing fields.",
+            "Run anyway?",
+            "y: yes, run metrics now",
+            "n/q/Esc: no, return to results",
+        ]
+        for row, line in enumerate(lines[:height]):
+            stdscr.addstr(row, 0, line[: width - 1], curses.A_BOLD if row == 0 else curses.A_NORMAL)
+        key = stdscr.getch()
+        if key in (ord("y"), ord("Y")):
+            return True
+        if key in (ord("n"), ord("N"), ord("q"), 27):
+            return False
+
+
+def _post_run_curses(stdscr, result: dict | None, args) -> str:
+    while True:
+        stdscr.erase()
+        height, width = stdscr.getmaxyx()
+        lines = _result_lines(result, args)
+        for row, line in enumerate(lines[:height]):
+            attr = curses.A_BOLD if row == 0 else curses.A_NORMAL
+            stdscr.addstr(row, 0, line[: width - 1], attr)
+        key = stdscr.getch()
+        if key in (10, 13, ord("m"), ord("M")):
+            return "menu"
+        if key in (ord("q"), ord("Q"), 27):
+            return "quit"
+        if result and result.get("dry_run") and key in (ord("r"), ord("R")):
+            skipped_count = int(result.get("skipped_count") or 0)
+            if skipped_count and not _confirm_run_after_errors(stdscr, skipped_count):
+                continue
+            return "run"
+
+
+def show_post_run_menu(result: dict | None, args) -> str:
+    return curses.wrapper(_post_run_curses, result, args)

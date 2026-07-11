@@ -31,6 +31,7 @@ from runner.field_translation import (
     write_field_translation_report,
     write_text_report,
 )
+from runner.tui import launch_tui, show_post_run_menu
 from runner.run_plan_helpers import (
     build_base_header_lines,
     build_outcome,
@@ -66,8 +67,7 @@ def _confirm_sidecar_update(action: str, path: Path, args) -> bool:
     return answer in {"y", "yes"}
 
 
-def main():
-    args = parse_run_plan_args()
+def run_once(args):
     context = prepare_run_context(args, DEFAULT_METRIC_PREDICTIONS)
     shutdown_requested = context.shutdown_requested
     control_state = context.control_state
@@ -177,7 +177,13 @@ def main():
             print("Dry run complete: some metrics would be skipped due to missing field mappings.")
         else:
             print("Dry run complete: all enabled metrics have required field mappings.")
-        return
+        return {
+            "dry_run": True,
+            "status": "needs_attention" if skipped_metrics else "ready",
+            "output_path": str(output_path),
+            "metrics_total": len(all_enabled_metrics),
+            "skipped_count": len(skipped_metrics),
+        }
 
     base_header_lines = build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size=True)
     print_title_box(base_header_lines)
@@ -292,7 +298,13 @@ def main():
         )
         write_outcome(output_path, outcome)
         print_phase_status("Completed")
-        return
+        return {
+            "dry_run": False,
+            "status": outcome.get("status"),
+            "output_path": str(output_path),
+            "metrics_total": len(all_enabled_metrics),
+            "skipped_count": len(skipped_metric_records),
+        }
     early_returned, outcome = run_serial_metrics(
         dataset_path=dataset_path,
         output_path=output_path,
@@ -316,7 +328,13 @@ def main():
         run_state=run_state,
     )
     if early_returned:
-        return
+        return {
+            "dry_run": False,
+            "status": outcome.get("status") if outcome else "cancelled",
+            "output_path": str(output_path),
+            "metrics_total": len(all_enabled_metrics),
+            "skipped_count": len(skipped_metric_records),
+        }
 
     write_outcome(output_path, outcome)
     print_phase_status("Completed")
@@ -326,5 +344,30 @@ def main():
     if not live_render_enabled:
         print("Results by taxonomy:")
         print_taxonomy_summary(outcome["result_taxonomy"])
+    return {
+        "dry_run": False,
+        "status": outcome.get("status"),
+        "output_path": str(output_path),
+        "metrics_total": len(all_enabled_metrics),
+        "skipped_count": len(skipped_metric_records),
+    }
+
+
+def main():
+    args = parse_run_plan_args()
+    while True:
+        result = run_once(args)
+        if not getattr(args, "tui_session", False):
+            return result
+        action = show_post_run_menu(result, args)
+        if action == "quit":
+            return result
+        if action == "run":
+            args.field_translation_dry_run = False
+            continue
+        args = launch_tui(args)
+        args.tui_session = True
+
+
 if __name__ == "__main__":
     main()
