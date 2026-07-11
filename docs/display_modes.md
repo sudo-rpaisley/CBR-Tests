@@ -1,6 +1,6 @@
 # Display modes
 
-The runner supports live display modes with `--display`.
+The runner supports live display modes with `--display`. To choose run flags from a terminal menu instead of remembering command-line options, start with `python run_plan.py --tui`.
 
 ## `compact`
 
@@ -35,3 +35,7 @@ place when stdout is an interactive terminal.
 - `SIGUSR2`: resume.
 
 Labels are kept in text so status remains readable even when color is disabled.
+
+## Launch selector TUI
+
+Run `python run_plan.py --tui` to open a keyboard-driven terminal menu before execution. Use arrow keys to move, Enter to edit or cycle values, Space to toggle boolean options, `r` to start the run, and `q` to cancel. The selector covers case/plan paths, dataset/output paths, case ID, display mode, worker count, taxonomy controls, field translation controls, and field translation report paths.

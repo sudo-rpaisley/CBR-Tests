@@ -1,12 +1,14 @@
 import argparse
 import json
 import signal
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy
 from runner.progress import set_live_header
+from runner.tui import launch_tui, validate_required_run_args
 
 SOURCE_FIELD_CANDIDATES = ("Source IP", "Src IP", "source_ip", "src_ip")
 DESTINATION_FIELD_CANDIDATES = ("Destination IP", "Dst IP", "destination_ip", "dst_ip")
@@ -120,7 +122,8 @@ def configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> 
 
 def parse_run_plan_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a test plan from a case JSON.")
-    parser.add_argument("--case", required=True, help="Path to case JSON or plan JSON file")
+    parser.add_argument("--tui", action="store_true", help="Open a terminal UI to select run options instead of remembering flags")
+    parser.add_argument("--case", help="Path to case JSON or plan JSON file")
     parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
     parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
@@ -170,10 +173,18 @@ def parse_run_plan_args() -> argparse.Namespace:
         default="compact",
         help=(
             "Live display mode: compact fits tmux panes, full shows every metric, "
-            "quiet suppresses live taxonomy updates, and interactive reserves the Textual TUI mode."
+            "quiet suppresses live taxonomy updates, and interactive shows the full ANSI TUI dashboard."
         ),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.tui:
+        if "--display" not in sys.argv:
+            args.display = "interactive"
+        if not sys.stdin.isatty() or not sys.stdout.isatty():
+            raise SystemExit("error: --tui requires an interactive terminal")
+        args = launch_tui(args)
+    validate_required_run_args(args)
+    return args
 
 
 def update_live_header(

@@ -24,14 +24,14 @@ This document lists the runner controls, side effects, reports, and display mode
 
 ## Live display modes
 
-Use `--display <mode>` to control terminal output.
+Use `--display <mode>` to control terminal output. Use `python run_plan.py --tui` to select run flags from a terminal menu before the run starts.
 
 | Mode | Use when | Behavior |
 | --- | --- | --- |
 | `compact` | Default and recommended for tmux panes | Shows branch summaries, active/attention metrics, recent completions, and recent events instead of every metric leaf. |
 | `full` | Debugging or large scrollback logs | Shows the full taxonomy/metric list. |
 | `quiet` | CI, scripts, or logs where live redraws are noise | Suppresses live taxonomy/status redraws. Outcome JSON is still written. |
-| `interactive` | Future Textual workflow | Currently uses the compact fallback while the full expand/collapse Textual UI is developed. |
+| `interactive` | Full terminal dashboard | Shows an ANSI dashboard with run metadata, progress, branch summaries, active/attention metrics, recent completions, and recent events. |
 
 The compact view is backed by shared run telemetry. That means skipped metrics, missing fields, recent events, and branch counts are tracked centrally and can be reused by future reports and the interactive UI.
 
@@ -119,3 +119,7 @@ python run_plan.py \
   --display quiet \
   --no-update-field-translation
 ```
+
+## Selector TUI
+
+`python run_plan.py --tui` opens a pre-run selector for users who do not want to memorize flags. The selector runs only in an interactive terminal and supports arrow-key navigation, Enter-to-edit/cycle fields, Space to toggle boolean flags, `r` to run, and `q` to cancel. It can set the same options exposed by the common CLI flags, including case/plan, dataset, output, case ID, display mode, worker count, taxonomy options, sidecar behavior, dry-run behavior, and report output paths.

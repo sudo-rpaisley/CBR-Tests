@@ -13,6 +13,14 @@ Primary entrypoint:
 
 - `run_plan.py`
 
+For guided terminal use, launch the selector TUI:
+
+```bash
+python run_plan.py --tui
+```
+
+The selector lets you choose common run flags, paths, display mode, worker count, taxonomy controls, and field-translation report options before starting the run.
+
 ## Requirements
 
 - Python 3.11+
@@ -59,7 +67,8 @@ python run_plan.py --case cases/example_case.json
 
 `run_plan.py` supports:
 
-- `--case` (required): path to case JSON **or** plan JSON.
+- `--tui`: open a terminal selector so flags can be chosen instead of remembered.
+- `--case` (required unless selected in `--tui`): path to case JSON **or** plan JSON.
 - `--dataset`: required when `--case` points directly to a plan JSON.
 - `--output`: required when `--case` points directly to a plan JSON.
 - `--case-id`: optional override when running a plan directly. Default: `ad_hoc_case`.
@@ -68,7 +77,7 @@ python run_plan.py --case cases/example_case.json
 - `--workers`: optional worker override.
   - `1` forces serial mode.
   - `>1` uses parallel mode.
-- `--display`: live terminal display mode. Use `compact` for tmux-friendly summaries, `full` for every taxonomy leaf, `quiet` to suppress live taxonomy redraws, or `interactive` to opt into the Textual-style workflow as it is developed.
+- `--display`: live terminal display mode. Use `compact` for tmux-friendly summaries, `full` for every taxonomy leaf, `quiet` to suppress live taxonomy redraws, or `interactive` for the full ANSI dashboard.
 - `--field-translation`: optional translation JSON path. Overrides sidecar lookup.
 - `--no-update-field-translation`: run without creating or updating sidecar translation templates.
 - `--field-translation-dry-run`: validate translations/templates and report skipped metrics without running metrics.
@@ -143,7 +152,7 @@ Metrics can declare explicit field needs with `field_requirements`, using `requi
 
 See `docs/run_plan_controls.md` for the complete control reference and `docs/run_telemetry.md` for the shared telemetry model.
 
-Large plans can produce more live taxonomy rows than fit in a tmux pane. The default `--display compact` mode shows branch counts, active/attention metrics, and recent completions instead of every metric. Use `--display full` to restore the original full taxonomy list, `--display quiet` for minimal output, or `--display interactive` to request the Textual-style interactive workflow. Interactive mode currently falls back to the compact live view while the full expand/collapse TUI is built out. The compact view is backed by shared run telemetry so branch counts, skipped metrics, attention items, and recent events can also feed future reports and interactive displays.
+Large plans can produce more live taxonomy rows than fit in a tmux pane. The default `--display compact` mode shows branch counts, active/attention metrics, and recent completions instead of every metric. Use `--display full` to restore the original full taxonomy list, `--display quiet` for minimal output, or `--display interactive` for the full ANSI dashboard. Use `python run_plan.py --tui` when you want to select run flags from a terminal menu before execution. The compact view is backed by shared run telemetry so branch counts, skipped metrics, attention items, and recent events can also feed future reports and interactive displays.
 
 ## Execution behavior
 
