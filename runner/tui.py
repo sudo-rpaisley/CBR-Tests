@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 import curses
+import json
 import os
 from curses import textpad
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 
 DISPLAY_MODES = ("compact", "full", "quiet", "interactive")
+
+
+def default_outcome_path(case_path: str | None = None) -> str:
+    stem = Path(case_path or "tui_run").stem
+    if stem.endswith("_plan"):
+        stem = stem[:-5]
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return str(Path("outcomes") / f"outcome_{stem}_{timestamp}.json")
 
 
 def detected_max_workers() -> int:
@@ -69,19 +79,19 @@ def build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiFie
     return [
         TuiField("case", "Case or plan JSON", "choice", args.case or (case_choices[0] if case_choices else ""), case_choices, "Pick a ready-to-run case, or pick a direct plan and provide dataset/output below.", "Required inputs"),
         TuiField("dataset", "Dataset file", "file", args.dataset or "", (), "Browse to the CSV/TSV/XLSX/PCAP file to test. Case files may already provide this.", "Required inputs"),
-        TuiField("output", "Outcome JSON", "text", args.output or "outcomes/outcome_tui.json", (), "Where the run result JSON should be written. Case files may already provide this.", "Required inputs"),
+        TuiField("output", "Outcome JSON", "text", args.output or default_outcome_path(args.case or (case_choices[0] if case_choices else None)), (), "Where the run result JSON should be written. Auto-filled with a readable date/time filename; case files may already provide this.", "Required inputs"),
         TuiField("case_id", "Ad-hoc case ID", "text", args.case_id or "ad_hoc_case", (), "Label written to the outcome when you run a plan directly instead of a case.", "Required inputs"),
         TuiField("display", "Live display mode", "choice", args.display or "interactive", DISPLAY_MODES, "Choose how much progress detail to show after the run starts.", "Execution"),
         TuiField("workers", "Worker count", "int", "" if args.workers is None else str(args.workers), (), "Leave blank for automatic worker selection; enter 1 for serial execution. The detected maximum is shown beside this field.", "Execution"),
         TuiField("taxonomy_file", "Metric order file", "choice", args.taxonomy_file or "", taxonomy_choices, "Optional taxonomy JSON that controls metric ordering.", "Taxonomy"),
-        TuiField("taxonomy_strict", "Require taxonomy coverage", "bool", bool(args.taxonomy_strict), (), "When enabled, fail if the taxonomy order omits enabled metrics.", "Taxonomy"),
+        TuiField("taxonomy_strict", "Strict taxonomy order", "bool", bool(args.taxonomy_strict), (), "Use this only when you provide a metric order file and want the run to fail if any enabled metric is missing from that order.", "Taxonomy"),
         TuiField("field_translation", "Field translation JSON", "choice", args.field_translation or "", translation_choices, "Optional mapping from dataset column names to canonical test field names.", "Field translation"),
         TuiField("no_update_field_translation", "Never update sidecar", "bool", bool(args.no_update_field_translation), (), "Do not create or modify dataset sidecar translation templates.", "Field translation"),
         TuiField("yes_field_translation_sidecar", "Auto-create sidecar", "bool", bool(args.yes_field_translation_sidecar), (), "Allow sidecar template creation/update without an extra prompt.", "Field translation"),
-        TuiField("field_translation_dry_run", "Validate fields only", "bool", bool(args.field_translation_dry_run), (), "Check field mappings and reports, then stop before running metrics.", "Field translation"),
-        TuiField("field_translation_report", "Field report JSON", "text", args.field_translation_report or "", (), "Optional machine-readable field translation validation report path.", "Reports"),
-        TuiField("field_translation_text_report", "Field report text", "text", args.field_translation_text_report or "", (), "Optional human-readable field translation report path.", "Reports"),
-        TuiField("field_translation_markdown_report", "Field report Markdown", "text", args.field_translation_markdown_report or "", (), "Optional Markdown field translation report path.", "Reports"),
+        TuiField("field_translation_dry_run", "Dry run: validate fields only", "bool", bool(args.field_translation_dry_run), (), "Check field mappings/reports first and stop before metrics. The results screen can start the real run afterward.", "Field translation"),
+        TuiField("field_translation_report", "Mapping report JSON", "text", args.field_translation_report or "", (), "Machine-readable report for automation: available columns, detected mappings, missing required fields, and skipped metrics.", "Reports"),
+        TuiField("field_translation_text_report", "Mapping report text", "text", args.field_translation_text_report or "", (), "Plain-language report for quick terminal review or sharing in logs.", "Reports"),
+        TuiField("field_translation_markdown_report", "Mapping report Markdown", "text", args.field_translation_markdown_report or "", (), "Markdown report for documentation, GitHub issues, or review notes.", "Reports"),
     ]
 
 
@@ -301,20 +311,94 @@ def _confirm_run_after_errors(stdscr, skipped_count: int) -> bool:
             return False
 
 
+
+@dataclass
+class ResultSection:
+    title: str
+    lines: list[str]
+    expanded: bool = False
+
+
+def _load_outcome_summary(output_path: str | None) -> tuple[list[str], list[str]]:
+    if not output_path:
+        return [], []
+    path = Path(output_path)
+    if not path.exists():
+        return [], []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    failed: list[str] = []
+    skipped: list[str] = []
+    for metric in payload.get("metric_results", []):
+        metric_id = metric.get("metric_id", "unknown_metric")
+        status = metric.get("status", "unknown")
+        reason = metric.get("reason") or metric.get("error") or metric.get("message") or "no detail recorded"
+        if status == "failed":
+            failed.append(f"{metric_id}: {reason}")
+        elif status == "skipped":
+            skipped.append(f"{metric_id}: {reason}")
+    return failed, skipped
+
+
+def build_result_sections(result: dict | None) -> list[ResultSection]:
+    result = result or {}
+    summary = [line for line in _result_lines(result, None) if line and not line.endswith("program") and not line.startswith("Enter/") and not line.startswith("r:")]
+    failed, skipped = _load_outcome_summary(result.get("output_path"))
+    sections = [ResultSection("Summary", summary, True)]
+    if failed:
+        sections.append(ResultSection(f"Failed metrics ({len(failed)})", failed, False))
+    if skipped:
+        sections.append(ResultSection(f"Skipped metrics ({len(skipped)})", skipped, False))
+    if result.get("dry_run"):
+        dry_run_lines = [
+            "This was a validation-only pass; metrics were not executed.",
+            "Press r to run now with these settings.",
+        ]
+        if result.get("skipped_count"):
+            dry_run_lines.append("Because issues were found, pressing r will ask for confirmation first.")
+        sections.append(ResultSection("Dry-run next steps", dry_run_lines, True))
+    return sections
+
+
+def _visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]:
+    rows: list[tuple[int | None, str]] = []
+    for index, section in enumerate(sections):
+        marker = "▾" if section.expanded else "▸"
+        rows.append((index, f"{marker} {section.title}"))
+        if section.expanded:
+            rows.extend((None, f"  {line}") for line in section.lines)
+    return rows
+
+
 def _post_run_curses(stdscr, result: dict | None, args) -> str:
+    sections = build_result_sections(result)
+    selected_section = 0
+    scroll = 0
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
-        lines = _result_lines(result, args)
-        for row, line in enumerate(lines[:height]):
-            attr = curses.A_BOLD if row == 0 else curses.A_NORMAL
-            stdscr.addstr(row, 0, line[: width - 1], attr)
+        stdscr.addstr(0, 0, "Run results"[: width - 1], curses.A_BOLD)
+        stdscr.addstr(1, 0, "↑/↓ scroll  Enter expand/collapse  m menu  q quit"[: width - 1])
+        if result and result.get("dry_run"):
+            stdscr.addstr(2, 0, "r run now (confirmation required if issues were found)"[: width - 1])
+        rows = _visible_result_rows(sections)
+        selected_row = next((i for i, (section_index, _) in enumerate(rows) if section_index == selected_section), 0)
+        visible_height = max(1, height - 4)
+        scroll = min(max(0, selected_row - visible_height + 1), max(0, len(rows) - visible_height))
+        for row_number, (section_index, line) in enumerate(rows[scroll : scroll + visible_height], start=4):
+            attr = curses.A_REVERSE if section_index == selected_section else curses.A_NORMAL
+            stdscr.addstr(row_number, 0, line[: width - 1], attr)
         key = stdscr.getch()
-        if key in (10, 13, ord("m"), ord("M")):
+        if key in (ord("m"), ord("M")):
             return "menu"
         if key in (ord("q"), ord("Q"), 27):
             return "quit"
-        if result and result.get("dry_run") and key in (ord("r"), ord("R")):
+        if key in (curses.KEY_UP, ord("k")):
+            selected_section = max(0, selected_section - 1)
+        elif key in (curses.KEY_DOWN, ord("j")):
+            selected_section = min(len(sections) - 1, selected_section + 1)
+        elif key in (10, 13):
+            sections[selected_section].expanded = not sections[selected_section].expanded
+        elif result and result.get("dry_run") and key in (ord("r"), ord("R")):
             skipped_count = int(result.get("skipped_count") or 0)
             if skipped_count and not _confirm_run_after_errors(stdscr, skipped_count):
                 continue

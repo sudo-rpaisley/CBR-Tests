@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from runner.tui import _result_lines, apply_tui_fields, build_default_tui_fields, describe_tui_field, detected_max_workers, list_file_browser_entries, validate_required_run_args
+from runner.tui import _result_lines, apply_tui_fields, build_default_tui_fields, build_result_sections, default_outcome_path, describe_tui_field, detected_max_workers, list_file_browser_entries, validate_required_run_args
 
 
 def _args(**overrides):
@@ -122,3 +122,35 @@ def test_post_dry_run_result_lines_show_attention_for_skips():
     lines = _result_lines({"dry_run": True, "status": "needs_attention", "output_path": "out.json", "metrics_total": 2, "skipped_count": 1}, _args())
 
     assert "Attention: 1 metric(s) skipped or blocked by missing fields" in lines
+
+
+def test_default_outcome_path_includes_case_stem_and_timestamp_shape():
+    value = default_outcome_path("cases/case_example.json")
+
+    assert value.startswith("outcomes/outcome_case_example_")
+    assert value.endswith(".json")
+
+
+def test_report_fields_explain_each_report_format():
+    fields = build_default_tui_fields(_args())
+    json_report = next(field for field in fields if field.name == "field_translation_report")
+    text_report = next(field for field in fields if field.name == "field_translation_text_report")
+    markdown_report = next(field for field in fields if field.name == "field_translation_markdown_report")
+
+    assert "Machine-readable" in json_report.help
+    assert "Plain-language" in text_report.help
+    assert "Markdown" in markdown_report.help
+
+
+def test_result_sections_include_expandable_failed_metrics(tmp_path):
+    output = tmp_path / "outcome.json"
+    output.write_text(
+        '{"metric_results": [{"metric_id": "m1", "status": "failed", "error": "boom"}]}',
+        encoding="utf-8",
+    )
+
+    sections = build_result_sections({"dry_run": False, "status": "failed", "output_path": str(output), "metrics_total": 1, "skipped_count": 0})
+
+    assert sections[0].title == "Summary"
+    assert sections[1].title == "Failed metrics (1)"
+    assert sections[1].lines == ["m1: boom"]
