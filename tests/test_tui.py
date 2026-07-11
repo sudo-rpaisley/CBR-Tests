@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from runner.tui import apply_tui_fields, build_default_tui_fields, validate_required_run_args
+from runner.tui import apply_tui_fields, build_default_tui_fields, list_file_browser_entries, validate_required_run_args
 
 
 def _args(**overrides):
@@ -62,3 +62,24 @@ def test_apply_tui_fields_converts_blank_optional_values_and_worker_count():
 def test_validate_required_run_args_rejects_missing_case():
     with pytest.raises(SystemExit):
         validate_required_run_args(_args(case=None))
+
+
+def test_dataset_field_uses_file_browser():
+    fields = build_default_tui_fields(_args())
+    dataset_field = next(field for field in fields if field.name == "dataset")
+
+    assert dataset_field.kind == "file"
+    assert "browse" in dataset_field.help
+
+
+def test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path):
+    (tmp_path / "z_data.csv").write_text("a,b\n", encoding="utf-8")
+    (tmp_path / "datasets").mkdir()
+    (tmp_path / "datasets" / "sample.csv").write_text("a,b\n", encoding="utf-8")
+    (tmp_path / ".git").mkdir()
+
+    entries = list_file_browser_entries(tmp_path, tmp_path)
+
+    assert [entry.label for entry in entries] == ["datasets/", "z_data.csv"]
+    assert entries[0].is_dir is True
+    assert entries[1].is_dir is False
