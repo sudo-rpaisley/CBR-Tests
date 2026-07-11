@@ -8,8 +8,6 @@ from datetime import datetime, timezone
 from runner.progress import set_live_output_enabled
 from runner.run_plan_helpers import build_title_box_lines
 
-DISPLAY_FALLBACK_NOTICE = "Interactive display requested; using compact live view until the Textual TUI is available."
-
 
 def configure_display(args) -> tuple[bool, str, int | None]:
     """Configure live output and return render-enabled, mode, and max-line settings."""
@@ -18,11 +16,9 @@ def configure_display(args) -> tuple[bool, str, int | None]:
         and sys.stdout.isatty()
         and os.environ.get("TERM", "").lower() not in {"", "dumb"}
     )
-    display_mode = "compact" if args.display == "interactive" else args.display
+    display_mode = args.display
     display_max_lines = 24 if display_mode == "compact" else None
     set_live_output_enabled(args.display != "quiet")
-    if args.display == "interactive":
-        print(DISPLAY_FALLBACK_NOTICE)
     return live_render_enabled, display_mode, display_max_lines
 
 

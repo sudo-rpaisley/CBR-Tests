@@ -23,7 +23,10 @@ Suppresses live taxonomy/status redraws. Use in CI, scripts, or logs where live 
 
 ## `interactive`
 
-Reserved for the Textual expand/collapse UI. It currently falls back to compact mode while the full TUI is developed.
+Shows an ANSI terminal dashboard with boxed sections for run metadata, overall
+progress, branch summaries, active/attention metrics, recently completed metrics,
+and recent events. The dashboard uses the current terminal size and redraws in
+place when stdout is an interactive terminal.
 
 ## Operator controls
 

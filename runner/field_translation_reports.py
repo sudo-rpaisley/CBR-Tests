@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
+import unicodedata
 from pathlib import Path
 
 SIDECAR_SCHEMA_VERSION = 1
@@ -108,51 +111,217 @@ def write_field_translation_report(path: Path, report: dict) -> None:
         f.write("\n")
 
 
-def format_column_section(title: str, items: list[str], *, indent: int = 2, max_width: int = 100) -> list[str]:
-    """Format a long list as readable fixed-width columns."""
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+MAX_COLUMN_CELL_WIDTH = 40
+
+
+def _display_width(value: str) -> int:
+    """Return terminal display width for a string, ignoring ANSI escapes."""
+    width = 0
+    for character in ANSI_ESCAPE_RE.sub("", value):
+        if unicodedata.combining(character):
+            continue
+        width += 2 if unicodedata.east_asian_width(character) in {"F", "W"} else 1
+    return width
+
+
+def _display_ljust(value: str, width: int) -> str:
+    """Left-pad based on display width rather than Python character count."""
+    return value + " " * max(0, width - _display_width(value))
+
+
+def _character_display_width(character: str) -> int:
+    if unicodedata.combining(character):
+        return 0
+    if unicodedata.east_asian_width(character) in {"F", "W"}:
+        return 2
+    return 1
+
+
+def _split_display_width(value: str, width: int) -> list[str]:
+    """Split a string into display-width-limited chunks.
+
+    Prefer splitting long identifiers at separators so metric names such as
+    ``inter_arrival_time_distribution_divergence`` do not break in the middle
+    of words.
+    """
+    if width <= 0 or not value:
+        return [value]
+
+    chunks: list[str] = []
+    current: list[str] = []
+    current_width = 0
+    last_separator_index: int | None = None
+    separators = {"_", "-", ".", "/"}
+
+    for character in value:
+        character_width = _character_display_width(character)
+        if current and current_width + character_width > width:
+            if last_separator_index is not None:
+                split_index = last_separator_index + 1
+                chunks.append("".join(current[:split_index]))
+                current = current[split_index:]
+                current_width = _display_width("".join(current))
+            else:
+                chunks.append("".join(current))
+                current = []
+                current_width = 0
+            last_separator_index = next(
+                (index for index in range(len(current) - 1, -1, -1) if current[index] in separators),
+                None,
+            )
+        current.append(character)
+        current_width += character_width
+        if character in separators:
+            last_separator_index = len(current) - 1
+    if current:
+        chunks.append("".join(current))
+    return chunks or [""]
+
+
+def _wrap_display_width(value: str, width: int) -> list[str]:
+    """Wrap a value on spaces when possible, falling back to display-width chunks."""
+    if _display_width(value) <= width:
+        return [value]
+
+    lines: list[str] = []
+    current = ""
+    for word in value.split(" "):
+        if not word:
+            continue
+        candidate = word if not current else f"{current} {word}"
+        if _display_width(candidate) <= width:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+        if _display_width(word) > width:
+            word_chunks = _split_display_width(word, width)
+            lines.extend(word_chunks[:-1])
+            current = word_chunks[-1]
+        else:
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [value]
+
+
+def format_column_grid(items: list[str], *, indent: int = 2, max_width: int | None = None) -> list[str]:
+    """Format values as a display-width-aware grid without a section title."""
     if not items:
         return []
 
+    if max_width is None:
+        max_width = shutil.get_terminal_size(fallback=(100, 24)).columns
+
     prefix = " " * indent
     available_width = max(20, max_width - indent)
-    cell_width = min(max(max(len(item) for item in items) + 2, 18), available_width)
+    wrap_width = min(MAX_COLUMN_CELL_WIDTH, available_width)
+    wrapped_items = [_wrap_display_width(item, wrap_width) for item in items]
+    widest_segment = max(_display_width(segment) for item in wrapped_items for segment in item)
+    cell_width = min(max(widest_segment + 2, 18), available_width)
     column_count = max(1, available_width // cell_width)
     row_count = (len(items) + column_count - 1) // column_count
-    lines = [f"{title} ({len(items)}):"]
+    lines: list[str] = []
 
     for row in range(row_count):
-        cells = []
+        row_cells = []
         for column in range(column_count):
             index = column * row_count + row
-            if index < len(items):
-                cells.append(items[index].ljust(cell_width))
-        lines.append(prefix + "".join(cells).rstrip())
+            if index < len(wrapped_items):
+                row_cells.append(wrapped_items[index])
+        row_height = max(len(cell) for cell in row_cells)
+        for cell_line in range(row_height):
+            cells = []
+            for cell in row_cells:
+                segment = cell[cell_line] if cell_line < len(cell) else ""
+                cells.append(_display_ljust(segment, cell_width))
+            lines.append(prefix + "".join(cells).rstrip())
+    return lines
+
+
+def format_column_section(title: str, items: list[str], *, indent: int = 2, max_width: int | None = None) -> list[str]:
+    """Format a long list as a readable fixed-width column section.
+
+    By default, use the current terminal width so the report displays as many
+    columns as will fit on the user's display. Long names are wrapped inside
+    cells, and width calculations use terminal display width for better Unicode
+    alignment. A ``max_width`` can still be provided by tests or callers that
+    need deterministic wrapping.
+    """
+    if not items:
+        return []
+    return [f"{title} ({len(items)}):", *format_column_grid(items, indent=indent, max_width=max_width)]
+
+
+def _metric_detail_entry(metric_id: str, details: dict) -> str:
+    """Format a metric name with any available status details."""
+    details_text = []
+    missing = details.get("missing_fields", [])
+    optional = details.get("missing_optional_fields", [])
+    error = details.get("error")
+    if missing:
+        details_text.append(f"missing {', '.join(missing)}")
+    if optional:
+        details_text.append(f"optional missing {', '.join(optional)}")
+    if error:
+        details_text.append(str(error))
+    if details_text:
+        return f"{metric_id}: {'; '.join(details_text)}"
+    return metric_id
+
+
+def _status_title(status: str) -> str:
+    return status.replace("_", " ").strip().title() or "Unknown"
+
+
+def format_metric_section(report: dict, use_color: bool = False, *, max_width: int | None = None) -> list[str]:
+    """Format metric statuses as non-empty category sections."""
+    runnable: list[str] = []
+    runnable_with_optional_missing: list[str] = []
+    skipped: list[str] = []
+    other_statuses: dict[str, list[str]] = {}
+
+    for metric_id, details in sorted(report.get("metrics", {}).items()):
+        status = details.get("status", "unknown")
+        optional = details.get("missing_optional_fields", [])
+        if status == "runnable" and optional:
+            runnable_with_optional_missing.append(_metric_detail_entry(metric_id, details))
+        elif status == "runnable":
+            runnable.append(metric_id)
+        elif status == "skipped":
+            skipped.append(_metric_detail_entry(metric_id, details))
+        else:
+            other_statuses.setdefault(status, []).append(_metric_detail_entry(metric_id, details))
+
+    lines = ["Metrics:"]
+    if runnable:
+        lines.extend(format_column_section("Runnable metrics", runnable, max_width=max_width))
+    if runnable_with_optional_missing:
+        lines.extend(
+            format_column_section(
+                "Runnable metrics with missing optional fields",
+                runnable_with_optional_missing,
+                max_width=max_width,
+            )
+        )
+    if skipped:
+        lines.extend(format_column_section("Skipped metrics", skipped, max_width=max_width))
+    for status, items in sorted(other_statuses.items()):
+        lines.extend(format_column_section(f"{_status_title(status)} metrics", items, max_width=max_width))
     return lines
 
 
 def format_field_translation_report(report: dict, use_color: bool = False) -> str:
     """Format a field translation report for humans."""
-    yellow = "\033[33m" if use_color else ""
-    green = "\033[32m" if use_color else ""
-    reset = "\033[0m" if use_color else ""
     lines = [
         "Field translation report",
         f"Dataset: {report.get('dataset')}",
         f"Translation file: {report.get('translation_file') or 'n/a'}",
         f"Sidecar status: {report.get('sidecar_status', 'unknown')}",
         "",
-        "Metrics:",
+        *format_metric_section(report, use_color=use_color),
     ]
-    for metric_id, details in sorted(report.get("metrics", {}).items()):
-        status = details.get("status", "unknown")
-        missing = details.get("missing_fields", [])
-        optional = details.get("missing_optional_fields", [])
-        if status == "skipped":
-            lines.append(f"  {yellow}[SKIPPED]{reset} {metric_id}: missing {', '.join(missing)}")
-        elif optional:
-            lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}: optional missing {', '.join(optional)}")
-        else:
-            lines.append(f"  {green}[RUNNABLE]{reset} {metric_id}")
     skipped = report.get("skipped_metrics", [])
     lines.extend(["", f"Skipped metric count: {len(skipped)}"])
     detected = report.get("detected_mappings", {})

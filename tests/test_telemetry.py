@@ -59,3 +59,29 @@ def test_compact_renderer_can_read_run_state():
     assert "skipped: 1" in text
     assert "missing: Source IP" in text
     assert "Recent events" in text
+
+
+def test_interactive_renderer_uses_tui_dashboard():
+    state = _state()
+    state.mark_running("m3")
+    state.mark_completed("m1", "success", elapsed_seconds=1.25)
+    state.mark_skipped("m2", ["Source IP"])
+
+    text = render_live_taxonomy(
+        metrics=[],
+        current_metric_id="m3",
+        completed_statuses={},
+        completed_durations={},
+        default_predictions={"m3": 20.0},
+        predicted_metric_total=20.0,
+        display_mode="interactive",
+        run_state=state,
+        max_lines=40,
+    )
+
+    assert "CBR Test Runner TUI" in text
+    assert "Overall:" in text
+    assert "Branches" in text
+    assert "Active / Attention" in text
+    assert "missing: Source IP" in text
+    assert "Recent Events" in text
