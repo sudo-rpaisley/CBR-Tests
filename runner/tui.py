@@ -291,7 +291,79 @@ def _result_lines(result: dict | None, args) -> list[str]:
     return lines
 
 
-def _confirm_run_after_errors(stdscr, skipped_count: int) -> bool:
+
+def _field_mapping_choices(dataset_columns: list[str], mappings: dict[str, str], field: str) -> list[str]:
+    used = {value for key, value in mappings.items() if key != field and value}
+    current = mappings.get(field, "")
+    choices = [""]
+    choices.extend(column for column in dataset_columns if column not in used or column == current)
+    return choices
+
+
+def save_field_mappings(path: Path, mappings: dict[str, str]) -> None:
+    payload = {}
+    if path.exists():
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    existing = payload.get("test_to_dataset_fields", {}) if isinstance(payload, dict) else {}
+    existing.update(mappings)
+    payload.update({"schema_version": payload.get("schema_version", 1), "test_to_dataset_fields": dict(sorted(existing.items()))})
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def _field_mapping_curses(stdscr, result: dict) -> str:
+    missing_fields = list(result.get("missing_fields") or [])
+    dataset_columns = list(result.get("dataset_columns") or [])
+    translation_path = Path(result.get("field_translation_path") or "field_translation.json")
+    mappings = {field: "" for field in missing_fields}
+    selected = 0
+    message = "↑/↓ field  Enter cycle dataset column  s save  q cancel"
+    while True:
+        stdscr.erase()
+        height, width = stdscr.getmaxyx()
+        stdscr.addstr(0, 0, "Map missing fields"[: width - 1], curses.A_BOLD)
+        stdscr.addstr(1, 0, "Choose one dataset column for each required canonical field."[: width - 1])
+        stdscr.addstr(2, 0, message[: width - 1])
+        if not missing_fields:
+            stdscr.addstr(4, 0, "No missing fields were reported."[: width - 1])
+        elif not dataset_columns:
+            stdscr.addstr(4, 0, "No dataset columns are available to choose from."[: width - 1])
+        visible_rows = max(1, height - 6)
+        start = min(max(0, selected - visible_rows + 1), max(0, len(missing_fields) - visible_rows))
+        for row, field in enumerate(missing_fields[start : start + visible_rows], start=4):
+            index = start + row - 4
+            value = mappings.get(field) or "(unmapped)"
+            marker = ">" if index == selected else " "
+            attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
+            stdscr.addstr(row, 0, f"{marker} {field:32} ← {value}"[: width - 1], attr)
+        used_count = len([value for value in mappings.values() if value])
+        stdscr.addstr(height - 2, 0, f"Mapped {used_count}/{len(missing_fields)} | output: {translation_path}"[: width - 1])
+        stdscr.addstr(height - 1, 0, "Columns already selected disappear from the other dropdowns."[: width - 1])
+        key = stdscr.getch()
+        if key in (ord("q"), ord("Q"), 27):
+            return "cancel"
+        if key in (ord("s"), ord("S")):
+            save_field_mappings(translation_path, {field: value for field, value in mappings.items() if value})
+            return "saved"
+        if not missing_fields:
+            continue
+        if key in (curses.KEY_UP, ord("k")):
+            selected = max(0, selected - 1)
+        elif key in (curses.KEY_DOWN, ord("j")):
+            selected = min(len(missing_fields) - 1, selected + 1)
+        elif key in (10, 13):
+            field = missing_fields[selected]
+            choices = _field_mapping_choices(dataset_columns, mappings, field)
+            current = mappings.get(field, "")
+            current_index = choices.index(current) if current in choices else 0
+            mappings[field] = choices[(current_index + 1) % len(choices)]
+
+
+def show_field_mapping_menu(result: dict) -> str:
+    return curses.wrapper(_field_mapping_curses, result)
+
+
+def _confirm_run_after_errors(stdscr, skipped_count: int, result: dict | None = None) -> str:
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
@@ -299,16 +371,19 @@ def _confirm_run_after_errors(stdscr, skipped_count: int) -> bool:
             "Dry run found issues",
             f"{skipped_count} metric(s) may be skipped or blocked by missing fields.",
             "Run anyway?",
+            "m: map missing fields first",
             "y: yes, run metrics now",
             "n/q/Esc: no, return to results",
         ]
         for row, line in enumerate(lines[:height]):
             stdscr.addstr(row, 0, line[: width - 1], curses.A_BOLD if row == 0 else curses.A_NORMAL)
         key = stdscr.getch()
+        if key in (ord("m"), ord("M")):
+            return "map"
         if key in (ord("y"), ord("Y")):
-            return True
+            return "run"
         if key in (ord("n"), ord("N"), ord("q"), 27):
-            return False
+            return "back"
 
 
 
@@ -454,8 +529,13 @@ def _post_run_curses(stdscr, result: dict | None, args) -> str:
             sections[selected_section].expanded = not sections[selected_section].expanded
         elif result and result.get("dry_run") and key in (ord("r"), ord("R")):
             skipped_count = int(result.get("skipped_count") or 0)
-            if skipped_count and not _confirm_run_after_errors(stdscr, skipped_count):
-                continue
+            if skipped_count:
+                decision = _confirm_run_after_errors(stdscr, skipped_count, result)
+                if decision == "map":
+                    show_field_mapping_menu(result or {})
+                    continue
+                if decision != "run":
+                    continue
             return "run"
 
 

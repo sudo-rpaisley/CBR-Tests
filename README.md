@@ -19,7 +19,7 @@ For guided terminal use, launch the selector TUI:
 python run_plan.py --tui
 ```
 
-The selector groups run options by purpose, explains the highlighted field in a footer, shows the detected maximum beside worker selection, and lets you choose common run flags, browse for the dataset, set paths, display mode, worker count, taxonomy controls, and field-translation report options before starting the run. During a TUI-launched run, the interactive dashboard supports branch selection and expand/collapse controls with the arrow keys and Enter/Space. After the run, an expandable results screen lets you review human-readable metric results, summary/failure sections, return to the setup menu, quit the program, or run metrics after a dry run.
+The selector groups run options by purpose, explains the highlighted field in a footer, shows the detected maximum beside worker selection, and lets you choose common run flags, browse for the dataset, set paths, display mode, worker count, taxonomy controls, and field-translation report options before starting the run. During a TUI-launched run, the interactive dashboard supports branch selection and expand/collapse controls with the arrow keys and Enter/Space. After the run, an expandable results screen lets you review human-readable metric results, summary/failure sections, return to the setup menu, quit the program, or run metrics after a dry run. If a dry run finds missing field mappings, the confirmation screen can open a mapping UI with per-field dropdowns of remaining dataset columns.
 
 ## Requirements
 

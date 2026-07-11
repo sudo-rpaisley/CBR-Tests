@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from runner.tui import _result_lines, apply_tui_fields, build_default_tui_fields, build_result_sections, default_outcome_path, describe_tui_field, detected_max_workers, list_file_browser_entries, validate_required_run_args
+from runner.tui import _field_mapping_choices, _result_lines, apply_tui_fields, build_default_tui_fields, build_result_sections, default_outcome_path, describe_tui_field, detected_max_workers, list_file_browser_entries, save_field_mappings, validate_required_run_args
 
 
 def _args(**overrides):
@@ -157,3 +157,21 @@ def test_result_sections_include_expandable_human_readable_metric_results(tmp_pa
     assert "m2 | status=success | elapsed=2.0s | ratio=0.95" in sections[1].lines
     assert any(section.title == "Successful metrics (1)" for section in sections)
     assert any(section.title == "Failed metrics (1)" for section in sections)
+
+
+def test_field_mapping_choices_remove_already_selected_columns():
+    choices = _field_mapping_choices(["Src IP", "Dst IP", "Protocol"], {"Source IP": "Src IP", "Destination IP": ""}, "Destination IP")
+
+    assert "" in choices
+    assert "Src IP" not in choices
+    assert "Dst IP" in choices
+    assert "Protocol" in choices
+
+
+def test_save_field_mappings_updates_test_to_dataset_fields(tmp_path):
+    path = tmp_path / "data.field_translation.json"
+    save_field_mappings(path, {"Source IP": "Src IP", "Destination IP": "Dst IP"})
+
+    payload = __import__("json").loads(path.read_text(encoding="utf-8"))
+
+    assert payload["test_to_dataset_fields"] == {"Destination IP": "Dst IP", "Source IP": "Src IP"}

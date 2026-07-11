@@ -177,12 +177,16 @@ def run_once(args):
             print("Dry run complete: some metrics would be skipped due to missing field mappings.")
         else:
             print("Dry run complete: all enabled metrics have required field mappings.")
+        missing_fields = sorted({field for fields in skipped_metrics.values() for field in fields})
         return {
             "dry_run": True,
             "status": "needs_attention" if skipped_metrics else "ready",
             "output_path": str(output_path),
             "metrics_total": len(all_enabled_metrics),
             "skipped_count": len(skipped_metrics),
+            "missing_fields": missing_fields,
+            "dataset_columns": sorted(dataset_columns),
+            "field_translation_path": str(translation_path or default_field_translation_path(dataset_path)),
         }
 
     base_header_lines = build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size=True)
