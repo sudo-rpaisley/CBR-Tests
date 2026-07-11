@@ -24,6 +24,7 @@ class TuiField:
     value: object = None
     choices: tuple[str, ...] = ()
     help: str = ""
+    section: str = "Run setup"
 
 
 def _discover_files(root: Path, patterns: tuple[str, ...]) -> tuple[str, ...]:
@@ -61,21 +62,21 @@ def build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiFie
     taxonomy_choices = ("",) + _discover_files(root, ("taxonomy/*.json", "plans/*taxonomy*.json"))
     translation_choices = ("",) + _discover_files(root, ("examples/field_translations/*.json",))
     return [
-        TuiField("case", "Case / plan", "choice", args.case or (case_choices[0] if case_choices else ""), case_choices, "Required. Choose a case JSON or plan JSON."),
-        TuiField("dataset", "Dataset", "file", args.dataset or "", (), "Required for plan JSON; press Enter to browse files or e to type."),
-        TuiField("output", "Output", "text", args.output or "outcomes/outcome_tui.json", (), "Required for plan JSON; case JSON may provide it."),
-        TuiField("case_id", "Case id", "text", args.case_id or "ad_hoc_case", (), "Used when running a plan JSON directly."),
-        TuiField("display", "Display", "choice", args.display or "interactive", DISPLAY_MODES, "Live output mode after launch."),
-        TuiField("workers", "Workers", "int", "" if args.workers is None else str(args.workers), (), "Blank auto-selects workers; 1 forces serial."),
-        TuiField("taxonomy_file", "Taxonomy file", "choice", args.taxonomy_file or "", taxonomy_choices, "Optional metric order file."),
-        TuiField("taxonomy_strict", "Strict taxonomy", "bool", bool(args.taxonomy_strict), (), "Fail if enabled metrics are absent from taxonomy order."),
-        TuiField("field_translation", "Field translation", "choice", args.field_translation or "", translation_choices, "Optional dataset field mapping JSON."),
-        TuiField("no_update_field_translation", "No sidecar update", "bool", bool(args.no_update_field_translation), (), "Do not create/update sidecar templates."),
-        TuiField("yes_field_translation_sidecar", "Auto sidecar yes", "bool", bool(args.yes_field_translation_sidecar), (), "Create/update sidecar templates without prompting."),
-        TuiField("field_translation_dry_run", "Translation dry-run", "bool", bool(args.field_translation_dry_run), (), "Validate translations and exit before metrics run."),
-        TuiField("field_translation_report", "JSON report", "text", args.field_translation_report or "", (), "Optional field translation validation JSON report."),
-        TuiField("field_translation_text_report", "Text report", "text", args.field_translation_text_report or "", (), "Optional human-readable field translation report."),
-        TuiField("field_translation_markdown_report", "Markdown report", "text", args.field_translation_markdown_report or "", (), "Optional Markdown field translation report."),
+        TuiField("case", "Case or plan JSON", "choice", args.case or (case_choices[0] if case_choices else ""), case_choices, "Pick a ready-to-run case, or pick a direct plan and provide dataset/output below.", "Required inputs"),
+        TuiField("dataset", "Dataset file", "file", args.dataset or "", (), "Browse to the CSV/TSV/XLSX/PCAP file to test. Case files may already provide this.", "Required inputs"),
+        TuiField("output", "Outcome JSON", "text", args.output or "outcomes/outcome_tui.json", (), "Where the run result JSON should be written. Case files may already provide this.", "Required inputs"),
+        TuiField("case_id", "Ad-hoc case ID", "text", args.case_id or "ad_hoc_case", (), "Label written to the outcome when you run a plan directly instead of a case.", "Required inputs"),
+        TuiField("display", "Live display mode", "choice", args.display or "interactive", DISPLAY_MODES, "Choose how much progress detail to show after the run starts.", "Execution"),
+        TuiField("workers", "Worker count", "int", "" if args.workers is None else str(args.workers), (), "Leave blank for automatic worker selection; enter 1 for serial execution.", "Execution"),
+        TuiField("taxonomy_file", "Metric order file", "choice", args.taxonomy_file or "", taxonomy_choices, "Optional taxonomy JSON that controls metric ordering.", "Taxonomy"),
+        TuiField("taxonomy_strict", "Require taxonomy coverage", "bool", bool(args.taxonomy_strict), (), "When enabled, fail if the taxonomy order omits enabled metrics.", "Taxonomy"),
+        TuiField("field_translation", "Field translation JSON", "choice", args.field_translation or "", translation_choices, "Optional mapping from dataset column names to canonical test field names.", "Field translation"),
+        TuiField("no_update_field_translation", "Never update sidecar", "bool", bool(args.no_update_field_translation), (), "Do not create or modify dataset sidecar translation templates.", "Field translation"),
+        TuiField("yes_field_translation_sidecar", "Auto-create sidecar", "bool", bool(args.yes_field_translation_sidecar), (), "Allow sidecar template creation/update without an extra prompt.", "Field translation"),
+        TuiField("field_translation_dry_run", "Validate fields only", "bool", bool(args.field_translation_dry_run), (), "Check field mappings and reports, then stop before running metrics.", "Field translation"),
+        TuiField("field_translation_report", "Field report JSON", "text", args.field_translation_report or "", (), "Optional machine-readable field translation validation report path.", "Reports"),
+        TuiField("field_translation_text_report", "Field report text", "text", args.field_translation_text_report or "", (), "Optional human-readable field translation report path.", "Reports"),
+        TuiField("field_translation_markdown_report", "Field report Markdown", "text", args.field_translation_markdown_report or "", (), "Optional Markdown field translation report path.", "Reports"),
     ]
 
 
@@ -98,8 +99,28 @@ def validate_required_run_args(args) -> None:
 
 def _format_value(field: TuiField) -> str:
     if field.kind == "bool":
-        return "[x]" if field.value else "[ ]"
-    return str(field.value or "")
+        return "Yes" if field.value else "No"
+    value = str(field.value or "")
+    return value if value else "(blank)"
+
+
+def field_action_hint(field: TuiField) -> str:
+    if field.kind == "bool":
+        return "Press Space or Enter to toggle Yes/No."
+    if field.kind == "choice":
+        return "Press Enter to cycle through available choices."
+    if field.kind == "file":
+        return "Press Enter to browse files, or press e to type/paste a path."
+    return "Press Enter or e to type a value."
+
+
+def describe_tui_field(field: TuiField) -> list[str]:
+    return [
+        f"Section: {field.section}",
+        f"Selected: {field.label}",
+        f"Does: {field.help}",
+        f"How: {field_action_hint(field)}",
+    ]
 
 
 def _edit_text(stdscr, y: int, x: int, initial: str, width: int) -> str:
@@ -135,22 +156,23 @@ def _browse_file(stdscr, root: Path, initial: str) -> str | None:
         if selected >= len(entries):
             selected = max(0, len(entries) - 1)
         stdscr.addstr(0, 0, "Dataset file explorer"[: width - 1], curses.A_BOLD)
-        stdscr.addstr(1, 0, f"Directory: {_display_path(current_dir, root)}"[: width - 1])
-        stdscr.addstr(2, 0, "↑/↓ move  Enter open/select  Backspace parent  e type path  q cancel"[: width - 1])
-        visible_rows = max(1, height - 5)
+        stdscr.addstr(1, 0, "Pick the dataset file to test. Directories end with /."[: width - 1])
+        stdscr.addstr(2, 0, f"Directory: {_display_path(current_dir, root)}"[: width - 1])
+        stdscr.addstr(3, 0, "↑/↓ move  Enter open/select  Backspace parent  e type path  q cancel"[: width - 1])
+        visible_rows = max(1, height - 6)
         start = min(max(0, selected - visible_rows + 1), max(0, len(entries) - visible_rows))
-        for row, entry in enumerate(entries[start : start + visible_rows], start=4):
-            index = start + row - 4
+        for row, entry in enumerate(entries[start : start + visible_rows], start=5):
+            index = start + row - 5
             marker = ">" if index == selected else " "
             attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
             stdscr.addstr(row, 0, f"{marker} {entry.label}"[: width - 1], attr)
         if not entries:
-            stdscr.addstr(4, 0, "No files in this directory."[: width - 1])
+            stdscr.addstr(5, 0, "No files in this directory."[: width - 1])
         key = stdscr.getch()
         if key in (ord("q"), 27):
             return None
         if key in (ord("e"),):
-            return _edit_text(stdscr, min(height - 2, 4), 0, initial, max(8, width - 1))
+            return _edit_text(stdscr, min(height - 2, 5), 0, initial, max(8, width - 1))
         if key in (curses.KEY_BACKSPACE, 127, 8):
             if current_dir != root and current_dir.parent != current_dir:
                 current_dir = current_dir.parent.resolve()
@@ -172,21 +194,26 @@ def _run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None:
     curses.curs_set(0)
     selected = 0
     repo_root = Path.cwd()
-    message = "↑/↓ move  Enter edit/cycle/browse  e type path  Space toggle  r run  q quit"
+    message = "↑/↓ move  Enter act on selected field  e type paths/text  Space toggle  r run  q quit"
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
         stdscr.addstr(0, 0, "CBR Test Runner TUI"[: width - 1], curses.A_BOLD)
-        stdscr.addstr(1, 0, message[: width - 1])
-        visible_rows = max(1, height - 5)
+        stdscr.addstr(1, 0, "Configure the run from top to bottom, then press r to start."[: width - 1])
+        stdscr.addstr(2, 0, message[: width - 1])
+        footer_height = 5
+        visible_rows = max(1, height - footer_height - 4)
         start = min(max(0, selected - visible_rows + 1), max(0, len(fields) - visible_rows))
-        for row, field in enumerate(fields[start : start + visible_rows], start=3):
-            marker = ">" if start + row - 3 == selected else " "
-            line = f"{marker} {field.label:24} {_format_value(field)}"
-            attr = curses.A_REVERSE if start + row - 3 == selected else curses.A_NORMAL
+        for row, field in enumerate(fields[start : start + visible_rows], start=4):
+            index = start + row - 4
+            marker = ">" if index == selected else " "
+            line = f"{marker} [{field.section}] {field.label:24} {_format_value(field)}"
+            attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
             stdscr.addstr(row, 0, line[: width - 1], attr)
-        help_line = fields[selected].help if fields else ""
-        stdscr.addstr(height - 1, 0, help_line[: width - 1])
+        footer_start = max(4, height - footer_height)
+        stdscr.hline(footer_start, 0, curses.ACS_HLINE, max(1, width - 1))
+        for offset, line in enumerate(describe_tui_field(fields[selected]) if fields else []):
+            stdscr.addstr(footer_start + offset + 1, 0, line[: width - 1])
         key = stdscr.getch()
         if key in (ord("q"), 27):
             return None

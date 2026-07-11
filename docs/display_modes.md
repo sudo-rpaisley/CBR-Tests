@@ -38,4 +38,4 @@ Labels are kept in text so status remains readable even when color is disabled.
 
 ## Launch selector TUI
 
-Run `python run_plan.py --tui` to open a keyboard-driven terminal menu before execution. Use arrow keys to move, Enter to edit or cycle values, Space to toggle boolean options, `r` to start the run, and `q` to cancel. The selector covers case/plan paths, a dataset file explorer, output paths, case ID, display mode, worker count, taxonomy controls, field translation controls, and field translation report paths.
+Run `python run_plan.py --tui` to open a keyboard-driven terminal menu before execution. Use arrow keys to move, Enter to act on the selected field, Space to toggle boolean options, `r` to start the run, and `q` to cancel. The footer explains what the highlighted field does and which key to press. The selector covers case/plan paths, a dataset file explorer, output paths, case ID, display mode, worker count, taxonomy controls, field translation controls, and field translation report paths.

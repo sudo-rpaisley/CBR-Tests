@@ -19,7 +19,7 @@ For guided terminal use, launch the selector TUI:
 python run_plan.py --tui
 ```
 
-The selector lets you choose common run flags, browse for the dataset, set paths, display mode, worker count, taxonomy controls, and field-translation report options before starting the run.
+The selector groups run options by purpose, explains the highlighted field in a footer, and lets you choose common run flags, browse for the dataset, set paths, display mode, worker count, taxonomy controls, and field-translation report options before starting the run.
 
 ## Requirements
 

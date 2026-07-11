@@ -122,4 +122,4 @@ python run_plan.py \
 
 ## Selector TUI
 
-`python run_plan.py --tui` opens a pre-run selector for users who do not want to memorize flags. The selector runs only in an interactive terminal and supports arrow-key navigation, Enter-to-edit/cycle fields, Space to toggle boolean flags, `r` to run, and `q` to cancel. It can set the same options exposed by the common CLI flags, including case/plan, dataset selection through a file explorer, output, case ID, display mode, worker count, taxonomy options, sidecar behavior, dry-run behavior, and report output paths.
+`python run_plan.py --tui` opens a pre-run selector for users who do not want to memorize flags. The selector runs only in an interactive terminal and supports arrow-key navigation, Enter to act on the selected field, Space to toggle boolean flags, `r` to run, and `q` to cancel. A footer explains the highlighted field and the available action. It can set the same options exposed by the common CLI flags, including case/plan, dataset selection through a file explorer, output, case ID, display mode, worker count, taxonomy options, sidecar behavior, dry-run behavior, and report output paths.

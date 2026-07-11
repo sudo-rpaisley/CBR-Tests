@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from runner.tui import apply_tui_fields, build_default_tui_fields, list_file_browser_entries, validate_required_run_args
+from runner.tui import apply_tui_fields, build_default_tui_fields, describe_tui_field, list_file_browser_entries, validate_required_run_args
 
 
 def _args(**overrides):
@@ -69,7 +69,9 @@ def test_dataset_field_uses_file_browser():
     dataset_field = next(field for field in fields if field.name == "dataset")
 
     assert dataset_field.kind == "file"
-    assert "browse" in dataset_field.help
+    assert dataset_field.label == "Dataset file"
+    assert dataset_field.section == "Required inputs"
+    assert "Browse" in dataset_field.help
 
 
 def test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path):
@@ -83,3 +85,15 @@ def test_list_file_browser_entries_sorts_directories_first_and_skips_internal_di
     assert [entry.label for entry in entries] == ["datasets/", "z_data.csv"]
     assert entries[0].is_dir is True
     assert entries[1].is_dir is False
+
+
+def test_describe_tui_field_explains_selected_field_actions():
+    fields = build_default_tui_fields(_args())
+    dataset_field = next(field for field in fields if field.name == "dataset")
+
+    description = describe_tui_field(dataset_field)
+
+    assert description[0] == "Section: Required inputs"
+    assert description[1] == "Selected: Dataset file"
+    assert any("CSV/TSV/XLSX/PCAP" in line for line in description)
+    assert description[-1] == "How: Press Enter to browse files, or press e to type/paste a path."
