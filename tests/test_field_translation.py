@@ -379,7 +379,7 @@ def test_field_translation_report_includes_suggestions_and_markdown():
         metrics=[metric],
         available_fields=set(),
         skipped_metrics={"m1": ["Source IP"]},
-        dataset_columns=["src_ip", "dst_ip", "bytes"],
+        dataset_columns=["Source IP", "src_ip", "dst_ip", "bytes"],
         missing_optional_fields={"m1": ["Destination IP"]},
         sidecar_status="suppressed",
     )
@@ -394,5 +394,6 @@ def test_field_translation_report_includes_suggestions_and_markdown():
     assert "bytes" in text
     assert "dst_ip" in text
     assert "src_ip" in text
+    assert "Source IP" not in report["unused_dataset_columns"]
     assert "Unused dataset columns: bytes, dst_ip, src_ip" not in text
     assert "| `m1` | skipped | Source IP | Destination IP |" in markdown

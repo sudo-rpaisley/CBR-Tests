@@ -495,7 +495,10 @@ def build_field_translation_report(
 ) -> dict:
     """Build a machine-readable field translation validation report."""
     usage = collect_field_requirements(plan)
+    dataset_column_set = set(dataset_columns or [])
     mapped_sources = set((field_translation or {}).keys())
+    directly_used_columns = dataset_column_set & set(usage)
+    unused_dataset_columns = sorted(dataset_column_set - mapped_sources - directly_used_columns)
     missing_fields = sorted({field for fields in skipped_metrics.values() for field in fields})
     optional_missing = missing_optional_fields or {}
     optional_missing_fields = sorted({field for fields in optional_missing.values() for field in fields})
@@ -505,7 +508,7 @@ def build_field_translation_report(
         "translation_file": str(translation_path) if translation_path else None,
         "sidecar_status": sidecar_status or "unknown",
         "dataset_columns": sorted(dataset_columns or []),
-        "unused_dataset_columns": sorted(set(dataset_columns or []) - mapped_sources),
+        "unused_dataset_columns": unused_dataset_columns,
         "available_fields": sorted(available_fields),
         "detected_mappings": dict(sorted((detected_translation or {}).items())),
         "explicit_mappings": dict(sorted((explicit_translation or {}).items())),
