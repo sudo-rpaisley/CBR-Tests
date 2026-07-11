@@ -67,3 +67,27 @@ def test_render_live_taxonomy_compact_summarizes_branches():
     assert "success: 1" in txt
     assert "running: 1" in txt
     assert "m2 [running | 5.0/20s ]" in txt
+
+
+def test_collect_parallel_metric_results_updates_statuses():
+    from datetime import datetime, timezone
+
+    from runner.parallel_results import collect_parallel_metric_results
+
+    completed_statuses = {}
+    completed_durations = {}
+    overall_status, test_results, metric_results, column_validations = collect_parallel_metric_results(
+        parallel_out=[(0, True, {"elapsed_seconds": 1.25, "test_results": {"m1": {"score": 1}}})],
+        metrics=[{"metric_id": "m1"}],
+        run_started_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        fail_fast=True,
+        completed_statuses=completed_statuses,
+        completed_durations=completed_durations,
+    )
+
+    assert overall_status == "success"
+    assert test_results == {"m1": {"score": 1}}
+    assert metric_results[0]["metric_id"] == "m1"
+    assert completed_statuses == {"m1": "success"}
+    assert completed_durations == {"m1": 1.25}
+    assert column_validations == {}

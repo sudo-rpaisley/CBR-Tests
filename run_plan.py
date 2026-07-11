@@ -6,25 +6,23 @@ from pathlib import Path
 from runner.taxonomy import print_taxonomy_summary
 from runner.run_plan_serial import run_serial_metrics
 from runner.dispatch import build_metric_handlers
-from runner.io import load_case_or_plan
 from runner.execution import auto_worker_count, run_metrics_parallel
 from runner.live_rendering import render_live_taxonomy
 from runner.progress import print_live_status
-from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.dataset_loading import is_tabular_dataset, load_shared_tabular_dataset
 from runner.tabular import load_tabular_dataset
-from runner.telemetry import RunState
 from runner.field_translation_workflow import (
     prepare_field_translation_context,
     print_field_translation_dry_run_summary,
     skipped_metric_records,
 )
-from runner.run_display import configure_display, print_phase_status, print_title_box
 from runner.parallel_progress import build_parallel_progress_callback
+from runner.parallel_results import collect_parallel_metric_results
+from runner.run_context import prepare_run_context
+from runner.run_display import print_phase_status, print_title_box
 from runner.run_plan_helpers import (
     build_base_header_lines,
     build_outcome,
-    configure_signal_handlers,
     detect_ip_fields,
     parse_run_plan_args,
     update_live_header,
@@ -56,37 +54,21 @@ def dispatch_metric_with_handlers(dataset_path: Path, metric: dict, metric_handl
 def main():
     args = parse_run_plan_args()
 
-    shutdown_requested = {"requested": False, "confirm_before": 0.0}
-    control_state = {"pause_requested": False, "cancel_requested": False}
-    live_render_enabled, display_mode, display_max_lines = configure_display(args)
-    default_metric_predictions = dict(DEFAULT_METRIC_PREDICTIONS)
-
-    configure_signal_handlers(control_state, shutdown_requested)
-
-    case_file = Path(args.case).resolve()
-    plan, dataset_path, output_path, case_id, translation_path = load_case_or_plan(
-        case_file, args.dataset, args.output, args.case_id, args.field_translation
-    )
-    if not dataset_path.exists():
-        raise FileNotFoundError(f"Dataset does not exist: {dataset_path}")
-
-    metrics = [m for m in plan.get("metrics", []) if m.get("enabled", True)]
-    all_enabled_metrics = list(metrics)
-    if args.taxonomy_file:
-        taxonomy_ranks = load_taxonomy_order(Path(args.taxonomy_file).expanduser().resolve())
-        metrics = order_metrics_by_taxonomy(metrics, taxonomy_ranks, strict=args.taxonomy_strict)
-        all_enabled_metrics = list(metrics)
-    if not metrics:
-        raise ValueError("The plan does not contain any enabled metrics.")
-
-    run_state = RunState.from_plan(
-        case_id=case_id,
-        plan=plan,
-        metrics=all_enabled_metrics,
-        dataset_path=dataset_path,
-        output_path=output_path,
-        started_at=datetime.now(timezone.utc),
-    )
+    context = prepare_run_context(args, DEFAULT_METRIC_PREDICTIONS)
+    shutdown_requested = context.shutdown_requested
+    control_state = context.control_state
+    live_render_enabled = context.live_render_enabled
+    display_mode = context.display_mode
+    display_max_lines = context.display_max_lines
+    default_metric_predictions = context.default_metric_predictions
+    plan = context.plan
+    dataset_path = context.dataset_path
+    output_path = context.output_path
+    case_id = context.case_id
+    translation_path = context.translation_path
+    metrics = context.metrics
+    all_enabled_metrics = context.all_enabled_metrics
+    run_state = context.run_state
 
     field_translation_context = prepare_field_translation_context(
         args=args,
@@ -208,28 +190,14 @@ def main():
             progress_callback=parallel_progress,
             control_state=control_state,
         )
-        for idx0, success, metric_payload in parallel_out:
-            metric = metrics[idx0]
-            metric_record = {
-                "metric_id": metric["metric_id"],
-                "status": "success" if success else "failed",
-                "started_at": run_started_at.isoformat(),
-                "finished_at": datetime.now(timezone.utc).isoformat(),
-                "elapsed_seconds": metric_payload.get("elapsed_seconds", 0.0),
-            }
-            if success:
-                test_results.update(metric_payload.get("test_results", {}))
-                if "column_validation" in metric_payload:
-                    column_validations[metric["metric_id"]] = metric_payload["column_validation"]
-            else:
-                metric_record["error"] = metric_payload.get("error", "Unknown error")
-                overall_status = "failed" if overall_status == "success" else overall_status
-                if fail_fast:
-                    metric_results.append(metric_record)
-                    break
-            metric_results.append(metric_record)
-            completed_statuses[metric["metric_id"]] = metric_record["status"]
-            completed_durations[metric["metric_id"]] = metric_record["elapsed_seconds"]
+        overall_status, test_results, metric_results, column_validations = collect_parallel_metric_results(
+            parallel_out=parallel_out,
+            metrics=metrics,
+            run_started_at=run_started_at,
+            fail_fast=fail_fast,
+            completed_statuses=completed_statuses,
+            completed_durations=completed_durations,
+        )
         # finalize immediately for parallel path
         outcome = build_outcome(
             overall_status, case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,

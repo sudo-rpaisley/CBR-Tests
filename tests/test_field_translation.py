@@ -397,3 +397,15 @@ def test_skipped_metric_records_are_outcome_ready():
         {"metric_id": "m1", "status": "skipped", "reason": "missing_field_mappings", "missing_fields": ["A"]},
         {"metric_id": "m2", "status": "skipped", "reason": "missing_field_mappings", "missing_fields": ["B"]},
     ]
+
+
+def test_field_resolver_translates_nested_requirement_values():
+    from runner.field_translation import FieldResolver
+
+    resolver = FieldResolver({"Src IP": "Source IP"}, ["Src IP", "Label"])
+
+    assert resolver.resolve("Source IP") == "Src IP"
+    assert resolver.translate_value({"fields": ["Source IP", "Label"], "literal": 5}) == {
+        "fields": ["Src IP", "Label"],
+        "literal": 5,
+    }

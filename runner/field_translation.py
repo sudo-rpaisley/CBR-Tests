@@ -253,23 +253,43 @@ def collect_field_requirements(plan: dict) -> dict[str, dict[str, list[str]]]:
     return {field: {k: sorted(v) for k, v in details.items()} for field, details in sorted(usage.items())}
 
 
+class FieldResolver:
+    """Resolve canonical metric field names to dataset column names."""
+
+    def __init__(self, field_translation: dict[str, str], dataset_columns=None):
+        self.fields = _invert_translation(field_translation)
+        if dataset_columns is not None:
+            for column in dataset_columns:
+                name = str(column).strip()
+                self.fields.setdefault(name, name)
+
+    def resolve(self, field_name: str) -> str:
+        """Return the dataset column for a canonical field name when mapped."""
+        return self.fields.get(field_name, field_name)
+
+    def translate_value(self, value):
+        """Translate strings inside nested metric input requirement values."""
+        if isinstance(value, dict):
+            return {key: self.translate_value(child) for key, child in value.items()}
+        if isinstance(value, list):
+            return [self.translate_value(child) for child in value]
+        if isinstance(value, str):
+            return self.resolve(value)
+        return value
+
+
 def field_resolver(field_translation: dict[str, str], dataset_columns=None) -> dict[str, str]:
     """Build canonical field -> dataset field resolver mapping."""
-    resolver = _invert_translation(field_translation)
-    if dataset_columns is not None:
-        for column in dataset_columns:
-            name = str(column).strip()
-            resolver.setdefault(name, name)
-    return resolver
+    return FieldResolver(field_translation, dataset_columns).fields
 
 
 def translate_metric_fields(metric: dict, field_translation: dict[str, str], dataset_columns=None) -> dict:
     """Return a metric copy with canonical input fields resolved to dataset columns."""
-    resolver = field_resolver(field_translation, dataset_columns)
+    resolver = FieldResolver(field_translation, dataset_columns)
     translated = dict(metric)
     requirements = metric.get("input_requirements")
     if isinstance(requirements, dict):
-        translated["input_requirements"] = _translate_requirement_value(requirements, resolver)
+        translated["input_requirements"] = resolver.translate_value(requirements)
     return translated
 
 
@@ -293,13 +313,3 @@ from runner.field_translation_reports import (
     write_field_translation_report,
     write_text_report,
 )
-
-
-def _translate_requirement_value(value, resolver: dict[str, str]):
-    if isinstance(value, dict):
-        return {key: _translate_requirement_value(child, resolver) for key, child in value.items()}
-    if isinstance(value, list):
-        return [_translate_requirement_value(child, resolver) for child in value]
-    if isinstance(value, str):
-        return resolver.get(value, value)
-    return value
