@@ -1,11 +1,18 @@
 from __future__ import annotations
+
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from concurrent.futures import wait, FIRST_COMPLETED
 from pathlib import Path
 
+from runner.live_rendering import render_interactive_run_state
+from runner.progress import (
+    colorize_status,
+    print_live_status,
+    render_metric_activity_bar,
+    render_overall_progress_line,
+)
 from runner.telemetry import RunState
-from runner.progress import colorize_status, render_metric_activity_bar, render_overall_progress_line, print_live_status
 
 
 def _metric_status_line(
@@ -172,7 +179,14 @@ def render_live_taxonomy(
     max_lines: int | None = None,
     run_state: RunState | None = None,
 ) -> str:
-    if display_mode in {"compact", "interactive"} and run_state is not None:
+    if display_mode == "interactive" and run_state is not None:
+        return render_interactive_run_state(
+            run_state,
+            default_predictions,
+            running_elapsed=running_elapsed,
+            max_lines=max_lines,
+        )
+    if display_mode == "compact" and run_state is not None:
         return render_compact_run_state(
             run_state,
             default_predictions,

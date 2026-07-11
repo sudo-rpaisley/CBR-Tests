@@ -72,7 +72,8 @@ def test_field_translation_dry_run_creates_sidecar_and_report(tmp_path):
     assert report_payload["skipped_metrics"] == [
         {"metric_id": "missing_value_ratio", "reason": "missing_field_mappings", "missing_fields": ["Canonical A"]}
     ]
-    assert "[SKIPPED] missing_value_ratio" in text_report_body
+    assert "Skipped metrics (1):" in text_report_body
+    assert "missing_value_ratio: missing Canonical A" in text_report_body
     assert "| `missing_value_ratio` | skipped | Canonical A | - |" in markdown_report_body
     assert "Field translation report" in result.stdout
     assert "Dry run complete" in result.stdout
