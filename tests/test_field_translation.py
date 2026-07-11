@@ -424,6 +424,21 @@ def test_format_column_section_uses_terminal_width_fallback(monkeypatch):
     assert lines == ["Unused dataset columns (3):", "  alpha             beta              gamma"]
 
 
+def test_format_column_section_wraps_identifiers_at_separators():
+    from runner.field_translation_reports import format_column_section
+
+    lines = format_column_section(
+        "Runnable metrics",
+        ["inter_arrival_time_distribution_divergence"],
+        max_width=42,
+    )
+
+    assert "inter_arrival_time_distribution_" in lines[1]
+    assert lines[2].strip() == "divergence"
+    assert "divergen" not in lines[1]
+    assert lines[2].strip() != "ce"
+
+
 def test_format_metric_section_uses_category_grid_without_repeated_status_labels():
     from runner.field_translation_reports import _display_width, format_metric_section
 

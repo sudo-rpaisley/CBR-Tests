@@ -130,27 +130,50 @@ def _display_ljust(value: str, width: int) -> str:
     return value + " " * max(0, width - _display_width(value))
 
 
+def _character_display_width(character: str) -> int:
+    if unicodedata.combining(character):
+        return 0
+    if unicodedata.east_asian_width(character) in {"F", "W"}:
+        return 2
+    return 1
+
+
 def _split_display_width(value: str, width: int) -> list[str]:
-    """Split a string into display-width-limited chunks."""
+    """Split a string into display-width-limited chunks.
+
+    Prefer splitting long identifiers at separators so metric names such as
+    ``inter_arrival_time_distribution_divergence`` do not break in the middle
+    of words.
+    """
     if width <= 0 or not value:
         return [value]
 
     chunks: list[str] = []
     current: list[str] = []
     current_width = 0
+    last_separator_index: int | None = None
+    separators = {"_", "-", ".", "/"}
+
     for character in value:
-        if unicodedata.combining(character):
-            character_width = 0
-        elif unicodedata.east_asian_width(character) in {"F", "W"}:
-            character_width = 2
-        else:
-            character_width = 1
+        character_width = _character_display_width(character)
         if current and current_width + character_width > width:
-            chunks.append("".join(current))
-            current = []
-            current_width = 0
+            if last_separator_index is not None:
+                split_index = last_separator_index + 1
+                chunks.append("".join(current[:split_index]))
+                current = current[split_index:]
+                current_width = _display_width("".join(current))
+            else:
+                chunks.append("".join(current))
+                current = []
+                current_width = 0
+            last_separator_index = next(
+                (index for index in range(len(current) - 1, -1, -1) if current[index] in separators),
+                None,
+            )
         current.append(character)
         current_width += character_width
+        if character in separators:
+            last_separator_index = len(current) - 1
     if current:
         chunks.append("".join(current))
     return chunks or [""]
