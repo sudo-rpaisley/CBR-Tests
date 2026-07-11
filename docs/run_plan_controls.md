@@ -119,13 +119,3 @@ python run_plan.py \
   --display quiet \
   --no-update-field-translation
 ```
-
-
-## Related documentation
-
-- `docs/plan_schema.md`: plan JSON details.
-- `docs/case_schema.md`: case JSON details.
-- `docs/outcome_schema.md`: outcome JSON details.
-- `docs/field_translation_report_schema.md`: field translation report details.
-- `docs/display_modes.md`: live display behavior.
-- `docs/troubleshooting.md`: common problems and fixes.

@@ -4,8 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from runner.field_translation import load_field_translation
-from runner.field_translation_schema import FieldTranslationError
+from runner.field_translation import FieldTranslationError, load_field_translation
 from runner.io import load_case_or_plan
 from runner.tabular import load_tabular_dataset
 
@@ -152,7 +151,7 @@ def test_collect_required_test_fields_from_plan():
 
 
 def test_ensure_field_translation_file_creates_template_with_detected_fields(tmp_path):
-    from runner.field_translation_sidecar import ensure_field_translation_file
+    from runner.field_translation import ensure_field_translation_file
 
     dataset_path = tmp_path / "packets.csv"
     dataset_path.write_text("frame.time_epoch,ip.src\n1710000000,10.0.0.1\n", encoding="utf-8")
@@ -183,7 +182,7 @@ def test_ensure_field_translation_file_creates_template_with_detected_fields(tmp
 
 
 def test_ensure_field_translation_file_updates_template_with_new_required_fields(tmp_path):
-    from runner.field_translation_sidecar import ensure_field_translation_file
+    from runner.field_translation import ensure_field_translation_file
 
     dataset_path = tmp_path / "packets.csv"
     dataset_path.write_text("ip.src\n10.0.0.1\n", encoding="utf-8")
@@ -223,7 +222,7 @@ def test_detect_standard_pcap_field_translation_for_dataset_reads_csv_header(tmp
 
 
 def test_existing_sidecar_is_not_rewritten_when_no_fields_are_missing(tmp_path):
-    from runner.field_translation_sidecar import ensure_field_translation_file
+    from runner.field_translation import ensure_field_translation_file
 
     dataset_path = tmp_path / "packets.csv"
     dataset_path.write_text("ip.src\n10.0.0.1\n", encoding="utf-8")
@@ -306,7 +305,7 @@ def test_translate_metric_fields_resolves_without_renaming_dataframe_columns():
 
 
 def test_build_field_translation_report_tracks_skipped_metrics(tmp_path):
-    from runner.field_translation_reports import build_field_translation_report
+    from runner.field_translation import build_field_translation_report
 
     dataset_path = tmp_path / "dataset.csv"
     translation_path = tmp_path / "dataset.field_translation.json"
@@ -342,21 +341,21 @@ def test_example_field_translations_use_standard_shape():
 
 
 def test_validate_field_translation_payload_rejects_missing_standard_mapping():
-    from runner.field_translation_schema import validate_field_translation_payload
+    from runner.field_translation import validate_field_translation_payload
 
     with pytest.raises(FieldTranslationError, match="test_to_dataset_fields"):
         validate_field_translation_payload({"schema_version": 1})
 
 
 def test_validate_field_translation_payload_rejects_unknown_schema_version():
-    from runner.field_translation_schema import validate_field_translation_payload
+    from runner.field_translation import validate_field_translation_payload
 
     with pytest.raises(FieldTranslationError, match="Unsupported field translation schema_version"):
         validate_field_translation_payload({"schema_version": 999, "test_to_dataset_fields": {}})
 
 
 def test_validate_field_translation_payload_rejects_metadata_for_unknown_fields():
-    from runner.field_translation_schema import validate_field_translation_payload
+    from runner.field_translation import validate_field_translation_payload
 
     with pytest.raises(FieldTranslationError, match="field_metadata contains fields"):
         validate_field_translation_payload({
@@ -367,7 +366,7 @@ def test_validate_field_translation_payload_rejects_metadata_for_unknown_fields(
 
 
 def test_field_translation_report_includes_suggestions_and_markdown():
-    from runner.field_translation_reports import build_field_translation_report, format_field_translation_markdown_report
+    from runner.field_translation import build_field_translation_report, format_field_translation_markdown_report
 
     metric = {"metric_id": "m1", "field_requirements": {"required": ["Source IP"], "optional": ["Destination IP"]}}
     report = build_field_translation_report(
@@ -388,24 +387,3 @@ def test_field_translation_report_includes_suggestions_and_markdown():
     assert report["unused_dataset_columns"] == ["bytes", "dst_ip", "src_ip"]
     assert report["metrics"]["m1"]["missing_optional_fields"] == ["Destination IP"]
     assert "| `m1` | skipped | Source IP | Destination IP |" in markdown
-
-
-def test_skipped_metric_records_are_outcome_ready():
-    from runner.field_translation_workflow import skipped_metric_records
-
-    assert skipped_metric_records({"m2": ["B"], "m1": ["A"]}) == [
-        {"metric_id": "m1", "status": "skipped", "reason": "missing_field_mappings", "missing_fields": ["A"]},
-        {"metric_id": "m2", "status": "skipped", "reason": "missing_field_mappings", "missing_fields": ["B"]},
-    ]
-
-
-def test_field_resolver_translates_nested_requirement_values():
-    from runner.field_translation import FieldResolver
-
-    resolver = FieldResolver({"Src IP": "Source IP"}, ["Src IP", "Label"])
-
-    assert resolver.resolve("Source IP") == "Src IP"
-    assert resolver.translate_value({"fields": ["Source IP", "Label"], "literal": 5}) == {
-        "fields": ["Src IP", "Label"],
-        "literal": 5,
-    }

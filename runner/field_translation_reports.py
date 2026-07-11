@@ -3,8 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from runner.field_translation_schema import SIDECAR_SCHEMA_VERSION
-
+SIDECAR_SCHEMA_VERSION = 1
 
 def _normalise_field_name(value: str) -> str:
     return "".join(ch.lower() for ch in value if ch.isalnum())
