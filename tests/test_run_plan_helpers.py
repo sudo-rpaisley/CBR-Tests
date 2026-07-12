@@ -105,3 +105,36 @@ def test_update_live_header_formats_and_forwards(monkeypatch):
     assert captured["lines"][0] == "=" * 12
     assert any("A" in line for line in captured["lines"])
     assert any("B" in line for line in captured["lines"])
+
+
+def test_parse_run_plan_args_keeps_interactive_display_in_tui_session(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["run_plan.py", "--case", "case.json", "--display", "interactive"])
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+
+    args = parse_run_plan_args()
+
+    assert args.tui_session is True
+
+
+def test_main_shows_results_menu_for_interactive_display(monkeypatch):
+    import argparse
+    import run_plan
+
+    args = argparse.Namespace(tui_session=True)
+    calls = []
+
+    monkeypatch.setattr(run_plan, "parse_run_plan_args", lambda: args)
+    monkeypatch.setattr(run_plan, "run_once", lambda parsed_args: {"status": "success", "output_path": "out.json"})
+
+    def _fake_show_post_run_menu(result, parsed_args):
+        calls.append((result, parsed_args))
+        return "quit"
+
+    monkeypatch.setattr(run_plan, "show_post_run_menu", _fake_show_post_run_menu)
+
+    result = run_plan.main()
+
+    assert result["status"] == "success"
+    assert len(calls) == 1
+    assert calls[0][0]["output_path"] == "out.json"
+    assert calls[0][1] is args

@@ -15,7 +15,7 @@ _KEYBOARD_ENABLED = False
 _OLD_TERMIOS = None
 _KEYBOARD_FD = None
 _KEYBOARD_OWNS_FD = False
-_INTERACTIVE_STATE = {"selected_branch": 0, "expanded_branches": set()}
+_INTERACTIVE_STATE = {"selected_branch": 0, "expanded_branches": set(), "metric_offsets": {}}
 
 
 def enable_interactive_keyboard() -> None:
@@ -81,10 +81,18 @@ def _read_key() -> str | None:
         return "up"
     if "\x1b[B" in text:
         return "down"
+    if "\x1b[5~" in text:
+        return "metric_page_up"
+    if "\x1b[6~" in text:
+        return "metric_page_down"
     if any(char in text for char in ("k", "K")):
         return "up"
     if any(char in text for char in ("j", "J")):
         return "down"
+    if any(char in text for char in ("u", "U")):
+        return "metric_page_up"
+    if any(char in text for char in ("d", "D")):
+        return "metric_page_down"
     if any(char in text for char in ("\r", "\n", " ")):
         return "toggle"
     if "\x1b" in text:
@@ -92,9 +100,10 @@ def _read_key() -> str | None:
     return None
 
 
-def _update_interactive_state(branches: list[str]) -> None:
+def _update_interactive_state(branches: list[str], branch_metric_counts: dict[str, int] | None = None) -> None:
     if not branches:
         return
+    branch_metric_counts = branch_metric_counts or {}
     key = _read_key()
     if key == "up":
         _INTERACTIVE_STATE["selected_branch"] = max(0, int(_INTERACTIVE_STATE["selected_branch"]) - 1)
@@ -107,6 +116,13 @@ def _update_interactive_state(branches: list[str]) -> None:
             expanded.remove(selected)
         else:
             expanded.add(selected)
+    elif key in {"metric_page_up", "metric_page_down"}:
+        selected = branches[int(_INTERACTIVE_STATE["selected_branch"])]
+        offsets = _INTERACTIVE_STATE.setdefault("metric_offsets", {})
+        current = int(offsets.get(selected, 0))
+        delta = 5 if key == "metric_page_down" else -5
+        max_offset = max(0, branch_metric_counts.get(selected, 0) - 10)
+        offsets[selected] = min(max(0, current + delta), max_offset)
     if int(_INTERACTIVE_STATE["selected_branch"]) >= len(branches):
         _INTERACTIVE_STATE["selected_branch"] = len(branches) - 1
 
@@ -207,15 +223,19 @@ def render_interactive_run_state(
 
     branch_summaries = run_state.branch_summaries()
     branch_names = list(branch_summaries)
+    branch_metric_counts = {branch: sum(1 for metric in run_state.metrics.values() if metric.branch == branch) for branch in branch_names}
     _INTERACTIVE_STATE["expanded_branches"].update(
         branch
         for branch, branch_counts in branch_summaries.items()
         if branch_counts.get("running") or branch_counts.get("failed") or branch_counts.get("skipped")
     )
-    _update_interactive_state(branch_names)
+    _update_interactive_state(branch_names, branch_metric_counts)
     selected_branch = int(_INTERACTIVE_STATE["selected_branch"])
     expanded_branches = _INTERACTIVE_STATE["expanded_branches"]
-    lines.append(_tui_row("Controls: ↑/↓ select branch • Enter/Space expand/collapse • Ctrl-C cancel", width))
+    if _KEYBOARD_ENABLED:
+        lines.append(_tui_row("Controls: ↑/↓ select branch • Enter/Space expand/collapse • PgUp/PgDn or u/d scroll metrics • Ctrl-C cancel", width))
+    else:
+        lines.append(_tui_row("Controls unavailable: terminal input was not captured; use --display full to see every row.", width))
     for index, (branch, branch_counts) in enumerate(branch_summaries.items()):
         detail = ", ".join(f"{key} {value}" for key, value in branch_counts.items() if key != "total" and value)
         prefix = "▾" if branch in expanded_branches else "▸"
@@ -223,7 +243,13 @@ def render_interactive_run_state(
         lines.append(_tui_row(f"{selector} {prefix} {branch}: {detail} / {branch_counts['total']} total", width))
         if branch in expanded_branches:
             branch_metrics = [metric for metric in run_state.metrics.values() if metric.branch == branch]
-            for metric in branch_metrics[:10]:
+            metric_offsets = _INTERACTIVE_STATE.setdefault("metric_offsets", {})
+            offset = min(int(metric_offsets.get(branch, 0)), max(0, len(branch_metrics) - 10))
+            metric_offsets[branch] = offset
+            visible_metrics = branch_metrics[offset : offset + 10]
+            if offset:
+                lines.append(_tui_row(f"    … {offset} earlier metrics hidden; PgUp/u to scroll", width))
+            for metric in visible_metrics:
                 elapsed = running_elapsed.get(metric.metric_id)
                 expected = None
                 if metric.status == "running":
@@ -241,8 +267,9 @@ def render_interactive_run_state(
                 if metric.error:
                     metric_line += f" | error: {metric.error}"
                 lines.append(_tui_row(metric_line, width))
-            if len(branch_metrics) > 10:
-                lines.append(_tui_row(f"    … {len(branch_metrics) - 10} more metrics in this branch", width))
+            hidden_after = max(0, len(branch_metrics) - offset - len(visible_metrics))
+            if hidden_after:
+                lines.append(_tui_row(f"    … {hidden_after} more metrics in this branch; PgDn/d to scroll", width))
 
     attention = run_state.attention_metrics()
     if attention:

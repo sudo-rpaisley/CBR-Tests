@@ -177,7 +177,7 @@ def parse_run_plan_args() -> argparse.Namespace:
         ),
     )
     args = parser.parse_args()
-    args.tui_session = bool(args.tui)
+    args.tui_session = bool(args.tui or (args.display == "interactive" and sys.stdout.isatty()))
     if args.tui:
         if "--display" not in sys.argv:
             args.display = "interactive"
