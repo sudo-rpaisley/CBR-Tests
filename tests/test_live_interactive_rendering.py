@@ -30,3 +30,19 @@ def test_interactive_dashboard_renders_branch_controls_and_expanded_metrics():
     assert "Controls: ↑/↓ select branch" in output
     assert "> ▾ branch_a" in output
     assert "metric_a [running" in output
+
+
+def test_interactive_keyboard_reads_full_arrow_escape_sequence(monkeypatch):
+    import os
+    import runner.live_rendering as live_rendering
+
+    read_fd, write_fd = os.pipe()
+    try:
+        os.write(write_fd, b"\x1b[B")
+        monkeypatch.setattr(live_rendering, "_KEYBOARD_ENABLED", True)
+        monkeypatch.setattr(live_rendering, "_KEYBOARD_FD", read_fd)
+
+        assert live_rendering._read_key() == "down"
+    finally:
+        os.close(read_fd)
+        os.close(write_fd)

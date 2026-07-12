@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import atexit
+import os
 import select
 import shutil
 import sys
 import termios
-import tty
 
 from runner.telemetry import RunState
 from runner.progress import colorize_status, render_metric_activity_bar
@@ -13,48 +13,82 @@ from runner.progress import colorize_status, render_metric_activity_bar
 
 _KEYBOARD_ENABLED = False
 _OLD_TERMIOS = None
+_KEYBOARD_FD = None
+_KEYBOARD_OWNS_FD = False
 _INTERACTIVE_STATE = {"selected_branch": 0, "expanded_branches": set()}
 
 
 def enable_interactive_keyboard() -> None:
-    global _KEYBOARD_ENABLED, _OLD_TERMIOS
-    if _KEYBOARD_ENABLED or not sys.stdin.isatty():
+    global _KEYBOARD_ENABLED, _OLD_TERMIOS, _KEYBOARD_FD, _KEYBOARD_OWNS_FD
+    if _KEYBOARD_ENABLED:
         return
-    _OLD_TERMIOS = termios.tcgetattr(sys.stdin.fileno())
-    tty.setcbreak(sys.stdin.fileno())
+    try:
+        if sys.stdin.isatty():
+            _KEYBOARD_FD = sys.stdin.fileno()
+            _KEYBOARD_OWNS_FD = False
+        else:
+            _KEYBOARD_FD = os.open("/dev/tty", os.O_RDONLY | os.O_NONBLOCK)
+            _KEYBOARD_OWNS_FD = True
+        _OLD_TERMIOS = termios.tcgetattr(_KEYBOARD_FD)
+        new_attrs = termios.tcgetattr(_KEYBOARD_FD)
+        new_attrs[3] &= ~(termios.ICANON | termios.ECHO)
+        new_attrs[6][termios.VMIN] = 1
+        new_attrs[6][termios.VTIME] = 0
+        termios.tcsetattr(_KEYBOARD_FD, termios.TCSADRAIN, new_attrs)
+    except OSError:
+        _KEYBOARD_FD = None
+        _KEYBOARD_OWNS_FD = False
+        _OLD_TERMIOS = None
+        return
     _KEYBOARD_ENABLED = True
     atexit.register(disable_interactive_keyboard)
 
 
 def disable_interactive_keyboard() -> None:
-    global _KEYBOARD_ENABLED, _OLD_TERMIOS
-    if not _KEYBOARD_ENABLED or _OLD_TERMIOS is None:
+    global _KEYBOARD_ENABLED, _OLD_TERMIOS, _KEYBOARD_FD, _KEYBOARD_OWNS_FD
+    if not _KEYBOARD_ENABLED or _OLD_TERMIOS is None or _KEYBOARD_FD is None:
         return
-    termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, _OLD_TERMIOS)
+    termios.tcsetattr(_KEYBOARD_FD, termios.TCSADRAIN, _OLD_TERMIOS)
+    if _KEYBOARD_OWNS_FD:
+        os.close(_KEYBOARD_FD)
+    _KEYBOARD_FD = None
+    _KEYBOARD_OWNS_FD = False
     _KEYBOARD_ENABLED = False
 
 
-def _read_key() -> str | None:
-    if not _KEYBOARD_ENABLED:
-        return None
-    readable, _, _ = select.select([sys.stdin], [], [], 0)
+def _read_available_key_bytes() -> bytes:
+    if not _KEYBOARD_ENABLED or _KEYBOARD_FD is None:
+        return b""
+    readable, _, _ = select.select([_KEYBOARD_FD], [], [], 0)
     if not readable:
+        return b""
+    chunks = []
+    while readable:
+        try:
+            chunks.append(os.read(_KEYBOARD_FD, 32))
+        except BlockingIOError:
+            break
+        readable, _, _ = select.select([_KEYBOARD_FD], [], [], 0.02)
+    return b"".join(chunks)
+
+
+def _read_key() -> str | None:
+    data = _read_available_key_bytes()
+    if not data:
         return None
-    char = sys.stdin.read(1)
-    if char == "\x1b":
-        readable, _, _ = select.select([sys.stdin], [], [], 0)
-        if readable and sys.stdin.read(1) == "[":
-            readable, _, _ = select.select([sys.stdin], [], [], 0)
-            if readable:
-                code = sys.stdin.read(1)
-                return {"A": "up", "B": "down"}.get(code)
-        return "escape"
-    if char in {"k", "K"}:
+    text = data.decode(errors="ignore")
+    if "\x1b[A" in text:
         return "up"
-    if char in {"j", "J"}:
+    if "\x1b[B" in text:
         return "down"
-    if char in {"\r", "\n", " "}:
+    if any(char in text for char in ("k", "K")):
+        return "up"
+    if any(char in text for char in ("j", "J")):
+        return "down"
+    if any(char in text for char in ("\r", "\n", " ")):
         return "toggle"
+    if "\x1b" in text:
+        return "escape"
     return None
 
 
