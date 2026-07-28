@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline VIN lookup</title>
+  <style>
+    :root { color-scheme: light dark; font: 16px/1.5 system-ui, sans-serif; }
+    body { margin: 0; background: #eef2f6; color: #17202a; }
+    main { max-width: 700px; margin: 8vh auto; padding: 2rem; background: white; border-radius: 14px; box-shadow: 0 8px 35px #16324f22; }
+    h1 { margin-top: 0; } label { display: block; font-weight: 700; margin-bottom: .5rem; }
+    .row { display: flex; gap: .75rem; }
+    input { flex: 1; min-width: 0; padding: .8rem; font: inherit; text-transform: uppercase; border: 1px solid #aeb8c2; border-radius: 7px; }
+    button { padding: .8rem 1.2rem; font: inherit; font-weight: 700; color: white; background: #1769aa; border: 0; border-radius: 7px; cursor: pointer; }
+    button:disabled { opacity: .6; } .hint { color: #536471; }
+    pre { display: none; padding: 1rem; overflow: auto; background: #f5f7f9; border-radius: 7px; white-space: pre-wrap; }
+    .error { color: #a21b1b; }
+    @media (prefers-color-scheme: dark) { body { background: #101820; color: #e8eef4; } main { background: #182530; } input, pre { background: #101820; color: #e8eef4; } .hint { color: #b7c2cc; } }
+  </style>
+</head>
+<body><main>
+  <h1>Offline VIN lookup</h1>
+  <p class="hint">Results come only from the VIN database installed on this computer. No VIN is sent over the internet.</p>
+  <p class="hint">USB and Bluetooth barcode readers that act as keyboards can scan directly into the field below. ELM327 OBD-II adapters can be used with the command-line <code>scan</code> command.</p>
+  <form id="lookup"><label for="vin">Vehicle identification number</label><div class="row">
+    <input id="vin" name="vin" minlength="17" maxlength="17" pattern="[A-HJ-NPR-Z0-9]{17}" required autocomplete="off" placeholder="1M8GDM9AXKP042788">
+    <button>Look up</button>
+  </div></form>
+  <pre id="result" aria-live="polite"></pre>
+  <section id="save" hidden><h2>Save vehicle</h2><div class="row"><input id="vehicle-name" placeholder="Name or registration"><button id="save-vehicle" type="button">Save</button></div></section>
+  <section><h2>Saved vehicles</h2><pre id="vehicles"></pre></section>
+  <section><h2>Code translation</h2><div class="row"><input id="code" placeholder="P0300"><input id="description" placeholder="Description"><button id="save-code" type="button">Save</button></div><div class="row"><input id="code-make" placeholder="Make (optional)"><input id="code-model" placeholder="Model (optional)"></div></section>
+  <section><h2>Import code database</h2><p class="hint">Upload CSV, JSON, or a text-based PDF, or provide a direct download link.</p><input id="codes-file" type="file" accept=".csv,.json,.pdf"><input id="codes-url" type="url" placeholder="https://example.com/codes.pdf"><button id="import-codes" type="button">Import</button><span id="import-result"></span></section>
+  <section><h2>Create report</h2><div class="row"><select id="report-vehicle"></select><select id="report-type"><option value="diagnostic">Error codes</option><option value="work">Work done</option><option value="full">Full report</option></select></div><input id="report-title" placeholder="Report title"><input id="report-codes" placeholder="Codes, comma separated"><input id="report-odometer" placeholder="Odometer"><textarea id="report-notes" placeholder="Notes / work performed"></textarea><button id="save-report" type="button">Save report</button><pre id="report-result"></pre></section>
+</main><script>
+const form = document.querySelector('#lookup');
+const output = document.querySelector('#result');
+let currentVin = '';
+async function api(path, body) { const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const data=await response.json(); if(!response.ok) throw new Error(data.error); return data; }
+async function loadVehicles(){const values=await fetch('/api/vehicles').then(r=>r.json());const list=document.querySelector('#vehicles');list.style.display='block';list.textContent=values.map(v=>`${v.name||'Unnamed'} — ${v.vin}`).join('\n')||'No saved vehicles.';document.querySelector('#report-vehicle').innerHTML=values.map(v=>`<option value="${v.id}">${v.name||v.vin}</option>`).join('');}
+loadVehicles();
+form.addEventListener('submit', async (event) => {
+  event.preventDefault(); output.className = ''; output.style.display = 'block'; output.textContent = 'Looking up…';
+  const button = form.querySelector('button'); button.disabled = true;
+  try {
+    const response = await fetch('/api/vin', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({vin: form.vin.value})});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Lookup failed');
+    output.textContent = JSON.stringify(data, null, 2);
+    currentVin=data.vin; document.querySelector('#save').hidden=false;
+  } catch (error) { output.className = 'error'; output.textContent = error.message; }
+  finally { button.disabled = false; }
+});
+document.querySelector('#save-vehicle').onclick=async()=>{await api('/api/vehicles',{vin:currentVin,name:document.querySelector('#vehicle-name').value});await loadVehicles();};
+document.querySelector('#save-code').onclick=()=>api('/api/translations',{code:document.querySelector('#code').value,description:document.querySelector('#description').value,make:document.querySelector('#code-make').value,model:document.querySelector('#code-model').value});
+document.querySelector('#import-codes').onclick=async()=>{const file=document.querySelector('#codes-file').files[0];let content='';if(file)content=(await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file);}));const result=await api('/api/code-databases',{filename:file?.name||'codes.pdf',content,url:document.querySelector('#codes-url').value,make:document.querySelector('#code-make').value,model:document.querySelector('#code-model').value});document.querySelector('#import-result').textContent=`Imported ${result.imported} codes`;};
+document.querySelector('#save-report').onclick=async()=>{const notes=document.querySelector('#report-notes').value;const report=await api('/api/reports',{vehicle_id:Number(document.querySelector('#report-vehicle').value),type:document.querySelector('#report-type').value,title:document.querySelector('#report-title').value,codes:document.querySelector('#report-codes').value.split(',').map(x=>x.trim()).filter(Boolean),odometer:document.querySelector('#report-odometer').value,notes,work:notes?[{description:notes}]:[]});const out=document.querySelector('#report-result');out.style.display='block';out.textContent=JSON.stringify(report,null,2);};
+</script></body></html>

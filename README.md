@@ -13,6 +13,67 @@ Primary entrypoint:
 
 - `run_plan.py`
 
+Supporting lookup utility:
+
+- `vin_lookup.py`: imports a downloaded VIN/WMI prefix database and provides
+  offline command-line and browser-based VIN lookup.
+
+```bash
+# Import a provider's downloaded CSV or JSON export once.
+python vin_lookup.py --database data/vin.sqlite3 import ~/Downloads/vin-prefixes.csv
+
+# Look up a VIN without sending it over the internet.
+python vin_lookup.py --database data/vin.sqlite3 lookup 1M8GDM9AXKP042788
+
+# Or open http://127.0.0.1:8765 for the local lookup page.
+python vin_lookup.py --database data/vin.sqlite3 serve
+
+# Read Mode 09 PID 02 from a USB ELM327-compatible OBD-II adapter, then look it up.
+python vin_lookup.py --database data/vin.sqlite3 scan /dev/ttyUSB0
+
+# A paired Bluetooth serial adapter commonly appears as /dev/rfcomm0.
+python vin_lookup.py --database data/vin.sqlite3 scan /dev/rfcomm0 --baud 38400
+```
+
+The importer accepts CSV headers `prefix` (or `wmi`), `make`, `manufacturer`,
+`model`, `model_year`, `vehicle_type`, and `body_class`. Common downloadable
+export headings such as `Make_Name`, `Mfr_Name`, and `VehicleTypeName` are also
+recognized. JSON downloads may be a list of objects or an object containing a
+`records` list with those keys. More specific prefixes take priority over
+WMI-only matches, so the same local format can hold both manufacturer and
+model-level data. Neither the CLI lookup nor the lookup page makes an outbound
+network request.
+
+### VIN reader support
+
+The lookup page works as-is with USB or Bluetooth VIN/barcode scanners that
+present themselves as a keyboard: focus the VIN field and scan. The `scan`
+command supports ELM327-compatible OBD-II adapters exposed as a serial device,
+including USB serial adapters and Bluetooth adapters paired to an RFCOMM device.
+It initializes the adapter, requests the standard vehicle-information VIN using
+OBD-II service 09 PID 02, validates the returned VIN, and performs the same
+offline database lookup. The reader does not need internet access. Native BLE
+adapters that do not expose a serial port require a vendor-specific bridge and
+are not yet supported.
+
+### Saved vehicles and reports
+
+The local database can also retain looked-up vehicles and generic or make/model-
+specific diagnostic trouble code translations. Vehicle-specific translations
+take priority over generic descriptions when a diagnostic or full report is
+created. Reports can contain error codes, notes, odometer readings, and structured
+work entries, so the same format supports a code report, a work record, or a full
+service report. `export-report <id> <path.json>` writes a portable JSON copy;
+use a `.pdf` destination for a printable PDF instead.
+
+Diagnostic-code databases can be uploaded from the local page or imported with
+`import-codes`. CSV, JSON, and text-based PDF lists are supported, including
+lines such as `P0300 Random/Multiple Cylinder Misfire`. A local filename or an
+explicit HTTP/HTTPS download URL may be supplied. Use `--make` and `--model` to
+scope all imported definitions, or include those columns per CSV/JSON record.
+Image-only scanned PDFs need OCR before import; the importer reports an error
+rather than silently creating an empty database.
+
 ## Requirements
 
 - Python 3.11+
