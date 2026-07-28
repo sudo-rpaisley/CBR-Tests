@@ -11,6 +11,7 @@ def ensure_schema(db):
     CREATE TABLE IF NOT EXISTS saved_vehicles(id INTEGER PRIMARY KEY,vin TEXT UNIQUE NOT NULL,name TEXT NOT NULL DEFAULT '',details_json TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS dtc_translations(id INTEGER PRIMARY KEY,code TEXT NOT NULL,make TEXT NOT NULL DEFAULT '',model TEXT NOT NULL DEFAULT '',description TEXT NOT NULL,UNIQUE(code,make,model));
     CREATE TABLE IF NOT EXISTS vehicle_reports(id INTEGER PRIMARY KEY,vehicle_id INTEGER NOT NULL REFERENCES saved_vehicles(id),report_type TEXT NOT NULL,title TEXT NOT NULL,notes TEXT NOT NULL DEFAULT '',odometer TEXT NOT NULL DEFAULT '',codes_json TEXT NOT NULL,work_json TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS diagnostic_scans(id INTEGER PRIMARY KEY,vehicle_id INTEGER NOT NULL REFERENCES saved_vehicles(id),adapter TEXT NOT NULL DEFAULT '',stored_json TEXT NOT NULL,pending_json TEXT NOT NULL,permanent_json TEXT NOT NULL,created_at TEXT NOT NULL);
     """)
 
 def save_vehicle(database, vin, name="", details=None):
@@ -68,3 +69,17 @@ def export_report(database,report_id,destination):
         canvas.save()
     else: destination.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8")
     return destination
+
+def save_diagnostic_scan(database,vehicle_id,diagnostics,adapter=""):
+    with sqlite3.connect(database) as db:
+        ensure_schema(db)
+        if not db.execute("SELECT 1 FROM saved_vehicles WHERE id=?",(vehicle_id,)).fetchone(): raise ValueError("Saved vehicle not found.")
+        cursor=db.execute("INSERT INTO diagnostic_scans(vehicle_id,adapter,stored_json,pending_json,permanent_json,created_at) VALUES(?,?,?,?,?,?)",(vehicle_id,adapter,json.dumps(diagnostics.get("stored",[])),json.dumps(diagnostics.get("pending",[])),json.dumps(diagnostics.get("permanent",[])),_now()))
+        scan_id=cursor.lastrowid
+        row=db.execute("SELECT created_at FROM diagnostic_scans WHERE id=?",(scan_id,)).fetchone()
+    return {"id":scan_id,"vehicle_id":vehicle_id,"adapter":adapter,"stored":diagnostics.get("stored",[]),"pending":diagnostics.get("pending",[]),"permanent":diagnostics.get("permanent",[]),"created_at":row[0]}
+
+def list_diagnostic_scans(database,vehicle_id):
+    with sqlite3.connect(database) as db:
+        ensure_schema(db); rows=db.execute("SELECT id,adapter,stored_json,pending_json,permanent_json,created_at FROM diagnostic_scans WHERE vehicle_id=? ORDER BY id DESC",(vehicle_id,)).fetchall()
+    return [{"id":r[0],"vehicle_id":vehicle_id,"adapter":r[1],"stored":json.loads(r[2]),"pending":json.loads(r[3]),"permanent":json.loads(r[4]),"created_at":r[5]} for r in rows]

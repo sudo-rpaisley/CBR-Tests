@@ -74,6 +74,11 @@ scope all imported definitions, or include those columns per CSV/JSON record.
 Image-only scanned PDFs need OCR before import; the importer reports an error
 rather than silently creating an empty database.
 
+To begin a diagnostic history, `scan-codes <vehicle-id> <device>` performs a
+read-only scan for stored (Mode 03), pending (Mode 07), and permanent (Mode 0A)
+trouble codes and saves the timestamped result against the vehicle. It does not
+clear codes or issue any other write operation.
+
 ## Requirements
 
 - Python 3.11+

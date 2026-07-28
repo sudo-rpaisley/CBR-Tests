@@ -15,8 +15,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Iterable
 
-from vin_readers import VinReaderError, read_elm327_vin
-from vehicle_records import create_report, export_report, list_vehicles, save_translation, save_vehicle
+from vin_readers import VinReaderError, read_elm327_diagnostics, read_elm327_vin
+from vehicle_records import create_report, export_report, list_diagnostic_scans, list_vehicles, save_diagnostic_scan, save_translation, save_vehicle
 from code_database_import import download_source, import_code_database
 
 
@@ -164,7 +164,7 @@ def make_handler(database: Path, page: bytes | None = None):
                 self._send(HTTPStatus.NOT_FOUND, b"Not found", "text/plain; charset=utf-8")
 
         def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
-            if self.path not in ("/api/vin", "/api/vehicles", "/api/translations", "/api/reports", "/api/code-databases"):
+            if self.path not in ("/api/vin", "/api/vehicles", "/api/translations", "/api/reports", "/api/code-databases", "/api/scans"):
                 self._send(HTTPStatus.NOT_FOUND, b"Not found", "text/plain; charset=utf-8")
                 return
             try:
@@ -181,7 +181,7 @@ def make_handler(database: Path, page: bytes | None = None):
                     result = save_translation(database, str(request.get("code", "")), str(request.get("description", "")), str(request.get("make", "")), str(request.get("model", "")))
                 elif self.path == "/api/reports":
                     result = create_report(database, int(request.get("vehicle_id", 0)), str(request.get("type", "full")), str(request.get("title", "")), notes=str(request.get("notes", "")), odometer=str(request.get("odometer", "")), codes=request.get("codes", []), work=request.get("work", []))
-                else:
+                elif self.path == "/api/code-databases":
                     suffix = Path(str(request.get("filename", "codes.csv"))).suffix or ".csv"
                     with tempfile.TemporaryDirectory() as temporary:
                         source = Path(temporary) / f"codes{suffix}"
@@ -194,8 +194,13 @@ def make_handler(database: Path, page: bytes | None = None):
                             source.write_bytes(content)
                         count = import_code_database(database, source, make=str(request.get("make", "")), model=str(request.get("model", "")))
                     result = {"imported": count}
+                else:
+                    vehicle_id = int(request.get("vehicle_id", 0))
+                    device = str(request.get("device", ""))
+                    diagnostics = read_elm327_diagnostics(device, baud=int(request.get("baud", 38400)), timeout=float(request.get("timeout", 5)))
+                    result = {"scan": save_diagnostic_scan(database, vehicle_id, diagnostics, device), "history": list_diagnostic_scans(database, vehicle_id)}
                 status = HTTPStatus.OK
-            except (VinLookupError, ValueError, AttributeError) as exc:
+            except (VinLookupError, VinReaderError, ValueError, AttributeError) as exc:
                 result, status = {"error": str(exc)}, HTTPStatus.BAD_REQUEST
             body = json.dumps(result).encode()
             self._send(status, body, "application/json; charset=utf-8")
@@ -243,6 +248,11 @@ def build_parser() -> argparse.ArgumentParser:
     codes.add_argument("source")
     codes.add_argument("--make", default="")
     codes.add_argument("--model", default="")
+    diagnostic = commands.add_parser("scan-codes", help="read and save stored, pending, and permanent DTCs")
+    diagnostic.add_argument("vehicle_id", type=int)
+    diagnostic.add_argument("device")
+    diagnostic.add_argument("--baud", type=int, default=38400)
+    diagnostic.add_argument("--timeout", type=float, default=5)
     return parser
 
 
@@ -271,7 +281,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "create-report":
             report = create_report(args.database, args.vehicle_id, args.type, args.title, notes=args.notes, odometer=args.odometer, codes=args.code, work=[{"description": args.notes}] if args.notes else [])
             print(json.dumps(report, indent=2))
-        else:
+        elif args.command == "import-codes":
             source = Path(args.source)
             temporary = None
             if args.source.startswith(("http://", "https://")):
@@ -281,6 +291,9 @@ def main(argv: list[str] | None = None) -> int:
             try: print(f"Imported {import_code_database(args.database, source, make=args.make, model=args.model)} diagnostic code(s).")
             finally:
                 if temporary: temporary.cleanup()
+        else:
+            diagnostics = read_elm327_diagnostics(args.device, baud=args.baud, timeout=args.timeout)
+            print(json.dumps(save_diagnostic_scan(args.database, args.vehicle_id, diagnostics, args.device), indent=2))
     except (VinLookupError, VinReaderError, OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

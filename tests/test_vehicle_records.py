@@ -1,5 +1,5 @@
 import json
-from vehicle_records import create_report, export_report, list_vehicles, save_translation, save_vehicle
+from vehicle_records import create_report, export_report, list_diagnostic_scans, list_vehicles, save_diagnostic_scan, save_translation, save_vehicle
 
 def test_vehicle_specific_codes_and_full_report_export(tmp_path):
     db=tmp_path/"vin.sqlite3"; vehicle=save_vehicle(db,"1M8GDM9AXKP042788","Shop van",{"make":"Example","model":"Roadster"})
@@ -9,3 +9,6 @@ def test_vehicle_specific_codes_and_full_report_export(tmp_path):
     assert report["codes"][0]["description"]=="Example misfire"
     output=export_report(db,report["id"],tmp_path/"report.json")
     assert json.loads(output.read_text())["work"]==[{"description":"Replaced plugs"}]
+    scan=save_diagnostic_scan(db,vehicle["id"],{"stored":["P0300"],"pending":[],"permanent":[]},"/dev/fake")
+    assert scan["stored"]==["P0300"]
+    assert list_diagnostic_scans(db,vehicle["id"])[0]["adapter"]=="/dev/fake"

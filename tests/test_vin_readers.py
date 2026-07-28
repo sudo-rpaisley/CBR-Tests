@@ -1,6 +1,6 @@
 import pytest
 
-from vin_readers import VinReaderError, parse_obd_vin, read_elm327_vin
+from vin_readers import VinReaderError, parse_dtc_response, parse_obd_vin, read_elm327_diagnostics, read_elm327_vin
 
 
 def test_parse_plain_scanner_vin():
@@ -30,3 +30,9 @@ def test_reader_initializes_adapter_and_requests_vin():
 
     assert read_elm327_vin("/dev/fake", transport=transport) == "1M8GDM9AXKP042788"
     assert [call[2] for call in commands] == ["ATZ", "ATE0", "ATL0", "ATS1", "ATH0", "ATSP0", "0902"]
+
+def test_parse_and_read_diagnostic_code_groups():
+    assert parse_dtc_response("43 01 00 03 00 00 00>",0x43)==["P0100","P0300"]
+    def transport(_device,_baud,command,_timeout):
+        return {"03":"43 01 00>","07":"47 03 00>","0A":"NO DATA>"}.get(command,"OK>")
+    assert read_elm327_diagnostics("/dev/fake",transport=transport)=={"stored":["P0100"],"pending":["P0300"],"permanent":[]}

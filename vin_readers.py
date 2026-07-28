@@ -89,3 +89,37 @@ def read_elm327_vin(
         transport(device, baud, command, timeout)
     response = transport(device, baud, "0902", timeout)
     return parse_obd_vin(response)
+
+
+def parse_dtc_response(response: str, response_mode: int) -> list[str]:
+    """Decode the two-byte DTC values following an OBD response-mode byte."""
+    values = [int(token, 16) for token in re.findall(r"(?<![0-9A-F])[0-9A-F]{2}(?![0-9A-F])", response.upper())]
+    try:
+        start = values.index(response_mode) + 1
+    except ValueError:
+        if "NO DATA" in response.upper():
+            return []
+        raise VinReaderError(f"The OBD response did not contain mode {response_mode:02X} data.")
+    categories = "PCBU"
+    codes = []
+    for index in range(start, len(values) - 1, 2):
+        first, second = values[index], values[index + 1]
+        if first == second == 0:
+            continue
+        code = f"{categories[first >> 6]}{(first >> 4) & 3:X}{first & 15:X}{second:02X}"
+        if code not in codes:
+            codes.append(code)
+    return codes
+
+
+def read_elm327_diagnostics(device: str, *, baud: int = 38400, timeout: float = 5, transport=_serial_transport) -> dict[str, list[str]]:
+    """Read stored, pending, and permanent codes without modifying the vehicle."""
+    if timeout <= 0:
+        raise VinReaderError("Reader timeout must be greater than zero.")
+    for command in ("ATZ", "ATE0", "ATL0", "ATS1", "ATH0", "ATSP0"):
+        transport(device, baud, command, timeout)
+    requests = {"stored": ("03", 0x43), "pending": ("07", 0x47), "permanent": ("0A", 0x4A)}
+    return {
+        name: parse_dtc_response(transport(device, baud, command, timeout), response_mode)
+        for name, (command, response_mode) in requests.items()
+    }
