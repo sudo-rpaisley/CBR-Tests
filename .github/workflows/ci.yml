@@ -64,6 +64,25 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Build documentation source snapshot
+        if: matrix.python-version == '3.11'
+        run: |
+          tar \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            -czf documentation-source-snapshot.tar.gz \
+            .github README.md run_plan.py requirements.txt requirements-dev.txt \
+            runner cbr_tests tests plans cases docs examples scripts
+
+      - name: Upload documentation source snapshot
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-source-snapshot
+          path: documentation-source-snapshot.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run test suite
         run: python -m pytest -q --junitxml=test-results-${{ matrix.python-version }}.xml
 
