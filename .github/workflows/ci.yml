@@ -46,6 +46,24 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
 
+      - name: Build documentation inventory
+        if: matrix.python-version == '3.11'
+        run: |
+          python scripts/build_documentation_inventory.py \
+            --json documentation-inventory.json \
+            --markdown documentation-inventory.md
+
+      - name: Upload documentation inventory
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-inventory
+          path: |
+            documentation-inventory.json
+            documentation-inventory.md
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run test suite
         run: python -m pytest -q --junitxml=test-results-${{ matrix.python-version }}.xml
 
