@@ -17,10 +17,10 @@ Parallel correctness, timestamps, atomic writes, and schema regression coverage.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_parallel_fail_fast_marks_unsubmitted_metrics(tmp_path` (L24) | Verifies that parallel fail fast marks unsubmitted metrics. | `run_metrics_parallel`, `_metric`, `called.append` |
-| `test_parallel_payload_contains_real_metric_timestamps(tmp_path` (L51) | Verifies that parallel payload contains real metric timestamps. | `run_metrics_parallel`, `datetime.fromisoformat`, `_metric` |
+| `test_parallel_fail_fast_marks_unsubmitted_metrics(tmp_path: Path)` (L24) | Verifies that parallel fail fast marks unsubmitted metrics. | `run_metrics_parallel`, `_metric`, `called.append` |
+| `test_parallel_payload_contains_real_metric_timestamps(tmp_path: Path)` (L51) | Verifies that parallel payload contains real metric timestamps. | `run_metrics_parallel`, `datetime.fromisoformat`, `_metric` |
 | `test_parallel_collector_preserves_completed_and_not_run_records()` (L69) | Verifies that parallel collector preserves completed and not run records. | `datetime`, `collect_parallel_metric_results`, `_metric` |
-| `test_write_outcome_creates_parent_and_replaces_file(tmp_path` (L113) | Verifies that write outcome creates parent and replaces file. | `write_outcome`, `destination.parent.glob`, `destination.read_text` |
+| `test_write_outcome_creates_parent_and_replaces_file(tmp_path: Path)` (L113) | Verifies that write outcome creates parent and replaces file. | `write_outcome`, `destination.parent.glob`, `destination.read_text` |
 | `test_plan_schema_rejects_duplicate_metric_ids()` (L122) | Verifies that plan schema rejects duplicate metric ids. | `pytest.raises`, `validate_plan_schema`, `_metric` |
 | `test_plan_schema_rejects_required_optional_overlap()` (L133) | Verifies that plan schema rejects required optional overlap. | `_metric`, `pytest.raises`, `validate_plan_schema` |
 
@@ -28,7 +28,7 @@ Parallel correctness, timestamps, atomic writes, and schema regression coverage.
 
 | Helper | Purpose |
 | --- | --- |
-| `_metric(metric_id` (L15) | Implementation helper for metric. |
+| `_metric(metric_id: str) -> dict` (L15) | Implementation helper for metric. |
 | `test_parallel_fail_fast_marks_unsubmitted_metrics._failed(_dataset, _metric_config)` (L28) | Implementation helper for failed. |
 | `test_parallel_fail_fast_marks_unsubmitted_metrics._unexpected(_dataset, metric_config)` (L32) | Implementation helper for unexpected. |
 
@@ -150,7 +150,7 @@ Command-level translation dry-run and sidecar behavior.
 
 | Helper | Purpose |
 | --- | --- |
-| `_write_plan(path` (L10) | Implementation helper for write plan. |
+| `_write_plan(path: Path)` (L10) | Implementation helper for write plan. |
 
 ## `tests/test_run_plan_helpers.py`
 
@@ -163,7 +163,7 @@ Tests and local helpers in this module.
 | `test_detect_ip_fields_prefers_first_matching_candidates()` (L20) | Verifies that detect IP fields prefers first matching candidates. | `_DummyFrame`, `detect_ip_fields` |
 | `test_detect_ip_fields_defaults_to_na_when_missing()` (L27) | Verifies that detect IP fields defaults to na when missing. | `_DummyFrame`, `detect_ip_fields` |
 | `test_build_title_box_lines_adds_frame_and_status_separator()` (L34) | Verifies that build title box lines adds frame and status separator. | `build_title_box_lines`, `any` |
-| `test_build_base_header_lines_with_dataset_size(tmp_path` (L42) | Verifies that build base header lines with dataset size. | `dataset.write_text`, `build_base_header_lines`, `any`, `line.startswith` |
+| `test_build_base_header_lines_with_dataset_size(tmp_path: Path)` (L42) | Verifies that build base header lines with dataset size. | `dataset.write_text`, `build_base_header_lines`, `any`, `line.startswith` |
 | `test_build_outcome_contains_expected_fields()` (L54) | Verifies that build outcome contains expected fields. | `datetime`, `build_outcome` |
 | `test_configure_signal_handlers_registers_sigint(monkeypatch)` (L76) | Verifies that configure signal handlers registers sigint. | `monkeypatch.setattr`, `configure_signal_handlers`, `any`, `calls.append` |
 | `test_parse_run_plan_args_reads_required_case(monkeypatch)` (L89) | Verifies that parse run plan args reads required case. | `monkeypatch.setattr`, `parse_run_plan_args` |
