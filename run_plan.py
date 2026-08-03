@@ -4,33 +4,30 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from runner.taxonomy import print_taxonomy_summary
-from runner.run_plan_serial import run_serial_metrics
-from runner.dispatch import build_metric_handlers
-from runner.execution import auto_worker_count, run_metrics_parallel, render_live_taxonomy
-from runner.progress import print_live_status
-from runner.tabular import load_tabular_dataset
 from runner.dataset_loading import is_tabular_dataset, load_shared_tabular_dataset
-from runner.parallel_results import collect_parallel_metric_results
-from runner.parallel_progress import build_parallel_progress_callback
-from runner.run_context import prepare_run_context
-from runner.run_display import print_phase_status, print_title_box
+from runner.dispatch import build_metric_handlers
+from runner.execution import auto_worker_count, render_live_taxonomy, run_metrics_parallel
 from runner.field_translation import (
     available_translated_fields,
+    build_field_translation_report,
     default_field_translation_path,
     detect_standard_pcap_field_translation_for_dataset,
     ensure_field_translation_file,
-    load_field_translation,
-    merge_field_translations,
-    metrics_missing_required_fields,
-    read_tabular_dataset_columns,
-    build_field_translation_report,
     format_field_translation_markdown_report,
     format_field_translation_report,
+    load_field_translation,
+    merge_field_translations,
     metrics_missing_optional_fields,
+    metrics_missing_required_fields,
+    read_tabular_dataset_columns,
     write_field_translation_report,
     write_text_report,
 )
+from runner.parallel_progress import build_parallel_progress_callback
+from runner.parallel_results import collect_parallel_metric_results
+from runner.progress import print_live_status
+from runner.run_context import prepare_run_context
+from runner.run_display import print_phase_status, print_title_box
 from runner.run_plan_helpers import (
     build_base_header_lines,
     build_outcome,
@@ -39,6 +36,9 @@ from runner.run_plan_helpers import (
     update_live_header,
     write_outcome,
 )
+from runner.run_plan_serial import run_serial_metrics
+from runner.tabular import load_tabular_dataset
+from runner.taxonomy import print_taxonomy_summary
 
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
@@ -252,7 +252,7 @@ def main():
     ]
 
     if workers > 1:
-        _parallel_progress = build_parallel_progress_callback(
+        parallel_progress = build_parallel_progress_callback(
             plan=plan,
             case_id=case_id,
             dataset_path=dataset_path,
@@ -273,8 +273,9 @@ def main():
             metrics,
             metric_handlers,
             workers,
-            progress_callback=_parallel_progress,
+            progress_callback=parallel_progress,
             control_state=control_state,
+            fail_fast=fail_fast,
         )
         overall_status, test_results, metric_results, column_validations = collect_parallel_metric_results(
             parallel_out=parallel_out,
@@ -285,14 +286,23 @@ def main():
             completed_durations=completed_durations,
         )
         outcome = build_outcome(
-            overall_status, case_id, plan["plan_meta"]["plan_id"], metrics, dataset_path,
-            metric_results, test_results, run_started_at, run_start_perf, column_validations,
+            overall_status,
+            case_id,
+            plan["plan_meta"]["plan_id"],
+            metrics,
+            dataset_path,
+            metric_results,
+            test_results,
+            run_started_at,
+            run_start_perf,
+            column_validations,
             skipped_metrics=skipped_metric_records,
             all_metrics=all_enabled_metrics,
         )
         write_outcome(output_path, outcome)
         print_phase_status("Completed")
         return
+
     early_returned, outcome = run_serial_metrics(
         dataset_path=dataset_path,
         output_path=output_path,
@@ -326,5 +336,7 @@ def main():
     if not live_render_enabled:
         print("Results by taxonomy:")
         print_taxonomy_summary(outcome["result_taxonomy"])
+
+
 if __name__ == "__main__":
     main()

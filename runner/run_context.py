@@ -8,6 +8,7 @@ from runner.io import load_case_or_plan
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
 from runner.run_display import configure_display
 from runner.run_plan_helpers import configure_signal_handlers
+from runner.schema import validate_plan_schema
 from runner.telemetry import RunState
 
 
@@ -32,7 +33,7 @@ class PreparedRunContext:
 
 
 def prepare_run_context(args, default_metric_predictions: dict[str, float]) -> PreparedRunContext:
-    """Resolve CLI inputs, display settings, metrics, and telemetry state for a run."""
+    """Resolve CLI inputs, validate the plan, and prepare run state."""
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
     control_state = {"pause_requested": False, "cancel_requested": False}
     live_render_enabled, display_mode, display_max_lines = configure_display(args)
@@ -40,17 +41,31 @@ def prepare_run_context(args, default_metric_predictions: dict[str, float]) -> P
 
     configure_signal_handlers(control_state, shutdown_requested)
 
-    case_file = Path(args.case).resolve()
+    case_file = Path(args.case).expanduser().resolve()
+    if not case_file.exists():
+        raise FileNotFoundError(f"Case or plan file does not exist: {case_file}")
+
     plan, dataset_path, output_path, case_id, translation_path = load_case_or_plan(
-        case_file, args.dataset, args.output, args.case_id, args.field_translation
+        case_file,
+        args.dataset,
+        args.output,
+        args.case_id,
+        args.field_translation,
     )
+    validate_plan_schema(plan)
+
     if not dataset_path.exists():
         raise FileNotFoundError(f"Dataset does not exist: {dataset_path}")
+    if dataset_path.is_dir():
+        raise IsADirectoryError(f"Dataset path must be a file: {dataset_path}")
 
-    metrics = [metric for metric in plan.get("metrics", []) if metric.get("enabled", True)]
+    metrics = [metric for metric in plan["metrics"] if metric.get("enabled", True)]
     all_enabled_metrics = list(metrics)
     if args.taxonomy_file:
-        taxonomy_ranks = load_taxonomy_order(Path(args.taxonomy_file).expanduser().resolve())
+        taxonomy_file = Path(args.taxonomy_file).expanduser().resolve()
+        if not taxonomy_file.exists():
+            raise FileNotFoundError(f"Taxonomy file does not exist: {taxonomy_file}")
+        taxonomy_ranks = load_taxonomy_order(taxonomy_file)
         metrics = order_metrics_by_taxonomy(metrics, taxonomy_ranks, strict=args.taxonomy_strict)
         all_enabled_metrics = list(metrics)
     if not metrics:
