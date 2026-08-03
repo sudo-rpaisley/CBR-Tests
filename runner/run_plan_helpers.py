@@ -1,6 +1,8 @@
 import argparse
 import json
+import os
 import signal
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,13 +30,14 @@ def build_outcome(
 ) -> dict:
     taxonomy_metrics = all_metrics or metrics
     outcome = {
+        "schema_version": 1,
         "status": status,
         "case_id": case_id,
         "plan_id": plan_id,
         "metric_ids": [m["metric_id"] for m in taxonomy_metrics],
         "dataset_path": str(dataset_path),
         "plan_taxonomy": build_plan_taxonomy(taxonomy_metrics),
-        "metric_results": metric_results,
+        "metric_results": list(metric_results),
         "test_results": test_results,
         "test_results_taxonomy": build_test_results_taxonomy(taxonomy_metrics, test_results),
         "result_taxonomy": build_result_taxonomy(taxonomy_metrics, metric_results, test_results),
@@ -51,8 +54,27 @@ def build_outcome(
 
 
 def write_outcome(output_path: Path, outcome: dict) -> None:
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(outcome, f, indent=2)
+    """Write an outcome atomically, creating its destination directory first."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{output_path.name}.",
+        suffix=".tmp",
+        dir=output_path.parent,
+        text=True,
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(outcome, handle, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, output_path)
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
 
 
 def detect_ip_fields(tabular_df) -> tuple[str, str]:
