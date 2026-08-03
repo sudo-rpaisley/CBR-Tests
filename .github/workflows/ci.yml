@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -26,10 +26,8 @@ jobs:
           - "3.12"
 
     steps:
-      - name: Check out repository branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,20 +46,35 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
 
-      - name: Generate exhaustive references
+      - name: Check generated documentation
         if: matrix.python-version == '3.11'
-        run: python scripts/build_reference_documentation.py
+        run: python scripts/build_reference_documentation.py --check
 
-      - name: Commit generated references
-        if: matrix.python-version == '3.11' && github.event_name == 'pull_request'
+      - name: Check local documentation links
+        if: matrix.python-version == '3.11'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/function_reference.md docs/test_reference.md
-          if ! git diff --cached --quiet; then
-            git commit -m "Generate exhaustive function and test references"
-            git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          fi
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          from urllib.parse import unquote
+
+          failures = []
+          pattern = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
+          for document in [Path("README.md"), *sorted(Path("docs").rglob("*.md"))]:
+              text = document.read_text(encoding="utf-8")
+              for raw_target in pattern.findall(text):
+                  target = raw_target.strip().split()[0].strip("<>")
+                  if not target or target.startswith(("http://", "https://", "mailto:", "#")):
+                      continue
+                  path_text = unquote(target.split("#", 1)[0])
+                  if not path_text:
+                      continue
+                  resolved = (document.parent / path_text).resolve()
+                  if not resolved.exists():
+                      failures.append(f"{document}: {target}")
+          if failures:
+              raise SystemExit("Broken local documentation links:\n" + "\n".join(failures))
+          PY
 
       - name: Run documented quickstart
         if: matrix.python-version == '3.11'
