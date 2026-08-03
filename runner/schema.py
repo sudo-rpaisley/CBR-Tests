@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-_ALLOWED_SAMPLE_MODES = {"full", "sample"}
 _ALLOWED_BOOLEAN_POLICY_FIELDS = {"fail_fast", "allow_skips"}
 
 
@@ -39,13 +38,7 @@ def validate_plan_schema(plan: dict) -> None:
         if field in execution_policy and not isinstance(execution_policy[field], bool):
             raise ValueError(f"execution_policy.{field} must be a boolean.")
     if "sample_mode" in execution_policy:
-        sample_mode = execution_policy["sample_mode"]
-        if sample_mode not in _ALLOWED_SAMPLE_MODES:
-            raise ValueError(
-                "execution_policy.sample_mode must be one of: "
-                + ", ".join(sorted(_ALLOWED_SAMPLE_MODES))
-                + "."
-            )
+        _require_non_empty_string(execution_policy["sample_mode"], "execution_policy.sample_mode")
 
     metrics = plan.get("metrics")
     if not isinstance(metrics, list) or not metrics:
@@ -104,11 +97,12 @@ def validate_plan_schema(plan: dict) -> None:
                 )
 
         calculation = metric.get("calculation")
-        if not isinstance(calculation, dict):
-            raise ValueError(f"Metric {metric_id} calculation must be an object.")
-        _require_non_empty_string(calculation.get("method"), f"Metric {metric_id} calculation.method")
-        if "parameters" in calculation and not isinstance(calculation["parameters"], dict):
-            raise ValueError(f"Metric {metric_id} calculation.parameters must be an object.")
+        if calculation is not None:
+            if not isinstance(calculation, dict):
+                raise ValueError(f"Metric {metric_id} calculation must be an object.")
+            _require_non_empty_string(calculation.get("method"), f"Metric {metric_id} calculation.method")
+            if "parameters" in calculation and not isinstance(calculation["parameters"], dict):
+                raise ValueError(f"Metric {metric_id} calculation.parameters must be an object.")
 
         retention = metric.get("retention")
         if retention is not None and not isinstance(retention, dict):
