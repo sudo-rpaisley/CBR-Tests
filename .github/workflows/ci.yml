@@ -46,42 +46,35 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
 
-      - name: Build documentation inventory
+      - name: Check generated documentation
+        if: matrix.python-version == '3.11'
+        run: python scripts/build_reference_documentation.py --check
+
+      - name: Run documented quickstart
         if: matrix.python-version == '3.11'
         run: |
-          python scripts/build_documentation_inventory.py \
-            --json documentation-inventory.json \
-            --markdown documentation-inventory.md
+          python run_plan.py \
+            --case examples/quickstart/case.json \
+            --workers 1 \
+            --display quiet \
+            --no-update-field-translation
+          python - <<'PY'
+          import json
+          from pathlib import Path
 
-      - name: Upload documentation inventory
-        if: matrix.python-version == '3.11'
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation-inventory
-          path: |
-            documentation-inventory.json
-            documentation-inventory.md
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Build documentation source snapshot
-        if: matrix.python-version == '3.11'
-        run: |
-          tar \
-            --exclude='__pycache__' \
-            --exclude='*.pyc' \
-            -czf documentation-source-snapshot.tar.gz \
-            .github README.md run_plan.py requirements.txt requirements-dev.txt \
-            runner cbr_tests tests plans cases docs examples scripts
-
-      - name: Upload documentation source snapshot
-        if: matrix.python-version == '3.11'
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation-source-snapshot
-          path: documentation-source-snapshot.tar.gz
-          if-no-files-found: error
-          retention-days: 7
+          outcome_path = Path("outcomes/quickstart_example.json")
+          outcome = json.loads(outcome_path.read_text(encoding="utf-8"))
+          assert outcome["schema_version"] == 1
+          assert outcome["status"] == "success"
+          assert len(outcome["metric_results"]) == 4
+          assert set(outcome["test_results"]) == {
+              "column_quality_profile",
+              "missing_value_ratio",
+              "duplicate_row_ratio",
+              "pearson_correlation_profile",
+          }
+          PY
+          rm -f outcomes/quickstart_example.json
 
       - name: Run test suite
         run: python -m pytest -q --junitxml=test-results-${{ matrix.python-version }}.xml
