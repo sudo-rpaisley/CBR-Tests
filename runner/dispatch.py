@@ -73,6 +73,7 @@ from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.service_port_consistency_profile import run_service_port_consistency_metric
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.packet_byte_consistency_profile import run_packet_byte_consistency_metric
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.flow_duration_consistency_profile import run_flow_duration_consistency_metric
+from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.derived_rate_consistency_profile import run_derived_rate_consistency_metric
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.handshake_plausibility_profile import run_handshake_plausibility_metric
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.tcp_flag_consistency_profile import run_tcp_flag_consistency_metric
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadata_integrity.slice_identifier_consistency_profile import run_slice_identifier_consistency_metric
@@ -180,6 +181,10 @@ def _flow_duration_metric(dataset_path: Path, metric: dict):
 @register_metric('packet_byte_consistency_profile')
 def _packet_byte_metric(dataset_path: Path, metric: dict):
     return run_packet_byte_consistency_metric(dataset_path, metric)
+
+@register_metric('derived_rate_consistency_profile')
+def _derived_rate_metric(dataset_path: Path, metric: dict):
+    return run_derived_rate_consistency_metric(dataset_path, metric)
 
 @register_metric('valid_slice_identifier_profile')
 def _slice_valid_metric(dataset_path: Path, metric: dict):
