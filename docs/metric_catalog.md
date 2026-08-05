@@ -1,6 +1,8 @@
 # Metric catalog
 
-This catalog summarizes the metrics currently referenced by plans. Keep this file updated when metrics are added, renamed, or materially changed.
+This catalog summarizes the metrics currently referenced by plans or available to plans. Keep this file updated when metrics are added, renamed, or materially changed.
+
+The taxonomy's reviewed top-level architecture remains **Dataset Heuristics**, **Reference Model Comparison**, and **Task Performance**. Metrics added after that review must be identified as post-review additions until a second expert review is completed.
 
 ## Common tabular quality/statistical metrics
 
@@ -37,6 +39,7 @@ This catalog summarizes the metrics currently referenced by plans. Keep this fil
 | `handshake_plausibility_profile` | Checks TCP handshake plausibility. | Uses TCP flag/count fields. |
 | `flow_duration_consistency_profile` | Checks flow duration plausibility. | Uses duration fields. |
 | `packet_byte_consistency_profile` | Checks packet/byte count consistency. | Uses packet and byte count fields. |
+| `derived_rate_consistency_profile` | Recomputes packet/s and byte/s from counts, byte totals, and duration, then checks reported rates within declared tolerances. | Post-expert-review addition. Requires an explicit `duration_unit`, count/byte fields, and at least one reported rate field. |
 | `reserved_ip_address_profile` | Checks reserved/private/bogus address use. | Uses source/destination IP fields. |
 | `non_negative_duration_ratio` | Checks duration values are non-negative. | Uses duration fields. |
 
