@@ -29,6 +29,11 @@ def collect_parallel_metric_results(
     Execution status remains separate from a metric's domain result. A handler
     can therefore execute successfully while producing ``pass``, ``warn``,
     ``fail`` or ``not_applicable`` in ``result_status``.
+
+    ``completed_statuses`` keeps historical execution labels for execution
+    failures/not-run records. Successfully executed metrics may expose their
+    domain result there for post-run rendering; live parallel rendering already
+    receives the richer status directly from the progress callback.
     """
     del fail_fast
 
@@ -75,7 +80,10 @@ def collect_parallel_metric_results(
                 overall_status = "failed"
 
         metric_results.append(metric_record)
-        completed_statuses[metric_id] = display_status(metric_id, success, payload) if status in {"success", "failed"} else status
+        if status == "success":
+            completed_statuses[metric_id] = display_status(metric_id, success, payload)
+        else:
+            completed_statuses[metric_id] = status
         completed_durations[metric_id] = metric_record["elapsed_seconds"]
 
     return overall_status, test_results, metric_results, column_validations
