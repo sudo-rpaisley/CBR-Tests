@@ -159,7 +159,7 @@ class RunState:
         metric.finished_at = datetime.now(timezone.utc)
         metric.missing_fields = list(missing_fields)
         metric.reason_code = "missing_required_fields"
-        metric.summary = f"Required fields are unavailable: {', '.join(missing_fields)}."
+        metric.summary = None
         metric.suggestion = "Check the dataset field-translation mapping and required plan fields."
         self.record_event(
             "metric_skipped",
