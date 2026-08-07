@@ -4,7 +4,8 @@ import time
 from pathlib import Path
 
 from runner.live_rendering import render_live_taxonomy
-from runner.progress import render_overall_progress_line, print_live_status
+from runner.metric_diagnostics import display_status, extract_diagnostic, extract_result_status
+from runner.progress import print_live_status, render_overall_progress_line
 from runner.run_display import compact_overall_progress_line
 from runner.run_plan_helpers import update_live_header
 
@@ -29,7 +30,18 @@ def build_parallel_progress_callback(
     """Build the live progress callback used by parallel metric execution."""
     running_started_at: dict[str, float] = {}
 
-    def _parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds):
+    def _parallel_progress(
+        event,
+        completed,
+        total,
+        pending,
+        metric_id,
+        ok,
+        running_ids,
+        elapsed_seconds,
+        payload=None,
+    ):
+        del pending
         active_running = set(running_ids or [])
         if event == "stopping":
             for metric in metrics:
@@ -47,21 +59,31 @@ def build_parallel_progress_callback(
             elif completed_statuses.get(mid) == "running":
                 completed_statuses[mid] = "pending"
                 running_started_at.pop(mid, None)
+
         if event == "completed" and metric_id:
-            completed_statuses[metric_id] = "success" if ok else "failed"
+            payload = payload if isinstance(payload, dict) else {}
+            completed_statuses[metric_id] = display_status(metric_id, bool(ok), payload)
             running_started_at.pop(metric_id, None)
             if elapsed_seconds is not None:
                 completed_durations[metric_id] = float(elapsed_seconds)
+            diagnostic = extract_diagnostic(metric_id, bool(ok), payload)
+            result_status = extract_result_status(metric_id, payload) if ok else None
             run_state.mark_completed(
                 metric_id,
                 "success" if ok else "failed",
                 elapsed_seconds=float(elapsed_seconds) if elapsed_seconds is not None else None,
+                error=payload.get("error"),
+                result_status=result_status,
+                diagnostic=diagnostic,
             )
+
         running_elapsed = {
             mid: (time.perf_counter() - started_at)
             for mid, started_at in running_started_at.items()
         }
-        overall_header = render_overall_progress_line(max(1, completed), total, time.perf_counter() - run_start_perf, None)
+        overall_header = render_overall_progress_line(
+            max(1, completed), total, time.perf_counter() - run_start_perf, None
+        )
         compact_overall_header = compact_overall_progress_line(overall_header)
         update_live_header([
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
