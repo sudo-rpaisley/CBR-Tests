@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from runner.contract import (
+    collect_reference_paths,
+    validate_dataset_format_applicability,
+    validate_output_path_safety,
+)
+from runner.field_translation import default_field_translation_path
 from runner.io import load_case_or_plan
 from runner.order import load_taxonomy_order, order_metrics_by_taxonomy
+from runner.provenance import resolve_plan_source_path
 from runner.run_display import configure_display
 from runner.run_plan_helpers import configure_signal_handlers
 from runner.schema import validate_plan_schema
@@ -30,10 +38,17 @@ class PreparedRunContext:
     metrics: list[dict]
     all_enabled_metrics: list[dict]
     run_state: RunState
+    case_file: Path
+    plan_source_path: Path
+    taxonomy_path: Path | None
+    run_started_at: datetime
+    run_start_perf: float
 
 
 def prepare_run_context(args, default_metric_predictions: dict[str, float]) -> PreparedRunContext:
     """Resolve CLI inputs, validate the plan, and prepare run state."""
+    run_started_at = datetime.now(timezone.utc)
+    run_start_perf = time.perf_counter()
     shutdown_requested = {"requested": False, "confirm_before": 0.0}
     control_state = {"pause_requested": False, "cancel_requested": False}
     live_render_enabled, display_mode, display_max_lines = configure_display(args)
@@ -58,14 +73,37 @@ def prepare_run_context(args, default_metric_predictions: dict[str, float]) -> P
         raise FileNotFoundError(f"Dataset does not exist: {dataset_path}")
     if dataset_path.is_dir():
         raise IsADirectoryError(f"Dataset path must be a file: {dataset_path}")
+    validate_dataset_format_applicability(plan, dataset_path)
+
+    plan_source_path = resolve_plan_source_path(case_file)
+    taxonomy_path = None
+    taxonomy_arg = getattr(args, "taxonomy_file", None)
+    if taxonomy_arg:
+        taxonomy_path = Path(taxonomy_arg).expanduser().resolve()
+        if not taxonomy_path.exists():
+            raise FileNotFoundError(f"Taxonomy file does not exist: {taxonomy_path}")
+
+    protected_paths = [
+        dataset_path,
+        case_file,
+        plan_source_path,
+        default_field_translation_path(dataset_path),
+        *collect_reference_paths(plan, base_dir=plan_source_path.parent),
+    ]
+    if translation_path is not None:
+        protected_paths.append(translation_path)
+    if taxonomy_path is not None:
+        protected_paths.append(taxonomy_path)
+    validate_output_path_safety(
+        output_path,
+        protected_paths=protected_paths,
+        allow_overwrite=bool(getattr(args, "force_output", False)),
+    )
 
     metrics = [metric for metric in plan["metrics"] if metric.get("enabled", True)]
     all_enabled_metrics = list(metrics)
-    if args.taxonomy_file:
-        taxonomy_file = Path(args.taxonomy_file).expanduser().resolve()
-        if not taxonomy_file.exists():
-            raise FileNotFoundError(f"Taxonomy file does not exist: {taxonomy_file}")
-        taxonomy_ranks = load_taxonomy_order(taxonomy_file)
+    if taxonomy_path is not None:
+        taxonomy_ranks = load_taxonomy_order(taxonomy_path)
         metrics = order_metrics_by_taxonomy(metrics, taxonomy_ranks, strict=args.taxonomy_strict)
         all_enabled_metrics = list(metrics)
     if not metrics:
@@ -77,7 +115,7 @@ def prepare_run_context(args, default_metric_predictions: dict[str, float]) -> P
         metrics=all_enabled_metrics,
         dataset_path=dataset_path,
         output_path=output_path,
-        started_at=datetime.now(timezone.utc),
+        started_at=run_started_at,
     )
 
     return PreparedRunContext(
@@ -95,4 +133,9 @@ def prepare_run_context(args, default_metric_predictions: dict[str, float]) -> P
         metrics=metrics,
         all_enabled_metrics=all_enabled_metrics,
         run_state=run_state,
+        case_file=case_file,
+        plan_source_path=plan_source_path,
+        taxonomy_path=taxonomy_path,
+        run_started_at=run_started_at,
+        run_start_perf=run_start_perf,
     )
