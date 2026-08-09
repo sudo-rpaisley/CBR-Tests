@@ -148,7 +148,11 @@ def build_provenance_manifest(
     run_id = str(uuid.uuid4())
     plan_snapshot = json.loads(json.dumps(plan))
     translation_snapshot = dict(sorted(field_translation.items()))
-    reference_paths = collect_reference_paths(plan, base_dir=plan_source_path.parent)
+
+    # Reference metrics currently resolve relative paths from the process working
+    # directory. Record that exact runtime resolution until reference handling is
+    # moved into a dedicated preflight layer.
+    reference_paths = collect_reference_paths(plan)
 
     return {
         "schema_version": 1,
