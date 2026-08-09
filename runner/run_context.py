@@ -83,22 +83,23 @@ def prepare_run_context(args, default_metric_predictions: dict[str, float]) -> P
         if not taxonomy_path.exists():
             raise FileNotFoundError(f"Taxonomy file does not exist: {taxonomy_path}")
 
-    protected_paths = [
-        dataset_path,
-        case_file,
-        plan_source_path,
-        default_field_translation_path(dataset_path),
-        *collect_reference_paths(plan, base_dir=plan_source_path.parent),
-    ]
-    if translation_path is not None:
-        protected_paths.append(translation_path)
-    if taxonomy_path is not None:
-        protected_paths.append(taxonomy_path)
-    validate_output_path_safety(
-        output_path,
-        protected_paths=protected_paths,
-        allow_overwrite=bool(getattr(args, "force_output", False)),
-    )
+    if not bool(getattr(args, "field_translation_dry_run", False)):
+        protected_paths = [
+            dataset_path,
+            case_file,
+            plan_source_path,
+            default_field_translation_path(dataset_path),
+            *collect_reference_paths(plan, base_dir=plan_source_path.parent),
+        ]
+        if translation_path is not None:
+            protected_paths.append(translation_path)
+        if taxonomy_path is not None:
+            protected_paths.append(taxonomy_path)
+        validate_output_path_safety(
+            output_path,
+            protected_paths=protected_paths,
+            allow_overwrite=bool(getattr(args, "force_output", False)),
+        )
 
     metrics = [metric for metric in plan["metrics"] if metric.get("enabled", True)]
     all_enabled_metrics = list(metrics)
