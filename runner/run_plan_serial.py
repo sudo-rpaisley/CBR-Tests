@@ -34,6 +34,7 @@ def run_serial_metrics(
     display_mode: str = "full",
     display_max_lines: int | None = None,
     run_state: RunState | None = None,
+    provenance: dict | None = None,
 ):
     overall_status = "success"
     test_results = {}
@@ -187,6 +188,7 @@ def run_serial_metrics(
                 column_validations,
                 skipped_metrics=skipped_metrics,
                 all_metrics=all_metrics,
+                provenance=provenance,
             )
             write_outcome(output_path, outcome)
             if sys.stdout.isatty():
@@ -213,5 +215,6 @@ def run_serial_metrics(
         column_validations,
         skipped_metrics=skipped_metrics,
         all_metrics=all_metrics,
+        provenance=provenance,
     )
     return False, outcome
