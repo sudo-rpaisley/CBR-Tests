@@ -1,9 +1,9 @@
 import os
 import sys
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
+from runner.contract import enforce_skip_policy, validate_loaded_dataset_applicability
 from runner.dataset_loading import is_tabular_dataset, load_shared_tabular_dataset
 from runner.dispatch import build_metric_handlers
 from runner.execution import auto_worker_count, render_live_taxonomy, run_metrics_parallel
@@ -26,6 +26,7 @@ from runner.field_translation import (
 from runner.parallel_progress import build_parallel_progress_callback
 from runner.parallel_results import collect_parallel_metric_results
 from runner.progress import print_live_status
+from runner.provenance import build_provenance_manifest
 from runner.run_context import prepare_run_context
 from runner.run_display import print_phase_status, print_title_box
 from runner.run_plan_helpers import (
@@ -83,6 +84,8 @@ def main():
     metrics = context.metrics
     all_enabled_metrics = context.all_enabled_metrics
     run_state = context.run_state
+    run_started_at = context.run_started_at
+    run_start_perf = context.run_start_perf
 
     dataset_columns = read_tabular_dataset_columns(dataset_path)
     detected_translation = detect_standard_pcap_field_translation_for_dataset(dataset_path)
@@ -128,10 +131,11 @@ def main():
             use_color = sys.stdout.isatty() and os.environ.get("TERM", "").lower() not in {"", "dumb"}
             yellow = "\033[33m" if use_color else ""
             reset = "\033[0m" if use_color else ""
-            print(f"{yellow}WARNING: Skipping metrics with missing required field mappings:{reset}")
+            print(f"{yellow}WARNING: Metrics have missing required field mappings:{reset}")
             for metric_id, missing_fields in skipped_metrics.items():
                 print(f"  {yellow}[SKIPPED]{reset} {metric_id}: {', '.join(missing_fields)}")
                 run_state.mark_skipped(metric_id, missing_fields)
+            enforce_skip_policy(plan, skipped_metrics, dry_run=args.field_translation_dry_run)
             metrics = [m for m in metrics if m["metric_id"] not in skipped_metrics]
             if not metrics and not args.field_translation_dry_run:
                 raise ValueError("No enabled metrics can run because required field mappings are missing.")
@@ -179,6 +183,17 @@ def main():
             print("Dry run complete: all enabled metrics have required field mappings.")
         return
 
+    provenance = build_provenance_manifest(
+        plan=plan,
+        dataset_path=dataset_path,
+        case_file=context.case_file,
+        plan_source_path=context.plan_source_path,
+        field_translation=field_translation,
+        translation_path=translation_path,
+        taxonomy_path=context.taxonomy_path,
+        cli_arguments=vars(args),
+    )
+
     base_header_lines = build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size=True)
     print_title_box(base_header_lines)
     update_live_header(base_header_lines, ["Status: Initializing run context"])
@@ -214,6 +229,7 @@ def main():
             display_max_lines=display_max_lines,
             run_state=run_state,
         )
+        validate_loaded_dataset_applicability(plan, shared_tabular_df)
 
     def _load_dataset_for_metric(path: Path):
         return load_tabular_dataset(path, field_translation=field_translation)
@@ -222,9 +238,6 @@ def main():
 
     execution_policy = plan.get("execution_policy", {})
     fail_fast = execution_policy.get("fail_fast", True)
-
-    run_started_at = datetime.now(timezone.utc)
-    run_start_perf = time.perf_counter()
 
     total_metrics = len(metrics)
     completed_statuses: dict[str, str] = {}
@@ -239,6 +252,7 @@ def main():
         update_live_header([
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
+            f"Run ID: {provenance['run_id']}",
             f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]} | Metrics: {total_metrics}",
             f"Execution: {mode} | Workers: {workers}",
             f"Source Field: {source_field}",
@@ -298,6 +312,7 @@ def main():
             column_validations,
             skipped_metrics=skipped_metric_records,
             all_metrics=all_enabled_metrics,
+            provenance=provenance,
         )
         write_outcome(output_path, outcome)
         print_phase_status("Completed")
@@ -324,6 +339,7 @@ def main():
         display_mode=display_mode,
         display_max_lines=display_max_lines,
         run_state=run_state,
+        provenance=provenance,
     )
     if early_returned:
         return
