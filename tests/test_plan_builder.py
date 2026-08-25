@@ -67,12 +67,19 @@ def test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule(t
 
 def test_reference_metrics_are_reported_but_never_written_without_reference_configuration(tmp_path):
     dataset = tmp_path / "flows.csv"
-    pd.DataFrame({"feature": [1.0, 2.0, 3.0]}).to_csv(dataset, index=False)
+    pd.DataFrame(
+        {
+            "Source Port": [12345, 443, 53],
+            "Destination Port": [53, 443, 12345],
+            "feature": [1.0, 2.0, 3.0],
+        }
+    ).to_csv(dataset, index=False)
 
     plan, report = build_plan(plan_id="reference", name="Reference", dataset_path=dataset)
     metric_ids = {metric["metric_id"] for metric in plan["metrics"]}
     reference_ids = [metric_id for metric_id in report["metrics"] if metric_id.endswith("_from_reference")]
 
+    assert "valid_port_range_profile" in metric_ids
     assert reference_ids
     for metric_id in reference_ids:
         assert metric_id not in metric_ids
