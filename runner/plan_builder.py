@@ -10,7 +10,10 @@ from typing import Iterable
 
 from runner.field_translation import (
     available_translated_fields,
+    default_field_translation_path,
     detect_standard_pcap_field_translation_for_dataset,
+    load_field_translation,
+    merge_field_translations,
     read_tabular_dataset_columns,
 )
 from runner.metric_catalog import (
@@ -34,15 +37,18 @@ def dataset_format(dataset_path: Path | None) -> str | None:
     return suffix[1:] if suffix.startswith(".") else suffix
 
 
-def inspect_dataset(dataset_path: Path | None) -> dict:
+def inspect_dataset(
+    dataset_path: Path | None,
+    *,
+    field_translation_path: Path | None = None,
+) -> dict:
+    """Inspect a dataset enough to decide which metrics are structurally runnable."""
+
     if dataset_path is None:
-        return {
-            "path": None,
-            "format": None,
-            "columns": [],
-            "available_fields": set(),
-            "field_translation": {},
-        }
+        raise ValueError(
+            "A dataset is required for automatic plan creation so the builder can "
+            "exclude tests that cannot run."
+        )
 
     dataset_path = Path(dataset_path).expanduser().resolve()
     if not dataset_path.exists() or not dataset_path.is_file():
@@ -55,11 +61,30 @@ def inspect_dataset(dataset_path: Path | None) -> dict:
         )
 
     columns = read_tabular_dataset_columns(dataset_path) if suffix in TABULAR_SUFFIXES else []
-    translation = (
+    automatic_translation = (
         detect_standard_pcap_field_translation_for_dataset(dataset_path)
         if suffix in TABULAR_SUFFIXES
         else {}
     )
+
+    resolved_translation_path: Path | None = None
+    explicit_translation: dict[str, str] = {}
+    if suffix in TABULAR_SUFFIXES:
+        if field_translation_path is not None:
+            resolved_translation_path = Path(field_translation_path).expanduser().resolve()
+            if not resolved_translation_path.exists():
+                raise FileNotFoundError(
+                    f"Field translation file does not exist: {resolved_translation_path}"
+                )
+        else:
+            sidecar = default_field_translation_path(dataset_path)
+            if sidecar.exists():
+                resolved_translation_path = sidecar
+
+        if resolved_translation_path is not None:
+            explicit_translation = load_field_translation(resolved_translation_path)
+
+    translation = merge_field_translations(automatic_translation, explicit_translation)
     fields = available_translated_fields(columns, translation) if columns else set()
     return {
         "path": dataset_path,
@@ -67,6 +92,7 @@ def inspect_dataset(dataset_path: Path | None) -> dict:
         "columns": columns,
         "available_fields": fields,
         "field_translation": translation,
+        "field_translation_path": resolved_translation_path,
     }
 
 
@@ -74,15 +100,12 @@ def _configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | N
     metric_id = metric_spec["metric_id"]
     template = metric_spec.get("template")
     manual_reason = metric_spec.get("manual_configuration_reason")
-    dataset_path = dataset.get("path")
     fmt = dataset.get("format")
 
     if manual_reason:
         return "needs_configuration", manual_reason, []
     if not metric_spec.get("registered_in_taxonomy", False):
         return "needs_configuration", "missing_master_taxonomy_entry", []
-    if dataset_path is None:
-        return "needs_dataset", "dataset_not_supplied", []
 
     is_pcap = fmt in {"pcap", "pcapng"}
     if is_pcap:
@@ -103,7 +126,9 @@ def _configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | N
     return "ready", None, []
 
 
-def _metric_from_spec(metric_spec: dict, *, enabled: bool, state: str, reason: str | None, missing: list[str]) -> dict:
+def _metric_from_spec(metric_spec: dict) -> dict:
+    """Create a plan metric from a spec already proven ready by preflight."""
+
     template = metric_spec.get("template")
     if template is None:
         metric = {
@@ -117,12 +142,8 @@ def _metric_from_spec(metric_spec: dict, *, enabled: bool, state: str, reason: s
         metric["label"] = metric.get("label") or metric_spec["label"]
         metric["taxonomy_path"] = metric_spec["taxonomy_path"]
 
-    metric["enabled"] = enabled
-    metric["configuration"] = {"status": state}
-    if reason:
-        metric["configuration"]["reason"] = reason
-    if missing:
-        metric["configuration"]["missing_fields"] = missing
+    metric["enabled"] = True
+    metric["configuration"] = {"status": "ready"}
     return metric
 
 
@@ -131,12 +152,20 @@ def build_plan(
     plan_id: str,
     name: str,
     description: str = "Automatically generated CBR-Tests plan.",
-    dataset_path: Path | None = None,
+    dataset_path: Path,
+    field_translation_path: Path | None = None,
     include_metric_ids: Iterable[str] | None = None,
     exclude_metric_ids: Iterable[str] | None = None,
-    enable_unready: bool = False,
 ) -> tuple[dict, dict]:
-    dataset = inspect_dataset(dataset_path)
+    """Build a plan containing only metrics that can run on the supplied dataset.
+
+    Every discoverable metric is considered unless include/exclude filters narrow
+    the candidate set. Metrics that need missing fields, dataset-specific
+    configuration, a reference dataset, or a different input format are reported
+    but are never written into the generated plan.
+    """
+
+    dataset = inspect_dataset(dataset_path, field_translation_path=field_translation_path)
     catalogue = build_metric_catalog(available_fields=dataset["available_fields"] or None)
     available_ids = {entry["metric_id"] for entry in catalogue}
 
@@ -157,20 +186,28 @@ def build_plan(
         metric_id = spec["metric_id"]
         if metric_id not in selected:
             continue
+
         state, reason, missing = _configuration_state(spec, dataset)
-        enabled = state == "ready" or (enable_unready and state != "not_applicable")
-        metric = _metric_from_spec(spec, enabled=enabled, state=state, reason=reason, missing=missing)
-        metrics.append(metric)
+        included = state == "ready"
         status_counts[state] = status_counts.get(state, 0) + 1
         status_by_metric[metric_id] = {
             "status": state,
-            "enabled": enabled,
+            "included": included,
             **({"reason": reason} if reason else {}),
             **({"missing_fields": missing} if missing else {}),
         }
 
-    fmt = dataset.get("format")
-    applicability_formats = [fmt] if fmt else ["csv", "tsv", "xlsx", "xls", "pcap", "pcapng"]
+        if not included:
+            continue
+        metrics.append(_metric_from_spec(spec))
+
+    if not metrics:
+        raise ValueError(
+            "No runnable metrics were found for this dataset. Resolve field mappings "
+            "or required metric configuration before creating a plan."
+        )
+
+    fmt = dataset["format"]
     plan = {
         "plan_meta": {
             "plan_id": plan_id,
@@ -179,11 +216,11 @@ def build_plan(
             "description": description,
         },
         "applicability": {
-            "dataset_formats": applicability_formats,
+            "dataset_formats": [fmt],
         },
         "execution_policy": {
             "fail_fast": False,
-            "allow_skips": True,
+            "allow_skips": False,
             "sample_mode": "full",
         },
         "metrics": metrics,
@@ -193,25 +230,38 @@ def build_plan(
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "selection_mode": "all_available" if include_metric_ids is None and not exclude else "filtered",
             "available_metric_count": len(available_ids),
-            "selected_metric_count": len(metrics),
+            "candidate_metric_count": len(selected),
+            "runnable_metric_count": len(metrics),
+            "excluded_unrunnable_metric_count": len(selected) - len(metrics),
             "configuration_status_counts": status_counts,
-            "dataset": str(dataset["path"]) if dataset["path"] is not None else None,
+            "dataset": str(dataset["path"]),
             "dataset_format": fmt,
             "dataset_column_count": len(dataset["columns"]),
+            "field_translation": (
+                str(dataset["field_translation_path"])
+                if dataset["field_translation_path"] is not None
+                else None
+            ),
         },
     }
     validate_plan_schema(plan)
 
     report = {
         "available_metric_count": len(available_ids),
-        "selected_metric_count": len(metrics),
-        "enabled_metric_count": sum(metric.get("enabled", True) for metric in metrics),
+        "candidate_metric_count": len(selected),
+        "runnable_metric_count": len(metrics),
+        "excluded_metric_count": len(selected) - len(metrics),
         "configuration_status_counts": status_counts,
         "metrics": status_by_metric,
-        "dataset": str(dataset["path"]) if dataset["path"] is not None else None,
+        "dataset": str(dataset["path"]),
         "dataset_format": fmt,
         "dataset_columns": dataset["columns"],
         "detected_field_translation": dataset["field_translation"],
+        "field_translation_path": (
+            str(dataset["field_translation_path"])
+            if dataset["field_translation_path"] is not None
+            else None
+        ),
     }
     return plan, report
 
