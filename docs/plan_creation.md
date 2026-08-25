@@ -21,6 +21,8 @@ This means every metric stored in a generated plan has:
 
 Automatic plan creation therefore requires a dataset. Without one, the builder cannot determine which tests are runnable and refuses to create a plan.
 
+"Runnable" here means structurally runnable at plan-creation time: the input format is compatible, the required canonical fields can be resolved, the metric has a usable template, and no required dataset-specific research configuration is missing. A metric may still produce a failing realism result once executed; that is the purpose of the test and is different from being unable to run.
+
 ## Preflight states
 
 Every candidate metric is classified as one of:
