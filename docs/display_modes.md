@@ -2,6 +2,8 @@
 
 The runner supports live display modes with `--display`.
 
+The separate `--tui` option opens the curses run-configuration and navigation interface. It is not a display-mode alias: TUI setup can select a case/plan and dataset before the runner starts, then defaults the live run to the `interactive` display unless another mode was explicitly requested.
+
 ## `compact`
 
 Default. Recommended for tmux and normal interactive runs. Shows:
@@ -34,4 +36,4 @@ place when stdout is an interactive terminal.
 - `SIGUSR1`: pause.
 - `SIGUSR2`: resume.
 
-Labels are kept in text so status remains readable even when color is disabled.
+Labels are kept in text so status remains readable even when colour is disabled.
