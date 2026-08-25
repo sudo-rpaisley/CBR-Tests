@@ -1,5 +1,8 @@
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from runner.run_plan_helpers import (
     build_base_header_lines,
@@ -92,6 +95,33 @@ def test_parse_run_plan_args_reads_required_case(monkeypatch):
     assert args.case == "case.json"
     assert args.case_id == "ad_hoc_case"
     assert args.display == "compact"
+    assert args.tui_session is False
+
+
+def test_parse_run_plan_args_requires_case_without_tui(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["run_plan.py"])
+
+    with pytest.raises(SystemExit, match="--case is required unless selected in --tui"):
+        parse_run_plan_args()
+
+
+def test_parse_run_plan_args_tui_can_supply_case(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["run_plan.py", "--tui"])
+    monkeypatch.setattr("runner.run_plan_helpers.sys.stdin", SimpleNamespace(isatty=lambda: True))
+    monkeypatch.setattr("runner.run_plan_helpers.sys.stdout", SimpleNamespace(isatty=lambda: True))
+
+    def _fake_launch_tui(args):
+        args.case = "cases/selected.json"
+        args.tui = False
+        return args
+
+    monkeypatch.setattr("runner.run_plan_helpers.launch_tui", _fake_launch_tui)
+
+    args = parse_run_plan_args()
+
+    assert args.case == "cases/selected.json"
+    assert args.display == "interactive"
+    assert args.tui_session is True
 
 
 def test_update_live_header_formats_and_forwards(monkeypatch):

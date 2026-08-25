@@ -19,9 +19,21 @@ python run_plan.py \
 
 This writes `outcomes/quickstart_example.json` using the repository’s self-contained sample dataset.
 
+### Interactive terminal UI
+
+For an interactive run setup, use:
+
+```bash
+python run_plan.py --tui
+```
+
+The curses TUI lets you select an existing case or plan, browse for a dataset, configure execution and field-translation options, run mapping dry-runs, and review results without having to remember the command-line flags. `--case` is not required when `--tui` is used. The TUI feeds the selected values into the same hardened runner as the normal CLI, so plan validation, output safety, skip policy and provenance checks still apply.
+
+`--tui` is the setup/navigation interface. `--display interactive` is the live ANSI dashboard shown while a configured run is executing.
+
 ## What it evaluates
 
-The dispatcher currently supports 63 metric IDs across:
+The dispatcher currently supports 64 metric IDs across:
 
 - completeness, duplicates, and column usability;
 - Pearson, Spearman, distance correlation, and distribution drift;
@@ -29,7 +41,7 @@ The dispatcher currently supports 63 metric IDs across:
 - label coverage, class balance, attack-window alignment, and split contamination;
 - slice coverage, balance, duplicate overlap, and identifier leakage;
 - reference-dataset comparisons;
-- IP, port, protocol, TCP flag, handshake, flow, packet/byte, and slice metadata realism;
+- IP, port, protocol, TCP flag, handshake, flow, packet/byte, derived-rate, and slice metadata realism;
 - benchmark accuracy, precision, recall, and F1.
 
 Not every supported metric appears in the five supplied research plans. See the full [metric reference](docs/metric_reference.md).
@@ -99,4 +111,3 @@ python create_plan.py --plan-id my-plan --dataset path/to/dataset.csv
 ```
 
 The creator discovers metrics from the live dispatcher, applies field translations, excludes tests that need unresolved fields/configuration or an incompatible input type, and writes only runnable metrics. See [Creating plans](docs/plan_creation.md) for the full workflow.
-
