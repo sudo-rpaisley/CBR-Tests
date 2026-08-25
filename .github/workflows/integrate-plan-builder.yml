@@ -1,0 +1,73 @@
+name: Integrate plan-builder branch
+
+on:
+  push:
+    branches:
+      - agent/plan-builder
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/plan-builder
+          fetch-depth: 0
+
+      - name: Merge current main and resolve known overlaps
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || true
+
+          unresolved="$(git diff --name-only --diff-filter=U)"
+          if [ -n "${unresolved}" ]; then
+            for path in ${unresolved}; do
+              case "${path}" in
+                README.md)
+                  git checkout --theirs README.md
+                  git add README.md
+                  ;;
+                *)
+                  echo "Unexpected merge conflict: ${path}"
+                  exit 1
+                  ;;
+              esac
+            done
+          fi
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+          section = '''\n\n## Automatic dataset-aware plan creation\n\nGenerate a plan containing only tests that preflight as structurally runnable for a supplied dataset:\n\n```bash\npython create_plan.py --plan-id my-plan --dataset path/to/dataset.csv\n```\n\nThe creator discovers metrics from the live dispatcher, applies field translations, excludes tests that need unresolved fields/configuration or an incompatible input type, and writes only runnable metrics. See [Creating plans](docs/plan_creation.md) for the full workflow.\n'''
+          if '## Automatic dataset-aware plan creation' not in text:
+              text = text.rstrip() + section + '\n'
+          readme.write_text(text, encoding='utf-8')
+
+          taxonomy_path = Path('taxonomy/master_taxonomy.json')
+          taxonomy = json.loads(taxonomy_path.read_text(encoding='utf-8'))
+          flow = taxonomy['dataset_heuristics']['protocol_and_network_realism']['flow_semantics']
+          flow.setdefault(
+              'derived_rate_consistency_ratio',
+              {
+                  '_metrics': ['derived_rate_consistency_profile'],
+                  '_review_status': 'post-expert-review addition pending second expert review',
+              },
+          )
+          taxonomy_path.write_text(json.dumps(taxonomy, indent=2) + '\n', encoding='utf-8')
+          PY
+
+          python scripts/build_reference_documentation.py
+
+          git rm .github/workflows/integrate-plan-builder.yml
+          git add -A
+          git commit -m "Reconcile automatic plan creation with current main"
+          git push origin HEAD:agent/plan-builder
