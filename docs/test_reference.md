@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **85 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **106 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -43,6 +43,33 @@ Tests and local helpers in this module.
 | `test_compute_missing_value_ratio_uses_candidate_fields()` (L7) | Verifies that compute missing value ratio uses candidate fields. | `compute_missing_value_ratio` |
 | `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L27) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
 | `test_compute_spearman_profile_reports_rank_correlation()` (L42) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+
+## `tests/test_experiment_contract.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_plan_schema_rejects_unimplemented_sample_mode()` (L48) | Verifies that plan schema rejects unimplemented sample mode. | `pytest.raises`, `validate_plan_schema`, `_plan` |
+| `test_plan_schema_validates_applicability_types()` (L53) | Verifies that plan schema validates applicability types. | `_plan`, `pytest.raises`, `validate_plan_schema` |
+| `test_dataset_format_applicability_is_enforced(tmp_path: Path)` (L60) | Verifies that dataset format applicability is enforced. | `pytest.raises`, `validate_dataset_format_applicability`, `_plan` |
+| `test_numeric_applicability_is_enforced()` (L65) | Verifies that numeric applicability is enforced. | `pytest.raises`, `validate_loaded_dataset_applicability`, `_plan` |
+| `test_allow_skips_false_is_enforced()` (L71) | Verifies that allow skips false is enforced. | `pytest.raises`, `enforce_skip_policy`, `_plan` |
+| `test_allow_skips_true_and_dry_run_are_permitted()` (L76) | Verifies that allow skips true and dry run are permitted. | `enforce_skip_policy`, `_plan` |
+| `test_output_path_cannot_collide_with_input(tmp_path: Path)` (L81) | Verifies that output path cannot collide with input. | `dataset.write_text`, `pytest.raises`, `validate_output_path_safety` |
+| `test_existing_output_requires_explicit_overwrite(tmp_path: Path)` (L88) | Verifies that existing output requires explicit overwrite. | `output.write_text`, `validate_output_path_safety`, `pytest.raises` |
+| `test_provenance_identifies_exact_inputs(tmp_path: Path)` (L96) | Verifies that provenance identifies exact inputs. | `dataset.write_bytes`, `_plan`, `plan_file.write_text`, `build_provenance_manifest`, `hashlib.sha256(dataset.read_bytes()).hexdigest`, `sha256_json`, `hashlib.sha256`, `dataset.read_bytes` |
+| `test_case_provenance_resolves_referenced_plan(tmp_path: Path)` (L123) | Verifies that case provenance resolves referenced plan. | `plan_dir.mkdir`, `plan_file.write_text`, `case_file.write_text`, `resolve_plan_source_path`, `plan_file.resolve` |
+| `test_outcome_schema_v2_embeds_provenance(tmp_path: Path)` (L134) | Verifies that outcome schema v2 embeds provenance. | `_plan`, `datetime.now`, `time.perf_counter`, `build_outcome` |
+| `test_outcome_writer_rejects_non_finite_json_without_replacing_previous_file(tmp_path: Path)` (L158) | Verifies that outcome writer rejects non finite JSON without replacing previous file. | `write_outcome`, `pytest.raises`, `output.read_text` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_plan(*, sample_mode: str = 'full', allow_skips: bool = False) -> dict` (L23) | Implementation helper for plan. |
 
 ## `tests/test_field_translation.py`
 
@@ -99,6 +126,32 @@ Tests and local helpers in this module.
 | `test_label_completeness_and_distribution_metrics()` (L15) | Verifies that label completeness and distribution metrics. | `compute_label_coverage_ratio`, `compute_per_slice_label_coverage_ratio`, `compute_per_slice_label_entropy_score`, `compute_class_imbalance_score` |
 | `test_temporal_label_correctness_metrics()` (L28) | Verifies that temporal label correctness metrics. | `compute_attack_window_alignment_score`, `compute_pre_post_attack_label_bleed_ratio` |
 | `test_split_integrity_metrics()` (L52) | Verifies that split integrity metrics. | `compute_train_test_duplicate_overlap_ratio`, `compute_train_test_identifier_contamination_ratio` |
+
+## `tests/test_metric_failure_diagnostics.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_reserved_ip_profile_respects_disabled_private_category()` (L30) | Verifies that reserved IP profile respects disabled private category. | `_base_metric`, `run_reserved_ip_address_metric` |
+| `test_valid_port_range_uses_configured_bounds_and_explains_failure()` (L48) | Verifies that valid port range uses configured bounds and explains failure. | `_base_metric`, `run_valid_port_range_metric` |
+| `test_valid_port_range_is_not_applicable_when_all_ports_are_missing()` (L72) | Verifies that valid port range is not applicable when all ports are missing. | `_base_metric`, `run_valid_port_range_metric` |
+| `test_service_port_consistency_does_not_treat_every_mixed_row_as_dns()` (L101) | Verifies that service port consistency does not treat every mixed row as dns. | `_service_metric`, `run_service_port_consistency_metric` |
+| `test_service_port_consistency_filters_to_service_population()` (L117) | Verifies that service port consistency filters to service population. | `_service_metric`, `run_service_port_consistency_metric` |
+| `test_service_port_consistency_failure_contains_threshold_and_examples()` (L136) | Verifies that service port consistency failure contains threshold and examples. | `_service_metric`, `run_service_port_consistency_metric` |
+| `test_parallel_collector_keeps_execution_and_domain_status_separate()` (L154) | Verifies that parallel collector keeps execution and domain status separate. | `collect_parallel_metric_results`, `_base_metric`, `datetime` |
+| `test_compact_live_state_shows_error_reason_not_bare_failed()` (L193) | Verifies that compact live state shows error reason not bare failed. | `RunState.from_plan`, `state.mark_running`, `state.mark_completed`, `render_live_taxonomy`, `datetime.now` |
+| `test_parallel_progress_callback_remains_backward_compatible(tmp_path: Path)` (L233) | Verifies that parallel progress callback remains backward compatible. | `run_metrics_parallel`, `any`, `_base_metric`, `events.append` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_base_metric(metric_id: str) -> dict` (L21) | Implementation helper for base metric. |
+| `_service_metric() -> dict` (L88) | Implementation helper for service metric. |
+| `test_parallel_progress_callback_remains_backward_compatible.old_callback(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds)` (L237) | Implementation helper for old callback. |
 
 ## `tests/test_metric_package_layout.py`
 

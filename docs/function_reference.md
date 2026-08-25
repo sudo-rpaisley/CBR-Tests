@@ -128,9 +128,22 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L56) | function | Internal | Implementation helper for confirm sidecar update. |
-| `main()` (L69) | function | Public | Implementation helper for main. |
-| `main._load_dataset_for_metric(path: Path)` (L218) | nested function | Internal | Implementation helper for load dataset for metric. |
+| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L57) | function | Internal | Implementation helper for confirm sidecar update. |
+| `main()` (L70) | function | Public | Implementation helper for main. |
+| `main._load_dataset_for_metric(path: Path)` (L234) | nested function | Internal | Implementation helper for load dataset for metric. |
+
+## `runner/contract.py`
+
+Python symbols defined by `runner/contract.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `dataset_format(dataset_path: Path) -> str` (L9) | function | Public | Return the normalized dataset format derived from its filename suffix. |
+| `validate_dataset_format_applicability(plan: dict, dataset_path: Path) -> None` (L14) | function | Public | Reject a dataset whose format is incompatible with the plan declaration. |
+| `validate_loaded_dataset_applicability(plan: dict, dataframe) -> None` (L30) | function | Public | Validate applicability rules that require access to loaded tabular data. |
+| `enforce_skip_policy(plan: dict, skipped_metrics: dict[str, list[str]], *, dry_run: bool = False) -> None` (L45) | function | Public | Enforce execution_policy.allow_skips once field preflight is complete. |
+| `collect_reference_paths(plan: dict, *, base_dir: Path | None = None) -> list[Path]` (L62) | function | Public | Collect configured reference dataset paths for safety/provenance checks. |
+| `validate_output_path_safety(output_path: Path, *, protected_paths: list[Path], allow_overwrite: bool = False) -> None` (L82) | function | Public | Prevent results from overwriting experiment inputs or existing output accidentally. |
 
 ## `runner/dataset_loading.py`
 
@@ -181,17 +194,13 @@ Live status rendering and bounded parallel metric execution.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_metric_status_line(metric_id: str, status: str, duration: float | None = None, elapsed: float | None = None, expected: float | None = None) -> str` (L18) | function | Internal | Implementation helper for metric status line. |
-| `_metric_display_status(metric_id: str, current_metric_id: str, completed_statuses: dict[str, str]) -> str` (L36) | function | Internal | Implementation helper for metric display status. |
-| `render_compact_run_state(run_state: RunState, default_predictions: dict[str, float], running_elapsed: dict[str, float] | None = None, max_lines: int | None = 24) -> str` (L44) | function | Public | Render a compact dashboard from centralized run telemetry. |
-| `render_compact_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, running_elapsed: dict[str, float] | None = None, max_lines: int | None = 24) -> str` (L105) | function | Public | Render a screen-friendly taxonomy summary with attention items expanded. |
-| `render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False, running_elapsed: dict[str, float] | None = None, display_mode: str = 'full', max_lines: int | None = None, run_state: RunState | None = None) -> str` (L198) | function | Public | Renders live taxonomy for terminal output. |
-| `run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[dict], completed_statuses: dict[str, str], completed_durations: dict[str, float], current: int, total: int, shutdown_requested: dict, run_start_perf: float | None, metric_handlers: dict, default_predictions: dict[str, float], display_mode: str = 'full', max_lines: int | None = None)` (L283) | function | Public | Runs metric with heartbeat. |
-| `auto_worker_count(num_metrics: int) -> int` (L348) | function | Public | Implementation helper for auto worker count. |
-| `_not_run_payload(status: str, reason: str) -> dict` (L355) | function | Internal | Implementation helper for not run payload. |
-| `run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int, progress_callback = None, control_state: dict | None = None, fail_fast: bool = False) -> list[tuple[int, bool, dict]]` (L366) | function | Public | Run metrics with bounded submission and deterministic result records. At most ``workers`` metrics are submitted at once. When fail-fast is enabled, a failed metric stops new submissions. Already-running work is allowed to finish because Python threads cannot be safely terminated; metrics that were never started are explicitly marked ``not_run_fail_fast``. Cancellation returns promptly, attempts to cancel queued futures, and marks all unfinished or unsubmitted metrics ``not_run_cancelled``. |
-| `run_metrics_parallel._timed_call(metric_id: str, metric: dict)` (L394) | nested function | Internal | Implementation helper for timed call. |
-| `run_metrics_parallel._submit_available() -> None` (L412) | nested function | Internal | Implementation helper for submit available. |
+| `run_metric_with_heartbeat(dataset_path: Path, metric: dict, metrics: list[dict], completed_statuses: dict[str, str], completed_durations: dict[str, float], current: int, total: int, shutdown_requested: dict, run_start_perf: float | None, metric_handlers: dict, default_predictions: dict[str, float], display_mode: str = 'full', max_lines: int | None = None, run_state = None)` (L13) | function | Public | Runs metric with heartbeat. |
+| `auto_worker_count(num_metrics: int) -> int` (L62) | function | Public | Implementation helper for auto worker count. |
+| `_not_run_payload(status: str, reason: str) -> dict` (L69) | function | Internal | Implementation helper for not run payload. |
+| `_notify_progress(progress_callback, *args, payload = None) -> None` (L81) | function | Internal | Call progress callbacks without breaking the historical eight-argument API. |
+| `run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int, progress_callback = None, control_state: dict | None = None, fail_fast: bool = False) -> list[tuple[int, bool, dict]]` (L103) | function | Public | Run metrics with bounded submission and deterministic result records. At most ``workers`` metrics are submitted at once. When fail-fast is enabled, a failed metric stops new submissions. Already-running work is allowed to finish because Python threads cannot be safely terminated; metrics that were never started are explicitly marked ``not_run_fail_fast``. Cancellation returns promptly, attempts to cancel queued futures, and marks all unfinished or unsubmitted metrics ``not_run_cancelled``. |
+| `run_metrics_parallel._timed_call(metric_id: str, metric: dict)` (L131) | nested function | Internal | Implementation helper for timed call. |
+| `run_metrics_parallel._submit_available() -> None` (L152) | nested function | Internal | Implementation helper for submit available. |
 
 ## `runner/field_translation.py`
 
@@ -313,17 +322,31 @@ ANSI interactive dashboard rendering.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_metric_status_line(metric_id: str, status: str, duration: float | None = None, elapsed: float | None = None, expected: float | None = None) -> str` (L9) | function | Internal | Implementation helper for metric status line. |
-| `_metric_display_status(metric_id: str, current_metric_id: str, completed_statuses: dict[str, str]) -> str` (L24) | function | Internal | Implementation helper for metric display status. |
-| `_terminal_width(value: str) -> int` (L32) | function | Internal | Implementation helper for terminal width. |
-| `_clip(value: str, width: int) -> str` (L36) | function | Internal | Implementation helper for clip. |
-| `_tui_border(width: int, left: str, fill: str, right: str, title: str = '') -> str` (L46) | function | Internal | Implementation helper for tui border. |
-| `_tui_row(content: str, width: int) -> str` (L56) | function | Internal | Implementation helper for tui row. |
-| `_progress_bar(completed: int, total: int, width: int) -> str` (L61) | function | Internal | Implementation helper for progress bar. |
-| `render_interactive_run_state(run_state: RunState, default_predictions: dict[str, float], running_elapsed: dict[str, float] | None = None, max_lines: int | None = None) -> str` (L68) | function | Public | Render an ANSI-friendly dashboard for ``--display interactive``. This avoids optional third-party TUI dependencies while still providing a full-screen dashboard with boxed sections, progress, active metrics, branch summaries, and recent events. |
-| `render_compact_run_state(run_state: RunState, default_predictions: dict[str, float], running_elapsed: dict[str, float] | None = None, max_lines: int | None = 24) -> str` (L158) | function | Public | Render a compact dashboard from centralized run telemetry. |
-| `render_compact_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, running_elapsed: dict[str, float] | None = None, max_lines: int | None = 24) -> str` (L216) | function | Public | Render a screen-friendly taxonomy summary with attention items expanded. |
-| `render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False, running_elapsed: dict[str, float] | None = None, display_mode: str = 'full', max_lines: int | None = None, run_state: RunState | None = None) -> str` (L285) | function | Public | Renders live taxonomy for terminal output. |
+| `_metric_status_line(metric_id: str, status: str, duration: float | None = None, elapsed: float | None = None, expected: float | None = None) -> str` (L12) | function | Internal | Implementation helper for metric status line. |
+| `_metric_display_status(metric_id: str, current_metric_id: str, completed_statuses: dict[str, str]) -> str` (L30) | function | Internal | Implementation helper for metric display status. |
+| `_diagnostic_suffix(metric) -> str` (L38) | function | Internal | Implementation helper for diagnostic suffix. |
+| `_has_branch_attention(counts: dict[str, int]) -> bool` (L50) | function | Internal | Implementation helper for has branch attention. |
+| `_terminal_width(value: str) -> int` (L54) | function | Internal | Implementation helper for terminal width. |
+| `_clip(value: str, width: int) -> str` (L58) | function | Internal | Implementation helper for clip. |
+| `_tui_border(width: int, left: str, fill: str, right: str, title: str = '') -> str` (L68) | function | Internal | Implementation helper for tui border. |
+| `_tui_row(content: str, width: int) -> str` (L78) | function | Internal | Implementation helper for tui row. |
+| `_progress_bar(completed: int, total: int, width: int) -> str` (L83) | function | Internal | Implementation helper for progress bar. |
+| `render_interactive_run_state(run_state: RunState, default_predictions: dict[str, float], running_elapsed: dict[str, float] | None = None, max_lines: int | None = None) -> str` (L90) | function | Public | Renders interactive run state for terminal output. |
+| `render_compact_run_state(run_state: RunState, default_predictions: dict[str, float], running_elapsed: dict[str, float] | None = None, max_lines: int | None = 24) -> str` (L176) | function | Public | Renders compact run state for terminal output. |
+| `render_compact_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, running_elapsed: dict[str, float] | None = None, max_lines: int | None = 24) -> str` (L236) | function | Public | Renders compact taxonomy for terminal output. |
+| `render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False, running_elapsed: dict[str, float] | None = None, display_mode: str = 'full', max_lines: int | None = None, run_state: RunState | None = None) -> str` (L308) | function | Public | Renders live taxonomy for terminal output. |
+
+## `runner/metric_diagnostics.py`
+
+Python symbols defined by `runner/metric_diagnostics.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `extract_metric_result(metric_id: str, payload: dict | None) -> dict | None` (L8) | function | Public | Implementation helper for extract metric result. |
+| `extract_result_status(metric_id: str, payload: dict | None) -> str | None` (L18) | function | Public | Implementation helper for extract result status. |
+| `_infer_execution_reason_code(payload: dict, error: str) -> str` (L29) | function | Internal | Implementation helper for infer execution reason code. |
+| `extract_diagnostic(metric_id: str, success: bool, payload: dict | None) -> dict[str, Any] | None` (L43) | function | Public | Implementation helper for extract diagnostic. |
+| `display_status(metric_id: str, success: bool, payload: dict | None) -> str` (L78) | function | Public | Implementation helper for display status. |
 
 ## `runner/order.py`
 
@@ -341,9 +364,9 @@ Parallel progress callbacks and telemetry updates.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `build_parallel_progress_callback(*, plan: dict, case_id: str, dataset_path: Path, output_path: Path, metrics: list[dict], shared_tabular_df, mode: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_metric_predictions: dict[str, float], run_start_perf: float, display_mode: str, display_max_lines: int | None, run_state)` (L12) | function | Public | Build the live progress callback used by parallel metric execution. |
-| `build_parallel_progress_callback._parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds)` (L32) | nested function | Internal | Implementation helper for parallel progress. |
-| `_dataset_summary_line(shared_tabular_df, total: int) -> str` (L99) | function | Internal | Implementation helper for dataset summary line. |
+| `build_parallel_progress_callback(*, plan: dict, case_id: str, dataset_path: Path, output_path: Path, metrics: list[dict], shared_tabular_df, mode: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_metric_predictions: dict[str, float], run_start_perf: float, display_mode: str, display_max_lines: int | None, run_state)` (L13) | function | Public | Build the live progress callback used by parallel metric execution. |
+| `build_parallel_progress_callback._parallel_progress(event, completed, total, pending, metric_id, ok, running_ids, elapsed_seconds, payload = None)` (L33) | nested function | Internal | Implementation helper for parallel progress. |
+| `_dataset_summary_line(shared_tabular_df, total: int) -> str` (L121) | function | Internal | Implementation helper for dataset summary line. |
 
 ## `runner/parallel_results.py`
 
@@ -351,8 +374,8 @@ Parallel record normalization and result aggregation.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_normalise_status(success: bool, payload: dict) -> str` (L9) | function | Internal | Implementation helper for normalise status. |
-| `collect_parallel_metric_results(*, parallel_out, metrics: list[dict], run_started_at: datetime, fail_fast: bool, completed_statuses: dict[str, str], completed_durations: dict[str, float]) -> tuple[str, dict, list[dict], dict]` (L16) | function | Public | Collect parallel outputs without discarding already-completed work. ``fail_fast`` is retained for call-site compatibility. The executor is responsible for stopping submission and marking metrics that were not run. |
+| `_normalise_status(success: bool, payload: dict) -> str` (L11) | function | Internal | Implementation helper for normalise status. |
+| `collect_parallel_metric_results(*, parallel_out, metrics: list[dict], run_started_at: datetime, fail_fast: bool, completed_statuses: dict[str, str], completed_durations: dict[str, float]) -> tuple[str, dict, list[dict], dict]` (L18) | function | Public | Collect parallel outputs without discarding already-completed work. Execution status remains separate from a metric's domain result. A handler can therefore execute successfully while producing ``pass``, ``warn``, ``fail`` or ``not_applicable`` in ``result_status``. ``completed_statuses`` keeps historical execution labels for execution failures/not-run records. Successfully executed metrics may expose their domain result there for post-run rendering; live parallel rendering already receives the richer status directly from the progress callback. |
 
 ## `runner/progress.py`
 
@@ -360,13 +383,29 @@ Terminal colour, progress bars, and live output.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `supports_color() -> bool` (L18) | function | Public | Implementation helper for supports color. |
-| `colorize_status(status: str) -> str` (L22) | function | Public | Implementation helper for colorize status. |
-| `render_metric_activity_bar(elapsed: float, expected_seconds: float = 60.0, width: int = 12) -> str` (L31) | function | Public | Renders metric activity bar for terminal output. |
-| `render_overall_progress_line(current: int, total: int, run_elapsed: float | None = None, in_metric_elapsed: float | None = None) -> str` (L41) | function | Public | Renders overall progress line for terminal output. |
-| `print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None` (L59) | function | Public | Implementation helper for print live status. |
-| `set_live_header(lines: list[str]) -> None` (L84) | function | Public | Implementation helper for set live header. |
-| `set_live_output_enabled(enabled: bool) -> None` (L89) | function | Public | Implementation helper for set live output enabled. |
+| `supports_color() -> bool` (L23) | function | Public | Implementation helper for supports color. |
+| `colorize_status(status: str) -> str` (L27) | function | Public | Implementation helper for colorize status. |
+| `render_metric_activity_bar(elapsed: float, expected_seconds: float = 60.0, width: int = 12) -> str` (L36) | function | Public | Renders metric activity bar for terminal output. |
+| `render_overall_progress_line(current: int, total: int, run_elapsed: float | None = None, in_metric_elapsed: float | None = None) -> str` (L46) | function | Public | Renders overall progress line for terminal output. |
+| `print_live_status(task_line: str, overall_line: str, warning_line: str | None = None) -> None` (L64) | function | Public | Implementation helper for print live status. |
+| `set_live_header(lines: list[str]) -> None` (L89) | function | Public | Implementation helper for set live header. |
+| `set_live_output_enabled(enabled: bool) -> None` (L94) | function | Public | Implementation helper for set live output enabled. |
+
+## `runner/provenance.py`
+
+Python symbols defined by `runner/provenance.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_canonical_json_bytes(value: Any) -> bytes` (L20) | function | Internal | Implementation helper for canonical JSON bytes. |
+| `sha256_json(value: Any) -> str` (L30) | function | Public | Implementation helper for sha256 JSON. |
+| `sha256_file(path: Path, *, chunk_size: int = 1024 * 1024) -> str` (L34) | function | Public | Implementation helper for sha256 file. |
+| `file_manifest(path: Path) -> dict[str, Any]` (L45) | function | Public | Implementation helper for file manifest. |
+| `_git_metadata(repo_root: Path) -> dict[str, Any]` (L63) | function | Internal | Implementation helper for git metadata. |
+| `_dependency_versions() -> dict[str, str | None]` (L91) | function | Internal | Implementation helper for dependency versions. |
+| `software_manifest() -> dict[str, Any]` (L101) | function | Public | Implementation helper for software manifest. |
+| `resolve_plan_source_path(case_file: Path) -> Path` (L119) | function | Public | Resolve the plan file used by a case, or return the direct plan file itself. |
+| `build_provenance_manifest(*, plan: dict, dataset_path: Path, case_file: Path, plan_source_path: Path, field_translation: dict[str, str], translation_path: Path | None, taxonomy_path: Path | None, cli_arguments: dict[str, Any]) -> dict[str, Any]` (L136) | function | Public | Build the immutable experiment-identification metadata stored with an outcome. |
 
 ## `runner/run_context.py`
 
@@ -374,8 +413,8 @@ Input resolution, validation, ordering, signals, display, and telemetry setup.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `PreparedRunContext` (L16) | class | Public | Resolved run inputs and display/control state needed by the runner. |
-| `prepare_run_context(args, default_metric_predictions: dict[str, float]) -> PreparedRunContext` (L35) | function | Public | Resolve CLI inputs, validate the plan, and prepare run state. |
+| `PreparedRunContext` (L24) | class | Public | Resolved run inputs and display/control state needed by the runner. |
+| `prepare_run_context(args, default_metric_predictions: dict[str, float]) -> PreparedRunContext` (L48) | function | Public | Resolve CLI inputs, validate the plan, and prepare run state. |
 
 ## `runner/run_display.py`
 
@@ -394,17 +433,17 @@ CLI parsing, headers, signal handlers, outcome construction, and atomic writes.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None) -> dict` (L17) | function | Public | Builds outcome. |
-| `write_outcome(output_path: Path, outcome: dict) -> None` (L56) | function | Public | Write an outcome atomically, creating its destination directory first. |
-| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L80) | function | Public | Detects IP fields. |
-| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L86) | function | Public | Builds title box lines. |
-| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L98) | function | Public | Builds base header lines. |
-| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L121) | function | Public | Configures signal handlers. |
-| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L122) | nested function | Internal | Implementation helper for handle sigint. |
-| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L128) | nested function | Internal | Implementation helper for handle sigusr1. |
-| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L132) | nested function | Internal | Implementation helper for handle sigusr2. |
-| `parse_run_plan_args() -> argparse.Namespace` (L143) | function | Public | Parses run plan args. |
-| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L201) | function | Public | Updates live header. |
+| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L17) | function | Public | Builds outcome. |
+| `write_outcome(output_path: Path, outcome: dict) -> None` (L60) | function | Public | Write an outcome atomically, creating its destination directory first. |
+| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L84) | function | Public | Detects IP fields. |
+| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L90) | function | Public | Builds title box lines. |
+| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L102) | function | Public | Builds base header lines. |
+| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L125) | function | Public | Configures signal handlers. |
+| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L126) | nested function | Internal | Implementation helper for handle sigint. |
+| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L132) | nested function | Internal | Implementation helper for handle sigusr1. |
+| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L136) | nested function | Internal | Implementation helper for handle sigusr2. |
+| `parse_run_plan_args() -> argparse.Namespace` (L147) | function | Public | Parses run plan args. |
+| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L206) | function | Public | Updates live header. |
 
 ## `runner/run_plan_serial.py`
 
@@ -412,7 +451,7 @@ Serial metric execution and interruption handling.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `run_serial_metrics(*, dataset_path: Path, output_path: Path, plan: dict, case_id: str, metrics: list[dict], metric_handlers: dict, shutdown_requested: dict, control_state: dict, default_metric_predictions: dict, live_render_enabled: bool, fail_fast: bool, run_started_at: datetime, run_start_perf: float, completed_statuses: dict, completed_durations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, display_mode: str = 'full', display_max_lines: int | None = None, run_state: RunState | None = None)` (L12) | function | Public | Runs metrics one at a time, updates display and telemetry, and builds an outcome. |
+| `run_serial_metrics(*, dataset_path: Path, output_path: Path, plan: dict, case_id: str, metrics: list[dict], metric_handlers: dict, shutdown_requested: dict, control_state: dict, default_metric_predictions: dict, live_render_enabled: bool, fail_fast: bool, run_started_at: datetime, run_start_perf: float, completed_statuses: dict, completed_durations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, display_mode: str = 'full', display_max_lines: int | None = None, run_state: RunState | None = None, provenance: dict | None = None)` (L15) | function | Public | Runs metrics one at a time, updates display and telemetry, and builds an outcome. |
 
 ## `runner/schema.py`
 
@@ -420,9 +459,10 @@ Plan JSON structural validation.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_require_non_empty_string(value, path: str) -> str` (L6) | function | Internal | Implementation helper for require non empty string. |
-| `_validate_string_list(value, path: str, *, allow_empty: bool = True) -> None` (L12) | function | Internal | Implementation helper for validate string list. |
-| `validate_plan_schema(plan: dict) -> None` (L21) | function | Public | Validates plan metadata, execution policy, metric IDs, taxonomy paths, requirements, calculation blocks, and retention blocks. |
+| `_require_non_empty_string(value, path: str) -> str` (L7) | function | Internal | Implementation helper for require non empty string. |
+| `_validate_string_list(value, path: str, *, allow_empty: bool = True) -> None` (L13) | function | Internal | Implementation helper for validate string list. |
+| `_validate_applicability(applicability: object) -> None` (L22) | function | Internal | Implementation helper for validate applicability. |
+| `validate_plan_schema(plan: dict) -> None` (L41) | function | Public | Validates plan metadata, execution policy, metric IDs, taxonomy paths, requirements, calculation blocks, and retention blocks. |
 
 ## `runner/tabular.py`
 
@@ -438,11 +478,12 @@ Plan and result taxonomy tree construction.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `ensure_taxonomy_path(root: dict, taxonomy_path: list[str]) -> dict` (L3) | function | Public | Implementation helper for ensure taxonomy path. |
-| `build_plan_taxonomy(metrics: list[dict]) -> dict` (L10) | function | Public | Builds plan taxonomy. |
-| `build_result_taxonomy(metrics: list[dict], metric_results: list[dict], test_results: dict) -> dict` (L22) | function | Public | Builds result taxonomy. |
-| `build_test_results_taxonomy(metrics: list[dict], test_results: dict) -> dict` (L37) | function | Public | Builds test results taxonomy. |
-| `print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None` (L49) | function | Public | Implementation helper for print taxonomy summary. |
+| `ensure_taxonomy_path(root: dict, taxonomy_path: list[str]) -> dict` (L4) | function | Public | Implementation helper for ensure taxonomy path. |
+| `build_plan_taxonomy(metrics: list[dict]) -> dict` (L11) | function | Public | Builds plan taxonomy. |
+| `_display_status(record: dict) -> str` (L23) | function | Internal | Implementation helper for display status. |
+| `build_result_taxonomy(metrics: list[dict], metric_results: list[dict], test_results: dict) -> dict` (L32) | function | Public | Builds result taxonomy. |
+| `build_test_results_taxonomy(metrics: list[dict], test_results: dict) -> dict` (L51) | function | Public | Builds test results taxonomy. |
+| `print_taxonomy_summary(result_taxonomy: dict, indent: int = 0) -> None` (L63) | function | Public | Implementation helper for print taxonomy summary. |
 
 ## `runner/telemetry.py`
 
@@ -450,22 +491,23 @@ Run, metric, and event state models.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `RunEvent` (L13) | class | Public | Data model for RunEvent. |
-| `RunEvent.to_dict(self) -> dict[str, Any]` (L20) | method | Public | Implementation helper for to dict. |
-| `MetricState` (L34) | class | Public | Data model for MetricState. |
-| `MetricState.branch(self) -> str` (L45) | method | Public | Implementation helper for branch. |
-| `RunState` (L50) | class | Public | Data model for RunState. |
-| `RunState.from_plan(cls, *, case_id: str, plan: dict, metrics: list[dict], dataset_path: Path, output_path: Path, started_at: datetime) -> 'RunState'` (L62) | method | Public | Implementation helper for from plan. |
-| `RunState.record_event(self, event_type: str, message: str, metric_id: str | None = None, **payload: Any) -> None` (L91) | method | Public | Implementation helper for record event. |
-| `RunState.mark_running(self, metric_id: str, *, started_at: datetime | None = None) -> None` (L94) | method | Public | Implementation helper for mark running. |
-| `RunState.mark_completed(self, metric_id: str, status: str, *, elapsed_seconds: float | None = None, error: str | None = None, finished_at: datetime | None = None) -> None` (L103) | method | Public | Implementation helper for mark completed. |
-| `RunState.mark_skipped(self, metric_id: str, missing_fields: list[str]) -> None` (L127) | method | Public | Implementation helper for mark skipped. |
-| `RunState.status_counts(self) -> dict[str, int]` (L141) | method | Public | Implementation helper for status counts. |
-| `RunState.branch_summaries(self) -> dict[str, dict[str, int]]` (L147) | method | Public | Implementation helper for branch summaries. |
-| `RunState.completed_statuses(self) -> dict[str, str]` (L158) | method | Public | Implementation helper for completed statuses. |
-| `RunState.completed_durations(self) -> dict[str, float]` (L165) | method | Public | Implementation helper for completed durations. |
-| `RunState.recent_completed(self, limit: int = 5) -> list[MetricState]` (L172) | method | Public | Implementation helper for recent completed. |
-| `RunState.attention_metrics(self) -> list[MetricState]` (L177) | method | Public | Implementation helper for attention metrics. |
+| `RunEvent` (L14) | class | Public | Data model for RunEvent. |
+| `RunEvent.to_dict(self) -> dict[str, Any]` (L21) | method | Public | Implementation helper for to dict. |
+| `MetricState` (L35) | class | Public | Data model for MetricState. |
+| `MetricState.branch(self) -> str` (L50) | method | Public | Implementation helper for branch. |
+| `MetricState.display_status(self) -> str` (L54) | method | Public | Implementation helper for display status. |
+| `RunState` (L63) | class | Public | Data model for RunState. |
+| `RunState.from_plan(cls, *, case_id: str, plan: dict, metrics: list[dict], dataset_path: Path, output_path: Path, started_at: datetime) -> 'RunState'` (L75) | method | Public | Implementation helper for from plan. |
+| `RunState.record_event(self, event_type: str, message: str, metric_id: str | None = None, **payload: Any) -> None` (L104) | method | Public | Implementation helper for record event. |
+| `RunState.mark_running(self, metric_id: str, *, started_at: datetime | None = None) -> None` (L107) | method | Public | Implementation helper for mark running. |
+| `RunState.mark_completed(self, metric_id: str, status: str, *, elapsed_seconds: float | None = None, error: str | None = None, result_status: str | None = None, diagnostic: dict[str, Any] | None = None, finished_at: datetime | None = None) -> None` (L116) | method | Public | Implementation helper for mark completed. |
+| `RunState.mark_skipped(self, metric_id: str, missing_fields: list[str]) -> None` (L154) | method | Public | Implementation helper for mark skipped. |
+| `RunState.status_counts(self) -> dict[str, int]` (L171) | method | Public | Implementation helper for status counts. |
+| `RunState.branch_summaries(self) -> dict[str, dict[str, int]]` (L190) | method | Public | Implementation helper for branch summaries. |
+| `RunState.completed_statuses(self) -> dict[str, str]` (L199) | method | Public | Implementation helper for completed statuses. |
+| `RunState.completed_durations(self) -> dict[str, float]` (L206) | method | Public | Implementation helper for completed durations. |
+| `RunState.recent_completed(self, limit: int = 5) -> list[MetricState]` (L213) | method | Public | Implementation helper for recent completed. |
+| `RunState.attention_metrics(self) -> list[MetricState]` (L224) | method | Public | Implementation helper for attention metrics. |
 
 ## `scripts/build_documentation_inventory.py`
 
@@ -544,8 +586,10 @@ Network/protocol realism implementation module awaiting migration from the test 
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `get_reserved_categories(addr) -> list[str]` (L21) | function | Public | Implementation helper for get reserved categories. |
-| `run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L55) | function | Public | Runs reserved IP address metric. |
+| `get_reserved_categories(addr) -> list[str]` (L35) | function | Public | Implementation helper for get reserved categories. |
+| `_enabled_categories(categories: list[str], params: dict) -> list[str]` (L65) | function | Internal | Implementation helper for enabled categories. |
+| `_diagnostic(status: str, *, invalid_count: int, invalid_ratio: float, reserved_count: int, checked_count: int, threshold: float, category_counts: dict, invalid_examples: list, reserved_examples: list) -> dict` (L73) | function | Internal | Implementation helper for diagnostic. |
+| `run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L116) | function | Public | Runs reserved IP address metric. |
 
 ## `tests/metrics/dataset_heuristics/protocol_and_network_realism/address_validity/valid_ip_address_profile.py`
 
@@ -595,9 +639,11 @@ Network/protocol realism implementation module awaiting migration from the test 
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `normalize_port_series(series)` (L5) | function | Public | Normalizes port series. |
-| `parse_port(value)` (L23) | function | Public | Parses port. |
-| `run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L45) | function | Public | Heuristic check of expected service ports in tabular flow data. This metric is a heuristic, not an absolute validity test. A service-port mismatch can be legitimate because services may run on non-standard ports, and attack traffic may intentionally target unusual ports. |
+| `normalize_port_series(series)` (L18) | function | Public | Normalizes port series. |
+| `parse_port(value)` (L36) | function | Public | Parses port. |
+| `_not_applicable_result(*, service_name: str, expected_ports: list[int], match_mode: str, existing_fields: list[str], missing_fields: list[str], row_count: int, population_basis: str, reason_code: str, summary: str, suggestion: str, service_field: str | None = None, service_values: list[str] | None = None) -> tuple[bool, dict]` (L54) | function | Internal | Implementation helper for not applicable result. |
+| `_diagnostic(status: str, *, service_name: str, checked: int, matching: int, mismatching: int, match_ratio: float, pass_threshold: float, warn_threshold: float, invalid_rows: int, population_rows: int, population_basis: str, expected_ports: list[int], mismatch_examples: list, invalid_examples: list) -> dict` (L97) | function | Internal | Implementation helper for diagnostic. |
+| `run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L154) | function | Public | Heuristically check expected ports only within an independently selected service population. A mixed flow dataset must not be treated as though every row belongs to the configured service. In ``auto`` mode the metric therefore requires a usable service/application field, unless ``assume_dataset_service`` is explicitly enabled. A plan can also use ``population_mode=all_rows`` when the dataset is known to contain only the named service. |
 
 ## `tests/metrics/dataset_heuristics/protocol_and_network_realism/port_validity/valid_port_range_profile.py`
 
@@ -605,9 +651,10 @@ Network/protocol realism implementation module awaiting migration from the test 
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `parse_port(value)` (L5) | function | Public | Parses port. |
-| `classify_port_range(port: int) -> str` (L29) | function | Public | Classifies port range. |
-| `run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L39) | function | Public | Runs valid port range metric. |
+| `parse_port(value, valid_min_port: int = 0, valid_max_port: int = 65535)` (L6) | function | Public | Parses port. |
+| `classify_port_range(port: int) -> str` (L28) | function | Public | Classifies port range. |
+| `_diagnostic(status: str, *, checked: int, invalid: int, non_integer: int, out_of_range: int, zero_count: int, invalid_ratio: float | None, threshold: float, valid_min_port: int, valid_max_port: int, examples: list) -> dict` (L38) | function | Internal | Implementation helper for diagnostic. |
+| `run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L87) | function | Public | Runs valid port range metric. |
 
 ## `tests/metrics/dataset_heuristics/protocol_and_network_realism/slice_metadata_integrity/slice_identifier_consistency_profile.py`
 
