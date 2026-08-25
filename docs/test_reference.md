@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **119 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **135 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -251,23 +251,26 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_detect_ip_fields_prefers_first_matching_candidates()` (L20) | Verifies that detect IP fields prefers first matching candidates. | `_DummyFrame`, `detect_ip_fields` |
-| `test_detect_ip_fields_defaults_to_na_when_missing()` (L27) | Verifies that detect IP fields defaults to na when missing. | `_DummyFrame`, `detect_ip_fields` |
-| `test_build_title_box_lines_adds_frame_and_status_separator()` (L34) | Verifies that build title box lines adds frame and status separator. | `build_title_box_lines`, `any` |
-| `test_build_base_header_lines_with_dataset_size(tmp_path: Path)` (L42) | Verifies that build base header lines with dataset size. | `dataset.write_text`, `build_base_header_lines`, `any`, `line.startswith` |
-| `test_build_outcome_contains_expected_fields()` (L54) | Verifies that build outcome contains expected fields. | `datetime`, `build_outcome` |
-| `test_configure_signal_handlers_registers_sigint(monkeypatch)` (L76) | Verifies that configure signal handlers registers sigint. | `monkeypatch.setattr`, `configure_signal_handlers`, `any`, `calls.append` |
-| `test_parse_run_plan_args_reads_required_case(monkeypatch)` (L89) | Verifies that parse run plan args reads required case. | `monkeypatch.setattr`, `parse_run_plan_args` |
-| `test_update_live_header_formats_and_forwards(monkeypatch)` (L97) | Verifies that update live header formats and forwards. | `monkeypatch.setattr`, `update_live_header`, `any` |
+| `test_detect_ip_fields_prefers_first_matching_candidates()` (L23) | Verifies that detect IP fields prefers first matching candidates. | `_DummyFrame`, `detect_ip_fields` |
+| `test_detect_ip_fields_defaults_to_na_when_missing()` (L30) | Verifies that detect IP fields defaults to na when missing. | `_DummyFrame`, `detect_ip_fields` |
+| `test_build_title_box_lines_adds_frame_and_status_separator()` (L37) | Verifies that build title box lines adds frame and status separator. | `build_title_box_lines`, `any` |
+| `test_build_base_header_lines_with_dataset_size(tmp_path: Path)` (L45) | Verifies that build base header lines with dataset size. | `dataset.write_text`, `build_base_header_lines`, `any`, `line.startswith` |
+| `test_build_outcome_contains_expected_fields()` (L57) | Verifies that build outcome contains expected fields. | `datetime`, `build_outcome` |
+| `test_configure_signal_handlers_registers_sigint(monkeypatch)` (L79) | Verifies that configure signal handlers registers sigint. | `monkeypatch.setattr`, `configure_signal_handlers`, `any`, `calls.append` |
+| `test_parse_run_plan_args_reads_required_case(monkeypatch)` (L92) | Verifies that parse run plan args reads required case. | `monkeypatch.setattr`, `parse_run_plan_args` |
+| `test_parse_run_plan_args_requires_case_without_tui(monkeypatch)` (L101) | Verifies that parse run plan args requires case without tui. | `monkeypatch.setattr`, `pytest.raises`, `parse_run_plan_args` |
+| `test_parse_run_plan_args_tui_can_supply_case(monkeypatch)` (L108) | Verifies that parse run plan args tui can supply case. | `monkeypatch.setattr`, `parse_run_plan_args`, `SimpleNamespace` |
+| `test_update_live_header_formats_and_forwards(monkeypatch)` (L127) | Verifies that update live header formats and forwards. | `monkeypatch.setattr`, `update_live_header`, `any` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_DummyFrame` (L15) | Data model for DummyFrame. |
-| `_DummyFrame.__init__(self, columns)` (L16) | Implementation helper for init. |
-| `test_configure_signal_handlers_registers_sigint._fake_signal(sig, handler)` (L79) | Implementation helper for fake signal. |
-| `test_update_live_header_formats_and_forwards._fake_set_live_header(lines)` (L100) | Implementation helper for fake set live header. |
+| `_DummyFrame` (L18) | Data model for DummyFrame. |
+| `_DummyFrame.__init__(self, columns)` (L19) | Implementation helper for init. |
+| `test_configure_signal_handlers_registers_sigint._fake_signal(sig, handler)` (L82) | Implementation helper for fake signal. |
+| `test_parse_run_plan_args_tui_can_supply_case._fake_launch_tui(args)` (L113) | Implementation helper for fake launch tui. |
+| `test_update_live_header_formats_and_forwards._fake_set_live_header(lines)` (L130) | Implementation helper for fake set live header. |
 
 ## `tests/test_runner_execution_invariants.py`
 
@@ -402,3 +405,32 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_temporal_consistency_metrics()` (L15) | Verifies that temporal consistency metrics. | `compute_timestamp_parse_success_ratio`, `compute_start_end_timestamp_consistency_ratio`, `compute_non_negative_duration_ratio` |
 | `test_temporal_behaviour_metrics_compare_first_and_second_halves()` (L28) | Verifies that temporal behaviour metrics compare first and second halves. | `compute_inter_arrival_time_distribution_divergence`, `compute_burstiness_coefficient_deviation`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score`, `compute_periodicity_preservation_score` |
+
+## `tests/test_tui.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_build_default_tui_fields_discovers_case_and_plan_choices(tmp_path)` (L31) | Verifies that build default tui fields discovers case and plan choices. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases' / 'case_a.json').write_text`, `(tmp_path / 'plans' / 'plan_a.json').write_text`, `build_default_tui_fields`, `next`, `_args` |
+| `test_apply_tui_fields_converts_blank_optional_values_and_worker_count()` (L44) | Verifies that apply tui fields converts blank optional values and worker count. | `_args`, `build_default_tui_fields`, `apply_tui_fields` |
+| `test_validate_required_run_args_rejects_missing_case()` (L62) | Verifies that validate required run args rejects missing case. | `pytest.raises`, `validate_required_run_args`, `_args` |
+| `test_dataset_field_uses_file_browser()` (L67) | Verifies that dataset field uses file browser. | `build_default_tui_fields`, `next`, `_args` |
+| `test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path)` (L77) | Verifies that list file browser entries sorts directories first and skips internal dirs. | `(tmp_path / 'z_data.csv').write_text`, `(tmp_path / 'datasets').mkdir`, `(tmp_path / 'datasets' / 'sample.csv').write_text`, `(tmp_path / '.git').mkdir` |
+| `test_describe_tui_field_explains_selected_field_actions()` (L90) | Verifies that describe tui field explains selected field actions. | `build_default_tui_fields`, `next`, `describe_tui_field`, `any`, `_args` |
+| `test_worker_field_shows_detected_max_workers()` (L102) | Verifies that worker field shows detected max workers. | `build_default_tui_fields`, `next`, `describe_tui_field`, `_args`, `detected_max_workers` |
+| `test_post_dry_run_result_lines_offer_run_action()` (L113) | Verifies that post dry run result lines offer run action. | `_result_lines`, `_args` |
+| `test_post_dry_run_result_lines_show_attention_for_skips()` (L121) | Verifies that post dry run result lines show attention for skips. | `_result_lines`, `_args` |
+| `test_default_outcome_path_includes_case_stem_and_timestamp_shape()` (L127) | Verifies that default outcome path includes case stem and timestamp shape. | `default_outcome_path`, `value.startswith`, `value.endswith` |
+| `test_report_fields_explain_each_report_format()` (L134) | Verifies that report fields explain each report format. | `build_default_tui_fields`, `next`, `_args` |
+| `test_result_sections_include_expandable_human_readable_metric_results(tmp_path)` (L145) | Verifies that result sections include expandable human readable metric results. | `output.write_text`, `build_result_sections`, `any` |
+| `test_field_mapping_choices_remove_already_selected_columns()` (L162) | Verifies that field mapping choices remove already selected columns. | `_field_mapping_choices` |
+| `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L171) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_args(**overrides)` (L8) | Implementation helper for args. |

@@ -143,9 +143,11 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L57) | function | Internal | Implementation helper for confirm sidecar update. |
-| `main()` (L70) | function | Public | Implementation helper for main. |
-| `main._load_dataset_for_metric(path: Path)` (L234) | nested function | Internal | Implementation helper for load dataset for metric. |
+| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L58) | function | Internal | Implementation helper for confirm sidecar update. |
+| `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L71) | function | Internal | Implementation helper for run result. |
+| `run_once(args)` (L81) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
+| `run_once._load_dataset_for_metric(path: Path)` (L255) | nested function | Internal | Implementation helper for load dataset for metric. |
+| `main()` (L397) | function | Public | Implementation helper for main. |
 
 ## `runner/contract.py`
 
@@ -481,17 +483,17 @@ CLI parsing, headers, signal handlers, outcome construction, and atomic writes.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L17) | function | Public | Builds outcome. |
-| `write_outcome(output_path: Path, outcome: dict) -> None` (L60) | function | Public | Write an outcome atomically, creating its destination directory first. |
-| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L84) | function | Public | Detects IP fields. |
-| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L90) | function | Public | Builds title box lines. |
-| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L102) | function | Public | Builds base header lines. |
-| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L125) | function | Public | Configures signal handlers. |
-| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L126) | nested function | Internal | Implementation helper for handle sigint. |
-| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L132) | nested function | Internal | Implementation helper for handle sigusr1. |
-| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L136) | nested function | Internal | Implementation helper for handle sigusr2. |
-| `parse_run_plan_args() -> argparse.Namespace` (L147) | function | Public | Parses run plan args. |
-| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L206) | function | Public | Updates live header. |
+| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L19) | function | Public | Builds outcome. |
+| `write_outcome(output_path: Path, outcome: dict) -> None` (L62) | function | Public | Write an outcome atomically, creating its destination directory first. |
+| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L86) | function | Public | Detects IP fields. |
+| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L92) | function | Public | Builds title box lines. |
+| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L104) | function | Public | Builds base header lines. |
+| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L127) | function | Public | Configures signal handlers. |
+| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L128) | nested function | Internal | Implementation helper for handle sigint. |
+| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L134) | nested function | Internal | Implementation helper for handle sigusr1. |
+| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L138) | nested function | Internal | Implementation helper for handle sigusr2. |
+| `parse_run_plan_args() -> argparse.Namespace` (L149) | function | Public | Parses run plan args. |
+| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L223) | function | Public | Updates live header. |
 
 ## `runner/run_plan_serial.py`
 
@@ -556,6 +558,47 @@ Run, metric, and event state models.
 | `RunState.completed_durations(self) -> dict[str, float]` (L206) | method | Public | Implementation helper for completed durations. |
 | `RunState.recent_completed(self, limit: int = 5) -> list[MetricState]` (L213) | method | Public | Implementation helper for recent completed. |
 | `RunState.attention_metrics(self) -> list[MetricState]` (L224) | method | Public | Implementation helper for attention metrics. |
+
+## `runner/tui.py`
+
+Python symbols defined by `runner/tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `default_outcome_path(case_path: str | None = None) -> str` (L15) | function | Public | Implementation helper for default outcome path. |
+| `detected_max_workers() -> int` (L23) | function | Public | Implementation helper for detected max workers. |
+| `FileBrowserEntry` (L28) | class | Public | Data model for FileBrowserEntry. |
+| `TuiField` (L35) | class | Public | Data model for TuiField. |
+| `_discover_files(root: Path, patterns: tuple[str, ...]) -> tuple[str, ...]` (L45) | function | Internal | Implementation helper for discover files. |
+| `_display_path(path: Path, root: Path) -> str` (L52) | function | Internal | Implementation helper for display path. |
+| `list_file_browser_entries(directory: Path, root: Path) -> list[FileBrowserEntry]` (L60) | function | Public | Implementation helper for list file browser entries. |
+| `build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiField]` (L74) | function | Public | Builds default tui fields. |
+| `apply_tui_fields(args, fields: list[TuiField])` (L98) | function | Public | Implementation helper for apply tui fields. |
+| `validate_required_run_args(args) -> None` (L110) | function | Public | Validates required run args. |
+| `_format_value(field: TuiField) -> str` (L115) | function | Internal | Implementation helper for format value. |
+| `field_action_hint(field: TuiField) -> str` (L125) | function | Public | Implementation helper for field action hint. |
+| `describe_tui_field(field: TuiField) -> list[str]` (L135) | function | Public | Implementation helper for describe tui field. |
+| `_edit_text(stdscr, y: int, x: int, initial: str, width: int) -> str` (L144) | function | Internal | Implementation helper for edit text. |
+| `_initial_browser_directory(initial: str, root: Path) -> Path` (L154) | function | Internal | Implementation helper for initial browser directory. |
+| `_browse_file(stdscr, root: Path, initial: str) -> str | None` (L166) | function | Internal | Implementation helper for browse file. |
+| `_run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None` (L211) | function | Internal | Implementation helper for run curses. |
+| `launch_tui(args, repo_root: Path | None = None)` (L264) | function | Public | Implementation helper for launch tui. |
+| `_result_lines(result: dict | None, args) -> list[str]` (L272) | function | Internal | Implementation helper for result lines. |
+| `_field_mapping_choices(dataset_columns: list[str], mappings: dict[str, str], field: str) -> list[str]` (L295) | function | Internal | Implementation helper for field mapping choices. |
+| `save_field_mappings(path: Path, mappings: dict[str, str]) -> None` (L303) | function | Public | Implementation helper for save field mappings. |
+| `_field_mapping_curses(stdscr, result: dict) -> str` (L314) | function | Internal | Implementation helper for field mapping curses. |
+| `show_field_mapping_menu(result: dict) -> str` (L362) | function | Public | Implementation helper for show field mapping menu. |
+| `_confirm_run_after_errors(stdscr, skipped_count: int, result: dict | None = None) -> str` (L366) | function | Internal | Implementation helper for confirm run after errors. |
+| `ResultSection` (L391) | class | Public | Data model for ResultSection. |
+| `_load_outcome_payload(output_path: str | None) -> dict` (L397) | function | Internal | Implementation helper for load outcome payload. |
+| `_scalar_summary_items(payload: object, limit: int = 4) -> list[str]` (L406) | function | Internal | Implementation helper for scalar summary items. |
+| `_test_result_for_metric(test_results: dict, metric_id: str) -> object` (L419) | function | Internal | Implementation helper for test result for metric. |
+| `_metric_result_line(metric: dict, test_results: dict) -> str` (L428) | function | Internal | Implementation helper for metric result line. |
+| `_outcome_result_sections(output_path: str | None) -> tuple[list[str], list[str], list[str], list[str]]` (L444) | function | Internal | Implementation helper for outcome result sections. |
+| `build_result_sections(result: dict | None) -> list[ResultSection]` (L467) | function | Public | Builds result sections. |
+| `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L491) | function | Internal | Implementation helper for visible result rows. |
+| `_post_run_curses(stdscr, result: dict | None, args) -> str` (L501) | function | Internal | Implementation helper for post run curses. |
+| `show_post_run_menu(result: dict | None, args) -> str` (L542) | function | Public | Implementation helper for show post run menu. |
 
 ## `scripts/build_documentation_inventory.py`
 
