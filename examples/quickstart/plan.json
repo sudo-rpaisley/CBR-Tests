@@ -1,0 +1,119 @@
+{
+  "plan_meta": {
+    "plan_id": "quickstart-tabular-v1",
+    "name": "Quickstart Tabular Checks",
+    "version": "1.0.0",
+    "description": "Small self-contained plan used by the documentation and CI smoke test."
+  },
+  "applicability": {
+    "dataset_formats": [
+      "csv"
+    ],
+    "dataset_family": [
+      "example_tabular"
+    ],
+    "requires_numeric_fields": true,
+    "minimum_numeric_fields": 2
+  },
+  "execution_policy": {
+    "fail_fast": false,
+    "allow_skips": true,
+    "sample_mode": "full"
+  },
+  "metrics": [
+    {
+      "metric_id": "column_quality_profile",
+      "label": "Column Quality Profile",
+      "taxonomy_path": [
+        "dataset_quality",
+        "columns"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "duration",
+          "bytes"
+        ]
+      },
+      "field_requirements": {
+        "required": [
+          "duration",
+          "bytes"
+        ],
+        "optional": []
+      }
+    },
+    {
+      "metric_id": "missing_value_ratio",
+      "label": "Missing Value Ratio",
+      "taxonomy_path": [
+        "dataset_quality",
+        "missing_values"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "duration",
+          "bytes",
+          "label"
+        ]
+      },
+      "field_requirements": {
+        "required": [],
+        "optional": [
+          "duration",
+          "bytes",
+          "label"
+        ]
+      }
+    },
+    {
+      "metric_id": "duplicate_row_ratio",
+      "label": "Duplicate Row Ratio",
+      "taxonomy_path": [
+        "dataset_quality",
+        "duplicates"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "subset_fields": [
+          "duration",
+          "bytes",
+          "label"
+        ]
+      },
+      "field_requirements": {
+        "required": [],
+        "optional": [
+          "duration",
+          "bytes",
+          "label"
+        ]
+      }
+    },
+    {
+      "metric_id": "pearson_correlation_profile",
+      "label": "Pearson Correlation Profile",
+      "taxonomy_path": [
+        "statistical_structure",
+        "correlation",
+        "pearson"
+      ],
+      "enabled": true,
+      "input_requirements": {
+        "candidate_fields": [
+          "duration",
+          "bytes"
+        ],
+        "minimum_runnable_fields": 2
+      },
+      "field_requirements": {
+        "required": [
+          "duration",
+          "bytes"
+        ],
+        "optional": []
+      }
+    }
+  ]
+}

@@ -1,121 +1,164 @@
-# run_plan controls and feature reference
+# `run_plan.py` controls and feature reference
 
-This document lists the runner controls, side effects, reports, and display modes in one place.
+## Invocation forms
 
-## Required inputs
+### Case file
+
+```bash
+python run_plan.py --case path/to/case.json
+```
+
+The case supplies the plan, dataset, output, case ID, and optional field-translation file. Relative paths are resolved from the case directory.
+
+### Plan file
+
+```bash
+python run_plan.py \
+  --case path/to/plan.json \
+  --dataset path/to/data.csv \
+  --output path/to/outcome.json \
+  --case-id optional_identifier
+```
+
+`--dataset` and `--output` are mandatory when `--case` is a plan.
+
+## Command-line options
 
 | Option | Required | Description |
 | --- | --- | --- |
-| `--case <path>` | Yes | Case JSON or plan JSON to execute. |
-| `--dataset <path>` | When `--case` is a plan | Dataset path for ad-hoc plan runs. Case files can provide this instead. |
-| `--output <path>` | When `--case` is a plan | Outcome JSON path for ad-hoc plan runs. Case files can provide this instead. |
-| `--case-id <id>` | No | Case identifier for ad-hoc plan runs. Defaults to `ad_hoc_case`. |
+| `--case <path>` | Always | Case JSON or plan JSON. |
+| `--dataset <path>` | Direct plan only | Dataset for a direct plan run. |
+| `--output <path>` | Direct plan only | Outcome JSON for a direct plan run. |
+| `--case-id <id>` | No | Direct-plan case ID; defaults to `ad_hoc_case`. |
+| `--workers <n>` | No | Worker override. `1` is serial; larger values request parallel execution. |
+| `--display <mode>` | No | `compact`, `full`, `quiet`, or `interactive`; default `compact`. |
+| `--taxonomy-file <path>` | No | External taxonomy/order JSON. |
+| `--taxonomy-strict` | No | Fail if an enabled metric is absent from the external order. |
+| `--field-translation <path>` | No | Explicit translation JSON; overrides case/sidecar lookup. |
+| `--no-update-field-translation` | No | Prevent sidecar creation/update. Existing mappings may still load. |
+| `--field-translation-dry-run` | No | Perform translation preflight/reporting and exit before metrics. |
+| `--yes-field-translation-sidecar` | No | Permit sidecar writes without interactive confirmation. |
+| `--field-translation-report <path>` | No | Machine-readable JSON mapping report. |
+| `--field-translation-text-report <path>` | No | Human-readable text mapping report. |
+| `--field-translation-markdown-report <path>` | No | Shareable Markdown mapping report. |
 
-## Execution controls
+Use `python run_plan.py --help` as the executable source of truth.
 
-| Option / control | Behavior |
+## Worker selection
+
+Without `--workers`, the runner chooses at most the number of metrics and normally one fewer than available CPUs. A tabular run that uses a shared dataframe is capped to four workers. The final value is always at least one.
+
+Parallel execution is bounded: only up to the worker count is submitted at once. Result records are restored to plan order.
+
+## Display modes
+
+| Mode | Behavior |
 | --- | --- |
-| `--workers <n>` | Overrides worker count. `1` forces serial execution; values above `1` run metrics in parallel. Tabular datasets are capped to a lower worker count to reduce memory pressure. |
-| `--taxonomy-file <path>` | Loads an external taxonomy ordering file and orders enabled metrics to match it. |
-| `--taxonomy-strict` | Fails if enabled metrics are missing from the taxonomy order. |
-| `Ctrl-C` | Requests cancellation. The current implementation cancels pending work and writes what it can before exiting. |
-| `SIGUSR1` | Pauses execution. |
-| `SIGUSR2` | Resumes execution after `SIGUSR1`. |
+| `compact` | Branch counts, active/attention metrics, recent completions, and events. Recommended for normal terminals and tmux. |
+| `full` | Full taxonomy and every metric leaf. Useful for detailed debugging. |
+| `quiet` | Suppresses live taxonomy/status redraws. Outcome and requested reports are still written. |
+| `interactive` | Uses the ANSI interactive dashboard path when terminal capabilities permit; the implementation may fall back to compact behavior. |
 
-## Live display modes
+Non-TTY output uses plain lines rather than in-place redraws or color-dependent meaning.
 
-Use `--display <mode>` to control terminal output.
+## Execution policy from the plan
 
-| Mode | Use when | Behavior |
-| --- | --- | --- |
-| `compact` | Default and recommended for tmux panes | Shows branch summaries, active/attention metrics, recent completions, and recent events instead of every metric leaf. |
-| `full` | Debugging or large scrollback logs | Shows the full taxonomy/metric list. |
-| `quiet` | CI, scripts, or logs where live redraws are noise | Suppresses live taxonomy/status redraws. Outcome JSON is still written. |
-| `interactive` | Future Textual workflow | Currently uses the compact fallback while the full expand/collapse Textual UI is developed. |
+`execution_policy.fail_fast` controls stopping after an **execution-level** metric failure.
 
-The compact view is backed by shared run telemetry. That means skipped metrics, missing fields, recent events, and branch counts are tracked centrally and can be reused by future reports and the interactive UI.
+### Serial
 
-## Field translation controls
+The first failed handler stops later metrics and the partial outcome is written.
 
-| Option | Behavior |
+### Parallel
+
+The first completed failure:
+
+- stops new submissions;
+- attempts to cancel queued futures;
+- records never-started/cancelled metrics as `not_run_fail_fast`;
+- preserves results from metrics already completed;
+- allows already-running threads to finish because they cannot be killed safely.
+
+`execution_policy.allow_skips` is currently descriptive; required-field preflight skips are still recorded and runnable metrics continue.
+
+`execution_policy.sample_mode` is also descriptive unless a metric explicitly reads it or its own calculation parameters.
+
+## Signals and operator controls
+
+| Control | Effect |
 | --- | --- |
-| `--field-translation <path>` | Uses an explicit translation JSON and overrides sidecar lookup. |
-| `--field-translation-dry-run` | Validates/creates/updates translation sidecars and reports missing mappings, then exits before running metrics. |
-| `--no-update-field-translation` | Prevents sidecar creation or update. Existing mappings may still be loaded. |
-| `--yes-field-translation-sidecar` | Allows sidecar creation/update without an interactive prompt. Useful for dry-runs and non-interactive shells. |
-| `--field-translation-report <path>` | Writes a machine-readable JSON field translation report. |
-| `--field-translation-text-report <path>` | Writes a human-readable text field translation report. |
-| `--field-translation-markdown-report <path>` | Writes a Markdown field translation report. |
+| `Ctrl-C` / `SIGINT` | Requests cancellation and marks shutdown state. |
+| `SIGUSR1` | Requests pause on platforms that expose the signal. |
+| `SIGUSR2` | Resumes after pause on platforms that expose the signal. |
+
+Parallel cancellation stops new submissions and attempts to cancel queued work. Running threads may finish after the command has moved toward shutdown.
+
+## Field translation order
+
+The effective field resolver considers:
+
+1. identity mappings for actual dataset columns;
+2. known common aliases;
+3. Wireshark/tshark-style headings;
+4. sidecar or case translation;
+5. explicit `--field-translation`, which takes precedence.
+
+The dataframe is not renamed. Metric `input_requirements` are copied and translated before handler execution.
 
 ## Sidecar behavior
 
-- Default sidecar path: `<dataset-stem>.field_translation.json` next to the dataset.
-- Existing sidecars are loaded automatically when `--field-translation` is not supplied.
-- Sidecars are only created if missing and allowed by prompt/flags.
-- Existing sidecars are only updated when enabled metrics require fields that are not already listed.
-- `--no-update-field-translation` disables sidecar create/update behavior.
-- Generated templates list every canonical field needed by enabled metric `field_requirements` so users know what to fill in.
-- Auto-detected aliases and PCAP/tshark headings are pre-populated when possible.
+Default path:
 
-## Skipped metric behavior
+```text
+<dataset-stem>.field_translation.json
+```
 
-- Metrics with missing required field mappings are marked `[SKIPPED]` and not executed.
-- Other runnable metrics continue to run.
-- Skipped metrics are included in the outcome JSON and field translation reports.
-- Missing optional fields do not skip a metric; they are reported separately.
+A generated sidecar lists canonical fields required by enabled metrics. Auto-detected columns may be filled in; unresolved values are empty strings. Existing user values are preserved, and the file is extended only for newly required fields.
 
-## Reports and outputs
+Interactive runs prompt before creation/update. Noninteractive runs need `--yes-field-translation-sidecar`. `--no-update-field-translation` always prevents writing.
 
-| Output | How to request | Purpose |
-| --- | --- | --- |
-| Outcome JSON | `--output <path>` or case file output | Canonical run result containing metric results, test results, taxonomies, timestamps, skipped metrics, and validations. |
-| Field translation JSON report | `--field-translation-report <path>` | Machine-readable mapping/availability/skipped-metric report. |
-| Field translation text report | `--field-translation-text-report <path>` | Human-readable mapping/availability/skipped-metric report. |
-| Field translation Markdown report | `--field-translation-markdown-report <path>` | Shareable Markdown mapping/availability/skipped-metric report. |
+## Skipped metrics
+
+A metric whose `field_requirements.required` fields remain unavailable is not dispatched. It receives:
+
+- status `skipped`;
+- reason `missing_field_mappings`;
+- a `missing_fields` list.
+
+Optional missing fields are reported without skipping. Skips appear in translation reports, `skipped_metrics`, and `metric_results`.
 
 ## Recommended commands
 
-### Dry-run field translations and reports
+### Self-contained example
+
+```bash
+python run_plan.py \
+  --case examples/quickstart/case.json \
+  --workers 1 \
+  --display quiet \
+  --no-update-field-translation
+```
+
+### Translation dry run
 
 ```bash
 python run_plan.py \
   --case plans/deepsecure_plan.json \
-  --dataset datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv \
-  --output outcomes/deepsecure_trial.json \
+  --dataset /data/example.csv \
+  --output outcomes/dry_run_placeholder.json \
   --field-translation-dry-run \
   --yes-field-translation-sidecar \
-  --field-translation-report outcomes/deepsecure_fields.json \
-  --field-translation-text-report outcomes/deepsecure_fields.txt \
-  --field-translation-markdown-report outcomes/deepsecure_fields.md
+  --field-translation-report outcomes/fields.json \
+  --field-translation-text-report outcomes/fields.txt \
+  --field-translation-markdown-report outcomes/fields.md
 ```
 
-### Run metrics with tmux-friendly output
+### Quiet serial troubleshooting run
 
 ```bash
 python run_plan.py \
-  --case plans/deepsecure_plan.json \
-  --dataset datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv \
-  --output outcomes/deepsecure_trial.json \
-  --display compact
-```
-
-### Run metrics with full taxonomy output
-
-```bash
-python run_plan.py \
-  --case plans/deepsecure_plan.json \
-  --dataset datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv \
-  --output outcomes/deepsecure_trial.json \
-  --display full
-```
-
-### Run metrics quietly in CI
-
-```bash
-python run_plan.py \
-  --case plans/deepsecure_plan.json \
-  --dataset datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv \
-  --output outcomes/deepsecure_trial.json \
+  --case path/to/case.json \
+  --workers 1 \
   --display quiet \
   --no-update-field-translation
 ```
