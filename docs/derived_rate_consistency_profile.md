@@ -1,6 +1,6 @@
 # Derived rate consistency profile
 
-`derived_rate_consistency_profile` is a post-expert-review Dataset Heuristics metric under Protocol and Network Realism → Flow Semantics.
+`derived_rate_consistency_profile` is a post-expert-review Dataset Heuristics metric under Protocol and Network Realism → Flow Semantics. It is also indexed in the repository's [Network and flow realism metrics](metrics/network_realism.md) reference.
 
 It recomputes reported flow packet and byte rates from:
 
