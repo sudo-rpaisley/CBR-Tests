@@ -33,7 +33,7 @@ The curses TUI lets you select an existing case or plan, browse for a dataset, c
 
 ## What it evaluates
 
-The dispatcher currently supports 63 metric IDs across:
+The dispatcher currently supports 64 metric IDs across:
 
 - completeness, duplicates, and column usability;
 - Pearson, Spearman, distance correlation, and distribution drift;
@@ -41,7 +41,7 @@ The dispatcher currently supports 63 metric IDs across:
 - label coverage, class balance, attack-window alignment, and split contamination;
 - slice coverage, balance, duplicate overlap, and identifier leakage;
 - reference-dataset comparisons;
-- IP, port, protocol, TCP flag, handshake, flow, packet/byte, and slice metadata realism;
+- IP, port, protocol, TCP flag, handshake, flow, packet/byte, derived-rate, and slice metadata realism;
 - benchmark accuracy, precision, recall, and F1.
 
 Not every supported metric appears in the five supplied research plans. See the full [metric reference](docs/metric_reference.md).
