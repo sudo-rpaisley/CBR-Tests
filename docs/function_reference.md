@@ -162,31 +162,32 @@ Metric registry, wrappers, field translation, and handler construction.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `register_metric(metric_id: str)` (L112) | function | Public | Implementation helper for register metric. |
-| `register_metric._decorator(function)` (L113) | nested function | Internal | Implementation helper for decorator. |
-| `run_pearson_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L120) | function | Public | Runs pearson metric. |
-| `run_spearman_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L142) | function | Public | Runs spearman metric. |
-| `run_missing_value_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L170) | function | Public | Runs missing value metric. |
-| `run_duplicate_row_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L182) | function | Public | Runs duplicate row metric. |
-| `run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None, metric_id: str, compute_fn)` (L194) | function | Public | Runs tabular metric. |
-| `run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L206) | function | Public | Runs distance correlation metric. |
-| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L232) | function | Public | Runs column quality metric. |
-| `_timestamp_metric(dataset_path: Path, metric: dict)` (L245) | function | Internal | Implementation helper for timestamp metric. |
-| `_protocol_metric(dataset_path: Path, metric: dict)` (L250) | function | Internal | Implementation helper for protocol metric. |
-| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L255) | function | Internal | Implementation helper for reserved IP metric. |
-| `_valid_port_metric(dataset_path: Path, metric: dict)` (L260) | function | Internal | Implementation helper for valid port metric. |
-| `_service_port_metric(dataset_path: Path, metric: dict)` (L265) | function | Internal | Implementation helper for service port metric. |
-| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L270) | function | Internal | Implementation helper for TCP flag metric. |
-| `_handshake_metric(dataset_path: Path, metric: dict)` (L275) | function | Internal | Implementation helper for handshake metric. |
-| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L280) | function | Internal | Implementation helper for flow duration metric. |
-| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L285) | function | Internal | Implementation helper for packet byte metric. |
-| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L290) | function | Internal | Implementation helper for slice valid metric. |
-| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L295) | function | Internal | Implementation helper for slice consistency metric. |
-| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L349) | function | Internal | Implementation helper for wrap registered handler. |
-| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L354) | nested function | Internal | Implementation helper for wrapped. |
-| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L369) | function | Internal | Implementation helper for make tabular compute handler. |
-| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L390) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
-| `build_metric_handlers._translate(metric: dict)` (L400) | nested function | Internal | Implementation helper for translate. |
+| `register_metric(metric_id: str)` (L115) | function | Public | Implementation helper for register metric. |
+| `register_metric._decorator(function)` (L116) | nested function | Internal | Implementation helper for decorator. |
+| `run_pearson_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L123) | function | Public | Runs pearson metric. |
+| `run_spearman_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L145) | function | Public | Runs spearman metric. |
+| `run_missing_value_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L173) | function | Public | Runs missing value metric. |
+| `run_duplicate_row_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L185) | function | Public | Runs duplicate row metric. |
+| `run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None, metric_id: str, compute_fn)` (L197) | function | Public | Runs tabular metric. |
+| `run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L209) | function | Public | Runs distance correlation metric. |
+| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L235) | function | Public | Runs column quality metric. |
+| `_timestamp_metric(dataset_path: Path, metric: dict)` (L248) | function | Internal | Implementation helper for timestamp metric. |
+| `_protocol_metric(dataset_path: Path, metric: dict)` (L253) | function | Internal | Implementation helper for protocol metric. |
+| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L258) | function | Internal | Implementation helper for reserved IP metric. |
+| `_valid_port_metric(dataset_path: Path, metric: dict)` (L263) | function | Internal | Implementation helper for valid port metric. |
+| `_service_port_metric(dataset_path: Path, metric: dict)` (L268) | function | Internal | Implementation helper for service port metric. |
+| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L273) | function | Internal | Implementation helper for TCP flag metric. |
+| `_handshake_metric(dataset_path: Path, metric: dict)` (L278) | function | Internal | Implementation helper for handshake metric. |
+| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L283) | function | Internal | Implementation helper for flow duration metric. |
+| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L288) | function | Internal | Implementation helper for packet byte metric. |
+| `_derived_rate_metric(dataset_path: Path, metric: dict)` (L293) | function | Internal | Implementation helper for derived rate metric. |
+| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L298) | function | Internal | Implementation helper for slice valid metric. |
+| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L303) | function | Internal | Implementation helper for slice consistency metric. |
+| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L357) | function | Internal | Implementation helper for wrap registered handler. |
+| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L362) | nested function | Internal | Implementation helper for wrapped. |
+| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L377) | function | Internal | Implementation helper for make tabular compute handler. |
+| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L398) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
+| `build_metric_handlers._translate(metric: dict)` (L408) | nested function | Internal | Implementation helper for translate. |
 
 ## `runner/execution.py`
 
@@ -599,6 +600,15 @@ Network/protocol realism implementation module awaiting migration from the test 
 | --- | --- | --- | --- |
 | `classify_ip_value(ip_value) -> str` (L5) | function | Public | Classify an IP field value as one of: missing, ipv4, ipv6, invalid. |
 | `run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L26) | function | Public | Runs protocol validity metric. |
+
+## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/derived_rate_consistency_profile.py`
+
+Network/protocol realism implementation module awaiting migration from the test package.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_within_tolerance(reported: pd.Series, expected: pd.Series, relative_tolerance: float, absolute_tolerance: float) -> pd.Series` (L18) | function | Internal | Implementation helper for within tolerance. |
+| `run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L28) | function | Public | Check whether reported packet/byte rates agree with counts, bytes, and duration. The duration unit must be declared in ``calculation.parameters.duration_unit``. At least one of ``flow_packets_per_second`` and ``flow_bytes_per_second`` must be mapped. This prevents the metric from silently assuming a dataset-specific duration unit or rate convention. |
 
 ## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/flow_duration_consistency_profile.py`
 

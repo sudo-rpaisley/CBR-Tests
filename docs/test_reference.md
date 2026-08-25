@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **106 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **110 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -43,6 +43,26 @@ Tests and local helpers in this module.
 | `test_compute_missing_value_ratio_uses_candidate_fields()` (L7) | Verifies that compute missing value ratio uses candidate fields. | `compute_missing_value_ratio` |
 | `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L27) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
 | `test_compute_spearman_profile_reports_rank_correlation()` (L42) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+
+## `tests/test_derived_rate_consistency_profile.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_accepts_rates_consistent_with_counts_bytes_and_duration(tmp_path: Path)` (L39) | Verifies that accepts rates consistent with counts bytes and duration. | `_write_dataset`, `run_derived_rate_consistency_metric`, `_metric` |
+| `test_reports_rate_mismatches_and_zero_duration_volume(tmp_path: Path)` (L74) | Verifies that reports rate mismatches and zero duration volume. | `_write_dataset`, `run_derived_rate_consistency_metric`, `_metric` |
+| `test_requires_an_explicit_duration_unit(tmp_path: Path)` (L111) | Verifies that requires an explicit duration unit. | `_write_dataset`, `_metric`, `run_derived_rate_consistency_metric` |
+| `test_requires_at_least_one_reported_rate_field(tmp_path: Path)` (L135) | Verifies that requires at least one reported rate field. | `_write_dataset`, `_metric`, `run_derived_rate_consistency_metric` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_metric() -> dict` (L10) | Implementation helper for metric. |
+| `_write_dataset(tmp_path: Path, rows: list[dict]) -> Path` (L33) | Implementation helper for write dataset. |
 
 ## `tests/test_experiment_contract.py`
 

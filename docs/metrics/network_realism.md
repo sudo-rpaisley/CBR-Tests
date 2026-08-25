@@ -2,6 +2,17 @@
 
 This page documents every dispatcher metric in the **Network and flow realism** category. Return to the [complete metric index](../metric_reference.md).
 
+## `derived_rate_consistency_profile`
+
+Recomputes packet/s and byte/s from packet counts, byte totals, and flow duration, then compares them with reported rates.
+
+- **Implementation:** Nested modules under `tests/metrics/dataset_heuristics/...` (production implementation awaiting migration)
+- **Supplied-plan usage:** none yet; available to plans.
+- **Inputs:** explicit `field_map` for duration, forward/backward packet and byte totals, plus at least one reported packet/s or byte/s field.
+- **Primary output:** Checked/inconsistent counts, negative/zero-duration violations, rate mismatch counts, bounded examples, consistency ratio and status.
+- **Interpretation:** Thresholds are plan-configurable; the duration unit must be declared explicitly.
+- **Current caveat:** Post-expert-review addition pending second expert review. Exporter semantics, sampling, timeouts and rounding can explain mismatches. See [Derived rate consistency profile](../derived_rate_consistency_profile.md).
+
 ## `flow_duration_consistency_profile`
 
 Checks flow duration against start/end timestamps and configured tolerance.

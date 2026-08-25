@@ -1,6 +1,6 @@
 # Metric reference
 
-The dispatcher supports **63 metric IDs**. The five supplied plans currently use **36** distinct IDs.
+The dispatcher supports **64 metric IDs**. The five supplied plans currently use **36** distinct IDs.
 
 ## Critical interpretation rules
 
@@ -20,7 +20,7 @@ The dispatcher supports **63 metric IDs**. The five supplied plans currently use
 - [Label integrity](metrics/label_integrity.md) — 8 metrics.
 - [Task-based validation](metrics/task_validation.md) — 4 metrics.
 - [Reference comparison](metrics/reference_comparison.md) — 16 metrics.
-- [Network and flow realism](metrics/network_realism.md) — 9 metrics.
+- [Network and flow realism](metrics/network_realism.md) — 10 metrics.
 - [Raw packet capture checks](metrics/packet_capture.md) — 2 metrics.
 
 ## Supplied plans

@@ -1,6 +1,6 @@
 # Metric catalog
 
-The complete catalog has moved to [Metric reference](metric_reference.md). It documents all **63** metric IDs supported by the dispatcher, not only the subset currently referenced by plans.
+The complete catalog has moved to [Metric reference](metric_reference.md). It documents all **64** metric IDs supported by the dispatcher, not only the subset currently referenced by plans.
 
 The supplied plans use 36 distinct metric IDs:
 
