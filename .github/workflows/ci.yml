@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -46,30 +46,9 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
 
-      - name: Generate combined documentation
+      - name: Check generated documentation
         if: matrix.python-version == '3.11'
-        run: python scripts/build_reference_documentation.py
-
-      - name: Commit regenerated documentation to PR branch
-        if: matrix.python-version == '3.11'
-        env:
-          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
-          HEAD_BRANCH: ${{ github.head_ref }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/function_reference.md docs/test_reference.md
-          if git diff --cached --quiet; then
-            echo "Generated references already current."
-          else
-            git commit -m "Regenerate references after integration"
-            remote_head="$(git ls-remote origin "refs/heads/${HEAD_BRANCH}" | cut -f1)"
-            if [ "${remote_head}" != "${EXPECTED_HEAD}" ]; then
-              echo "Refusing to update ${HEAD_BRANCH}: expected ${EXPECTED_HEAD}, found ${remote_head}."
-              exit 1
-            fi
-            git push --force origin "HEAD:${HEAD_BRANCH}"
-          fi
+        run: python scripts/build_reference_documentation.py --check
 
       - name: Check local documentation links
         if: matrix.python-version == '3.11'
