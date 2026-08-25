@@ -27,10 +27,11 @@ def build_outcome(
     column_validations: dict,
     skipped_metrics: list[dict] | None = None,
     all_metrics: list[dict] | None = None,
+    provenance: dict | None = None,
 ) -> dict:
     taxonomy_metrics = all_metrics or metrics
     outcome = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": status,
         "case_id": case_id,
         "plan_id": plan_id,
@@ -45,6 +46,9 @@ def build_outcome(
         "run_finished_at": datetime.now(timezone.utc).isoformat(),
         "run_elapsed_seconds": round(time.perf_counter() - run_start_perf, 6),
     }
+    if provenance:
+        outcome["run_id"] = provenance.get("run_id")
+        outcome["provenance"] = provenance
     if column_validations:
         outcome["column_validations"] = column_validations
     if skipped_metrics:
@@ -67,7 +71,7 @@ def write_outcome(output_path: Path, outcome: dict) -> None:
     temporary_path = Path(temporary_name)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump(outcome, handle, indent=2)
+            json.dump(outcome, handle, indent=2, allow_nan=False)
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
@@ -146,6 +150,7 @@ def parse_run_plan_args() -> argparse.Namespace:
     parser.add_argument("--dataset", help="Dataset path (required when --case points to a plan JSON)")
     parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
+    parser.add_argument("--force-output", action="store_true", help="Allow replacement of an existing output file")
     parser.add_argument("--field-translation", help="Optional JSON file mapping dataset column names to test field names")
     parser.add_argument(
         "--no-update-field-translation",

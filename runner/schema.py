@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 _ALLOWED_BOOLEAN_POLICY_FIELDS = {"fail_fast", "allow_skips"}
+_ALLOWED_SAMPLE_MODES = {"full"}
 
 
 def _require_non_empty_string(value, path: str) -> str:
@@ -18,6 +19,25 @@ def _validate_string_list(value, path: str, *, allow_empty: bool = True) -> None
         raise ValueError(f"{path} must contain only non-empty strings.")
 
 
+def _validate_applicability(applicability: object) -> None:
+    if applicability is None:
+        return
+    if not isinstance(applicability, dict):
+        raise ValueError("applicability must be an object.")
+
+    for key in ("dataset_formats", "dataset_family"):
+        if key in applicability:
+            _validate_string_list(applicability[key], f"applicability.{key}", allow_empty=False)
+
+    if "requires_numeric_fields" in applicability and not isinstance(applicability["requires_numeric_fields"], bool):
+        raise ValueError("applicability.requires_numeric_fields must be a boolean.")
+
+    if "minimum_numeric_fields" in applicability:
+        minimum = applicability["minimum_numeric_fields"]
+        if isinstance(minimum, bool) or not isinstance(minimum, int) or minimum < 0:
+            raise ValueError("applicability.minimum_numeric_fields must be a non-negative integer.")
+
+
 def validate_plan_schema(plan: dict) -> None:
     if not isinstance(plan, dict):
         raise ValueError("Plan must be a JSON object.")
@@ -31,6 +51,8 @@ def validate_plan_schema(plan: dict) -> None:
     if "version" in plan_meta:
         _require_non_empty_string(plan_meta["version"], "plan_meta.version")
 
+    _validate_applicability(plan.get("applicability"))
+
     execution_policy = plan.get("execution_policy", {})
     if not isinstance(execution_policy, dict):
         raise ValueError("execution_policy must be an object.")
@@ -38,7 +60,12 @@ def validate_plan_schema(plan: dict) -> None:
         if field in execution_policy and not isinstance(execution_policy[field], bool):
             raise ValueError(f"execution_policy.{field} must be a boolean.")
     if "sample_mode" in execution_policy:
-        _require_non_empty_string(execution_policy["sample_mode"], "execution_policy.sample_mode")
+        sample_mode = _require_non_empty_string(execution_policy["sample_mode"], "execution_policy.sample_mode")
+        if sample_mode not in _ALLOWED_SAMPLE_MODES:
+            raise ValueError(
+                f"execution_policy.sample_mode '{sample_mode}' is not implemented; "
+                f"supported values: {', '.join(sorted(_ALLOWED_SAMPLE_MODES))}."
+            )
 
     metrics = plan.get("metrics")
     if not isinstance(metrics, list) or not metrics:

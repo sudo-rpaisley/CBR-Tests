@@ -5,10 +5,15 @@ import sys
 ANSI_RESET = "\x1b[0m"
 ANSI_COLORS = {
     "success": "\x1b[32m",
+    "pass": "\x1b[32m",
     "running": "\x1b[34m",
     "pending": "\x1b[33m",
+    "warn": "\x1b[33m",
+    "not_applicable": "\x1b[33m",
     "stopping": "\x1b[33m",
     "failed": "\x1b[31m",
+    "fail": "\x1b[31m",
+    "error": "\x1b[31m",
     "cancelled": "\x1b[31m",
 }
 LIVE_HEADER_LINES: list[str] = []
