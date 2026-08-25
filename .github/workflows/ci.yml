@@ -46,9 +46,19 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
 
-      - name: Check generated documentation
+      - name: Generate combined documentation
         if: matrix.python-version == '3.11'
-        run: python scripts/build_reference_documentation.py --check
+        run: python scripts/build_reference_documentation.py
+
+      - name: Upload generated documentation
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-reference-documentation
+          path: |
+            docs/function_reference.md
+            docs/test_reference.md
+          retention-days: 7
 
       - name: Check local documentation links
         if: matrix.python-version == '3.11'
