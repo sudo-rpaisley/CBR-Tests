@@ -52,6 +52,9 @@ jobs:
 
       - name: Commit regenerated documentation to PR branch
         if: matrix.python-version == '3.11'
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -60,7 +63,12 @@ jobs:
             echo "Generated references already current."
           else
             git commit -m "Regenerate references after integration"
-            git push origin HEAD:agent/metrics-package-refactor
+            remote_head="$(git ls-remote origin "refs/heads/${HEAD_BRANCH}" | cut -f1)"
+            if [ "${remote_head}" != "${EXPECTED_HEAD}" ]; then
+              echo "Refusing to update ${HEAD_BRANCH}: expected ${EXPECTED_HEAD}, found ${remote_head}."
+              exit 1
+            fi
+            git push --force origin "HEAD:${HEAD_BRANCH}"
           fi
 
       - name: Check local documentation links
