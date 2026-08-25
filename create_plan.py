@@ -46,21 +46,22 @@ def _prompt(value: str | None, label: str, default: str | None = None, *, requir
 
 
 def _print_report(report: dict) -> None:
-    print("\nPlan configuration summary")
-    print(f"  Available tests: {report['available_metric_count']}")
-    print(f"  Selected tests:  {report['selected_metric_count']}")
-    print(f"  Enabled tests:   {report['enabled_metric_count']}")
+    print("\nPlan preflight summary")
+    print(f"  Available tests:       {report['available_metric_count']}")
+    print(f"  Tests considered:      {report['candidate_metric_count']}")
+    print(f"  Runnable / in plan:    {report['runnable_metric_count']}")
+    print(f"  Excluded as unrunnable:{report['excluded_metric_count']:>4}")
     for status, count in sorted(report["configuration_status_counts"].items()):
-        print(f"  {status.replace('_', ' ').title():<20} {count}")
+        print(f"  {status.replace('_', ' ').title():<22} {count}")
 
-    attention = [
+    excluded = [
         (metric_id, details)
         for metric_id, details in report["metrics"].items()
-        if details["status"] != "ready"
+        if not details["included"]
     ]
-    if attention:
-        print("\nTests requiring attention")
-        for metric_id, details in attention:
+    if excluded:
+        print("\nTests excluded from the plan")
+        for metric_id, details in excluded:
             reason = details.get("reason", details["status"])
             print(f"  - {metric_id}: {details['status']} ({reason})")
             missing = details.get("missing_fields", [])
@@ -83,32 +84,31 @@ def _check_plan(path: Path) -> int:
     available = set(available_metric_ids())
     configured = {metric["metric_id"] for metric in plan.get("metrics", [])}
     unknown = sorted(configured - available)
-    missing = sorted(available - configured)
+    absent = sorted(available - configured)
     print("Plan schema: valid")
     print(f"Configured tests: {len(configured)}")
     if unknown:
         print("Unknown tests: " + ", ".join(unknown))
-    if missing:
-        print("Available but absent: " + ", ".join(missing))
+    if absent:
+        print(f"Registry tests not in this plan: {len(absent)}")
     return 1 if unknown else 0
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create validated CBR-Tests plans from the live metric registry."
+        description="Create validated CBR-Tests plans containing only tests runnable on a dataset."
     )
     parser.add_argument("--plan-id", help="Stable plan identifier")
     parser.add_argument("--name", help="Human-readable plan name")
     parser.add_argument("--description", help="Plan description")
-    parser.add_argument("--dataset", help="Optional dataset used to preflight fields and applicability")
-    parser.add_argument("--output", help="Destination JSON path (defaults to plans/<plan-id>_plan.json)")
-    parser.add_argument("--include", action="append", help="Only include these metric IDs (repeat or comma-separate)")
-    parser.add_argument("--exclude", action="append", help="Exclude these metric IDs (repeat or comma-separate)")
+    parser.add_argument("--dataset", help="Dataset to inspect; required when creating a plan")
     parser.add_argument(
-        "--enable-unready",
-        action="store_true",
-        help="Enable tests even when configuration/mapping is incomplete (not recommended)",
+        "--field-translation",
+        help="Optional field translation JSON. If omitted, an existing dataset sidecar is used automatically.",
     )
+    parser.add_argument("--output", help="Destination JSON path (defaults to plans/<plan-id>_plan.json)")
+    parser.add_argument("--include", action="append", help="Only consider these metric IDs (repeat or comma-separate)")
+    parser.add_argument("--exclude", action="append", help="Do not consider these metric IDs (repeat or comma-separate)")
     parser.add_argument("--force", action="store_true", help="Replace an existing output plan")
     parser.add_argument("--list-tests", action="store_true", help="List all tests discoverable by plan creation")
     parser.add_argument("--check", metavar="PLAN", help="Validate a plan and compare it with the live registry")
@@ -128,8 +128,10 @@ def main() -> int:
     default_name = plan_id.replace("-", " ").replace("_", " ").title()
     name = _prompt(args.name, "Plan name", default_name, required=True)
     assert name is not None
-    dataset_value = _prompt(args.dataset, "Dataset path (optional)", None)
-    dataset_path = Path(dataset_value) if dataset_value else None
+    dataset_value = _prompt(args.dataset, "Dataset path", required=True)
+    assert dataset_value is not None
+    dataset_path = Path(dataset_value)
+    field_translation_path = Path(args.field_translation) if args.field_translation else None
     description = args.description or "Automatically generated CBR-Tests plan."
     default_output = str(Path("plans") / f"{_slug(plan_id)}_plan.json")
     output_value = _prompt(args.output, "Output path", default_output, required=True)
@@ -140,14 +142,14 @@ def main() -> int:
         name=name,
         description=description,
         dataset_path=dataset_path,
+        field_translation_path=field_translation_path,
         include_metric_ids=_split_metric_args(args.include),
         exclude_metric_ids=_split_metric_args(args.exclude),
-        enable_unready=args.enable_unready,
     )
     _print_report(report)
 
     if sys.stdin.isatty():
-        answer = input("\nSave this plan? [Y/n] ").strip().lower()
+        answer = input("\nSave this runnable-only plan? [Y/n] ").strip().lower()
         if answer not in {"", "y", "yes"}:
             print("Plan not saved.")
             return 0
