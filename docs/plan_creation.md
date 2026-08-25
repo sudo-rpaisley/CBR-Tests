@@ -1,6 +1,6 @@
 # Creating plans
 
-`create_plan.py` builds test plans from the metric handlers that the runner can actually execute. It does not maintain a separate hard-coded test list, so newly registered metrics are automatically considered during plan creation.
+`create_plan.py` builds test plans from the metric handlers that the runner can actually execute. It does not maintain a separate hard-coded test list, so newly registered metrics are automatically considered during plan creation. This includes post-review additions registered by the dispatcher; their taxonomy/review metadata remains authoritative and does not make an unconfigured metric runnable.
 
 ## Core rule
 
