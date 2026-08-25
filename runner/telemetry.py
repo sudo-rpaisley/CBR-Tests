@@ -7,6 +7,7 @@ from typing import Any
 
 
 TERMINAL_STATUSES = {"success", "failed", "skipped", "cancelled"}
+ATTENTION_STATUSES = {"running", "error", "fail", "warn", "not_applicable", "skipped", "stopping", "cancelled"}
 
 
 @dataclass
@@ -35,15 +36,27 @@ class MetricState:
     metric_id: str
     taxonomy_path: list[str]
     status: str = "pending"
+    result_status: str | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
     elapsed_seconds: float | None = None
     error: str | None = None
+    reason_code: str | None = None
+    summary: str | None = None
+    suggestion: str | None = None
     missing_fields: list[str] = field(default_factory=list)
 
     @property
     def branch(self) -> str:
         return str(self.taxonomy_path[0]) if self.taxonomy_path else "uncategorized"
+
+    @property
+    def display_status(self) -> str:
+        if self.status == "failed":
+            return "error"
+        if self.status == "success" and self.result_status:
+            return self.result_status
+        return self.status
 
 
 @dataclass
@@ -107,22 +120,36 @@ class RunState:
         *,
         elapsed_seconds: float | None = None,
         error: str | None = None,
+        result_status: str | None = None,
+        diagnostic: dict[str, Any] | None = None,
         finished_at: datetime | None = None,
     ) -> None:
         metric = self.metrics.get(metric_id)
         if metric is None:
             return
         metric.status = status
+        metric.result_status = result_status
         metric.finished_at = finished_at or datetime.now(timezone.utc)
         metric.elapsed_seconds = elapsed_seconds
         metric.error = error
+
+        diagnostic = diagnostic or {}
+        metric.reason_code = diagnostic.get("reason_code")
+        metric.summary = diagnostic.get("summary")
+        metric.suggestion = diagnostic.get("suggestion")
+
+        display_status = metric.display_status
         event_type = "metric_completed" if status == "success" else f"metric_{status}"
         payload: dict[str, Any] = {}
         if elapsed_seconds is not None:
             payload["elapsed_seconds"] = elapsed_seconds
         if error:
             payload["error"] = error
-        self.record_event(event_type, f"{status.capitalize()} {metric_id}", metric_id=metric_id, **payload)
+        if result_status:
+            payload["result_status"] = result_status
+        if diagnostic:
+            payload["diagnostic"] = diagnostic
+        self.record_event(event_type, f"{display_status.capitalize()} {metric_id}", metric_id=metric_id, **payload)
 
     def mark_skipped(self, metric_id: str, missing_fields: list[str]) -> None:
         metric = self.metrics.get(metric_id)
@@ -131,6 +158,9 @@ class RunState:
         metric.status = "skipped"
         metric.finished_at = datetime.now(timezone.utc)
         metric.missing_fields = list(missing_fields)
+        metric.reason_code = "missing_required_fields"
+        metric.summary = None
+        metric.suggestion = "Check the dataset field-translation mapping and required plan fields."
         self.record_event(
             "metric_skipped",
             f"Skipped {metric_id}: missing {', '.join(missing_fields)}",
@@ -139,25 +169,36 @@ class RunState:
         )
 
     def status_counts(self) -> dict[str, int]:
-        counts = {"success": 0, "running": 0, "failed": 0, "skipped": 0, "pending": 0, "cancelled": 0, "stopping": 0}
+        counts = {
+            "pass": 0,
+            "success": 0,
+            "warn": 0,
+            "fail": 0,
+            "error": 0,
+            "not_applicable": 0,
+            "running": 0,
+            "skipped": 0,
+            "pending": 0,
+            "cancelled": 0,
+            "stopping": 0,
+        }
         for metric in self.metrics.values():
-            counts[metric.status] = counts.get(metric.status, 0) + 1
+            display_status = metric.display_status
+            counts[display_status] = counts.get(display_status, 0) + 1
         return counts
 
     def branch_summaries(self) -> dict[str, dict[str, int]]:
         summaries: dict[str, dict[str, int]] = {}
         for metric in self.metrics.values():
-            summary = summaries.setdefault(
-                metric.branch,
-                {"total": 0, "success": 0, "running": 0, "failed": 0, "skipped": 0, "pending": 0, "cancelled": 0, "stopping": 0},
-            )
+            summary = summaries.setdefault(metric.branch, {"total": 0})
             summary["total"] += 1
-            summary[metric.status] = summary.get(metric.status, 0) + 1
+            display_status = metric.display_status
+            summary[display_status] = summary.get(display_status, 0) + 1
         return summaries
 
     def completed_statuses(self) -> dict[str, str]:
         return {
-            metric_id: metric.status
+            metric_id: metric.display_status
             for metric_id, metric in self.metrics.items()
             if metric.status != "pending"
         }
@@ -170,7 +211,13 @@ class RunState:
         }
 
     def recent_completed(self, limit: int = 5) -> list[MetricState]:
-        completed = [metric for metric in self.metrics.values() if metric.status == "success" and metric.finished_at is not None]
+        completed = [
+            metric
+            for metric in self.metrics.values()
+            if metric.status == "success"
+            and metric.display_status in {"success", "pass"}
+            and metric.finished_at is not None
+        ]
         completed.sort(key=lambda metric: metric.finished_at or datetime.min.replace(tzinfo=timezone.utc))
         return completed[-limit:]
 
@@ -178,5 +225,5 @@ class RunState:
         return [
             metric
             for metric in self.metrics.values()
-            if metric.status in {"running", "failed", "skipped", "stopping", "cancelled"}
+            if metric.display_status in ATTENTION_STATUSES
         ]
