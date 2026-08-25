@@ -8,10 +8,12 @@ This repository provides a plan-driven metric runner for dataset quality and net
 - Runs enabled metrics from that plan (serial or parallel).
 - Streams a live taxonomy/progress view in TTY terminals.
 - Writes a single JSON outcome file containing metric/test/taxonomy results.
+- Creates dataset-aware plans containing only tests that preflight as runnable.
 
-Primary entrypoint:
+Primary entrypoints:
 
 - `run_plan.py`
+- `create_plan.py`
 
 ## Requirements
 
@@ -21,7 +23,19 @@ Primary entrypoint:
 
 ## Quick start
 
-### 1) Run from a plan file
+### 1) Create a plan for a dataset
+
+```bash
+python create_plan.py \
+  --plan-id example \
+  --name "Example dataset" \
+  --dataset datasets/example.csv \
+  --output plans/example_plan.json
+```
+
+The creator considers the live runtime metric registry and writes only tests whose input format, required fields, mappings, and configuration are sufficient to run. Tests that need missing mappings or research-specific configuration are reported but are not placed in the plan. See `docs/plan_creation.md`.
+
+### 2) Run from a plan file
 
 ```bash
 python run_plan.py \
@@ -30,7 +44,7 @@ python run_plan.py \
   --output outcomes/outcome_example.json
 ```
 
-### 2) Run from a case file
+### 3) Run from a case file
 
 If your case JSON already references the plan, dataset, and output, just pass `--case`.
 
@@ -41,6 +55,7 @@ python run_plan.py --case cases/example_case.json
 
 ## Documentation map
 
+- `docs/plan_creation.md`: dataset-aware runnable-only plan creation.
 - `docs/run_plan_controls.md`: complete CLI/control/display/report reference.
 - `docs/plan_schema.md`: plan JSON schema and metric object reference.
 - `docs/case_schema.md`: case JSON schema and path resolution rules.
@@ -217,27 +232,3 @@ python run_plan.py \
 ```
 
 ## Developer notes
-
-Key modules:
-
-- `run_plan.py`: main orchestration entrypoint.
-- `runner/run_plan_helpers.py`: shared CLI/header/signal/outcome helpers.
-- `runner/run_plan_serial.py`: serial execution flow.
-- `runner/execution.py`: parallel execution + heartbeat rendering helpers.
-- `runner/progress.py`: live rendering and progress bar formatting.
-
-Tests:
-
-```bash
-pytest -q tests/test_run_plan_helpers.py
-```
-
-## Troubleshooting
-
-- If output seems noisy in non-interactive environments, ensure TTY behavior matches your shell/session.
-- If a run appears paused, send `SIGUSR2` to resume.
-- If a metric fails early, check `execution_policy.fail_fast` in the plan.
-
-## License
-
-Internal/project-specific. Add your team’s license text here if needed.
