@@ -40,6 +40,7 @@ from runner.run_plan_helpers import (
 from runner.run_plan_serial import run_serial_metrics
 from runner.tabular import load_tabular_dataset
 from runner.taxonomy import print_taxonomy_summary
+from runner.tui import launch_tui, show_post_run_menu
 
 DEFAULT_METRIC_PREDICTIONS = {
     "column_quality_profile": 2.0,
@@ -67,8 +68,18 @@ def _confirm_sidecar_update(action: str, path: Path, args) -> bool:
     return answer in {"y", "yes"}
 
 
-def main():
-    args = parse_run_plan_args()
+def _run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict:
+    return {
+        "dry_run": dry_run,
+        "status": status,
+        "output_path": str(output_path),
+        "metrics_total": metrics_total,
+        "skipped_count": skipped_count,
+    }
+
+
+def run_once(args):
+    """Execute one configured run and return a small summary for the TUI/session layer."""
     context = prepare_run_context(args, DEFAULT_METRIC_PREDICTIONS)
     shutdown_requested = context.shutdown_requested
     control_state = context.control_state
@@ -181,7 +192,17 @@ def main():
             print("Dry run complete: some metrics would be skipped due to missing field mappings.")
         else:
             print("Dry run complete: all enabled metrics have required field mappings.")
-        return
+        result = _run_result(
+            dry_run=True,
+            status="needs_attention" if skipped_metrics else "ready",
+            output_path=output_path,
+            metrics_total=len(all_enabled_metrics),
+            skipped_count=len(skipped_metrics),
+        )
+        result["missing_fields"] = sorted({field for fields in skipped_metrics.values() for field in fields})
+        result["dataset_columns"] = sorted(dataset_columns)
+        result["field_translation_path"] = str(translation_path or default_field_translation_path(dataset_path))
+        return result
 
     provenance = build_provenance_manifest(
         plan=plan,
@@ -316,7 +337,13 @@ def main():
         )
         write_outcome(output_path, outcome)
         print_phase_status("Completed")
-        return
+        return _run_result(
+            dry_run=False,
+            status=outcome.get("status"),
+            output_path=output_path,
+            metrics_total=len(all_enabled_metrics),
+            skipped_count=len(skipped_metric_records),
+        )
 
     early_returned, outcome = run_serial_metrics(
         dataset_path=dataset_path,
@@ -342,7 +369,13 @@ def main():
         provenance=provenance,
     )
     if early_returned:
-        return
+        return _run_result(
+            dry_run=False,
+            status=outcome.get("status") if outcome else "cancelled",
+            output_path=output_path,
+            metrics_total=len(all_enabled_metrics),
+            skipped_count=len(skipped_metric_records),
+        )
 
     write_outcome(output_path, outcome)
     print_phase_status("Completed")
@@ -352,6 +385,31 @@ def main():
     if not live_render_enabled:
         print("Results by taxonomy:")
         print_taxonomy_summary(outcome["result_taxonomy"])
+    return _run_result(
+        dry_run=False,
+        status=outcome.get("status"),
+        output_path=output_path,
+        metrics_total=len(all_enabled_metrics),
+        skipped_count=len(skipped_metric_records),
+    )
+
+
+def main():
+    args = parse_run_plan_args()
+    while True:
+        result = run_once(args)
+        if not getattr(args, "tui_session", False):
+            return result
+
+        action = show_post_run_menu(result, args)
+        if action == "quit":
+            return result
+        if action == "run":
+            args.field_translation_dry_run = False
+            continue
+
+        args = launch_tui(args)
+        args.tui_session = True
 
 
 if __name__ == "__main__":
