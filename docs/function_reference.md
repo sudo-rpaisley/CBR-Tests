@@ -113,6 +113,21 @@ Raw packet timestamp coherence scanning.
 | --- | --- | --- | --- |
 | `run_timestamp_coherence_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Scan a PCAP and assess whether packet timestamps are coherent. |
 
+## `create_plan.py`
+
+Python symbols defined by `create_plan.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_slug(value: str) -> str` (L14) | function | Internal | Implementation helper for slug. |
+| `_split_metric_args(values: list[str] | None) -> list[str] | None` (L19) | function | Internal | Implementation helper for split metric args. |
+| `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L28) | function | Internal | Implementation helper for prompt. |
+| `_print_report(report: dict) -> None` (L48) | function | Internal | Implementation helper for print report. |
+| `_list_tests() -> None` (L72) | function | Internal | Implementation helper for list tests. |
+| `_check_plan(path: Path) -> int` (L80) | function | Internal | Implementation helper for check plan. |
+| `parse_args() -> argparse.Namespace` (L97) | function | Public | Parses args. |
+| `main() -> int` (L118) | function | Public | Implementation helper for main. |
+
 ## `export_outcomes_for_graphs.py`
 
 Flattens selected outcome fields into CSV tables for graphing.
@@ -337,6 +352,25 @@ ANSI interactive dashboard rendering.
 | `render_compact_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, running_elapsed: dict[str, float] | None = None, max_lines: int | None = 24) -> str` (L236) | function | Public | Renders compact taxonomy for terminal output. |
 | `render_live_taxonomy(metrics: list[dict], current_metric_id: str, completed_statuses: dict[str, str], completed_durations: dict[str, float], default_predictions: dict[str, float], predicted_metric_total: float, elapsed: float | None = None, completed: bool = False, running_elapsed: dict[str, float] | None = None, display_mode: str = 'full', max_lines: int | None = None, run_state: RunState | None = None) -> str` (L308) | function | Public | Renders live taxonomy for terminal output. |
 
+## `runner/metric_catalog.py`
+
+Python symbols defined by `runner/metric_catalog.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `available_metric_ids() -> list[str]` (L36) | function | Public | Return metric IDs accepted by the runtime dispatcher. The plan builder deliberately asks the dispatcher for its handlers instead of keeping a second metric-ID list. Adding a runnable metric therefore makes it discoverable by plan creation automatically. |
+| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L48) | function | Internal | Implementation helper for walk taxonomy. |
+| `load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[str]]` (L65) | function | Public | Loads taxonomy paths. |
+| `load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]` (L75) | function | Public | Collect existing plan metric definitions as configuration templates. |
+| `required_fields(metric: dict) -> list[str]` (L96) | function | Public | Implementation helper for required fields. |
+| `choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None` (L105) | function | Public | Implementation helper for choose metric template. |
+| `choose_metric_template.score(metric: dict) -> tuple[int, int, int, str]` (L110) | nested function | Internal | Implementation helper for score. |
+| `metric_manual_configuration_reason(metric_id: str) -> str | None` (L123) | function | Public | Implementation helper for metric manual configuration reason. |
+| `humanize_metric_id(metric_id: str) -> str` (L129) | function | Public | Implementation helper for humanize metric id. |
+| `_blank_reference_paths(value)` (L133) | function | Internal | Implementation helper for blank reference paths. |
+| `sanitize_manual_template(metric: dict, reason: str) -> dict` (L145) | function | Public | Remove dataset-specific values that would be unsafe as universal defaults. |
+| `build_metric_catalog(*, metric_ids: Iterable[str] | None = None, taxonomy_path: Path = DEFAULT_TAXONOMY_PATH, plans_dir: Path = DEFAULT_PLANS_DIR, available_fields: set[str] | None = None) -> list[dict]` (L175) | function | Public | Build catalogue entries for every runnable metric. |
+
 ## `runner/metric_diagnostics.py`
 
 Python symbols defined by `runner/metric_diagnostics.py`.
@@ -377,6 +411,19 @@ Parallel record normalization and result aggregation.
 | --- | --- | --- | --- |
 | `_normalise_status(success: bool, payload: dict) -> str` (L11) | function | Internal | Implementation helper for normalise status. |
 | `collect_parallel_metric_results(*, parallel_out, metrics: list[dict], run_started_at: datetime, fail_fast: bool, completed_statuses: dict[str, str], completed_durations: dict[str, float]) -> tuple[str, dict, list[dict], dict]` (L18) | function | Public | Collect parallel outputs without discarding already-completed work. Execution status remains separate from a metric's domain result. A handler can therefore execute successfully while producing ``pass``, ``warn``, ``fail`` or ``not_applicable`` in ``result_status``. ``completed_statuses`` keeps historical execution labels for execution failures/not-run records. Successfully executed metrics may expose their domain result there for post-run rendering; live parallel rendering already receives the richer status directly from the progress callback. |
+
+## `runner/plan_builder.py`
+
+Python symbols defined by `runner/plan_builder.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `dataset_format(dataset_path: Path | None) -> str | None` (L33) | function | Public | Implementation helper for dataset format. |
+| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L40) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
+| `_configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | None, list[str]]` (L99) | function | Internal | Implementation helper for configuration state. |
+| `_metric_from_spec(metric_spec: dict) -> dict` (L129) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
+| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None) -> tuple[dict, dict]` (L150) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
+| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L269) | function | Public | Validate and atomically write a generated plan. |
 
 ## `runner/progress.py`
 

@@ -89,3 +89,14 @@ Foundational metrics have moved to `cbr_tests.metrics`. Legacy import modules re
 ## License
 
 No project license has yet been declared. Add an appropriate license before public redistribution or external reuse.
+
+## Automatic dataset-aware plan creation
+
+Generate a plan containing only tests that preflight as structurally runnable for a supplied dataset:
+
+```bash
+python create_plan.py --plan-id my-plan --dataset path/to/dataset.csv
+```
+
+The creator discovers metrics from the live dispatcher, applies field translations, excludes tests that need unresolved fields/configuration or an incompatible input type, and writes only runnable metrics. See [Creating plans](docs/plan_creation.md) for the full workflow.
+

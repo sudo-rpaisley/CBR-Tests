@@ -45,6 +45,12 @@
           "_metrics": [
             "packet_byte_consistency_profile"
           ]
+        },
+        "derived_rate_consistency_ratio": {
+          "_metrics": [
+            "derived_rate_consistency_profile"
+          ],
+          "_review_status": "post-expert-review addition pending second expert review"
         }
       },
       "slice_metadata_integrity": {
