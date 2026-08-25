@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 from runner.dispatch import build_metric_handlers
+from runner.field_translation import collect_required_test_fields_for_metric
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -94,11 +95,11 @@ def load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list
 
 def required_fields(metric: dict) -> list[str]:
     requirements = metric.get("field_requirements")
-    if isinstance(requirements, dict):
+    if isinstance(requirements, dict) and "required" in requirements:
         required = requirements.get("required", [])
         if isinstance(required, list):
             return sorted({field for field in required if isinstance(field, str) and field.strip()})
-    return []
+    return collect_required_test_fields_for_metric(metric)
 
 
 def choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None:
