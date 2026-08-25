@@ -1,0 +1,12 @@
+{
+  "case_id": "quickstart_example",
+  "test_plan": {
+    "path": "plan.json"
+  },
+  "dataset": {
+    "path": "sample.csv"
+  },
+  "output": {
+    "path": "../../outcomes/quickstart_example.json"
+  }
+}

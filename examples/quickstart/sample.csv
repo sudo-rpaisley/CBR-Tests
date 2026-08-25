@@ -1,0 +1,6 @@
+duration,bytes,label
+1.2,120,normal
+2.4,240,attack
+2.4,240,attack
+3.6,360,normal
+4.8,,attack
