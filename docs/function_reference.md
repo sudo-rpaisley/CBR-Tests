@@ -341,6 +341,27 @@ Translation preflight and requested-report workflow.
 | `_write_requested_reports(args, field_translation_report: dict[str, Any], human_report: str) -> None` (L190) | function | Internal | Implementation helper for write requested reports. |
 | `_should_use_color() -> bool` (L202) | function | Internal | Implementation helper for should use color. |
 
+## `runner/human_summary.py`
+
+Python symbols defined by `runner/human_summary.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `default_human_summary_path(output_path: Path) -> Path` (L10) | function | Public | Return the default Markdown companion path for a JSON outcome. |
+| `_clean_text(value: Any, *, limit: int = 240) -> str` (L18) | function | Internal | Implementation helper for clean text. |
+| `_markdown(value: Any, *, limit: int = 240) -> str` (L33) | function | Internal | Implementation helper for markdown. |
+| `_scalar_pairs(value: Any, *, limit: int = 5, prefix: str = '') -> list[tuple[str, Any]]` (L37) | function | Internal | Extract a bounded set of human-readable scalar evidence values. |
+| `_scalar_pairs.visit(item: Any, key_prefix: str) -> None` (L41) | nested function | Internal | Implementation helper for visit. |
+| `_test_result(outcome: dict, metric_id: str) -> Any` (L67) | function | Internal | Implementation helper for test result. |
+| `_result_summary(outcome: dict, record: dict) -> str` (L74) | function | Internal | Implementation helper for result summary. |
+| `_execution_counts(records: list[dict]) -> Counter` (L104) | function | Internal | Implementation helper for execution counts. |
+| `_domain_counts(records: list[dict]) -> Counter` (L108) | function | Internal | Implementation helper for domain counts. |
+| `_interpretation(outcome: dict, execution: Counter, domain: Counter) -> list[str]` (L116) | function | Internal | Implementation helper for interpretation. |
+| `_attention_records(records: list[dict]) -> list[dict]` (L153) | function | Internal | Implementation helper for attention records. |
+| `_attention_records.severity(record: dict) -> tuple[int, str]` (L154) | nested function | Internal | Implementation helper for severity. |
+| `_format_attention_record(outcome: dict, record: dict) -> list[str]` (L176) | function | Internal | Implementation helper for format attention record. |
+| `format_human_summary(outcome: dict, *, outcome_path: Path | None = None) -> str` (L213) | function | Public | Render an outcome as a concise, scientifically conservative Markdown report. |
+
 ## `runner/io.py`
 
 Case/plan loading and path resolution.
@@ -526,17 +547,18 @@ CLI parsing, headers, signal handlers, outcome construction, and atomic writes.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L19) | function | Public | Builds outcome. |
-| `write_outcome(output_path: Path, outcome: dict) -> None` (L62) | function | Public | Write an outcome atomically, creating its destination directory first. |
-| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L86) | function | Public | Detects IP fields. |
-| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L92) | function | Public | Builds title box lines. |
-| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L104) | function | Public | Builds base header lines. |
-| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L127) | function | Public | Configures signal handlers. |
-| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L128) | nested function | Internal | Implementation helper for handle sigint. |
-| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L134) | nested function | Internal | Implementation helper for handle sigusr1. |
-| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L138) | nested function | Internal | Implementation helper for handle sigusr2. |
-| `parse_run_plan_args() -> argparse.Namespace` (L149) | function | Public | Parses run plan args. |
-| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L223) | function | Public | Updates live header. |
+| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L20) | function | Public | Builds outcome. |
+| `_open_atomic_text_file(destination: Path) -> tuple[int, Path]` (L63) | function | Internal | Implementation helper for open atomic text file. |
+| `write_outcome(output_path: Path, outcome: dict) -> Path` (L73) | function | Public | Write the authoritative JSON outcome and its human-readable Markdown companion. Both files are fully written and fsynced before either destination is replaced. The summary is published first and the JSON outcome second, so publication of a new JSON outcome implies that its companion summary was already published. Returns the companion summary path. |
+| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L113) | function | Public | Detects IP fields. |
+| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L119) | function | Public | Builds title box lines. |
+| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L131) | function | Public | Builds base header lines. |
+| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L154) | function | Public | Configures signal handlers. |
+| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L155) | nested function | Internal | Implementation helper for handle sigint. |
+| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L161) | nested function | Internal | Implementation helper for handle sigusr1. |
+| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L165) | nested function | Internal | Implementation helper for handle sigusr2. |
+| `parse_run_plan_args() -> argparse.Namespace` (L176) | function | Public | Parses run plan args. |
+| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L250) | function | Public | Updates live header. |
 
 ## `runner/run_plan_serial.py`
 

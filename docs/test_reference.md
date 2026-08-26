@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **161 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **166 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -157,6 +157,26 @@ Translation loading, detection, sidecars, reports, suggestions, and formatting.
 | Helper | Purpose |
 | --- | --- |
 | `test_format_column_section_uses_terminal_width_fallback.fake_get_terminal_size(fallback)` (L415) | Implementation helper for fake get terminal size. |
+
+## `tests/test_human_summary.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_default_human_summary_path_uses_companion_markdown_name()` (L87) | Verifies that default human summary path uses companion markdown name. | `default_human_summary_path` |
+| `test_human_summary_separates_execution_from_domain_findings()` (L92) | Verifies that human summary separates execution from domain findings. | `format_human_summary`, `_example_outcome` |
+| `test_human_summary_surfaces_reasons_evidence_and_actions()` (L105) | Verifies that human summary surfaces reasons evidence and actions. | `format_human_summary`, `_example_outcome` |
+| `test_human_summary_lists_all_metrics_and_reproducibility_identifiers()` (L118) | Verifies that human summary lists all metrics and reproducibility identifiers. | `format_human_summary`, `_example_outcome` |
+| `test_write_outcome_always_writes_json_and_human_summary(tmp_path)` (L129) | Verifies that write outcome always writes JSON and human summary. | `_example_outcome`, `write_outcome`, `outcome_path.exists`, `outcome_path.read_text` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_example_outcome() -> dict` (L8) | Implementation helper for example outcome. |
 
 ## `tests/test_label_fidelity_profile.py`
 
