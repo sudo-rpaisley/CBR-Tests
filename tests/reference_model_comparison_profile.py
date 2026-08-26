@@ -1,7 +1,12 @@
 from math import sqrt
 from pathlib import Path
+from threading import Lock
 
+import numpy as np
 import pandas as pd
+
+from cbr_tests.metrics.temporal import _timestamp_unit
+from runner.pcap_adapter import build_pcap_packet_dataframe, is_packet_capture
 
 from tests.statistical_fidelity_profile import (
     _energy_distance,
@@ -19,28 +24,109 @@ def _reference_path(metric: dict) -> str | None:
     return requirements.get("reference_dataset_path") or params.get("reference_dataset_path")
 
 
+_REFERENCE_DF_CACHE: dict[str, pd.DataFrame] = {}
+_REFERENCE_DF_CACHE_LOCK = Lock()
+
+
 def _load_reference_df(metric: dict) -> pd.DataFrame:
+    shared = metric.get("_reference_df")
+    if isinstance(shared, pd.DataFrame):
+        return shared
+
     path_value = _reference_path(metric)
     if not path_value:
-        return pd.DataFrame()
-    path = Path(path_value).expanduser()
-    suffix = path.suffix.lower()
-    if suffix in {".csv", ".tsv"}:
-        return pd.read_csv(path, sep="\t" if suffix == ".tsv" else ",", skipinitialspace=True, low_memory=False)
-    if suffix in {".xlsx", ".xls"}:
-        return pd.read_excel(path)
-    return pd.DataFrame()
+        raise ValueError("reference_dataset_path is required for reference-comparison metrics")
+    path = Path(path_value).expanduser().resolve()
+    if not path.exists() or not path.is_file():
+        raise FileNotFoundError(f"Reference dataset does not exist or is not a file: {path}")
+
+    cache_key = str(path)
+    with _REFERENCE_DF_CACHE_LOCK:
+        cached = _REFERENCE_DF_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+        suffix = path.suffix.lower()
+        if is_packet_capture(path):
+            dataframe = build_pcap_packet_dataframe(path)
+        elif suffix in {".csv", ".tsv"}:
+            dataframe = pd.read_csv(path, sep="\t" if suffix == ".tsv" else ",", skipinitialspace=True, low_memory=False)
+        elif suffix in {".xlsx", ".xls"}:
+            dataframe = pd.read_excel(path)
+        else:
+            raise ValueError(f"Unsupported reference dataset format: {suffix or '<none>'}")
+        if dataframe.empty:
+            raise ValueError(f"Reference dataset contains no usable rows: {path}")
+        _REFERENCE_DF_CACHE[cache_key] = dataframe
+        return dataframe
 
 
 def _candidate_fields(metric: dict) -> list[str]:
     return metric.get("input_requirements", {}).get("candidate_fields", [])
 
 
+def _even_positions(length: int, maximum: int) -> list[int]:
+    if length <= maximum:
+        return list(range(length))
+    if maximum <= 1:
+        return [0]
+    step = (length - 1) / (maximum - 1)
+    return [round(index * step) for index in range(maximum)]
+
+
 def _numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]:
     if field not in df.columns:
         return []
-    values = pd.to_numeric(df[field], errors="coerce").dropna().tolist()
-    return [float(value) for value in values[:max_sample_size]]
+    series = pd.to_numeric(df[field], errors="coerce").dropna().reset_index(drop=True)
+    if series.empty:
+        return []
+    positions = _even_positions(len(series), max(1, int(max_sample_size)))
+    return [float(series.iloc[position]) for position in positions]
+
+
+def _sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame:
+    if len(df) <= max_sample_size:
+        return df
+    return df.iloc[_even_positions(len(df), max_sample_size)].copy()
+
+
+def _numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]:
+    usable = [field for field in fields if field in df.columns]
+    if not usable:
+        return np.empty((0, 0)), []
+    numeric = df[usable].apply(pd.to_numeric, errors="coerce").dropna()
+    numeric = _sample_dataframe(numeric, max_sample_size)
+    return numeric.to_numpy(dtype=float), usable
+
+
+def _multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]:
+    if current.size == 0 or reference.size == 0 or current.shape[1] != reference.shape[1]:
+        return None, None
+    pooled = np.vstack([current, reference])
+    scale = pooled.std(axis=0)
+    scale = np.where(scale > 0, scale, 1.0)
+    centre = pooled.mean(axis=0)
+    current_z = (current - centre) / scale
+    reference_z = (reference - centre) / scale
+    pooled_z = np.vstack([current_z, reference_z])
+
+    def squared_distances(left, right):
+        values = (
+            np.sum(left * left, axis=1)[:, None]
+            + np.sum(right * right, axis=1)[None, :]
+            - 2.0 * left.dot(right.T)
+        )
+        return np.maximum(values, 0.0)
+
+    pooled_distances = squared_distances(pooled_z, pooled_z)
+    upper = pooled_distances[np.triu_indices(len(pooled_z), 1)]
+    positive = upper[upper > 0]
+    median_squared_distance = float(np.median(positive)) if positive.size else 1.0
+    gamma = 1.0 / (2.0 * median_squared_distance) if median_squared_distance > 0 else 1.0
+    k_xx = np.exp(-gamma * squared_distances(current_z, current_z))
+    k_yy = np.exp(-gamma * squared_distances(reference_z, reference_z))
+    k_xy = np.exp(-gamma * squared_distances(current_z, reference_z))
+    mmd_squared = float(k_xx.mean() + k_yy.mean() - 2.0 * k_xy.mean())
+    return max(0.0, mmd_squared), sqrt(median_squared_distance)
 
 
 def _feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict:
@@ -80,14 +166,24 @@ def compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric
 
 def compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict:
     reference_df = _load_reference_df(metric)
-    values = []
-    for field in _candidate_fields(metric):
-        values.extend(_numeric_values(df, field, 1000))
-    reference_values = []
-    for field in _candidate_fields(metric):
-        reference_values.extend(_numeric_values(reference_df, field, 1000))
-    score = round(_rbf_mmd(values, reference_values), 6) if values and reference_values else None
-    return {"summary": {"reference_dataset_path": _reference_path(metric), "current_value_count": len(values), "reference_value_count": len(reference_values), "feature_set_mmd_score_from_reference": score}}
+    fields = [field for field in _candidate_fields(metric) if field in df.columns and field in reference_df.columns]
+    max_sample_size = int(metric.get("calculation", {}).get("parameters", {}).get("max_sample_size", 500))
+    if max_sample_size < 2:
+        raise ValueError("max_sample_size must be at least 2 for MMD")
+    current_matrix, current_fields = _numeric_matrix(df, fields, max_sample_size)
+    reference_matrix, reference_fields = _numeric_matrix(reference_df, fields, max_sample_size)
+    common_fields = [field for field in fields if field in current_fields and field in reference_fields]
+    score, bandwidth = _multivariate_rbf_mmd(current_matrix, reference_matrix)
+    return {"summary": {
+        "reference_dataset_path": _reference_path(metric),
+        "fields": common_fields,
+        "current_row_count": int(current_matrix.shape[0]),
+        "reference_row_count": int(reference_matrix.shape[0]),
+        "standardization": "pooled_mean_and_standard_deviation",
+        "rbf_bandwidth": round(bandwidth, 6) if bandwidth is not None else None,
+        "feature_set_mmd_score_from_reference": round(score, 6) if score is not None else None,
+        "runnable": score is not None,
+    }}
 
 
 def _matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict:
@@ -131,10 +227,15 @@ def compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: d
 def compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict:
     reference_df = _load_reference_df(metric)
     fields = _candidate_fields(metric)
-    current = compute_distance_correlation_profile(df, fields)["profile"]["matrix"]
-    reference = compute_distance_correlation_profile(reference_df, fields)["profile"]["matrix"]
+    max_sample_size = int(metric.get("calculation", {}).get("parameters", {}).get("max_sample_size", 1000))
+    if max_sample_size < 2:
+        raise ValueError("max_sample_size must be at least 2 for distance correlation")
+    current_df = _sample_dataframe(df, max_sample_size)
+    reference_sample = _sample_dataframe(reference_df, max_sample_size)
+    current = compute_distance_correlation_profile(current_df, fields)["profile"]["matrix"]
+    reference = compute_distance_correlation_profile(reference_sample, fields)["profile"]["matrix"]
     deviation = _matrix_deviation(current, reference)
-    return {"summary": {"reference_dataset_path": _reference_path(metric), "distance_correlation_matrix_deviation_from_reference": deviation["mean_deviation"], "pair_count": deviation["pair_count"]}, "pairs": deviation["pairs"]}
+    return {"summary": {"reference_dataset_path": _reference_path(metric), "distance_correlation_matrix_deviation_from_reference": deviation["mean_deviation"], "pair_count": deviation["pair_count"], "current_sample_size": len(current_df), "reference_sample_size": len(reference_sample)}, "pairs": deviation["pairs"]}
 
 
 def _timestamp_field(metric: dict) -> str:
@@ -143,28 +244,30 @@ def _timestamp_field(metric: dict) -> str:
 
 def compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict:
     reference_df = _load_reference_df(metric)
-    current_gaps = _inter_arrival_seconds(_parse_timestamp_series(df, _timestamp_field(metric)))
-    reference_gaps = _inter_arrival_seconds(_parse_timestamp_series(reference_df, _timestamp_field(metric)))
+    current_gaps = _inter_arrival_seconds(_parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric)))
+    reference_gaps = _inter_arrival_seconds(_parse_timestamp_series(reference_df, _timestamp_field(metric), _timestamp_unit(metric)))
     divergence = round(_ks_statistic(current_gaps, reference_gaps), 6) if current_gaps and reference_gaps else None
-    return {"summary": {"reference_dataset_path": _reference_path(metric), "current_gap_count": len(current_gaps), "reference_gap_count": len(reference_gaps), "inter_arrival_distribution_divergence_from_reference": divergence}}
+    return {"summary": {"reference_dataset_path": _reference_path(metric), "timestamp_unit": _timestamp_unit(metric), "current_gap_count": len(current_gaps), "reference_gap_count": len(reference_gaps), "inter_arrival_distribution_divergence_from_reference": divergence}}
 
 
 def compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict:
     reference_df = _load_reference_df(metric)
-    current = _burstiness(_inter_arrival_seconds(_parse_timestamp_series(df, _timestamp_field(metric))))
-    reference = _burstiness(_inter_arrival_seconds(_parse_timestamp_series(reference_df, _timestamp_field(metric))))
+    current = _burstiness(_inter_arrival_seconds(_parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))))
+    reference = _burstiness(_inter_arrival_seconds(_parse_timestamp_series(reference_df, _timestamp_field(metric), _timestamp_unit(metric))))
     deviation = abs(current - reference) if current is not None and reference is not None else None
-    return {"summary": {"reference_dataset_path": _reference_path(metric), "current_burstiness": round(current, 6) if current is not None else None, "reference_burstiness": round(reference, 6) if reference is not None else None, "burstiness_deviation_from_reference": round(deviation, 6) if deviation is not None else None}}
+    return {"summary": {"reference_dataset_path": _reference_path(metric), "timestamp_unit": _timestamp_unit(metric), "current_burstiness": round(current, 6) if current is not None else None, "reference_burstiness": round(reference, 6) if reference is not None else None, "burstiness_deviation_from_reference": round(deviation, 6) if deviation is not None else None}}
 
 
 def compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict:
     reference_df = _load_reference_df(metric)
     current_ts = _parse_timestamp_series(df, _timestamp_field(metric)).dropna().tolist()
     reference_ts = _parse_timestamp_series(reference_df, _timestamp_field(metric)).dropna().tolist()
-    current_probs = _probabilities(_hourly_counts(current_ts))
-    reference_probs = _probabilities(_hourly_counts(reference_ts))
-    divergence = 0.5 * sum(abs(a - b) for a, b in zip(current_probs, reference_probs))
-    return {"summary": {"reference_dataset_path": _reference_path(metric), "current_timestamp_count": len(current_ts), "reference_timestamp_count": len(reference_ts), "hourly_activity_divergence_from_reference": round(divergence, 6)}}
+    divergence = None
+    if current_ts and reference_ts:
+        current_probs = _probabilities(_hourly_counts(current_ts))
+        reference_probs = _probabilities(_hourly_counts(reference_ts))
+        divergence = 0.5 * sum(abs(a - b) for a, b in zip(current_probs, reference_probs))
+    return {"summary": {"reference_dataset_path": _reference_path(metric), "timestamp_unit": _timestamp_unit(metric), "current_timestamp_count": len(current_ts), "reference_timestamp_count": len(reference_ts), "hourly_activity_divergence_from_reference": round(divergence, 6) if divergence is not None else None}}
 
 
 def _slice_field(metric: dict) -> str:

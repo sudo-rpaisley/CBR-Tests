@@ -42,9 +42,9 @@ def _write_capture(path: Path, packet_count: int = 64) -> None:
 
 def test_pcap_supported_set_contains_every_current_automatic_packet_metric():
     assert PCAP_SUPPORTED_METRICS == PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
-    assert len(PCAP_DIRECT_METRICS) == 2
+    assert len(PCAP_DIRECT_METRICS) == 3
     assert len(PCAP_PACKET_METRICS) == 18
-    assert len(PCAP_SUPPORTED_METRICS) == 20
+    assert len(PCAP_SUPPORTED_METRICS) == 21
 
 
 def test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path):
@@ -74,7 +74,7 @@ def test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path):
     assert summary["timestamp_parse_success_ratio"] == 1.0
 
 
-def test_automatic_pcap_plan_contains_all_twenty_currently_runnable_metrics(tmp_path):
+def test_automatic_pcap_plan_contains_all_twenty_one_currently_runnable_metrics(tmp_path):
     capture = tmp_path / "capture.pcap"
     _write_capture(capture)
 
@@ -82,9 +82,9 @@ def test_automatic_pcap_plan_contains_all_twenty_currently_runnable_metrics(tmp_
     metric_ids = {metric["metric_id"] for metric in plan["metrics"]}
 
     assert metric_ids == PCAP_SUPPORTED_METRICS
-    assert report["runnable_metric_count"] == 20
-    assert report["metrics"]["handshake_plausibility_profile"]["status"] == "needs_configuration"
-    assert report["metrics"]["handshake_plausibility_profile"]["reason"] == "capture_boundary_policy_required"
+    assert report["runnable_metric_count"] == 21
+    assert report["metrics"]["handshake_plausibility_profile"]["status"] == "ready"
+    assert "reason" not in report["metrics"]["handshake_plausibility_profile"]
     for metric_id in PCAP_SELF_DERIVED_METRICS:
         assert report["metrics"][metric_id]["status"] == "not_applicable"
         assert report["metrics"][metric_id]["reason"] == "self_derived_pcap_invariant_not_independent"
@@ -109,6 +109,4 @@ def test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)
 
 
 def test_context_configuration_reasons_are_not_silent_exclusions():
-    assert PCAP_CONTEXT_CONFIGURATION_REASONS == {
-        "handshake_plausibility_profile": "capture_boundary_policy_required"
-    }
+    assert PCAP_CONTEXT_CONFIGURATION_REASONS == {}

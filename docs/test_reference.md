@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **153 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **161 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -236,7 +236,7 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_pcap_supported_set_contains_every_current_automatic_packet_metric()` (L43) | Verifies that PCAP supported set contains every current automatic packet metric. | Assertions and fixtures in the module |
 | `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L50) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['timestamp_parse_success_ratio']`, `AssertionError`, `handlers[metric_id]` |
-| `test_automatic_pcap_plan_contains_all_twenty_currently_runnable_metrics(tmp_path)` (L77) | Verifies that automatic PCAP plan contains all twenty currently runnable metrics. | `_write_capture`, `build_plan` |
+| `test_automatic_pcap_plan_contains_all_twenty_one_currently_runnable_metrics(tmp_path)` (L77) | Verifies that automatic PCAP plan contains all twenty one currently runnable metrics. | `_write_capture`, `build_plan` |
 | `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L93) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
 | `test_context_configuration_reasons_are_not_silent_exclusions()` (L111) | Verifies that context configuration reasons are not silent exclusions. | Assertions and fixtures in the module |
 
@@ -247,6 +247,24 @@ Tests and local helpers in this module.
 | `_write_capture(path: Path, packet_count: int = 64) -> None` (L21) | Implementation helper for write capture. |
 | `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L59) | Implementation helper for forbidden loader. |
 
+## `tests/test_pcap_handshake.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_pcap_handshake_ignores_boundary_and_incomplete_attempts(tmp_path)` (L15) | Verifies that PCAP handshake ignores boundary and incomplete attempts. | `_write`, `run_pcap_handshake_plausibility_metric`, `IP`, `TCP` |
+| `test_pcap_handshake_warns_on_direction_contradiction(tmp_path)` (L36) | Verifies that PCAP handshake warns on direction contradiction. | `_write`, `run_pcap_handshake_plausibility_metric`, `IP`, `TCP` |
+| `test_pcap_handshake_not_applicable_without_opening_syn(tmp_path)` (L50) | Verifies that PCAP handshake not applicable without opening syn. | `_write`, `run_pcap_handshake_plausibility_metric`, `IP`, `TCP` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write(path: Path, packets)` (L9) | Implementation helper for write. |
+
 ## `tests/test_plan_builder.py`
 
 Tests and local helpers in this module.
@@ -255,15 +273,19 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_metric_catalog_covers_runtime_dispatcher()` (L13) | Verifies that metric catalog covers runtime dispatcher. | `available_metric_ids`, `_slug`, `build_metric_catalog` |
-| `test_automatic_plan_requires_dataset()` (L22) | Verifies that automatic plan requires dataset. | `pytest.raises`, `build_plan` |
-| `test_generated_plan_contains_only_ready_enabled_metrics(tmp_path)` (L27) | Verifies that generated plan contains only ready enabled metrics. | `build_plan`, `all`, `validate_plan_schema` |
-| `test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule(tmp_path)` (L54) | Verifies that dataset preflight includes ready port range and excludes service rule. | `build_plan` |
-| `test_reference_metrics_are_reported_but_never_written_without_reference_configuration(tmp_path)` (L72) | Verifies that reference metrics are reported but never written without reference configuration. | `build_plan`, `metric_id.endswith` |
-| `test_existing_field_translation_sidecar_can_make_metric_runnable(tmp_path)` (L94) | Verifies that existing field translation sidecar can make metric runnable. | `sidecar.write_text`, `build_plan`, `sidecar.resolve` |
-| `test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_path)` (L123) | Verifies that PCAP plan includes direct and independent packet adapter metrics. | `dataset.write_bytes`, `build_plan`, `all` |
-| `test_include_exclude_rejects_unknown_metric_ids(tmp_path)` (L139) | Verifies that include exclude rejects unknown metric ids. | `pytest.raises`, `build_plan` |
-| `test_write_plan_is_valid_and_requires_force_for_overwrite(tmp_path)` (L152) | Verifies that write plan is valid and requires force for overwrite. | `build_plan`, `write_plan`, `validate_plan_schema`, `pytest.raises` |
+| `test_metric_catalog_covers_runtime_dispatcher()` (L19) | Verifies that metric catalog covers runtime dispatcher. | `available_metric_ids`, `_slug`, `build_metric_catalog` |
+| `test_automatic_plan_requires_dataset()` (L28) | Verifies that automatic plan requires dataset. | `pytest.raises`, `build_plan` |
+| `test_generated_plan_contains_only_ready_enabled_metrics(tmp_path)` (L33) | Verifies that generated plan contains only ready enabled metrics. | `build_plan`, `all`, `validate_plan_schema` |
+| `test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule(tmp_path)` (L60) | Verifies that dataset preflight includes ready port range and excludes service rule. | `build_plan` |
+| `test_reference_metrics_are_reported_but_never_written_without_reference_configuration(tmp_path)` (L78) | Verifies that reference metrics are reported but never written without reference configuration. | `build_plan`, `metric_id.endswith` |
+| `test_existing_field_translation_sidecar_can_make_metric_runnable(tmp_path)` (L100) | Verifies that existing field translation sidecar can make metric runnable. | `sidecar.write_text`, `build_plan`, `sidecar.resolve` |
+| `test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_path)` (L129) | Verifies that PCAP plan includes direct and independent packet adapter metrics. | `dataset.write_bytes`, `build_plan`, `all` |
+| `test_include_exclude_rejects_unknown_metric_ids(tmp_path)` (L145) | Verifies that include exclude rejects unknown metric ids. | `pytest.raises`, `build_plan` |
+| `test_write_plan_is_valid_and_requires_force_for_overwrite(tmp_path)` (L158) | Verifies that write plan is valid and requires force for overwrite. | `build_plan`, `write_plan`, `validate_plan_schema`, `pytest.raises` |
+| `test_pcap_handshake_is_automatically_runnable_without_boundary_policy(tmp_path)` (L176) | Verifies that PCAP handshake is automatically runnable without boundary policy. | `dataset.write_bytes`, `build_plan` |
+| `test_pcap_service_port_requires_explicit_single_service_assertion(tmp_path)` (L184) | Verifies that PCAP service port requires explicit single service assertion. | `dataset.write_bytes`, `build_plan` |
+| `test_pcap_reference_metrics_unlock_only_with_independent_reference_pcap(tmp_path)` (L205) | Verifies that PCAP reference metrics unlock only with independent reference PCAP. | `candidate.write_bytes`, `reference.write_bytes`, `build_plan`, `PCAP_REFERENCE_METRICS.issubset`, `reference.resolve` |
+| `test_pcap_reference_rejects_self_comparison_and_representation_mismatch(tmp_path)` (L221) | Verifies that PCAP reference rejects self comparison and representation mismatch. | `candidate.write_bytes`, `build_plan`, `pytest.raises` |
 
 ## `tests/test_protocol_validity_profile.py`
 
@@ -295,8 +317,9 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_reference_distribution_dependency_and_temporal_metrics(tmp_path)` (L14) | Verifies that reference distribution dependency and temporal metrics. | `reference.to_csv`, `compute_feature_wise_ks_statistic_from_reference`, `compute_pearson_matrix_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
-| `test_reference_slice_and_protocol_metrics(tmp_path)` (L34) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
+| `test_reference_distribution_dependency_and_temporal_metrics(tmp_path)` (L19) | Verifies that reference distribution dependency and temporal metrics. | `reference.to_csv`, `compute_feature_wise_ks_statistic_from_reference`, `compute_pearson_matrix_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
+| `test_reference_slice_and_protocol_metrics(tmp_path)` (L39) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
+| `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L65) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP`, `TCP` |
 
 ## `tests/test_run_plan_field_translation.py`
 

@@ -38,7 +38,9 @@ from cbr_tests.metrics.temporal import (
     compute_timestamp_parse_success_ratio,
 )
 from cbr_tests.metrics.timestamp_coherence import run_timestamp_coherence_metric
+from cbr_tests.metrics.pcap_handshake import run_pcap_handshake_plausibility_metric
 from runner.field_translation import translate_metric_fields
+from runner.pcap_adapter import is_packet_capture
 from tests.label_fidelity_profile import (
     compute_attack_window_alignment_score,
     compute_class_imbalance_score,
@@ -300,6 +302,8 @@ def _tcp_flag_metric(dataset_path: Path, metric: dict):
 
 @register_metric("handshake_plausibility_profile")
 def _handshake_metric(dataset_path: Path, metric: dict):
+    if is_packet_capture(dataset_path):
+        return run_pcap_handshake_plausibility_metric(dataset_path, metric)
     return run_handshake_plausibility_metric(dataset_path, metric)
 
 

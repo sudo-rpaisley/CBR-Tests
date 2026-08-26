@@ -25,6 +25,32 @@ def _split_metric_args(values: list[str] | None) -> list[str] | None:
     return output
 
 
+def _parse_expected_ports(value: str | None) -> list[int]:
+    if not value:
+        return []
+    ports = []
+    for part in value.split(","):
+        text = part.strip()
+        if not text:
+            continue
+        try:
+            port = int(text)
+        except ValueError as exc:
+            raise ValueError(f"Expected service ports must be integers: {text}") from exc
+        if port < 0 or port > 65535:
+            raise ValueError(f"Expected service port is outside 0-65535: {port}")
+        ports.append(port)
+    return sorted(set(ports))
+
+
+def _browse_dataset_file() -> str | None:
+    import curses
+    from runner.tui import _browse_file
+    repo_root = Path.cwd()
+    initial = "datasets" if (repo_root / "datasets").is_dir() else ""
+    return curses.wrapper(lambda stdscr: _browse_file(stdscr, repo_root, initial))
+
+
 def _prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None:
     if value:
         return value
@@ -122,6 +148,9 @@ def parse_args() -> argparse.Namespace:
         "--field-translation",
         help="Optional field translation JSON. If omitted, an existing dataset sidecar is used automatically.",
     )
+    parser.add_argument("--reference-dataset", help="Optional independent reference dataset. Raw-PCAP reference comparison requires a PCAP/PCAPNG reference.")
+    parser.add_argument("--single-service", help="Explicitly assert that the entire PCAP represents this one application service.")
+    parser.add_argument("--expected-service-ports", help="Comma-separated expected ports for --single-service, e.g. 53 or 80,8080.")
     parser.add_argument(
         "--output",
         help="Destination JSON path; defaults to plans/<derived-plan-id>_plan.json",
@@ -155,19 +184,38 @@ def main() -> int:
     if not dataset_value:
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             raise ValueError("Dataset path is required in non-interactive mode.")
-        import curses
-        from runner.tui import _browse_file
-
-        repo_root = Path.cwd()
-        initial = "datasets" if (repo_root / "datasets").is_dir() else ""
-        dataset_value = curses.wrapper(
-            lambda stdscr: _browse_file(stdscr, repo_root, initial)
-        )
+        dataset_value = _browse_dataset_file()
         if dataset_value is None:
             print("Dataset selection cancelled. Plan not created.")
             return 0
 
     dataset_path = Path(dataset_value)
+    is_pcap = dataset_path.suffix.lower() in {".pcap", ".pcapng"}
+
+    reference_value = getattr(args, "reference_dataset", None)
+    if is_pcap and not reference_value and sys.stdin.isatty() and sys.stdout.isatty():
+        answer = input("\nAdd an independent reference PCAP for reference-comparison metrics? [y/N] ").strip().lower()
+        if answer in {"y", "yes"}:
+            reference_value = _browse_dataset_file()
+            if reference_value is None:
+                print("Reference selection cancelled; reference-comparison metrics remain excluded.")
+    reference_dataset_path = Path(reference_value) if reference_value else None
+
+    single_service = getattr(args, "single_service", None)
+    expected_ports = _parse_expected_ports(getattr(args, "expected_service_ports", None))
+    if bool(single_service) != bool(expected_ports):
+        raise ValueError("--single-service and --expected-service-ports must be supplied together.")
+    if is_pcap and not single_service and sys.stdin.isatty() and sys.stdout.isatty():
+        answer = input("\nIs the entire capture independently known to represent one application service? [y/N] ").strip().lower()
+        if answer in {"y", "yes"}:
+            single_service = _prompt(None, "Service name", required=True)
+            expected_ports = _parse_expected_ports(_prompt(None, "Expected service port(s), comma-separated", required=True))
+            if not expected_ports:
+                raise ValueError("At least one expected service port is required.")
+    service_port_configuration = None
+    if single_service and expected_ports:
+        service_port_configuration = {"service_name": single_service, "expected_ports": expected_ports, "population_mode": "all_rows"}
+
     field_translation_path = Path(args.field_translation) if args.field_translation else None
     description = args.description or "Automatically generated CBR-Tests plan."
     output_path = Path(args.output) if args.output else Path("plans") / f"{plan_id}_plan.json"
@@ -175,6 +223,10 @@ def main() -> int:
     if sys.stdout.isatty():
         print(f"\nPlan ID:     {plan_id}")
         print(f"Dataset:     {dataset_path}")
+        if reference_dataset_path:
+            print(f"Reference:   {reference_dataset_path}")
+        if service_port_configuration:
+            print(f"Service:     {service_port_configuration['service_name']} on {service_port_configuration['expected_ports']} (explicit single-service capture)")
         print(f"Output path: {output_path}")
         if output_path.exists() and not args.force:
             print("Output status: existing plan (overwrite confirmation will be requested before saving)")
@@ -187,6 +239,8 @@ def main() -> int:
         field_translation_path=field_translation_path,
         include_metric_ids=_split_metric_args(args.include),
         exclude_metric_ids=_split_metric_args(args.exclude),
+        reference_dataset_path=reference_dataset_path,
+        service_port_configuration=service_port_configuration,
     )
     _print_report(report)
 
