@@ -12,7 +12,7 @@ from runner.schema import validate_plan_schema
 
 
 def _slug(value: str) -> str:
-    value = re.sub(r"[^a-zA-Z0-9._-]+", "-", value.strip()).strip("-._")
+    value = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip()).strip("-").lower()
     return value or "generated"
 
 
@@ -98,15 +98,24 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Create validated CBR-Tests plans containing only tests runnable on a dataset."
     )
-    parser.add_argument("--plan-id", help="Stable plan identifier")
-    parser.add_argument("--name", help="Human-readable plan name")
+    parser.add_argument(
+        "--plan-id",
+        help=(
+            "Deprecated compatibility option. Plan IDs are derived automatically from --name; "
+            "if supplied, this value must match the derived ID."
+        ),
+    )
+    parser.add_argument("--name", help="Human-readable plan name; the plan ID is derived from this name")
     parser.add_argument("--description", help="Plan description")
-    parser.add_argument("--dataset", help="Dataset to inspect; required when creating a plan")
+    parser.add_argument("--dataset", help="Dataset to inspect; interactive mode opens a file browser when omitted")
     parser.add_argument(
         "--field-translation",
         help="Optional field translation JSON. If omitted, an existing dataset sidecar is used automatically.",
     )
-    parser.add_argument("--output", help="Destination JSON path (defaults to plans/<plan-id>_plan.json)")
+    parser.add_argument(
+        "--output",
+        help="Destination JSON path; defaults to plans/<derived-plan-id>_plan.json",
+    )
     parser.add_argument("--include", action="append", help="Only consider these metric IDs (repeat or comma-separate)")
     parser.add_argument("--exclude", action="append", help="Do not consider these metric IDs (repeat or comma-separate)")
     parser.add_argument("--force", action="store_true", help="Replace an existing output plan")
@@ -123,19 +132,40 @@ def main() -> int:
     if args.check:
         return _check_plan(Path(args.check).expanduser().resolve())
 
-    plan_id = _prompt(args.plan_id, "Plan ID", required=True)
-    assert plan_id is not None
-    default_name = plan_id.replace("-", " ").replace("_", " ").title()
-    name = _prompt(args.name, "Plan name", default_name, required=True)
+    name = _prompt(args.name, "Plan name", required=True)
     assert name is not None
-    dataset_value = _prompt(args.dataset, "Dataset path", required=True)
-    assert dataset_value is not None
+    plan_id = _slug(name)
+    if args.plan_id and args.plan_id != plan_id:
+        raise ValueError(
+            f"Plan ID is derived from the plan name. '{name}' becomes '{plan_id}', "
+            f"but --plan-id was '{args.plan_id}'. Remove --plan-id or make it match."
+        )
+
+    dataset_value = args.dataset
+    if not dataset_value:
+        if not sys.stdin.isatty() or not sys.stdout.isatty():
+            raise ValueError("Dataset path is required in non-interactive mode.")
+        import curses
+        from runner.tui import _browse_file
+
+        repo_root = Path.cwd()
+        initial = "datasets" if (repo_root / "datasets").is_dir() else ""
+        dataset_value = curses.wrapper(
+            lambda stdscr: _browse_file(stdscr, repo_root, initial)
+        )
+        if dataset_value is None:
+            print("Dataset selection cancelled. Plan not created.")
+            return 0
+
     dataset_path = Path(dataset_value)
     field_translation_path = Path(args.field_translation) if args.field_translation else None
     description = args.description or "Automatically generated CBR-Tests plan."
-    default_output = str(Path("plans") / f"{_slug(plan_id)}_plan.json")
-    output_value = _prompt(args.output, "Output path", default_output, required=True)
-    assert output_value is not None
+    output_path = Path(args.output) if args.output else Path("plans") / f"{plan_id}_plan.json"
+
+    if sys.stdout.isatty():
+        print(f"\nPlan ID:     {plan_id}")
+        print(f"Dataset:     {dataset_path}")
+        print(f"Output path: {output_path}")
 
     plan, report = build_plan(
         plan_id=plan_id,
@@ -154,8 +184,8 @@ def main() -> int:
             print("Plan not saved.")
             return 0
 
-    output_path = write_plan(Path(output_value), plan, overwrite=args.force)
-    print(f"\nPlan written: {output_path}")
+    written_path = write_plan(output_path, plan, overwrite=args.force)
+    print(f"\nPlan written: {written_path}")
     return 0
 
 
