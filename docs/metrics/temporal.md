@@ -15,25 +15,25 @@ Compares burstiness coefficients of first- and second-half inter-arrival gaps.
 
 ## `diurnal_pattern_similarity_score`
 
-Computes cosine similarity between 24-hour count vectors from timestamp halves.
+Measures day-to-day similarity of UTC hour-of-day activity shapes. One 24-bin packet/row-count vector is built for each observed calendar day, then cosine similarity is calculated for every day pair and averaged.
 
 - **Implementation:** `cbr_tests/metrics/temporal.py`
 - **Supplied-plan usage:** `deepsecure_plan`
-- **Inputs:** `timestamp_field`.
-- **Primary output:** Sample counts and similarity score.
-- **Interpretation:** Closer to 1 means a more similar hourly shape.
-- **Current caveat:** Both all-zero/empty vectors produce 0; raw counts make the score sensitive to sparse hours.
+- **Inputs:** `timestamp_field`; `minimum_day_count` default 2.
+- **Primary output:** Observed-day count, day-pair count, runnable flag and mean pairwise similarity score.
+- **Interpretation:** Closer to 1 means the daily hour-of-day activity shape is more stable across observed days.
+- **Current caveat:** This is an internal temporal-stability measure, not external realism by itself. Calendar-day profiles use UTC after timestamp parsing; captures spanning only one observed day are reported as not evaluable rather than assigned a misleading score.
 
 ## `hourly_activity_distribution_divergence`
 
-Compares 24-hour activity distributions between timestamp halves using total variation distance.
+Measures day-to-day divergence of UTC hour-of-day activity distributions. One 24-bin distribution is built for each observed calendar day and total-variation distance is averaged across every day pair.
 
 - **Implementation:** `cbr_tests/metrics/temporal.py`
 - **Supplied-plan usage:** `deepsecure_plan`
-- **Inputs:** `timestamp_field`.
-- **Primary output:** Sample counts and divergence in [0,1].
-- **Interpretation:** 0 means identical hourly proportions; 1 means disjoint hourly activity.
-- **Current caveat:** Internal half comparison and sensitive to the capture interval and timezone interpretation.
+- **Inputs:** `timestamp_field`; `minimum_day_count` default 2.
+- **Primary output:** Observed-day count, day-pair count, runnable flag and divergence in [0,1].
+- **Interpretation:** 0 means identical daily hourly proportions; 1 means the compared daily profiles occupy disjoint hours.
+- **Current caveat:** This is an internal stability measure and is sensitive to timezone/capture coverage. It no longer splits packets chronologically, which previously made a regular single-day capture appear maximally divergent merely because different clock hours fell into different halves.
 
 ## `inter_arrival_time_distribution_divergence`
 
@@ -59,14 +59,14 @@ Checks numeric durations are nonnegative, or derives duration from start/end tim
 
 ## `periodicity_preservation_score`
 
-Compares autocorrelation at configured lags between timestamp halves.
+Measures repeat similarity at configured lags on the actual continuous hourly activity series. The timestamps are binned into consecutive UTC hours, including zero-count hours, and each series is compared with a lagged copy using normalised absolute count difference.
 
 - **Implementation:** `cbr_tests/metrics/temporal.py`
-- **Supplied-plan usage:** `deepsecure_plan`
-- **Inputs:** `timestamp_field`; `lags` default `[1,24]`.
-- **Primary output:** Per-lag autocorrelations/deviations and 1 minus mean capped deviation.
-- **Interpretation:** Higher means more similar autocorrelation structure.
-- **Current caveat:** Hourly count vectors always have length 24, so lag 24 is not runnable and is skipped by the current implementation.
+- **Supplied-plan usage:** `deepsecure_plan`.
+- **Inputs:** `timestamp_field`; `lags` default `[24]`; `minimum_lag_pairs` default 2.
+- **Primary output:** Per-lag paired-hour count, runnable flag and repeat similarity, plus the mean score when every configured lag is evaluable.
+- **Interpretation:** 1 means the hourly activity repeats exactly at every configured lag; lower values mean less repeated structure. Lag 24 directly compares each hour with the corresponding hour one day later.
+- **Current caveat:** A configured lag is not evaluable when the capture does not span enough hourly bins. The overall score is then `null` rather than silently dropping that lag. This remains an internal periodicity measure rather than reference fidelity.
 
 ## `start_end_timestamp_consistency_ratio`
 

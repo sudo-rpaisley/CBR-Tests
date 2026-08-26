@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **169 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **173 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -523,7 +523,11 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_temporal_consistency_metrics()` (L15) | Verifies that temporal consistency metrics. | `compute_timestamp_parse_success_ratio`, `compute_start_end_timestamp_consistency_ratio`, `compute_non_negative_duration_ratio` |
-| `test_temporal_behaviour_metrics_compare_first_and_second_halves()` (L28) | Verifies that temporal behaviour metrics compare first and second halves. | `compute_inter_arrival_time_distribution_divergence`, `compute_burstiness_coefficient_deviation`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score`, `compute_periodicity_preservation_score` |
+| `test_inter_arrival_and_burstiness_still_measure_internal_half_drift()` (L28) | Verifies that inter arrival and burstiness still measure internal half drift. | `compute_inter_arrival_time_distribution_divergence`, `compute_burstiness_coefficient_deviation` |
+| `test_regular_multiday_activity_has_identical_diurnal_profiles_and_periodicity()` (L40) | Verifies that regular multiday activity has identical diurnal profiles and periodicity. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_shifted_daily_activity_is_detected_as_diurnally_different()` (L69) | Verifies that shifted daily activity is detected as diurnally different. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_single_day_capture_is_not_mislabelled_as_diurnally_divergent()` (L93) | Verifies that single day capture is not mislabelled as diurnally divergent. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_periodicity_rejects_non_positive_lags()` (L120) | Verifies that periodicity rejects non positive lags. | `compute_periodicity_preservation_score`, `AssertionError` |
 
 ## `tests/test_tui.py`
 

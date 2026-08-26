@@ -217,105 +217,233 @@ def _probabilities(counts: list[int]) -> list[float]:
     return [count / total for count in counts] if total else [0.0] * len(counts)
 
 
+def _daily_hour_vectors(
+    timestamps: list[pd.Timestamp],
+) -> list[tuple[str, list[int]]]:
+    """Return one 24-hour UTC activity vector per observed calendar day."""
+
+    by_day: dict[str, list[int]] = {}
+    for timestamp in timestamps:
+        key = timestamp.date().isoformat()
+        counts = by_day.setdefault(key, [0] * 24)
+        counts[int(timestamp.hour)] += 1
+    return [(day, by_day[day]) for day in sorted(by_day)]
+
+
+def _mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]:
+    divergences: list[float] = []
+    for left_index in range(len(vectors)):
+        left = _probabilities(vectors[left_index])
+        for right_index in range(left_index + 1, len(vectors)):
+            right = _probabilities(vectors[right_index])
+            divergences.append(
+                0.5 * sum(
+                    abs(left_value - right_value)
+                    for left_value, right_value in zip(left, right)
+                )
+            )
+    if not divergences:
+        return None, 0
+    return sum(divergences) / len(divergences), len(divergences)
+
+
+def _cosine_similarity(left: list[int], right: list[int]) -> float | None:
+    numerator = sum(a * b for a, b in zip(left, right))
+    left_norm = sqrt(sum(value * value for value in left))
+    right_norm = sqrt(sum(value * value for value in right))
+    if not left_norm or not right_norm:
+        return None
+    return numerator / (left_norm * right_norm)
+
+
+def _mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]:
+    similarities: list[float] = []
+    for left_index in range(len(vectors)):
+        for right_index in range(left_index + 1, len(vectors)):
+            similarity = _cosine_similarity(vectors[left_index], vectors[right_index])
+            if similarity is not None:
+                similarities.append(similarity)
+    if not similarities:
+        return None, 0
+    return sum(similarities) / len(similarities), len(similarities)
+
+
 def compute_hourly_activity_distribution_divergence(
     df: pd.DataFrame,
     metric: dict,
 ) -> dict:
+    """Measure day-to-day divergence in UTC hour-of-day activity distributions.
+
+    Comparing chronological packet halves confounds the result with capture time:
+    an eight-hour regular capture, for example, puts different hours in each half
+    and appears maximally divergent.  This implementation instead compares one
+    24-hour profile per observed calendar day and therefore requires at least two
+    observed days before producing a value.
+    """
+
     timestamps = (
         _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
         .dropna()
         .sort_values()
         .tolist()
     )
-    left, right = _split_list(timestamps)
-    left_probabilities = _probabilities(_hourly_counts(left))
-    right_probabilities = _probabilities(_hourly_counts(right))
-    divergence = 0.5 * sum(
-        abs(left_value - right_value)
-        for left_value, right_value in zip(left_probabilities, right_probabilities)
+    parameters = metric.get("calculation", {}).get("parameters", {})
+    minimum_day_count = max(2, int(parameters.get("minimum_day_count", 2)))
+    day_vectors = _daily_hour_vectors(timestamps)
+    day_count = len(day_vectors)
+    divergence, pair_count = _mean_pairwise_total_variation(
+        [counts for _day, counts in day_vectors]
     )
+    runnable = day_count >= minimum_day_count and divergence is not None
     return {
         "summary": {
-            "sample_a_count": len(left),
-            "sample_b_count": len(right),
-            "hourly_activity_distribution_divergence": round(divergence, 6),
+            "timestamp_count": len(timestamps),
+            "observed_day_count": day_count,
+            "minimum_day_count": minimum_day_count,
+            "day_pair_count": pair_count,
+            "first_observed_date": day_vectors[0][0] if day_vectors else None,
+            "last_observed_date": day_vectors[-1][0] if day_vectors else None,
+            "runnable": runnable,
+            "hourly_activity_distribution_divergence": (
+                round(divergence, 6) if runnable and divergence is not None else None
+            ),
         }
     }
 
 
 def compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict:
+    """Measure day-to-day similarity of UTC hour-of-day activity shapes."""
+
     timestamps = (
         _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
         .dropna()
         .sort_values()
         .tolist()
     )
-    left, right = _split_list(timestamps)
-    left_counts = _hourly_counts(left)
-    right_counts = _hourly_counts(right)
-    numerator = sum(a * b for a, b in zip(left_counts, right_counts))
-    left_norm = sqrt(sum(value * value for value in left_counts))
-    right_norm = sqrt(sum(value * value for value in right_counts))
-    score = numerator / (left_norm * right_norm) if left_norm and right_norm else 0.0
+    parameters = metric.get("calculation", {}).get("parameters", {})
+    minimum_day_count = max(2, int(parameters.get("minimum_day_count", 2)))
+    day_vectors = _daily_hour_vectors(timestamps)
+    day_count = len(day_vectors)
+    score, pair_count = _mean_pairwise_cosine_similarity(
+        [counts for _day, counts in day_vectors]
+    )
+    runnable = day_count >= minimum_day_count and score is not None
     return {
         "summary": {
-            "sample_a_count": len(left),
-            "sample_b_count": len(right),
-            "diurnal_pattern_similarity_score": round(score, 6),
+            "timestamp_count": len(timestamps),
+            "observed_day_count": day_count,
+            "minimum_day_count": minimum_day_count,
+            "day_pair_count": pair_count,
+            "first_observed_date": day_vectors[0][0] if day_vectors else None,
+            "last_observed_date": day_vectors[-1][0] if day_vectors else None,
+            "runnable": runnable,
+            "diurnal_pattern_similarity_score": (
+                round(score, 6) if runnable and score is not None else None
+            ),
         }
     }
 
 
-def _autocorrelation(values: list[int], lag: int) -> float | None:
-    if len(values) <= lag:
-        return None
-    mean = sum(values) / len(values)
-    numerator = sum(
-        (values[index] - mean) * (values[index - lag] - mean)
-        for index in range(lag, len(values))
-    )
-    denominator = sum((value - mean) ** 2 for value in values)
-    return numerator / denominator if denominator else 0.0
+def _continuous_hourly_counts(
+    timestamps: list[pd.Timestamp],
+) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]:
+    if not timestamps:
+        return [], None, None
+    first_hour = timestamps[0].floor("h")
+    last_hour = timestamps[-1].floor("h")
+    hourly_index = pd.date_range(first_hour, last_hour, freq="h")
+    counts_by_hour = {hour: 0 for hour in hourly_index}
+    for timestamp in timestamps:
+        counts_by_hour[timestamp.floor("h")] += 1
+    return [counts_by_hour[hour] for hour in hourly_index], first_hour, last_hour
+
+
+def _lag_repeat_similarity(
+    values: list[int],
+    lag: int,
+    minimum_pairs: int,
+) -> tuple[float | None, int]:
+    if lag <= 0:
+        raise ValueError("periodicity lags must be positive integers")
+    pair_count = len(values) - lag
+    if pair_count < minimum_pairs:
+        return None, max(0, pair_count)
+
+    earlier = values[:-lag]
+    later = values[lag:]
+    activity = sum(max(left, right) for left, right in zip(earlier, later))
+    if activity == 0:
+        return None, pair_count
+    difference = sum(abs(left - right) for left, right in zip(earlier, later))
+    return 1.0 - (difference / activity), pair_count
 
 
 def compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict:
+    """Measure how closely hourly activity repeats at configured temporal lags.
+
+    The previous implementation autocorrelated two 24-element hour-of-day
+    histograms, so a lag of 24 could never be evaluated.  Here the lag is applied
+    to the actual continuous hourly activity series: lag 24 therefore compares
+    each observed hour with the corresponding hour one day later.
+    """
+
     timestamps = (
         _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
         .dropna()
         .sort_values()
         .tolist()
     )
-    left, right = _split_list(timestamps)
-    lags = metric.get("calculation", {}).get("parameters", {}).get("lags", [1, 24])
-    left_counts = _hourly_counts(left)
-    right_counts = _hourly_counts(right)
+    parameters = metric.get("calculation", {}).get("parameters", {})
+    raw_lags = parameters.get("lags", [24])
+    lags: list[int] = []
+    for raw_lag in raw_lags:
+        lag = int(raw_lag)
+        if lag <= 0:
+            raise ValueError("periodicity lags must be positive integers")
+        if lag not in lags:
+            lags.append(lag)
+    if not lags:
+        raise ValueError("periodicity lags must contain at least one positive integer")
+
+    minimum_lag_pairs = max(1, int(parameters.get("minimum_lag_pairs", 2)))
+    hourly_counts, first_hour, last_hour = _continuous_hourly_counts(timestamps)
     lag_results = []
-    deviations = []
+    similarities: list[float] = []
+    all_lags_runnable = True
     for lag in lags:
-        left_autocorrelation = _autocorrelation(left_counts, int(lag))
-        right_autocorrelation = _autocorrelation(right_counts, int(lag))
-        if left_autocorrelation is None or right_autocorrelation is None:
-            continue
-        deviation = abs(left_autocorrelation - right_autocorrelation)
-        deviations.append(deviation)
+        similarity, pair_count = _lag_repeat_similarity(
+            hourly_counts,
+            lag,
+            minimum_lag_pairs,
+        )
+        lag_runnable = similarity is not None
+        all_lags_runnable = all_lags_runnable and lag_runnable
+        if similarity is not None:
+            similarities.append(similarity)
         lag_results.append(
             {
-                "lag": int(lag),
-                "sample_a_autocorrelation": round(left_autocorrelation, 6),
-                "sample_b_autocorrelation": round(right_autocorrelation, 6),
-                "deviation": round(deviation, 6),
+                "lag_hours": lag,
+                "paired_hour_count": pair_count,
+                "minimum_lag_pairs": minimum_lag_pairs,
+                "runnable": lag_runnable,
+                "repeat_similarity": (
+                    round(similarity, 6) if similarity is not None else None
+                ),
             }
         )
-    score = (
-        1.0 - min(1.0, sum(deviations) / len(deviations))
-        if deviations
-        else None
-    )
+
+    runnable = bool(hourly_counts) and all_lags_runnable and len(similarities) == len(lags)
+    score = sum(similarities) / len(similarities) if runnable else None
     return {
         "lags": lag_results,
         "summary": {
-            "sample_a_count": len(left),
-            "sample_b_count": len(right),
+            "timestamp_count": len(timestamps),
+            "hourly_bin_count": len(hourly_counts),
+            "first_hour": first_hour.isoformat() if first_hour is not None else None,
+            "last_hour": last_hour.isoformat() if last_hour is not None else None,
+            "configured_lags_hours": lags,
+            "minimum_lag_pairs": minimum_lag_pairs,
+            "runnable": runnable,
             "periodicity_preservation_score": (
                 round(score, 6) if score is not None else None
             ),
