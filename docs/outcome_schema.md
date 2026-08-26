@@ -1,12 +1,19 @@
 # Outcome JSON schema reference
 
-Each run writes one outcome JSON file. It is the canonical machine-readable execution record.
+Each completed run writes two companion files:
+
+- the outcome JSON, which is the canonical machine-readable execution record;
+- a human-readable Markdown summary with the same base filename and suffix `.summary.md`.
+
+For example, `outcomes/experiment.json` is accompanied by `outcomes/experiment.summary.md`.
+
+The Markdown file is derived from the JSON outcome. It is intended for rapid review and interpretation; the JSON remains authoritative for reproducibility, downstream analysis, and research claims.
 
 ## Top-level fields
 
 | Field | Description |
 | --- | --- |
-| `schema_version` | Outcome schema version. Current value: `1`. |
+| `schema_version` | Outcome schema version. Current value: `2`. |
 | `status` | Overall **execution** status: `success`, `failed`, or `cancelled`. |
 | `case_id` | Case identifier. |
 | `plan_id` | Plan identifier. |
@@ -20,8 +27,25 @@ Each run writes one outcome JSON file. It is the canonical machine-readable exec
 | `run_started_at` | UTC ISO timestamp when execution preparation began. |
 | `run_finished_at` | UTC ISO timestamp when the outcome was assembled. |
 | `run_elapsed_seconds` | Wall-clock elapsed time measured with a monotonic timer. |
+| `run_id` | Unique run identifier when provenance capture is enabled. |
+| `provenance` | Reproducibility manifest containing dataset/plan hashes, code revision, dependency information, field translations and reference datasets. |
 | `column_validations` | Optional per-metric column validation diagnostics. |
 | `skipped_metrics` | Optional preflight skips caused by missing required field mappings. |
+
+## Human-readable companion summary
+
+The `.summary.md` file is generated automatically whenever the JSON outcome is written, including serial, parallel and fail-fast completion paths. It contains:
+
+- an at-a-glance execution and domain-result count table;
+- a plain-English interpretation that keeps execution failure separate from metric-domain `fail` results;
+- a focused section for execution errors, skipped metrics, domain failures and warnings;
+- structured reason codes, bounded evidence and suggested actions where metrics provide them;
+- a compact table covering every metric result;
+- dataset, plan and code reproducibility identifiers when provenance is available.
+
+The summary deliberately **does not calculate an aggregate realism score or invent a combined scientific pass/fail verdict**. Metrics that do not expose a domain `pass`, `warn`, `fail` or `not_applicable` status are shown as informational rather than silently classified.
+
+This distinction is important because a runner may complete successfully while one or more metrics legitimately identify unrealistic or suspicious dataset properties.
 
 ## Metric execution records
 
@@ -37,7 +61,21 @@ Successful execution:
 }
 ```
 
-Execution failure adds `error`. A handler may also supply `reason`.
+When a metric defines a domain assessment, the execution record may additionally contain `result_status`:
+
+```json
+{
+  "metric_id": "valid_port_range_profile",
+  "status": "success",
+  "result_status": "fail",
+  "diagnostic": {
+    "reason_code": "invalid_port_values",
+    "summary": "Some transport ports are outside the valid range."
+  }
+}
+```
+
+Execution failure adds `error`. A handler may also supply `reason`, `reason_code`, and a structured `diagnostic`.
 
 Preflight skip:
 
@@ -65,9 +103,11 @@ or `not_run_cancelled` with reason `run_cancelled`.
 
 ## Execution status versus metric assessment
 
-Top-level and `metric_results[].status` values describe whether code ran successfully. Many metric payloads under `test_results` also include a domain `status` such as `pass`, `warn`, `fail`, or `not_applicable`.
+Top-level and `metric_results[].status` values describe whether code ran successfully. Many metric payloads under `test_results` also include a domain `status` such as `pass`, `warn`, `fail`, or `not_applicable`; normalized domain status is also copied to `metric_results[].result_status` where available.
 
-These layers are independent. A domain-level `fail` returned by a successful handler does not currently make the outcome top-level status `failed`. Automated consumers should apply their own policy to domain scores/statuses in addition to checking execution status.
+These layers are independent. A domain-level `fail` returned by a successful handler does not make the outcome top-level status `failed`. Automated consumers should apply their explicit research policy to domain scores/statuses in addition to checking execution status.
+
+The human-readable companion reinforces this separation rather than collapsing both layers into a single verdict.
 
 ## Test result shapes
 
@@ -78,10 +118,13 @@ Shapes are metric-specific. Common conventions include:
 - `slices`: per-slice results;
 - `pairs`: correlation/deviation pairs;
 - `examples`: bounded diagnostic examples;
-- `status`: domain assessment where the metric defines thresholds.
+- `status`: domain assessment where the metric defines thresholds;
+- `diagnostic`: structured reason code, interpretation, evidence and suggested action where available.
 
 See [Metric reference](metric_reference.md) for the primary output and interpretation of every metric.
 
 ## Write guarantees
 
-The destination parent directory is created automatically. JSON is written to a temporary file in the same directory, flushed and fsynced, then moved into place with `os.replace`. This prevents a partially written destination from replacing the previous complete outcome.
+The destination parent directory is created automatically. The JSON and Markdown summary are both written to temporary files in the destination directory, flushed and fsynced before publication. The summary is moved into place first and the authoritative JSON second, so publication of a new JSON outcome implies that its companion summary has already been published.
+
+The files are named deterministically from the requested output path. If the JSON output is `outcomes/example.json`, the summary is `outcomes/example.summary.md`.
