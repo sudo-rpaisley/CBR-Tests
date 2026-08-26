@@ -1,11 +1,16 @@
 """Compatibility imports for the former metric module location."""
 
 from cbr_tests.metrics.temporal import (
-    _autocorrelation,
     _burstiness,
+    _continuous_hourly_counts,
+    _cosine_similarity,
+    _daily_hour_vectors,
     _hourly_counts,
     _inter_arrival_seconds,
     _ks_statistic,
+    _lag_repeat_similarity,
+    _mean_pairwise_cosine_similarity,
+    _mean_pairwise_total_variation,
     _parse_timestamp_series,
     _probabilities,
     _split_list,
