@@ -1,9 +1,7 @@
 name: Regenerate reference docs
 
 on:
-  push:
-    branches:
-      - agent/plan-creation-ux
+  pull_request:
 
 permissions:
   contents: write
