@@ -117,6 +117,14 @@ python create_plan.py \
   --field-translation field_translations/example.json
 ```
 
+## PCAP/PCAPNG planning
+
+Raw packet captures now use a canonical packet adapter for metrics whose inputs can be copied directly from decoded packets. In addition to the direct packet-capture metrics, automatic PCAP plans can therefore include `reserved_ip_address_profile` and `valid_port_range_profile`.
+
+The planner deliberately does **not** enable tabular flow self-consistency metrics merely because CBR-Tests can reconstruct equivalent fields from the same capture. Checks such as flow-duration/IAT arithmetic, packet/byte arithmetic and derived-rate arithmetic would otherwise validate values calculated by the adapter against other values calculated by the adapter. Those exclusions are reported as `self_derived_pcap_invariant_not_independent`.
+
+A canonical bidirectional 5-tuple flow view is still available internally for later sequence-aware and reference-comparison metrics. It does not assume an exporter idle timeout, so it is not silently treated as equivalent to CICFlowMeter or another exporter.
+
 ## Selection controls
 
 Every available test is considered by default. Narrow the candidate set with:

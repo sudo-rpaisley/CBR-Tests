@@ -143,11 +143,11 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L58) | function | Internal | Implementation helper for confirm sidecar update. |
-| `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L71) | function | Internal | Implementation helper for run result. |
-| `run_once(args)` (L81) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
-| `run_once._load_dataset_for_metric(path: Path)` (L255) | nested function | Internal | Implementation helper for load dataset for metric. |
-| `main()` (L397) | function | Public | Implementation helper for main. |
+| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L59) | function | Internal | Implementation helper for confirm sidecar update. |
+| `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L72) | function | Internal | Implementation helper for run result. |
+| `run_once(args)` (L82) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
+| `run_once._load_dataset_for_metric(path: Path)` (L261) | nested function | Internal | Implementation helper for load dataset for metric. |
+| `main()` (L403) | function | Public | Implementation helper for main. |
 
 ## `runner/contract.py`
 
@@ -360,18 +360,18 @@ Python symbols defined by `runner/metric_catalog.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `available_metric_ids() -> list[str]` (L36) | function | Public | Return metric IDs accepted by the runtime dispatcher. The plan builder deliberately asks the dispatcher for its handlers instead of keeping a second metric-ID list. Adding a runnable metric therefore makes it discoverable by plan creation automatically. |
-| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L48) | function | Internal | Implementation helper for walk taxonomy. |
-| `load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[str]]` (L65) | function | Public | Loads taxonomy paths. |
-| `load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]` (L75) | function | Public | Collect existing plan metric definitions as configuration templates. |
-| `required_fields(metric: dict) -> list[str]` (L96) | function | Public | Implementation helper for required fields. |
-| `choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None` (L105) | function | Public | Implementation helper for choose metric template. |
-| `choose_metric_template.score(metric: dict) -> tuple[int, int, int, str]` (L110) | nested function | Internal | Implementation helper for score. |
-| `metric_manual_configuration_reason(metric_id: str) -> str | None` (L123) | function | Public | Implementation helper for metric manual configuration reason. |
-| `humanize_metric_id(metric_id: str) -> str` (L129) | function | Public | Implementation helper for humanize metric id. |
-| `_blank_reference_paths(value)` (L133) | function | Internal | Implementation helper for blank reference paths. |
-| `sanitize_manual_template(metric: dict, reason: str) -> dict` (L145) | function | Public | Remove dataset-specific values that would be unsafe as universal defaults. |
-| `build_metric_catalog(*, metric_ids: Iterable[str] | None = None, taxonomy_path: Path = DEFAULT_TAXONOMY_PATH, plans_dir: Path = DEFAULT_PLANS_DIR, available_fields: set[str] | None = None) -> list[dict]` (L175) | function | Public | Build catalogue entries for every runnable metric. |
+| `available_metric_ids() -> list[str]` (L34) | function | Public | Return metric IDs accepted by the runtime dispatcher. The plan builder deliberately asks the dispatcher for its handlers instead of keeping a second metric-ID list. Adding a runnable metric therefore makes it discoverable by plan creation automatically. |
+| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L46) | function | Internal | Implementation helper for walk taxonomy. |
+| `load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[str]]` (L63) | function | Public | Loads taxonomy paths. |
+| `load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]` (L73) | function | Public | Collect existing plan metric definitions as configuration templates. |
+| `required_fields(metric: dict) -> list[str]` (L94) | function | Public | Implementation helper for required fields. |
+| `choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None` (L103) | function | Public | Implementation helper for choose metric template. |
+| `choose_metric_template.score(metric: dict) -> tuple[int, int, int, str]` (L108) | nested function | Internal | Implementation helper for score. |
+| `metric_manual_configuration_reason(metric_id: str) -> str | None` (L121) | function | Public | Implementation helper for metric manual configuration reason. |
+| `humanize_metric_id(metric_id: str) -> str` (L127) | function | Public | Implementation helper for humanize metric id. |
+| `_blank_reference_paths(value)` (L131) | function | Internal | Implementation helper for blank reference paths. |
+| `sanitize_manual_template(metric: dict, reason: str) -> dict` (L143) | function | Public | Remove dataset-specific values that would be unsafe as universal defaults. |
+| `build_metric_catalog(*, metric_ids: Iterable[str] | None = None, taxonomy_path: Path = DEFAULT_TAXONOMY_PATH, plans_dir: Path = DEFAULT_PLANS_DIR, available_fields: set[str] | None = None) -> list[dict]` (L173) | function | Public | Build catalogue entries for every runnable metric. |
 
 ## `runner/metric_diagnostics.py`
 
@@ -414,18 +414,43 @@ Parallel record normalization and result aggregation.
 | `_normalise_status(success: bool, payload: dict) -> str` (L11) | function | Internal | Implementation helper for normalise status. |
 | `collect_parallel_metric_results(*, parallel_out, metrics: list[dict], run_started_at: datetime, fail_fast: bool, completed_statuses: dict[str, str], completed_durations: dict[str, float]) -> tuple[str, dict, list[dict], dict]` (L18) | function | Public | Collect parallel outputs without discarding already-completed work. Execution status remains separate from a metric's domain result. A handler can therefore execute successfully while producing ``pass``, ``warn``, ``fail`` or ``not_applicable`` in ``result_status``. ``completed_statuses`` keeps historical execution labels for execution failures/not-run records. Successfully executed metrics may expose their domain result there for post-run rendering; live parallel rendering already receives the richer status directly from the progress callback. |
 
+## `runner/pcap_adapter.py`
+
+Python symbols defined by `runner/pcap_adapter.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `is_packet_capture(path: Path) -> bool` (L92) | function | Public | Implementation helper for is packet capture. |
+| `_packet_fields(packet) -> dict[str, Any] | None` (L96) | function | Internal | Implementation helper for packet fields. |
+| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L145) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. Values in this view are copied from decoded packet fields rather than derived from reconstructed flows, so packet-level metrics can operate on raw capture evidence without first inventing exporter-specific flow semantics. |
+| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L168) | function | Internal | Implementation helper for endpoint key. |
+| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L172) | function | Internal | Implementation helper for flow key. |
+| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L185) | function | Internal | Implementation helper for safe std variance. |
+| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L193) | function | Internal | Implementation helper for series stats. |
+| `_DirectionStats` (L204) | class | Internal | Data model for DirectionStats. |
+| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L213) | method | Public | Implementation helper for add. |
+| `_DirectionStats.min_length(self) -> float` (L223) | method | Public | Implementation helper for min length. |
+| `_DirectionStats.max_length(self) -> float` (L226) | method | Public | Implementation helper for max length. |
+| `_DirectionStats.mean_length(self) -> float` (L229) | method | Public | Implementation helper for mean length. |
+| `_FlowState` (L234) | class | Internal | Data model for FlowState. |
+| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L262) | method | Public | Implementation helper for is forward. |
+| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L276) | method | Public | Implementation helper for add packet. |
+| `_FlowState.as_row(self) -> dict[str, Any]` (L314) | method | Public | Implementation helper for as row. |
+| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L359) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. The first observed packet defines the forward direction. Packet lengths are captured frame lengths and durations/IATs are expressed in seconds. No idle timeout is guessed: one row is produced per bidirectional 5-tuple across the capture. Consequently this view is infrastructure for later sequence and reference metrics, not evidence that self-derived flow arithmetic is realistic. |
+| `pcap_metric_template(metric_id: str) -> dict | None` (L417) | function | Public | Return only templates whose PCAP inputs are copied from packet evidence. |
+
 ## `runner/plan_builder.py`
 
 Python symbols defined by `runner/plan_builder.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `dataset_format(dataset_path: Path | None) -> str | None` (L33) | function | Public | Implementation helper for dataset format. |
-| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L40) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
-| `_configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | None, list[str]]` (L99) | function | Internal | Implementation helper for configuration state. |
-| `_metric_from_spec(metric_spec: dict) -> dict` (L129) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
-| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None) -> tuple[dict, dict]` (L150) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
-| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L269) | function | Public | Validate and atomically write a generated plan. |
+| `dataset_format(dataset_path: Path | None) -> str | None` (L36) | function | Public | Implementation helper for dataset format. |
+| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L43) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
+| `_configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | None, list[str]]` (L106) | function | Internal | Implementation helper for configuration state. |
+| `_metric_from_spec(metric_spec: dict) -> dict` (L147) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
+| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None) -> tuple[dict, dict]` (L168) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
+| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L291) | function | Public | Validate and atomically write a generated plan. |
 
 ## `runner/progress.py`
 

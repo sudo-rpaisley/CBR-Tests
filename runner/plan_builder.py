@@ -16,10 +16,13 @@ from runner.field_translation import (
     merge_field_translations,
     read_tabular_dataset_columns,
 )
-from runner.metric_catalog import (
-    PCAP_ONLY_METRICS,
-    build_metric_catalog,
-    required_fields,
+from runner.metric_catalog import build_metric_catalog, required_fields
+from runner.pcap_adapter import (
+    PCAP_DIRECT_METRICS,
+    PCAP_PACKET_COLUMNS,
+    PCAP_PACKET_METRICS,
+    PCAP_SELF_DERIVED_METRICS,
+    pcap_metric_template,
 )
 from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy
@@ -85,7 +88,11 @@ def inspect_dataset(
             explicit_translation = load_field_translation(resolved_translation_path)
 
     translation = merge_field_translations(automatic_translation, explicit_translation)
-    fields = available_translated_fields(columns, translation) if columns else set()
+    fields = (
+        available_translated_fields(columns, translation)
+        if columns
+        else set(PCAP_PACKET_COLUMNS) if suffix in PCAP_SUFFIXES else set()
+    )
     return {
         "path": dataset_path,
         "format": dataset_format(dataset_path),
@@ -109,11 +116,22 @@ def _configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | N
 
     is_pcap = fmt in {"pcap", "pcapng"}
     if is_pcap:
-        if metric_id in PCAP_ONLY_METRICS:
+        if metric_id in PCAP_DIRECT_METRICS:
             return "ready", None, []
-        return "not_applicable", "tabular_metric_on_packet_capture", []
+        if metric_id in PCAP_SELF_DERIVED_METRICS:
+            return "not_applicable", "self_derived_pcap_invariant_not_independent", []
+        if metric_id in PCAP_PACKET_METRICS:
+            if template is None:
+                return "needs_configuration", "pcap_adapter_template_missing", []
+            required = required_fields(template)
+            available = dataset.get("available_fields", set())
+            missing = [field for field in required if field not in available]
+            if missing:
+                return "needs_mapping", "pcap_adapter_fields_missing", missing
+            return "ready", None, []
+        return "not_applicable", "pcap_adapter_not_available", []
 
-    if metric_id in PCAP_ONLY_METRICS:
+    if metric_id in PCAP_DIRECT_METRICS:
         return "not_applicable", "packet_capture_metric_on_tabular_dataset", []
     if template is None:
         return "needs_configuration", "no_metric_template_available", []
@@ -186,6 +204,10 @@ def build_plan(
         metric_id = spec["metric_id"]
         if metric_id not in selected:
             continue
+
+        if dataset["format"] in {"pcap", "pcapng"} and metric_id in PCAP_PACKET_METRICS:
+            spec = dict(spec)
+            spec["template"] = pcap_metric_template(metric_id)
 
         state, reason, missing = _configuration_state(spec, dataset)
         included = state == "ready"

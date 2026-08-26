@@ -7,16 +7,14 @@ from typing import Iterable
 
 from runner.dispatch import build_metric_handlers
 from runner.field_translation import collect_required_test_fields_for_metric
+from runner.pcap_adapter import PCAP_DIRECT_METRICS
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TAXONOMY_PATH = REPOSITORY_ROOT / "taxonomy" / "master_taxonomy.json"
 DEFAULT_PLANS_DIR = REPOSITORY_ROOT / "plans"
 
-PCAP_ONLY_METRICS = {
-    "protocol_validity_profile",
-    "timestamp_coherence_profile",
-}
+PCAP_ONLY_METRICS = PCAP_DIRECT_METRICS
 
 MANUAL_CONFIGURATION_REASONS = {
     "service_port_consistency_profile": "service_definition_required",

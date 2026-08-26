@@ -93,6 +93,11 @@ def test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path):
         ok, payload = runner(capture, metric)
         assert ok is True, (metric_id, payload)
         assert metric_id in payload["test_results"]
+        if metric_id == "reserved_ip_address_profile":
+            result = payload["test_results"][metric_id]
+            assert result["reserved_category_counts"]["private"] > 0
+            assert result["reserved_address_count"] == 0
+            assert result["status"] == "pass"
 
 
 def test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates():

@@ -23,3 +23,9 @@ Scans raw PCAP packet timestamps for backward jumps, zero deltas, and large gaps
 - **Primary output:** Packet/capture/gap counts, mean/max gap, domain status.
 - **Interpretation:** Backward jumps yield warn; otherwise pass. Large gaps and zero deltas are reported but do not change status by themselves.
 - **Current caveat:** Loads packets sequentially through Scapy; empty/unreadable captures are execution failures.
+
+## Canonical PCAP adapter
+
+PCAP/PCAPNG files are also decoded into a shared packet view containing capture-order index, timestamp, IP addresses, transport ports where present, protocol, IP version, packet length and TCP flags. This allows existing packet-evidence metrics such as `reserved_ip_address_profile` and `valid_port_range_profile` to run without converting the capture to CSV first.
+
+The adapter also exposes a bidirectional 5-tuple flow view for future sequence/reference work. Current automatic plans intentionally exclude self-consistency tests whose compared values would both be derived by this adapter, because those passes would not provide independent evidence about dataset realism.

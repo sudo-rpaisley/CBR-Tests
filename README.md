@@ -64,6 +64,10 @@ python run_plan.py \
   --case-id example_local
 ```
 
+### Raw PCAP support
+
+Automatic plans for `.pcap`/`.pcapng` now include direct packet checks plus safe packet-field adapters for special-use IP profiling and port-range validation. Flow views are reconstructed for future sequence/reference metrics, but self-derived flow arithmetic is not counted as independent realism evidence.
+
 ## Documentation
 
 Start with [the documentation index](docs/index.md).

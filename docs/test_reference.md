@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **137 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **141 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -184,6 +184,25 @@ Production-package and compatibility-import boundaries.
 | `test_legacy_metric_modules_reexport_production_implementations()` (L28) | Verifies that legacy metric modules reexport production implementations. | Assertions and fixtures in the module |
 | `test_dispatch_does_not_import_moved_metric_implementations_from_tests()` (L54) | Verifies that dispatch does not import moved metric implementations from tests. | `inspect.getsource`, `any` |
 
+## `tests/test_pcap_adapter.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path)` (L37) | Verifies that build PCAP packet dataframe copies raw packet fields. | `_write_capture`, `build_pcap_packet_dataframe` |
+| `test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path)` (L52) | Verifies that build PCAP flow dataframe reconstructs bidirectional view. | `_write_capture`, `build_pcap_flow_dataframe`, `pytest.approx` |
+| `test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path)` (L78) | Verifies that packet adapted metrics run on raw packet view. | `_write_capture`, `build_pcap_packet_dataframe`, `runners.items`, `pcap_metric_template`, `runner` |
+| `test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates()` (L103) | Verifies that self derived flow invariants are not exposed as PCAP templates. | `pcap_metric_template` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_capture(path: Path) -> None` (L25) | Implementation helper for write capture. |
+
 ## `tests/test_plan_builder.py`
 
 Tests and local helpers in this module.
@@ -192,15 +211,15 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_metric_catalog_covers_runtime_dispatcher()` (L12) | Verifies that metric catalog covers runtime dispatcher. | `available_metric_ids`, `_slug`, `build_metric_catalog` |
-| `test_automatic_plan_requires_dataset()` (L21) | Verifies that automatic plan requires dataset. | `pytest.raises`, `build_plan` |
-| `test_generated_plan_contains_only_ready_enabled_metrics(tmp_path)` (L26) | Verifies that generated plan contains only ready enabled metrics. | `build_plan`, `all`, `validate_plan_schema` |
-| `test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule(tmp_path)` (L53) | Verifies that dataset preflight includes ready port range and excludes service rule. | `build_plan` |
-| `test_reference_metrics_are_reported_but_never_written_without_reference_configuration(tmp_path)` (L71) | Verifies that reference metrics are reported but never written without reference configuration. | `build_plan`, `metric_id.endswith` |
-| `test_existing_field_translation_sidecar_can_make_metric_runnable(tmp_path)` (L93) | Verifies that existing field translation sidecar can make metric runnable. | `sidecar.write_text`, `build_plan`, `sidecar.resolve` |
-| `test_pcap_plan_contains_only_packet_capture_metrics(tmp_path)` (L122) | Verifies that PCAP plan contains only packet capture metrics. | `dataset.write_bytes`, `build_plan`, `all` |
-| `test_include_exclude_rejects_unknown_metric_ids(tmp_path)` (L134) | Verifies that include exclude rejects unknown metric ids. | `pytest.raises`, `build_plan` |
-| `test_write_plan_is_valid_and_requires_force_for_overwrite(tmp_path)` (L147) | Verifies that write plan is valid and requires force for overwrite. | `build_plan`, `write_plan`, `validate_plan_schema`, `pytest.raises` |
+| `test_metric_catalog_covers_runtime_dispatcher()` (L13) | Verifies that metric catalog covers runtime dispatcher. | `available_metric_ids`, `_slug`, `build_metric_catalog` |
+| `test_automatic_plan_requires_dataset()` (L22) | Verifies that automatic plan requires dataset. | `pytest.raises`, `build_plan` |
+| `test_generated_plan_contains_only_ready_enabled_metrics(tmp_path)` (L27) | Verifies that generated plan contains only ready enabled metrics. | `build_plan`, `all`, `validate_plan_schema` |
+| `test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule(tmp_path)` (L54) | Verifies that dataset preflight includes ready port range and excludes service rule. | `build_plan` |
+| `test_reference_metrics_are_reported_but_never_written_without_reference_configuration(tmp_path)` (L72) | Verifies that reference metrics are reported but never written without reference configuration. | `build_plan`, `metric_id.endswith` |
+| `test_existing_field_translation_sidecar_can_make_metric_runnable(tmp_path)` (L94) | Verifies that existing field translation sidecar can make metric runnable. | `sidecar.write_text`, `build_plan`, `sidecar.resolve` |
+| `test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_path)` (L123) | Verifies that PCAP plan includes direct and independent packet adapter metrics. | `dataset.write_bytes`, `build_plan`, `all` |
+| `test_include_exclude_rejects_unknown_metric_ids(tmp_path)` (L139) | Verifies that include exclude rejects unknown metric ids. | `pytest.raises`, `build_plan` |
+| `test_write_plan_is_valid_and_requires_force_for_overwrite(tmp_path)` (L152) | Verifies that write plan is valid and requires force for overwrite. | `build_plan`, `write_plan`, `validate_plan_schema`, `pytest.raises` |
 
 ## `tests/test_protocol_validity_profile.py`
 
