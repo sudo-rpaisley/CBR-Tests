@@ -123,11 +123,12 @@ Python symbols defined by `create_plan.py`.
 | `_slug(value: str) -> str` (L14) | function | Internal | Implementation helper for slug. |
 | `_split_metric_args(values: list[str] | None) -> list[str] | None` (L19) | function | Internal | Implementation helper for split metric args. |
 | `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L28) | function | Internal | Implementation helper for prompt. |
-| `_print_report(report: dict) -> None` (L48) | function | Internal | Implementation helper for print report. |
-| `_list_tests() -> None` (L72) | function | Internal | Implementation helper for list tests. |
-| `_check_plan(path: Path) -> int` (L80) | function | Internal | Implementation helper for check plan. |
-| `parse_args() -> argparse.Namespace` (L97) | function | Public | Parses args. |
-| `main() -> int` (L127) | function | Public | Implementation helper for main. |
+| `_confirm_overwrite(output_path: Path) -> bool` (L48) | function | Internal | Ask an interactive user whether an existing plan may be replaced. |
+| `_print_report(report: dict) -> None` (L58) | function | Internal | Implementation helper for print report. |
+| `_list_tests() -> None` (L82) | function | Internal | Implementation helper for list tests. |
+| `_check_plan(path: Path) -> int` (L90) | function | Internal | Implementation helper for check plan. |
+| `parse_args() -> argparse.Namespace` (L107) | function | Public | Parses args. |
+| `main() -> int` (L137) | function | Public | Implementation helper for main. |
 
 ## `export_outcomes_for_graphs.py`
 

@@ -45,6 +45,16 @@ def _prompt(value: str | None, label: str, default: str | None = None, *, requir
             return None
 
 
+def _confirm_overwrite(output_path: Path) -> bool:
+    """Ask an interactive user whether an existing plan may be replaced."""
+
+    answer = input(
+        f"\nPlan already exists: {output_path}\n"
+        "Overwrite the existing plan? [y/N] "
+    ).strip().lower()
+    return answer in {"y", "yes"}
+
+
 def _print_report(report: dict) -> None:
     print("\nPlan preflight summary")
     print(f"  Available tests:       {report['available_metric_count']}")
@@ -118,7 +128,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--include", action="append", help="Only consider these metric IDs (repeat or comma-separate)")
     parser.add_argument("--exclude", action="append", help="Do not consider these metric IDs (repeat or comma-separate)")
-    parser.add_argument("--force", action="store_true", help="Replace an existing output plan")
+    parser.add_argument("--force", action="store_true", help="Replace an existing output plan without prompting")
     parser.add_argument("--list-tests", action="store_true", help="List all tests discoverable by plan creation")
     parser.add_argument("--check", metavar="PLAN", help="Validate a plan and compare it with the live registry")
     return parser.parse_args()
@@ -166,6 +176,8 @@ def main() -> int:
         print(f"\nPlan ID:     {plan_id}")
         print(f"Dataset:     {dataset_path}")
         print(f"Output path: {output_path}")
+        if output_path.exists() and not args.force:
+            print("Output status: existing plan (overwrite confirmation will be requested before saving)")
 
     plan, report = build_plan(
         plan_id=plan_id,
@@ -178,13 +190,21 @@ def main() -> int:
     )
     _print_report(report)
 
-    if sys.stdin.isatty():
+    interactive = sys.stdin.isatty()
+    if interactive:
         answer = input("\nSave this runnable-only plan? [Y/n] ").strip().lower()
         if answer not in {"", "y", "yes"}:
             print("Plan not saved.")
             return 0
 
-    written_path = write_plan(output_path, plan, overwrite=args.force)
+    overwrite = args.force
+    if output_path.exists() and not overwrite and interactive:
+        overwrite = _confirm_overwrite(output_path)
+        if not overwrite:
+            print("Plan not saved; existing plan was left unchanged.")
+            return 0
+
+    written_path = write_plan(output_path, plan, overwrite=overwrite)
     print(f"\nPlan written: {written_path}")
     return 0
 
