@@ -217,6 +217,27 @@ def run_distance_correlation_metric(
     minimum_runnable_fields = metric["input_requirements"].get(
         "minimum_runnable_fields", 2
     )
+    parameters = metric.get("calculation", {}).get("parameters", {})
+    max_sample_size = parameters.get("max_sample_size")
+    sampling = None
+    if max_sample_size is not None:
+        max_sample_size = int(max_sample_size)
+        if max_sample_size < 2:
+            return False, {
+                "error": "max_sample_size must be at least 2 for distance correlation.",
+                "reason_code": "invalid_metric_configuration",
+            }
+        if len(df) > max_sample_size:
+            original_row_count = len(df)
+            step = (original_row_count - 1) / (max_sample_size - 1)
+            positions = [round(index * step) for index in range(max_sample_size)]
+            df = df.iloc[positions].copy()
+            sampling = {
+                "method": "deterministic_evenly_spaced_rows",
+                "original_row_count": original_row_count,
+                "sampled_row_count": len(df),
+                "max_sample_size": max_sample_size,
+            }
     result = compute_distance_correlation_profile(df, candidate_fields)
     runnable_fields = result["profile"]["fields"]
     if len(runnable_fields) < minimum_runnable_fields:
@@ -224,12 +245,15 @@ def run_distance_correlation_metric(
             "column_validation": result["column_validation"],
             "error": "Not enough usable numeric columns to compute distance correlation.",
         }
-    return True, {
+    payload = {
         "column_validation": result["column_validation"],
         "test_results": {
             "distance_correlation_matrix_deviation": result["profile"]
         },
     }
+    if sampling is not None:
+        payload["sampling"] = sampling
+    return True, payload
 
 
 def run_column_quality_metric(

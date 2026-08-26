@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 import math
 from pathlib import Path
@@ -16,12 +17,50 @@ PCAP_DIRECT_METRICS = {
     "timestamp_coherence_profile",
 }
 
-# Existing metrics that can consume fields copied directly from packet records.
-# These checks are independent of the flow reconstruction calculations below.
-PCAP_PACKET_METRICS = {
+# Existing metrics that can consume the canonical decoded-packet view without
+# requiring dataset-specific research assumptions.  These are grouped by the
+# question they ask so automatic PCAP planning can expose every currently safe
+# runnable metric rather than an arbitrary shortlist.
+PCAP_PACKET_NETWORK_METRICS = {
     "reserved_ip_address_profile",
     "valid_port_range_profile",
 }
+
+PCAP_PACKET_DATA_QUALITY_METRICS = {
+    "column_quality_profile",
+    "missing_value_ratio",
+    "duplicate_row_ratio",
+}
+
+PCAP_PACKET_DEPENDENCY_METRICS = {
+    "pearson_correlation_profile",
+    "spearman_correlation_matrix_deviation",
+    "distance_correlation_matrix_deviation",
+}
+
+PCAP_PACKET_DISTRIBUTION_METRICS = {
+    "kolmogorov_smirnov_feature_divergence",
+    "wasserstein_feature_distance",
+    "energy_distance",
+    "maximum_mean_discrepancy",
+}
+
+PCAP_PACKET_TEMPORAL_METRICS = {
+    "timestamp_parse_success_ratio",
+    "inter_arrival_time_distribution_divergence",
+    "burstiness_coefficient_deviation",
+    "hourly_activity_distribution_divergence",
+    "diurnal_pattern_similarity_score",
+    "periodicity_preservation_score",
+}
+
+PCAP_PACKET_METRICS = (
+    PCAP_PACKET_NETWORK_METRICS
+    | PCAP_PACKET_DATA_QUALITY_METRICS
+    | PCAP_PACKET_DEPENDENCY_METRICS
+    | PCAP_PACKET_DISTRIBUTION_METRICS
+    | PCAP_PACKET_TEMPORAL_METRICS
+)
 
 PCAP_SUPPORTED_METRICS = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
 
@@ -34,6 +73,15 @@ PCAP_SELF_DERIVED_METRICS = {
     "flow_duration_consistency_profile",
     "packet_byte_consistency_profile",
     "derived_rate_consistency_profile",
+    "start_end_timestamp_consistency_ratio",
+    "non_negative_duration_ratio",
+}
+
+# These metrics could consume reconstructed information, but their scientific
+# interpretation depends on capture-boundary or experiment context that must be
+# supplied explicitly rather than guessed by the automatic planner.
+PCAP_CONTEXT_CONFIGURATION_REASONS = {
+    "handshake_plausibility_profile": "capture_boundary_policy_required",
 }
 
 PCAP_PACKET_COLUMNS = {
@@ -47,6 +95,7 @@ PCAP_PACKET_COLUMNS = {
     "IP Version",
     "Packet Length",
     "TCP Flags",
+    "Inter Arrival Time",
 }
 
 # Canonical flow view retained for later sequence/reference metrics. It is not
@@ -155,12 +204,24 @@ def build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame:
         raise ValueError(f"Not a PCAP/PCAPNG dataset: {path}")
 
     rows: list[dict[str, Any]] = []
+    previous_timestamp: float | None = None
     with PcapReader(str(path)) as reader:
         for packet_index, packet in enumerate(reader):
             fields = _packet_fields(packet)
             if fields is None:
                 continue
-            rows.append({"Packet Index": packet_index, **fields})
+            timestamp = float(fields["Timestamp"])
+            inter_arrival_time = (
+                None if previous_timestamp is None else timestamp - previous_timestamp
+            )
+            previous_timestamp = timestamp
+            rows.append(
+                {
+                    "Packet Index": packet_index,
+                    **fields,
+                    "Inter Arrival Time": inter_arrival_time,
+                }
+            )
 
     return pd.DataFrame(rows, columns=sorted(PCAP_PACKET_COLUMNS))
 
@@ -415,8 +476,17 @@ def build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame:
 
 
 def pcap_metric_template(metric_id: str) -> dict | None:
-    """Return only templates whose PCAP inputs are copied from packet evidence."""
+    """Return a deterministic template for a metric safe on decoded packet evidence.
 
+    The templates deliberately avoid dataset-specific policy such as service
+    definitions, allowed slice IDs, reference datasets, attack windows, or model
+    configuration.  Numeric dependency/drift metrics use packet length and
+    capture-order inter-arrival time because those quantities have meaningful
+    continuous scales; TCP flag bitmasks and port identifiers are not treated as
+    ordinal measurements for correlation.
+    """
+
+    numeric_analysis_fields = ["Packet Length", "Inter Arrival Time"]
     templates = {
         "reserved_ip_address_profile": {
             "metric_id": "reserved_ip_address_profile",
@@ -446,6 +516,193 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                 },
             },
         },
+        "column_quality_profile": {
+            "metric_id": "column_quality_profile",
+            "label": "Canonical Packet Numeric Field Profile",
+            "input_requirements": {
+                "candidate_fields": [
+                    "Packet Length",
+                    "Inter Arrival Time",
+                    "Source Port",
+                    "Destination Port",
+                    "TCP Flags",
+                ],
+            },
+            "calculation": {
+                "method": "Profile numeric usability of canonical packet fields; missing transport fields are protocol-conditional and descriptive rather than automatically unrealistic.",
+                "parameters": {},
+            },
+        },
+        "missing_value_ratio": {
+            "metric_id": "missing_value_ratio",
+            "label": "Canonical Packet Field Missingness",
+            "input_requirements": {
+                "candidate_fields": [
+                    "Timestamp",
+                    "Source IP",
+                    "Destination IP",
+                    "Source Port",
+                    "Destination Port",
+                    "Protocol",
+                    "IP Version",
+                    "Packet Length",
+                    "TCP Flags",
+                    "Inter Arrival Time",
+                ],
+            },
+            "calculation": {
+                "method": "Profile missingness in canonical packet fields; port/TCP-flag absence is protocol-conditional and the first inter-arrival value is expected to be missing.",
+                "parameters": {},
+            },
+        },
+        "duplicate_row_ratio": {
+            "metric_id": "duplicate_row_ratio",
+            "label": "Repeated Packet-Signature Ratio",
+            "input_requirements": {
+                "subset_fields": [
+                    "Source IP",
+                    "Destination IP",
+                    "Source Port",
+                    "Destination Port",
+                    "Protocol",
+                    "IP Version",
+                    "Packet Length",
+                    "TCP Flags",
+                ],
+            },
+            "calculation": {
+                "method": "Measure repeated canonical packet signatures while excluding capture index and timestamp; repeats are descriptive because retransmissions and repeated requests may be legitimate.",
+                "parameters": {},
+            },
+        },
+        "pearson_correlation_profile": {
+            "metric_id": "pearson_correlation_profile",
+            "label": "Packet Length/IAT Pearson Profile",
+            "input_requirements": {
+                "candidate_fields": numeric_analysis_fields,
+                "minimum_runnable_fields": 2,
+            },
+            "calculation": {
+                "method": "Compute Pearson dependence between packet length and capture-order inter-arrival time.",
+                "parameters": {},
+            },
+        },
+        "spearman_correlation_matrix_deviation": {
+            "metric_id": "spearman_correlation_matrix_deviation",
+            "label": "Packet Length/IAT Spearman Profile",
+            "input_requirements": {
+                "candidate_fields": numeric_analysis_fields,
+                "minimum_runnable_fields": 2,
+            },
+            "calculation": {
+                "method": "Compute Spearman rank dependence between packet length and capture-order inter-arrival time.",
+                "parameters": {},
+            },
+        },
+        "distance_correlation_matrix_deviation": {
+            "metric_id": "distance_correlation_matrix_deviation",
+            "label": "Packet Length/IAT Distance-Correlation Profile",
+            "input_requirements": {
+                "candidate_fields": numeric_analysis_fields,
+                "minimum_runnable_fields": 2,
+            },
+            "calculation": {
+                "method": "Compute nonlinear distance correlation between packet length and capture-order inter-arrival time using a deterministic evenly spaced computational sample when necessary.",
+                "parameters": {
+                    "max_sample_size": 1000,
+                },
+            },
+        },
+        "kolmogorov_smirnov_feature_divergence": {
+            "metric_id": "kolmogorov_smirnov_feature_divergence",
+            "label": "Packet Feature KS Internal Drift",
+            "input_requirements": {"candidate_fields": numeric_analysis_fields},
+            "calculation": {
+                "method": "Compare first- and second-half packet-length and inter-arrival distributions with the two-sample KS statistic.",
+                "parameters": {"minimum_sample_size": 2, "max_sample_size": 1000},
+            },
+        },
+        "wasserstein_feature_distance": {
+            "metric_id": "wasserstein_feature_distance",
+            "label": "Packet Feature Wasserstein Internal Drift",
+            "input_requirements": {"candidate_fields": numeric_analysis_fields},
+            "calculation": {
+                "method": "Compare first- and second-half packet-length and inter-arrival distributions with one-dimensional Wasserstein distance.",
+                "parameters": {"minimum_sample_size": 2, "max_sample_size": 1000},
+            },
+        },
+        "energy_distance": {
+            "metric_id": "energy_distance",
+            "label": "Packet Feature Energy-Distance Internal Drift",
+            "input_requirements": {"candidate_fields": numeric_analysis_fields},
+            "calculation": {
+                "method": "Compare first- and second-half packet-length and inter-arrival distributions with the implemented energy-distance expression.",
+                "parameters": {"minimum_sample_size": 2, "max_sample_size": 1000},
+            },
+        },
+        "maximum_mean_discrepancy": {
+            "metric_id": "maximum_mean_discrepancy",
+            "label": "Packet Feature MMD Internal Drift",
+            "input_requirements": {"candidate_fields": numeric_analysis_fields},
+            "calculation": {
+                "method": "Compare first- and second-half packet-length and inter-arrival distributions with RBF-kernel squared MMD.",
+                "parameters": {"minimum_sample_size": 2, "max_sample_size": 1000},
+            },
+        },
+        "timestamp_parse_success_ratio": {
+            "metric_id": "timestamp_parse_success_ratio",
+            "label": "Packet Timestamp Parse Success Ratio",
+            "input_requirements": {"timestamp_field": "Timestamp"},
+            "calculation": {
+                "method": "Parse PCAP epoch timestamps explicitly as seconds since the Unix epoch.",
+                "parameters": {"timestamp_unit": "s"},
+            },
+        },
+        "inter_arrival_time_distribution_divergence": {
+            "metric_id": "inter_arrival_time_distribution_divergence",
+            "label": "Packet Inter-Arrival Internal Divergence",
+            "input_requirements": {"timestamp_field": "Timestamp"},
+            "calculation": {
+                "method": "Compare first- and second-half packet inter-arrival distributions using decoded PCAP timestamps.",
+                "parameters": {"timestamp_unit": "s", "minimum_sample_size": 2},
+            },
+        },
+        "burstiness_coefficient_deviation": {
+            "metric_id": "burstiness_coefficient_deviation",
+            "label": "Packet Burstiness Coefficient Deviation",
+            "input_requirements": {"timestamp_field": "Timestamp"},
+            "calculation": {
+                "method": "Compare burstiness coefficients of first- and second-half packet inter-arrival gaps.",
+                "parameters": {"timestamp_unit": "s"},
+            },
+        },
+        "hourly_activity_distribution_divergence": {
+            "metric_id": "hourly_activity_distribution_divergence",
+            "label": "Packet Hourly Activity Divergence",
+            "input_requirements": {"timestamp_field": "Timestamp"},
+            "calculation": {
+                "method": "Compare first- and second-half UTC hourly packet activity distributions.",
+                "parameters": {"timestamp_unit": "s"},
+            },
+        },
+        "diurnal_pattern_similarity_score": {
+            "metric_id": "diurnal_pattern_similarity_score",
+            "label": "Packet Diurnal Pattern Similarity",
+            "input_requirements": {"timestamp_field": "Timestamp"},
+            "calculation": {
+                "method": "Compare first- and second-half UTC hourly packet-count shapes using cosine similarity.",
+                "parameters": {"timestamp_unit": "s"},
+            },
+        },
+        "periodicity_preservation_score": {
+            "metric_id": "periodicity_preservation_score",
+            "label": "Packet Periodicity Preservation Score",
+            "input_requirements": {"timestamp_field": "Timestamp"},
+            "calculation": {
+                "method": "Compare autocorrelation of first- and second-half UTC hourly packet counts at configured lags.",
+                "parameters": {"timestamp_unit": "s", "lags": [1, 24]},
+            },
+        },
     }
     template = templates.get(metric_id)
-    return None if template is None else {**template}
+    return None if template is None else deepcopy(template)

@@ -85,7 +85,7 @@ def test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path):
         "valid_port_range_profile": run_valid_port_range_metric,
     }
 
-    assert set(runners) == PCAP_PACKET_METRICS
+    assert set(runners).issubset(PCAP_PACKET_METRICS)
     for metric_id, runner in runners.items():
         metric = pcap_metric_template(metric_id)
         assert metric is not None

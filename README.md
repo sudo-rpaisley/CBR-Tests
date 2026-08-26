@@ -66,7 +66,9 @@ python run_plan.py \
 
 ### Raw PCAP support
 
-Automatic plans for `.pcap`/`.pcapng` now include direct packet checks plus safe packet-field adapters for special-use IP profiling and port-range validation. Flow views are reconstructed for future sequence/reference metrics, but self-derived flow arithmetic is not counted as independent realism evidence.
+Automatic plans for `.pcap`/`.pcapng` include **all 20 existing metrics that are currently runnable from raw packet evidence without inventing research configuration**. This covers the two direct packet-capture checks, IP/port validation, packet-field data quality, packet-length/inter-arrival dependency profiles, internal distribution-drift metrics, and packet-timestamp temporal metrics.
+
+Metrics that need a reference dataset, service definition, labels, slices, attack windows, train/test information, benchmark configuration, or an explicit capture-boundary policy remain visible in preflight but are not inserted into the plan. Flow self-consistency checks are also excluded where both sides of the comparison would be calculated by CBR-Tests itself, because that would test the adapter rather than provide independent realism evidence.
 
 ## Documentation
 

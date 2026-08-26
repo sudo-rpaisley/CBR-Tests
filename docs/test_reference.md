@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **145 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **150 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -202,6 +202,27 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write_capture(path: Path) -> None` (L25) | Implementation helper for write capture. |
+
+## `tests/test_pcap_all_runnable_metrics.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_pcap_supported_set_contains_every_current_automatic_packet_metric()` (L43) | Verifies that PCAP supported set contains every current automatic packet metric. | Assertions and fixtures in the module |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L50) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['timestamp_parse_success_ratio']`, `AssertionError`, `handlers[metric_id]` |
+| `test_automatic_pcap_plan_contains_all_twenty_currently_runnable_metrics(tmp_path)` (L77) | Verifies that automatic PCAP plan contains all twenty currently runnable metrics. | `_write_capture`, `build_plan` |
+| `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L93) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
+| `test_context_configuration_reasons_are_not_silent_exclusions()` (L111) | Verifies that context configuration reasons are not silent exclusions. | Assertions and fixtures in the module |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_capture(path: Path, packet_count: int = 64) -> None` (L21) | Implementation helper for write capture. |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L59) | Implementation helper for forbidden loader. |
 
 ## `tests/test_plan_builder.py`
 

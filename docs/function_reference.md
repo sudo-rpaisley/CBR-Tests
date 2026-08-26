@@ -88,22 +88,23 @@ Timestamp, duration, timing-drift, hourly, and periodicity calculations.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `_timestamp_field(metric: dict, default: str = 'timestamp') -> str` (L8) | function | Internal | Implementation helper for timestamp field. |
-| `_parse_timestamp_series(df: pd.DataFrame, field: str) -> pd.Series` (L12) | function | Internal | Implementation helper for parse timestamp series. |
-| `_ks_statistic(left: list[float], right: list[float]) -> float` (L18) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
-| `_split_list(values: list) -> tuple[list, list]` (L37) | function | Internal | Implementation helper for split list. |
-| `_inter_arrival_seconds(timestamps: pd.Series) -> list[float]` (L42) | function | Internal | Implementation helper for inter arrival seconds. |
-| `compute_timestamp_parse_success_ratio(df: pd.DataFrame, metric: dict) -> dict` (L50) | function | Public | Computes timestamp parse success ratio and returns a structured result. |
-| `compute_start_end_timestamp_consistency_ratio(df: pd.DataFrame, metric: dict) -> dict` (L68) | function | Public | Computes start end timestamp consistency ratio and returns a structured result. |
-| `compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict` (L98) | function | Public | Computes non negative duration ratio and returns a structured result. |
-| `compute_inter_arrival_time_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L132) | function | Public | Computes inter arrival time distribution divergence and returns a structured result. |
-| `_burstiness(values: list[float]) -> float | None` (L155) | function | Internal | Implementation helper for burstiness. |
-| `compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict` (L165) | function | Public | Computes burstiness coefficient deviation and returns a structured result. |
-| `_hourly_counts(timestamps: list[pd.Timestamp]) -> list[int]` (L192) | function | Internal | Implementation helper for hourly counts. |
-| `_probabilities(counts: list[int]) -> list[float]` (L199) | function | Internal | Implementation helper for probabilities. |
-| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L204) | function | Public | Computes hourly activity distribution divergence and returns a structured result. |
-| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L230) | function | Public | Computes diurnal pattern similarity score and returns a structured result. |
-| `_autocorrelation(values: list[int], lag: int) -> float | None` (L253) | function | Internal | Implementation helper for autocorrelation. |
-| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L265) | function | Public | Computes periodicity preservation score and returns a structured result. |
+| `_timestamp_unit(metric: dict) -> str | None` (L12) | function | Internal | Implementation helper for timestamp unit. |
+| `_parse_timestamp_series(df: pd.DataFrame, field: str, unit: str | None = None) -> pd.Series` (L22) | function | Internal | Implementation helper for parse timestamp series. |
+| `_ks_statistic(left: list[float], right: list[float]) -> float` (L34) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
+| `_split_list(values: list) -> tuple[list, list]` (L53) | function | Internal | Implementation helper for split list. |
+| `_inter_arrival_seconds(timestamps: pd.Series) -> list[float]` (L58) | function | Internal | Implementation helper for inter arrival seconds. |
+| `compute_timestamp_parse_success_ratio(df: pd.DataFrame, metric: dict) -> dict` (L66) | function | Public | Computes timestamp parse success ratio and returns a structured result. |
+| `compute_start_end_timestamp_consistency_ratio(df: pd.DataFrame, metric: dict) -> dict` (L84) | function | Public | Computes start end timestamp consistency ratio and returns a structured result. |
+| `compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict` (L114) | function | Public | Computes non negative duration ratio and returns a structured result. |
+| `compute_inter_arrival_time_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L148) | function | Public | Computes inter arrival time distribution divergence and returns a structured result. |
+| `_burstiness(values: list[float]) -> float | None` (L171) | function | Internal | Implementation helper for burstiness. |
+| `compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict` (L181) | function | Public | Computes burstiness coefficient deviation and returns a structured result. |
+| `_hourly_counts(timestamps: list[pd.Timestamp]) -> list[int]` (L208) | function | Internal | Implementation helper for hourly counts. |
+| `_probabilities(counts: list[int]) -> list[float]` (L215) | function | Internal | Implementation helper for probabilities. |
+| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L220) | function | Public | Computes hourly activity distribution divergence and returns a structured result. |
+| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L246) | function | Public | Computes diurnal pattern similarity score and returns a structured result. |
+| `_autocorrelation(values: list[int], lag: int) -> float | None` (L269) | function | Internal | Implementation helper for autocorrelation. |
+| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L281) | function | Public | Computes periodicity preservation score and returns a structured result. |
 
 ## `cbr_tests/metrics/timestamp_coherence.py`
 
@@ -187,24 +188,24 @@ Metric registry, wrappers, field translation, and handler construction.
 | `run_duplicate_row_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L185) | function | Public | Runs duplicate row metric. |
 | `run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None, metric_id: str, compute_fn)` (L197) | function | Public | Runs tabular metric. |
 | `run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L209) | function | Public | Runs distance correlation metric. |
-| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L235) | function | Public | Runs column quality metric. |
-| `_timestamp_metric(dataset_path: Path, metric: dict)` (L248) | function | Internal | Implementation helper for timestamp metric. |
-| `_protocol_metric(dataset_path: Path, metric: dict)` (L253) | function | Internal | Implementation helper for protocol metric. |
-| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L258) | function | Internal | Implementation helper for reserved IP metric. |
-| `_valid_port_metric(dataset_path: Path, metric: dict)` (L263) | function | Internal | Implementation helper for valid port metric. |
-| `_service_port_metric(dataset_path: Path, metric: dict)` (L268) | function | Internal | Implementation helper for service port metric. |
-| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L273) | function | Internal | Implementation helper for TCP flag metric. |
-| `_handshake_metric(dataset_path: Path, metric: dict)` (L278) | function | Internal | Implementation helper for handshake metric. |
-| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L283) | function | Internal | Implementation helper for flow duration metric. |
-| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L288) | function | Internal | Implementation helper for packet byte metric. |
-| `_derived_rate_metric(dataset_path: Path, metric: dict)` (L293) | function | Internal | Implementation helper for derived rate metric. |
-| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L298) | function | Internal | Implementation helper for slice valid metric. |
-| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L303) | function | Internal | Implementation helper for slice consistency metric. |
-| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L357) | function | Internal | Implementation helper for wrap registered handler. |
-| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L362) | nested function | Internal | Implementation helper for wrapped. |
-| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L377) | function | Internal | Implementation helper for make tabular compute handler. |
-| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L398) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
-| `build_metric_handlers._translate(metric: dict)` (L408) | nested function | Internal | Implementation helper for translate. |
+| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L259) | function | Public | Runs column quality metric. |
+| `_timestamp_metric(dataset_path: Path, metric: dict)` (L272) | function | Internal | Implementation helper for timestamp metric. |
+| `_protocol_metric(dataset_path: Path, metric: dict)` (L277) | function | Internal | Implementation helper for protocol metric. |
+| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L282) | function | Internal | Implementation helper for reserved IP metric. |
+| `_valid_port_metric(dataset_path: Path, metric: dict)` (L287) | function | Internal | Implementation helper for valid port metric. |
+| `_service_port_metric(dataset_path: Path, metric: dict)` (L292) | function | Internal | Implementation helper for service port metric. |
+| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L297) | function | Internal | Implementation helper for TCP flag metric. |
+| `_handshake_metric(dataset_path: Path, metric: dict)` (L302) | function | Internal | Implementation helper for handshake metric. |
+| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L307) | function | Internal | Implementation helper for flow duration metric. |
+| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L312) | function | Internal | Implementation helper for packet byte metric. |
+| `_derived_rate_metric(dataset_path: Path, metric: dict)` (L317) | function | Internal | Implementation helper for derived rate metric. |
+| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L322) | function | Internal | Implementation helper for slice valid metric. |
+| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L327) | function | Internal | Implementation helper for slice consistency metric. |
+| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L381) | function | Internal | Implementation helper for wrap registered handler. |
+| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L386) | nested function | Internal | Implementation helper for wrapped. |
+| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L401) | function | Internal | Implementation helper for make tabular compute handler. |
+| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L422) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
+| `build_metric_handlers._translate(metric: dict)` (L432) | nested function | Internal | Implementation helper for translate. |
 
 ## `runner/execution.py`
 
@@ -420,24 +421,24 @@ Python symbols defined by `runner/pcap_adapter.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `is_packet_capture(path: Path) -> bool` (L92) | function | Public | Implementation helper for is packet capture. |
-| `_packet_fields(packet) -> dict[str, Any] | None` (L96) | function | Internal | Implementation helper for packet fields. |
-| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L145) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. Values in this view are copied from decoded packet fields rather than derived from reconstructed flows, so packet-level metrics can operate on raw capture evidence without first inventing exporter-specific flow semantics. |
-| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L168) | function | Internal | Implementation helper for endpoint key. |
-| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L172) | function | Internal | Implementation helper for flow key. |
-| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L185) | function | Internal | Implementation helper for safe std variance. |
-| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L193) | function | Internal | Implementation helper for series stats. |
-| `_DirectionStats` (L204) | class | Internal | Data model for DirectionStats. |
-| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L213) | method | Public | Implementation helper for add. |
-| `_DirectionStats.min_length(self) -> float` (L223) | method | Public | Implementation helper for min length. |
-| `_DirectionStats.max_length(self) -> float` (L226) | method | Public | Implementation helper for max length. |
-| `_DirectionStats.mean_length(self) -> float` (L229) | method | Public | Implementation helper for mean length. |
-| `_FlowState` (L234) | class | Internal | Data model for FlowState. |
-| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L262) | method | Public | Implementation helper for is forward. |
-| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L276) | method | Public | Implementation helper for add packet. |
-| `_FlowState.as_row(self) -> dict[str, Any]` (L314) | method | Public | Implementation helper for as row. |
-| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L359) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. The first observed packet defines the forward direction. Packet lengths are captured frame lengths and durations/IATs are expressed in seconds. No idle timeout is guessed: one row is produced per bidirectional 5-tuple across the capture. Consequently this view is infrastructure for later sequence and reference metrics, not evidence that self-derived flow arithmetic is realistic. |
-| `pcap_metric_template(metric_id: str) -> dict | None` (L417) | function | Public | Return only templates whose PCAP inputs are copied from packet evidence. |
+| `is_packet_capture(path: Path) -> bool` (L141) | function | Public | Implementation helper for is packet capture. |
+| `_packet_fields(packet) -> dict[str, Any] | None` (L145) | function | Internal | Implementation helper for packet fields. |
+| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L194) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. Values in this view are copied from decoded packet fields rather than derived from reconstructed flows, so packet-level metrics can operate on raw capture evidence without first inventing exporter-specific flow semantics. |
+| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L229) | function | Internal | Implementation helper for endpoint key. |
+| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L233) | function | Internal | Implementation helper for flow key. |
+| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L246) | function | Internal | Implementation helper for safe std variance. |
+| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L254) | function | Internal | Implementation helper for series stats. |
+| `_DirectionStats` (L265) | class | Internal | Data model for DirectionStats. |
+| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L274) | method | Public | Implementation helper for add. |
+| `_DirectionStats.min_length(self) -> float` (L284) | method | Public | Implementation helper for min length. |
+| `_DirectionStats.max_length(self) -> float` (L287) | method | Public | Implementation helper for max length. |
+| `_DirectionStats.mean_length(self) -> float` (L290) | method | Public | Implementation helper for mean length. |
+| `_FlowState` (L295) | class | Internal | Data model for FlowState. |
+| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L323) | method | Public | Implementation helper for is forward. |
+| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L337) | method | Public | Implementation helper for add packet. |
+| `_FlowState.as_row(self) -> dict[str, Any]` (L375) | method | Public | Implementation helper for as row. |
+| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L420) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. The first observed packet defines the forward direction. Packet lengths are captured frame lengths and durations/IATs are expressed in seconds. No idle timeout is guessed: one row is produced per bidirectional 5-tuple across the capture. Consequently this view is infrastructure for later sequence and reference metrics, not evidence that self-derived flow arithmetic is realistic. |
+| `pcap_metric_template(metric_id: str) -> dict | None` (L478) | function | Public | Return a deterministic template for a metric safe on decoded packet evidence. The templates deliberately avoid dataset-specific policy such as service definitions, allowed slice IDs, reference datasets, attack windows, or model configuration. Numeric dependency/drift metrics use packet length and capture-order inter-arrival time because those quantities have meaningful continuous scales; TCP flag bitmasks and port identifiers are not treated as ordinal measurements for correlation. |
 
 ## `runner/plan_builder.py`
 
@@ -445,12 +446,12 @@ Python symbols defined by `runner/plan_builder.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `dataset_format(dataset_path: Path | None) -> str | None` (L36) | function | Public | Implementation helper for dataset format. |
-| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L43) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
-| `_configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | None, list[str]]` (L106) | function | Internal | Implementation helper for configuration state. |
-| `_metric_from_spec(metric_spec: dict) -> dict` (L147) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
-| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None) -> tuple[dict, dict]` (L168) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
-| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L291) | function | Public | Validate and atomically write a generated plan. |
+| `dataset_format(dataset_path: Path | None) -> str | None` (L37) | function | Public | Implementation helper for dataset format. |
+| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L44) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
+| `_configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | None, list[str]]` (L107) | function | Internal | Implementation helper for configuration state. |
+| `_metric_from_spec(metric_spec: dict) -> dict` (L151) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
+| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None) -> tuple[dict, dict]` (L172) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
+| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L295) | function | Public | Validate and atomically write a generated plan. |
 
 ## `runner/progress.py`
 

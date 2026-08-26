@@ -119,9 +119,13 @@ python create_plan.py \
 
 ## PCAP/PCAPNG planning
 
-Raw packet captures now use a canonical packet adapter for metrics whose inputs can be copied directly from decoded packets. In addition to the direct packet-capture metrics, automatic PCAP plans can therefore include `reserved_ip_address_profile` and `valid_port_range_profile`.
+Raw packet captures use a canonical decoded-packet adapter and automatic planning now includes **every currently safe runnable existing metric** for that representation, not just a packet-specific shortlist. The current automatic PCAP set contains 20 metrics: the two direct PCAP checks plus packet-address/port checks, three data-quality profiles, three dependency profiles, four internal distribution-drift metrics, and six packet-timestamp temporal metrics.
 
-The planner deliberately does **not** enable tabular flow self-consistency metrics merely because CBR-Tests can reconstruct equivalent fields from the same capture. Checks such as flow-duration/IAT arithmetic, packet/byte arithmetic and derived-rate arithmetic would otherwise validate values calculated by the adapter against other values calculated by the adapter. Those exclusions are reported as `self_derived_pcap_invariant_not_independent`.
+The shared packet view contains capture-order index, epoch timestamp, source/destination IPs, transport ports where present, protocol, IP version, packet length, TCP flags, and capture-order inter-arrival time. Numeric dependence/drift templates deliberately use packet length and inter-arrival time; port identifiers and TCP flag bitmasks are not treated as continuous ordinal measurements. PCAP epoch timestamps are explicitly parsed with unit `s` rather than relying on pandas' numeric timestamp default.
+
+`distance_correlation_matrix_deviation` is quadratic in sample size, so the PCAP template declares a transparent computational safeguard: at most 1000 deterministically evenly spaced packet rows are used for that metric. The outcome records the sampling method and original/sample row counts. Other metrics keep their existing metric-specific sampling semantics.
+
+The planner deliberately does **not** enable flow self-consistency metrics merely because CBR-Tests can reconstruct equivalent fields from the same capture. Checks such as start/end-versus-duration arithmetic, aggregate packet/byte arithmetic and derived-rate arithmetic would otherwise validate values calculated by the adapter against other values calculated by the adapter. Those exclusions are reported as `self_derived_pcap_invariant_not_independent`. `handshake_plausibility_profile` is reported as `needs_configuration` with `capture_boundary_policy_required`, because an arbitrary capture may begin in the middle of established TCP sessions and the planner must not guess that capture-boundary assumption.
 
 A canonical bidirectional 5-tuple flow view is still available internally for later sequence-aware and reference-comparison metrics. It does not assume an exporter idle timeout, so it is not silently treated as equivalent to CICFlowMeter or another exporter.
 
