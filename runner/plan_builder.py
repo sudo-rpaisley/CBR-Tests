@@ -29,6 +29,7 @@ from runner.pcap_adapter import (
     pcap_reference_metric_template,
     pcap_service_port_template,
 )
+from runner.preflight_advice import advice_for_exclusion, build_unlock_actions
 from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy
 
@@ -281,12 +282,20 @@ def build_plan(
         state, reason, missing = _configuration_state(spec, dataset, reference_dataset)
         included = state == "ready"
         status_counts[state] = status_counts.get(state, 0) + 1
-        status_by_metric[metric_id] = {
+        details = {
             "status": state,
             "included": included,
             **({"reason": reason} if reason else {}),
             **({"missing_fields": missing} if missing else {}),
         }
+        if not included:
+            details["advice"] = advice_for_exclusion(
+                reason,
+                status=state,
+                dataset_format=dataset["format"],
+                missing_fields=missing,
+            )
+        status_by_metric[metric_id] = details
 
         if not included:
             continue
@@ -357,6 +366,7 @@ def build_plan(
         "excluded_metric_count": len(selected) - len(metrics),
         "configuration_status_counts": status_counts,
         "metrics": status_by_metric,
+        "unlock_actions": build_unlock_actions(status_by_metric, dataset_format=fmt),
         "dataset": str(dataset["path"]),
         "dataset_format": fmt,
         "dataset_columns": dataset["columns"],

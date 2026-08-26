@@ -132,17 +132,19 @@ Python symbols defined by `create_plan.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_slug(value: str) -> str` (L14) | function | Internal | Implementation helper for slug. |
-| `_split_metric_args(values: list[str] | None) -> list[str] | None` (L19) | function | Internal | Implementation helper for split metric args. |
-| `_parse_expected_ports(value: str | None) -> list[int]` (L28) | function | Internal | Implementation helper for parse expected ports. |
-| `_browse_dataset_file() -> str | None` (L46) | function | Internal | Implementation helper for browse dataset file. |
-| `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L54) | function | Internal | Implementation helper for prompt. |
-| `_confirm_overwrite(output_path: Path) -> bool` (L74) | function | Internal | Ask an interactive user whether an existing plan may be replaced. |
-| `_print_report(report: dict) -> None` (L84) | function | Internal | Implementation helper for print report. |
-| `_list_tests() -> None` (L108) | function | Internal | Implementation helper for list tests. |
-| `_check_plan(path: Path) -> int` (L116) | function | Internal | Implementation helper for check plan. |
-| `parse_args() -> argparse.Namespace` (L133) | function | Public | Parses args. |
-| `main() -> int` (L166) | function | Public | Implementation helper for main. |
+| `_slug(value: str) -> str` (L15) | function | Internal | Implementation helper for slug. |
+| `_split_metric_args(values: list[str] | None) -> list[str] | None` (L20) | function | Internal | Implementation helper for split metric args. |
+| `_parse_expected_ports(value: str | None) -> list[int]` (L29) | function | Internal | Implementation helper for parse expected ports. |
+| `_browse_dataset_file() -> str | None` (L47) | function | Internal | Implementation helper for browse dataset file. |
+| `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L55) | function | Internal | Implementation helper for prompt. |
+| `_confirm_overwrite(output_path: Path) -> bool` (L75) | function | Internal | Ask an interactive user whether an existing plan may be replaced. |
+| `_print_wrapped(prefix: str, text: str, *, width: int = 108) -> None` (L85) | function | Internal | Implementation helper for print wrapped. |
+| `_compact_metric_ids(metric_ids: list[str], *, limit: int = 8) -> str` (L94) | function | Internal | Implementation helper for compact metric ids. |
+| `_print_report(report: dict) -> None` (L101) | function | Internal | Implementation helper for print report. |
+| `_list_tests() -> None` (L144) | function | Internal | Implementation helper for list tests. |
+| `_check_plan(path: Path) -> int` (L152) | function | Internal | Implementation helper for check plan. |
+| `parse_args() -> argparse.Namespace` (L169) | function | Public | Parses args. |
+| `main() -> int` (L202) | function | Public | Implementation helper for main. |
 
 ## `export_outcomes_for_graphs.py`
 
@@ -484,12 +486,22 @@ Python symbols defined by `runner/plan_builder.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `dataset_format(dataset_path: Path | None) -> str | None` (L41) | function | Public | Implementation helper for dataset format. |
-| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L48) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
-| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L111) | function | Internal | Implementation helper for configuration state. |
-| `_metric_from_spec(metric_spec: dict) -> dict` (L193) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
-| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L214) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
-| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L376) | function | Public | Validate and atomically write a generated plan. |
+| `dataset_format(dataset_path: Path | None) -> str | None` (L42) | function | Public | Implementation helper for dataset format. |
+| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L49) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
+| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L112) | function | Internal | Implementation helper for configuration state. |
+| `_metric_from_spec(metric_spec: dict) -> dict` (L194) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
+| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L215) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
+| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L386) | function | Public | Validate and atomically write a generated plan. |
+
+## `runner/preflight_advice.py`
+
+Python symbols defined by `runner/preflight_advice.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_entry(action_key: str, title: str, advice: str, *, example: str | None = None, actionable: bool = True) -> dict[str, Any]` (L7) | function | Internal | Implementation helper for entry. |
+| `advice_for_exclusion(reason: str | None, *, status: str, dataset_format: str | None, missing_fields: list[str] | None = None) -> dict[str, Any]` (L26) | function | Public | Return a concrete, research-safe remedy for an excluded metric. |
+| `build_unlock_actions(metric_statuses: dict[str, dict], *, dataset_format: str | None) -> list[dict[str, Any]]` (L207) | function | Public | Group excluded metrics by the user/research action that could unlock them. |
 
 ## `runner/progress.py`
 

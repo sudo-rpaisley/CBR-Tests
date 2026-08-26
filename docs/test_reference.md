@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **166 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **169 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -306,6 +306,9 @@ Tests and local helpers in this module.
 | `test_pcap_service_port_requires_explicit_single_service_assertion(tmp_path)` (L184) | Verifies that PCAP service port requires explicit single service assertion. | `dataset.write_bytes`, `build_plan` |
 | `test_pcap_reference_metrics_unlock_only_with_independent_reference_pcap(tmp_path)` (L205) | Verifies that PCAP reference metrics unlock only with independent reference PCAP. | `candidate.write_bytes`, `reference.write_bytes`, `build_plan`, `PCAP_REFERENCE_METRICS.issubset`, `reference.resolve` |
 | `test_pcap_reference_rejects_self_comparison_and_representation_mismatch(tmp_path)` (L221) | Verifies that PCAP reference rejects self comparison and representation mismatch. | `candidate.write_bytes`, `build_plan`, `pytest.raises` |
+| `test_pcap_preflight_exclusions_include_unlock_advice(tmp_path)` (L238) | Verifies that PCAP preflight exclusions include unlock advice. | `dataset.write_bytes`, `build_plan`, `next`, `iter` |
+| `test_tabular_missing_fields_advise_mapping_without_fabrication(tmp_path)` (L262) | Verifies that tabular missing fields advise mapping without fabrication. | `build_plan`, `report['metrics'].values`, `details.get` |
+| `test_print_report_shows_grouped_unlock_guidance(tmp_path, capsys)` (L278) | Verifies that print report shows grouped unlock guidance. | `dataset.write_bytes`, `build_plan`, `_print_report`, `capsys.readouterr` |
 
 ## `tests/test_protocol_validity_profile.py`
 
