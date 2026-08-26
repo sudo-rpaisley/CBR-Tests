@@ -127,3 +127,7 @@ python create_plan.py --name "My Plan" --dataset path/to/dataset.csv
 ```
 
 This writes `plans/my-plan_plan.json`. The creator discovers metrics from the live dispatcher, applies field translations, excludes tests that need unresolved fields/configuration or an incompatible input type, and writes only runnable metrics. For every excluded test the preflight now explains what is needed to unlock it, and groups shared remedies (reference data, field mapping, slice metadata, attack windows, split configuration, service evidence, and so on) so you can see which next input would enable the most additional tests. Grouped remedies are ordered by how many excluded metrics they affect, making the highest-leverage missing input easy to identify. See [Creating plans](docs/plan_creation.md) for the full workflow.
+
+## Dataset summary sidecars
+
+Normal runs maintain a human-readable `<dataset filename>.summary.md` beside the dataset. The sidecar includes file/hash identity, record and field counts, safe time coverage, and relevant descriptive/network characteristics. Its embedded SHA-256 and summary-schema version are checked on every run, so unchanged datasets reuse the existing summary without an extra dataset scan. Use `--no-dataset-summary` to suppress it or `--refresh-dataset-summary` to rebuild it deliberately. See [Dataset summary sidecars](docs/dataset_summary.md).

@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **173 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **181 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -66,6 +66,38 @@ Tests and local helpers in this module.
 | `test_compute_missing_value_ratio_uses_candidate_fields()` (L7) | Verifies that compute missing value ratio uses candidate fields. | `compute_missing_value_ratio` |
 | `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L27) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
 | `test_compute_spearman_profile_reports_rank_correlation()` (L42) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+
+## `tests/test_dataset_summary.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_default_dataset_summary_path_preserves_dataset_suffix(tmp_path: Path)` (L12) | Verifies that default dataset summary path preserves dataset suffix. | `default_dataset_summary_path` |
+| `test_dataset_summary_is_created_reused_and_refreshed_by_hash(tmp_path: Path, monkeypatch)` (L17) | Verifies that dataset summary is created reused and refreshed by hash. | `dataset.write_text`, `sha256_file`, `ensure_dataset_summary`, `monkeypatch.setattr`, `AssertionError`, `dataset.read_text` |
+| `test_dataset_summary_schema_mismatch_forces_refresh(tmp_path: Path)` (L59) | Verifies that dataset summary schema mismatch forces refresh. | `dataset.write_text`, `sha256_file`, `ensure_dataset_summary`, `text.replace` |
+| `test_tabular_numeric_timestamp_unit_is_not_guessed(tmp_path: Path)` (L79) | Verifies that tabular numeric timestamp unit is not guessed. | `dataset.write_text`, `ensure_dataset_summary`, `text.lower`, `sha256_file` |
+| `test_pcap_summary_uses_epoch_seconds_and_decoded_packet_language(tmp_path: Path)` (L90) | Verifies that PCAP summary uses epoch seconds and decoded packet language. | `dataset.write_bytes`, `ensure_dataset_summary`, `sha256_file` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `test_dataset_summary_is_created_reused_and_refreshed_by_hash._must_not_scan(_path)` (L43) | Implementation helper for must not scan. |
+
+## `tests/test_dataset_summary_controls.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_dataset_summary_cli_defaults_enabled(monkeypatch)` (L10) | Verifies that dataset summary CLI defaults enabled. | `monkeypatch.setattr`, `parse_run_plan_args` |
+| `test_dataset_summary_cli_can_disable_and_force_refresh(monkeypatch)` (L17) | Verifies that dataset summary CLI can disable and force refresh. | `monkeypatch.setattr`, `parse_run_plan_args` |
+| `test_tui_exposes_dataset_summary_controls(monkeypatch)` (L34) | Verifies that tui exposes dataset summary controls. | `monkeypatch.setattr`, `parse_run_plan_args`, `build_default_tui_fields` |
 
 ## `tests/test_derived_rate_consistency_profile.py`
 
