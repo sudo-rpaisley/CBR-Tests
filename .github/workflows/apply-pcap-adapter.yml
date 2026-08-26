@@ -1,0 +1,167 @@
+name: Apply PCAP adapter integration
+
+on:
+  push:
+    branches:
+      - agent/pcap-canonical-adapter
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pcap-canonical-adapter
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Patch integration
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'Expected block not found in {path}: {old[:80]!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Keep the historical constant as a compatibility alias, but source it
+          # from the canonical PCAP capability definition.
+          replace(
+              'runner/metric_catalog.py',
+              'from runner.field_translation import collect_required_test_fields_for_metric\n',
+              'from runner.field_translation import collect_required_test_fields_for_metric\nfrom runner.pcap_adapter import PCAP_DIRECT_METRICS\n',
+          )
+          replace(
+              'runner/metric_catalog.py',
+              'PCAP_ONLY_METRICS = {\n    "protocol_validity_profile",\n    "timestamp_coherence_profile",\n}\n',
+              'PCAP_ONLY_METRICS = PCAP_DIRECT_METRICS\n',
+          )
+
+          # Plan preflight: direct raw-PCAP metrics plus packet-field adapters are
+          # ready; self-derived flow invariants remain deliberately excluded.
+          replace(
+              'runner/plan_builder.py',
+              'from runner.metric_catalog import (\n    PCAP_ONLY_METRICS,\n    build_metric_catalog,\n    required_fields,\n)\n',
+              'from runner.metric_catalog import build_metric_catalog, required_fields\nfrom runner.pcap_adapter import (\n    PCAP_DIRECT_METRICS,\n    PCAP_PACKET_COLUMNS,\n    PCAP_PACKET_METRICS,\n    PCAP_SELF_DERIVED_METRICS,\n    pcap_metric_template,\n)\n',
+          )
+          replace(
+              'runner/plan_builder.py',
+              '    fields = available_translated_fields(columns, translation) if columns else set()\n',
+              '    fields = (\n        available_translated_fields(columns, translation)\n        if columns\n        else set(PCAP_PACKET_COLUMNS) if suffix in PCAP_SUFFIXES else set()\n    )\n',
+          )
+          replace(
+              'runner/plan_builder.py',
+              '''    is_pcap = fmt in {"pcap", "pcapng"}\n    if is_pcap:\n        if metric_id in PCAP_ONLY_METRICS:\n            return "ready", None, []\n        return "not_applicable", "tabular_metric_on_packet_capture", []\n\n    if metric_id in PCAP_ONLY_METRICS:\n        return "not_applicable", "packet_capture_metric_on_tabular_dataset", []\n''',
+              '''    is_pcap = fmt in {"pcap", "pcapng"}\n    if is_pcap:\n        if metric_id in PCAP_DIRECT_METRICS:\n            return "ready", None, []\n        if metric_id in PCAP_SELF_DERIVED_METRICS:\n            return "not_applicable", "self_derived_pcap_invariant_not_independent", []\n        if metric_id in PCAP_PACKET_METRICS:\n            if template is None:\n                return "needs_configuration", "pcap_adapter_template_missing", []\n            required = required_fields(template)\n            available = dataset.get("available_fields", set())\n            missing = [field for field in required if field not in available]\n            if missing:\n                return "needs_mapping", "pcap_adapter_fields_missing", missing\n            return "ready", None, []\n        return "not_applicable", "pcap_adapter_not_available", []\n\n    if metric_id in PCAP_DIRECT_METRICS:\n        return "not_applicable", "packet_capture_metric_on_tabular_dataset", []\n''',
+          )
+          replace(
+              'runner/plan_builder.py',
+              '''        state, reason, missing = _configuration_state(spec, dataset)\n        included = state == "ready"\n''',
+              '''        if dataset["format"] in {"pcap", "pcapng"} and metric_id in PCAP_PACKET_METRICS:\n            spec = dict(spec)\n            spec["template"] = pcap_metric_template(metric_id)\n\n        state, reason, missing = _configuration_state(spec, dataset)\n        included = state == "ready"\n''',
+          )
+
+          # Runtime: build a shared packet-level dataframe once when an adapted
+          # packet metric is present. Direct PCAP handlers still read the capture.
+          replace(
+              'run_plan.py',
+              'from runner.provenance import build_provenance_manifest\n',
+              'from runner.provenance import build_provenance_manifest\nfrom runner.pcap_adapter import PCAP_PACKET_METRICS, build_pcap_packet_dataframe, is_packet_capture\n',
+          )
+          replace(
+              'run_plan.py',
+              '''        validate_loaded_dataset_applicability(plan, shared_tabular_df)\n\n    def _load_dataset_for_metric(path: Path):\n''',
+              '''        validate_loaded_dataset_applicability(plan, shared_tabular_df)\n    elif is_packet_capture(dataset_path) and any(\n        metric["metric_id"] in PCAP_PACKET_METRICS for metric in metrics\n    ):\n        print_phase_status("PCAP", "Building canonical packet view")\n        shared_tabular_df = build_pcap_packet_dataframe(dataset_path)\n\n    def _load_dataset_for_metric(path: Path):\n''',
+          )
+          replace(
+              'run_plan.py',
+              '            f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]} | Metrics: {total_metrics}",\n',
+              '            f"{\'Packets\' if is_packet_capture(dataset_path) else \'Rows\'}: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]} | Metrics: {total_metrics}",\n',
+          )
+
+          # Reserved/special-use IP categories are always profiled, but do not
+          # become a realism warning unless the plan explicitly opts a category
+          # into its policy. This removes the unsafe implicit "private=bad" rule.
+          replace(
+              'tests/metrics/dataset_heuristics/protocol_and_network_realism/address_validity/reserved_ip_address_profile.py',
+              '        if bool(params.get(CATEGORY_PARAMETER.get(category, ""), True))\n',
+              '        if bool(params.get(CATEGORY_PARAMETER.get(category, ""), False))\n',
+          )
+          replace(
+              'tests/metrics/dataset_heuristics/protocol_and_network_realism/address_validity/reserved_ip_address_profile.py',
+              '''            categories = _enabled_categories(get_reserved_categories(addr), params)\n            if categories:\n                reserved_address_count += 1\n                field_summaries[field]["reserved_address_count"] += 1\n                row_reserved = True\n                for category in categories:\n                    reserved_category_counts[category] += 1\n''',
+              '''            observed_categories = get_reserved_categories(addr)\n            for category in observed_categories:\n                reserved_category_counts[category] += 1\n\n            categories = _enabled_categories(observed_categories, params)\n            if categories:\n                reserved_address_count += 1\n                field_summaries[field]["reserved_address_count"] += 1\n                row_reserved = True\n''',
+          )
+
+          # Plan-builder regression expectations.
+          replace(
+              'tests/test_plan_builder.py',
+              'from runner.metric_catalog import PCAP_ONLY_METRICS, available_metric_ids, build_metric_catalog\n',
+              'from runner.metric_catalog import available_metric_ids, build_metric_catalog\nfrom runner.pcap_adapter import PCAP_DIRECT_METRICS, PCAP_PACKET_METRICS, PCAP_SELF_DERIVED_METRICS\n',
+          )
+          replace(
+              'tests/test_plan_builder.py',
+              '''def test_pcap_plan_contains_only_packet_capture_metrics(tmp_path):\n    dataset = tmp_path / "capture.pcap"\n    dataset.write_bytes(b"pcap-placeholder")\n\n    plan, report = build_plan(plan_id="pcap", name="PCAP", dataset_path=dataset)\n    metric_ids = {metric["metric_id"] for metric in plan["metrics"]}\n\n    assert metric_ids == PCAP_ONLY_METRICS\n    assert report["runnable_metric_count"] == len(PCAP_ONLY_METRICS)\n    assert all(metric["enabled"] is True for metric in plan["metrics"])\n''',
+              '''def test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_path):\n    dataset = tmp_path / "capture.pcap"\n    dataset.write_bytes(b"pcap-placeholder")\n\n    plan, report = build_plan(plan_id="pcap", name="PCAP", dataset_path=dataset)\n    metric_ids = {metric["metric_id"] for metric in plan["metrics"]}\n    expected = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS\n\n    assert metric_ids == expected\n    assert report["runnable_metric_count"] == len(expected)\n    assert all(metric["enabled"] is True for metric in plan["metrics"])\n    for metric_id in PCAP_SELF_DERIVED_METRICS:\n        assert metric_id not in metric_ids\n        assert report["metrics"][metric_id]["reason"] == "self_derived_pcap_invariant_not_independent"\n''',
+          )
+
+          # Strengthen the PCAP adapter test to prove private IPs are profiled
+          # without silently being declared unrealistic by the default policy.
+          p = Path('tests/test_pcap_adapter.py')
+          text = p.read_text(encoding='utf-8')
+          needle = '''        ok, payload = runner(capture, metric)\n        assert ok is True, (metric_id, payload)\n        assert metric_id in payload["test_results"]\n'''
+          replacement = needle + '''        if metric_id == "reserved_ip_address_profile":\n            result = payload["test_results"][metric_id]\n            assert result["reserved_category_counts"]["private"] > 0\n            assert result["reserved_address_count"] == 0\n            assert result["status"] == "pass"\n'''
+          if needle not in text:
+              raise SystemExit('PCAP adapter assertion block not found')
+          p.write_text(text.replace(needle, replacement, 1), encoding='utf-8')
+
+          # Documentation: explain the distinction between packet evidence and
+          # self-derived flow fields so plan size is not mistaken for validity.
+          p = Path('docs/plan_creation.md')
+          text = p.read_text(encoding='utf-8')
+          marker = '## Selection controls\n'
+          section = '''## PCAP/PCAPNG planning\n\nRaw packet captures now use a canonical packet adapter for metrics whose inputs can be copied directly from decoded packets. In addition to the direct packet-capture metrics, automatic PCAP plans can therefore include `reserved_ip_address_profile` and `valid_port_range_profile`.\n\nThe planner deliberately does **not** enable tabular flow self-consistency metrics merely because CBR-Tests can reconstruct equivalent fields from the same capture. Checks such as flow-duration/IAT arithmetic, packet/byte arithmetic and derived-rate arithmetic would otherwise validate values calculated by the adapter against other values calculated by the adapter. Those exclusions are reported as `self_derived_pcap_invariant_not_independent`.\n\nA canonical bidirectional 5-tuple flow view is still available internally for later sequence-aware and reference-comparison metrics. It does not assume an exporter idle timeout, so it is not silently treated as equivalent to CICFlowMeter or another exporter.\n\n'''
+          if marker not in text:
+              raise SystemExit('plan creation marker not found')
+          p.write_text(text.replace(marker, section + marker, 1), encoding='utf-8')
+
+          p = Path('docs/metrics/packet_capture.md')
+          text = p.read_text(encoding='utf-8')
+          text += '''\n## Canonical PCAP adapter\n\nPCAP/PCAPNG files are also decoded into a shared packet view containing capture-order index, timestamp, IP addresses, transport ports where present, protocol, IP version, packet length and TCP flags. This allows existing packet-evidence metrics such as `reserved_ip_address_profile` and `valid_port_range_profile` to run without converting the capture to CSV first.\n\nThe adapter also exposes a bidirectional 5-tuple flow view for future sequence/reference work. Current automatic plans intentionally exclude self-consistency tests whose compared values would both be derived by this adapter, because those passes would not provide independent evidence about dataset realism.\n'''
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('README.md')
+          text = p.read_text(encoding='utf-8')
+          anchor = '## Documentation\n'
+          note = '''### Raw PCAP support\n\nAutomatic plans for `.pcap`/`.pcapng` now include direct packet checks plus safe packet-field adapters for special-use IP profiling and port-range validation. Flow views are reconstructed for future sequence/reference metrics, but self-derived flow arithmetic is not counted as independent realism evidence.\n\n'''
+          if anchor not in text:
+              raise SystemExit('README documentation anchor not found')
+          p.write_text(text.replace(anchor, note + anchor, 1), encoding='utf-8')
+          PY
+      - name: Install development dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Regenerate references
+        run: python scripts/build_reference_documentation.py
+      - name: Validate
+        run: |
+          python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
+          python -m pytest -q tests/test_pcap_adapter.py tests/test_plan_builder.py
+          python -m pytest -q
+          python scripts/build_reference_documentation.py --check
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add runner/metric_catalog.py runner/plan_builder.py run_plan.py \
+            tests/metrics/dataset_heuristics/protocol_and_network_realism/address_validity/reserved_ip_address_profile.py \
+            tests/test_plan_builder.py tests/test_pcap_adapter.py runner/pcap_adapter.py \
+            README.md docs/plan_creation.md docs/metrics/packet_capture.md \
+            docs/function_reference.md docs/test_reference.md
+          git commit -m "Expand PCAP planning with independent packet checks"
+          git push origin HEAD:agent/pcap-canonical-adapter
