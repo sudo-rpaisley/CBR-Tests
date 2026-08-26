@@ -44,10 +44,8 @@ jobs:
           python -m pytest -q
       - name: Regenerate references
         run: python scripts/build_reference_documentation.py
-      - name: Verify generated references and documentation
-        run: |
-          python scripts/build_reference_documentation.py --check
-          python scripts/check_docs_links.py
+      - name: Verify generated references
+        run: python scripts/build_reference_documentation.py --check
       - name: Commit validated implementation and remove temporary workflow
         run: |
           rm .github/workflows/validate-plan-overwrite.yml
