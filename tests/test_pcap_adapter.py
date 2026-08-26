@@ -7,18 +7,15 @@ from scapy.utils import wrpcap
 
 from runner.pcap_adapter import (
     PCAP_FLOW_COLUMNS,
-    PCAP_FLOW_METRICS,
+    PCAP_PACKET_COLUMNS,
+    PCAP_PACKET_METRICS,
+    PCAP_SELF_DERIVED_METRICS,
     build_pcap_flow_dataframe,
+    build_pcap_packet_dataframe,
     pcap_metric_template,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.flow_duration_consistency_profile import (
-    run_flow_duration_consistency_metric,
-)
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.packet_byte_consistency_profile import (
-    run_packet_byte_consistency_metric,
-)
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.tcp_flag_consistency_profile import (
-    run_tcp_flag_consistency_metric,
+from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.reserved_ip_address_profile import (
+    run_reserved_ip_address_metric,
 )
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.valid_port_range_profile import (
     run_valid_port_range_metric,
@@ -37,7 +34,22 @@ def _write_capture(path: Path) -> None:
     wrpcap(str(path), packets)
 
 
-def test_build_pcap_flow_dataframe_reconstructs_bidirectional_flows(tmp_path):
+def test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path):
+    capture = tmp_path / "sample.pcap"
+    _write_capture(capture)
+
+    dataframe = build_pcap_packet_dataframe(capture)
+
+    assert set(dataframe.columns) == PCAP_PACKET_COLUMNS
+    assert len(dataframe) == 4
+    assert list(dataframe["Protocol"]) == [6, 6, 6, 17]
+    assert dataframe.iloc[0]["Source Port"] == 12345
+    assert dataframe.iloc[0]["Destination Port"] == 80
+    assert dataframe.iloc[0]["TCP Flags"] == 0x02
+    assert dataframe.iloc[3]["TCP Flags"] != dataframe.iloc[3]["TCP Flags"]  # NaN for UDP
+
+
+def test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path):
     capture = tmp_path / "sample.pcap"
     _write_capture(capture)
 
@@ -63,19 +75,17 @@ def test_build_pcap_flow_dataframe_reconstructs_bidirectional_flows(tmp_path):
     assert tcp_flow["Bwd IAT Total"] == pytest.approx(0.0)
 
 
-def test_all_declared_pcap_flow_metrics_run_on_canonical_flow_table(tmp_path):
+def test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path):
     capture = tmp_path / "sample.pcap"
     _write_capture(capture)
-    dataframe = build_pcap_flow_dataframe(capture)
+    dataframe = build_pcap_packet_dataframe(capture)
 
     runners = {
+        "reserved_ip_address_profile": run_reserved_ip_address_metric,
         "valid_port_range_profile": run_valid_port_range_metric,
-        "tcp_flag_consistency_profile": run_tcp_flag_consistency_metric,
-        "flow_duration_consistency_profile": run_flow_duration_consistency_metric,
-        "packet_byte_consistency_profile": run_packet_byte_consistency_metric,
     }
 
-    assert set(runners) == PCAP_FLOW_METRICS
+    assert set(runners) == PCAP_PACKET_METRICS
     for metric_id, runner in runners.items():
         metric = pcap_metric_template(metric_id)
         assert metric is not None
@@ -83,3 +93,9 @@ def test_all_declared_pcap_flow_metrics_run_on_canonical_flow_table(tmp_path):
         ok, payload = runner(capture, metric)
         assert ok is True, (metric_id, payload)
         assert metric_id in payload["test_results"]
+
+
+def test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates():
+    assert PCAP_SELF_DERIVED_METRICS
+    for metric_id in PCAP_SELF_DERIVED_METRICS:
+        assert pcap_metric_template(metric_id) is None
