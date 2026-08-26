@@ -30,6 +30,10 @@ Scans raw PCAP packet timestamps for backward jumps, zero deltas, and large gaps
 
 ## Canonical PCAP adapter
 
-PCAP/PCAPNG files are also decoded into a shared packet view containing capture-order index, timestamp, IP addresses, transport ports where present, protocol, IP version, packet length and TCP flags. This allows existing packet-evidence metrics such as `reserved_ip_address_profile` and `valid_port_range_profile` to run without converting the capture to CSV first.
+PCAP/PCAPNG files are decoded into a shared packet view containing capture-order index, epoch timestamp, IP addresses, transport ports where present, protocol, IP version, packet length, TCP flags, and capture-order inter-arrival time. Automatic PCAP plans currently include all 20 existing metrics that can use this evidence without inventing dataset-specific research configuration.
 
-The adapter also exposes a bidirectional 5-tuple flow view for future sequence/reference work. Current automatic plans intentionally exclude self-consistency tests whose compared values would both be derived by this adapter, because those passes would not provide independent evidence about dataset realism.
+Beyond `protocol_validity_profile` and `timestamp_coherence_profile`, this includes address/port validation, data-quality profiles, packet-length/inter-arrival dependency profiles, four internal distribution-drift profiles, and the timestamp-based temporal suite. Missing ports/TCP flags are protocol-conditional and should be read descriptively. Repeated packet signatures may also be legitimate retransmissions or repeated requests.
+
+PCAP timestamps are floating-point Unix seconds, so the temporal templates explicitly declare `timestamp_unit: s`; this avoids pandas interpreting raw numeric timestamps as nanoseconds. Distance correlation uses a deterministic evenly spaced maximum of 1000 rows because the exact implementation is quadratic, and reports that computational sampling in the metric payload.
+
+The adapter also exposes a bidirectional 5-tuple flow view for future sequence/reference work. Current automatic plans intentionally exclude self-consistency tests whose compared values would both be derived by this adapter, because those passes would not provide independent evidence about dataset realism. Aggregate handshake plausibility is also not auto-enabled until capture-boundary policy is supplied explicitly.

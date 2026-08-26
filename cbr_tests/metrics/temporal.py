@@ -9,9 +9,25 @@ def _timestamp_field(metric: dict, default: str = "timestamp") -> str:
     return metric.get("input_requirements", {}).get("timestamp_field", default)
 
 
-def _parse_timestamp_series(df: pd.DataFrame, field: str) -> pd.Series:
+def _timestamp_unit(metric: dict) -> str | None:
+    unit = metric.get("calculation", {}).get("parameters", {}).get("timestamp_unit")
+    if unit is None:
+        return None
+    unit = str(unit).strip().lower()
+    if unit not in {"s", "ms", "us", "ns"}:
+        raise ValueError("timestamp_unit must be one of: s, ms, us, ns")
+    return unit
+
+
+def _parse_timestamp_series(
+    df: pd.DataFrame,
+    field: str,
+    unit: str | None = None,
+) -> pd.Series:
     if field not in df.columns:
         return pd.Series([pd.NaT] * len(df), index=df.index)
+    if unit is not None:
+        return pd.to_datetime(df[field], errors="coerce", utc=True, unit=unit)
     return pd.to_datetime(df[field], errors="coerce", utc=True)
 
 
@@ -49,7 +65,7 @@ def _inter_arrival_seconds(timestamps: pd.Series) -> list[float]:
 
 def compute_timestamp_parse_success_ratio(df: pd.DataFrame, metric: dict) -> dict:
     field = _timestamp_field(metric)
-    timestamps = _parse_timestamp_series(df, field)
+    timestamps = _parse_timestamp_series(df, field, _timestamp_unit(metric))
     row_count = int(len(df))
     parsed_count = int(timestamps.notna().sum())
     return {
@@ -133,7 +149,7 @@ def compute_inter_arrival_time_distribution_divergence(
     df: pd.DataFrame,
     metric: dict,
 ) -> dict:
-    timestamps = _parse_timestamp_series(df, _timestamp_field(metric))
+    timestamps = _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
     gaps = _inter_arrival_seconds(timestamps)
     left, right = _split_list(gaps)
     minimum_sample_size = metric.get("calculation", {}).get("parameters", {}).get(
@@ -163,7 +179,7 @@ def _burstiness(values: list[float]) -> float | None:
 
 
 def compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict:
-    timestamps = _parse_timestamp_series(df, _timestamp_field(metric))
+    timestamps = _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
     gaps = _inter_arrival_seconds(timestamps)
     left, right = _split_list(gaps)
     left_burstiness = _burstiness(left)
@@ -206,7 +222,7 @@ def compute_hourly_activity_distribution_divergence(
     metric: dict,
 ) -> dict:
     timestamps = (
-        _parse_timestamp_series(df, _timestamp_field(metric))
+        _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
         .dropna()
         .sort_values()
         .tolist()
@@ -229,7 +245,7 @@ def compute_hourly_activity_distribution_divergence(
 
 def compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict:
     timestamps = (
-        _parse_timestamp_series(df, _timestamp_field(metric))
+        _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
         .dropna()
         .sort_values()
         .tolist()
@@ -264,7 +280,7 @@ def _autocorrelation(values: list[int], lag: int) -> float | None:
 
 def compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict:
     timestamps = (
-        _parse_timestamp_series(df, _timestamp_field(metric))
+        _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
         .dropna()
         .sort_values()
         .tolist()

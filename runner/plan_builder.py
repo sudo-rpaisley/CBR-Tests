@@ -18,6 +18,7 @@ from runner.field_translation import (
 )
 from runner.metric_catalog import build_metric_catalog, required_fields
 from runner.pcap_adapter import (
+    PCAP_CONTEXT_CONFIGURATION_REASONS,
     PCAP_DIRECT_METRICS,
     PCAP_PACKET_COLUMNS,
     PCAP_PACKET_METRICS,
@@ -118,6 +119,9 @@ def _configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | N
     if is_pcap:
         if metric_id in PCAP_DIRECT_METRICS:
             return "ready", None, []
+        context_reason = PCAP_CONTEXT_CONFIGURATION_REASONS.get(metric_id)
+        if context_reason:
+            return "needs_configuration", context_reason, []
         if metric_id in PCAP_SELF_DERIVED_METRICS:
             return "not_applicable", "self_derived_pcap_invariant_not_independent", []
         if metric_id in PCAP_PACKET_METRICS:
