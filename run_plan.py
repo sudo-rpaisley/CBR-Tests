@@ -27,7 +27,7 @@ from runner.parallel_progress import build_parallel_progress_callback
 from runner.parallel_results import collect_parallel_metric_results
 from runner.progress import print_live_status
 from runner.provenance import build_provenance_manifest
-from runner.pcap_adapter import PCAP_PACKET_METRICS, build_pcap_packet_dataframe, is_packet_capture
+from runner.pcap_adapter import PCAP_PACKET_BACKED_METRICS, build_pcap_packet_dataframe, is_packet_capture
 from runner.run_context import prepare_run_context
 from runner.run_display import print_phase_status, print_title_box
 from runner.run_plan_helpers import (
@@ -253,7 +253,7 @@ def run_once(args):
         )
         validate_loaded_dataset_applicability(plan, shared_tabular_df)
     elif is_packet_capture(dataset_path) and any(
-        metric["metric_id"] in PCAP_PACKET_METRICS for metric in metrics
+        metric["metric_id"] in PCAP_PACKET_BACKED_METRICS for metric in metrics
     ):
         print_phase_status("PCAP", "Building canonical packet view")
         shared_tabular_df = build_pcap_packet_dataframe(dataset_path)

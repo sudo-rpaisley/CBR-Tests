@@ -66,9 +66,11 @@ python run_plan.py \
 
 ### Raw PCAP support
 
-Automatic plans for `.pcap`/`.pcapng` include **all 20 existing metrics that are currently runnable from raw packet evidence without inventing research configuration**. This covers the two direct packet-capture checks, IP/port validation, packet-field data quality, packet-length/inter-arrival dependency profiles, internal distribution-drift metrics, and packet-timestamp temporal metrics.
+Automatic plans for `.pcap`/`.pcapng` include **21 existing metrics that are currently runnable from raw packet evidence without inventing research configuration**. This includes a capture-boundary-safe raw TCP handshake profile in addition to the existing protocol/timestamp, address/port, data-quality, dependency, distribution-drift and temporal checks.
 
-Metrics that need a reference dataset, service definition, labels, slices, attack windows, train/test information, benchmark configuration, or an explicit capture-boundary policy remain visible in preflight but are not inserted into the plan. Flow self-consistency checks are also excluded where both sides of the comparison would be calculated by CBR-Tests itself, because that would test the adapter rather than provide independent realism evidence.
+The handshake profile evaluates only attempts whose opening SYN is actually observed. Mid-stream connections, SYN-only attempts, resets and missing handshake packets are evidence categories rather than automatic realism failures. An independent reference PCAP supplied with `--reference-dataset` can add 12 packet-level reference-comparison metrics, and an explicitly single-service capture can add service-port consistency with `--single-service` plus `--expected-service-ports`.
+
+Metrics that still need labels, slices, attack windows, train/test information, benchmark configuration, or flow-segmentation/exporter semantics remain visible in preflight but are not inserted into the plan. Flow self-consistency checks are also excluded where both sides of the comparison would be calculated by CBR-Tests itself, because that would test the adapter rather than provide independent realism evidence.
 
 ## Documentation
 

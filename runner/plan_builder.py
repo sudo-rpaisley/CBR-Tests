@@ -22,8 +22,12 @@ from runner.pcap_adapter import (
     PCAP_DIRECT_METRICS,
     PCAP_PACKET_COLUMNS,
     PCAP_PACKET_METRICS,
+    PCAP_REFERENCE_METRICS,
+    PCAP_REFERENCE_UNSUPPORTED_REASONS,
     PCAP_SELF_DERIVED_METRICS,
     pcap_metric_template,
+    pcap_reference_metric_template,
+    pcap_service_port_template,
 )
 from runner.schema import validate_plan_schema
 from runner.taxonomy import build_plan_taxonomy
@@ -104,18 +108,58 @@ def inspect_dataset(
     }
 
 
-def _configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | None, list[str]]:
+def _configuration_state(
+    metric_spec: dict,
+    dataset: dict,
+    reference_dataset: dict | None = None,
+) -> tuple[str, str | None, list[str]]:
     metric_id = metric_spec["metric_id"]
     template = metric_spec.get("template")
     manual_reason = metric_spec.get("manual_configuration_reason")
     fmt = dataset.get("format")
+    is_pcap = fmt in {"pcap", "pcapng"}
+
+    if is_pcap and metric_id in PCAP_REFERENCE_METRICS:
+        if reference_dataset is None:
+            return "needs_configuration", "reference_dataset_required", []
+        if reference_dataset.get("format") not in {"pcap", "pcapng"}:
+            return "needs_configuration", "pcap_reference_representation_mismatch", []
+        if template is None:
+            return "needs_configuration", "pcap_reference_template_missing", []
+        required = required_fields(template)
+        available = dataset.get("available_fields", set())
+        missing = [field for field in required if field not in available]
+        if missing:
+            return "needs_mapping", "pcap_adapter_fields_missing", missing
+        reference_available = reference_dataset.get("available_fields", set())
+        reference_missing = [field for field in required if field not in reference_available]
+        if reference_missing:
+            return "needs_mapping", "reference_pcap_adapter_fields_missing", reference_missing
+        return "ready", None, []
+
+    if is_pcap and metric_id in PCAP_REFERENCE_UNSUPPORTED_REASONS:
+        if reference_dataset is None:
+            return "needs_configuration", "reference_dataset_required", []
+        return "needs_configuration", PCAP_REFERENCE_UNSUPPORTED_REASONS[metric_id], []
+
+    if is_pcap and metric_id == "service_port_consistency_profile":
+        if template is None:
+            return "needs_configuration", "service_definition_required", []
+        params = template.get("calculation", {}).get("parameters", {})
+        if not params.get("service_name") or not params.get("expected_ports") or params.get("population_mode") != "all_rows":
+            return "needs_configuration", "pcap_service_population_evidence_required", []
+        required = required_fields(template)
+        available = dataset.get("available_fields", set())
+        missing = [field for field in required if field not in available]
+        if missing:
+            return "needs_mapping", "pcap_adapter_fields_missing", missing
+        return "ready", None, []
 
     if manual_reason:
         return "needs_configuration", manual_reason, []
     if not metric_spec.get("registered_in_taxonomy", False):
         return "needs_configuration", "missing_master_taxonomy_entry", []
 
-    is_pcap = fmt in {"pcap", "pcapng"}
     if is_pcap:
         if metric_id in PCAP_DIRECT_METRICS:
             return "ready", None, []
@@ -139,14 +183,12 @@ def _configuration_state(metric_spec: dict, dataset: dict) -> tuple[str, str | N
         return "not_applicable", "packet_capture_metric_on_tabular_dataset", []
     if template is None:
         return "needs_configuration", "no_metric_template_available", []
-
     required = required_fields(template)
     available = dataset.get("available_fields", set())
     missing = [field for field in required if field not in available]
     if missing:
         return "needs_mapping", "required_fields_not_resolved", missing
     return "ready", None, []
-
 
 def _metric_from_spec(metric_spec: dict) -> dict:
     """Create a plan metric from a spec already proven ready by preflight."""
@@ -178,6 +220,8 @@ def build_plan(
     field_translation_path: Path | None = None,
     include_metric_ids: Iterable[str] | None = None,
     exclude_metric_ids: Iterable[str] | None = None,
+    reference_dataset_path: Path | None = None,
+    service_port_configuration: dict | None = None,
 ) -> tuple[dict, dict]:
     """Build a plan containing only metrics that can run on the supplied dataset.
 
@@ -188,6 +232,13 @@ def build_plan(
     """
 
     dataset = inspect_dataset(dataset_path, field_translation_path=field_translation_path)
+    reference_dataset = None
+    if reference_dataset_path is not None:
+        reference_path = Path(reference_dataset_path).expanduser().resolve()
+        if reference_path == dataset["path"]:
+            raise ValueError("Reference dataset must be independent; candidate and reference paths are identical.")
+        reference_dataset = inspect_dataset(reference_path)
+
     catalogue = build_metric_catalog(available_fields=dataset["available_fields"] or None)
     available_ids = {entry["metric_id"] for entry in catalogue}
 
@@ -209,11 +260,25 @@ def build_plan(
         if metric_id not in selected:
             continue
 
-        if dataset["format"] in {"pcap", "pcapng"} and metric_id in PCAP_PACKET_METRICS:
-            spec = dict(spec)
-            spec["template"] = pcap_metric_template(metric_id)
+        if dataset["format"] in {"pcap", "pcapng"}:
+            if metric_id in PCAP_PACKET_METRICS:
+                spec = dict(spec)
+                spec["template"] = pcap_metric_template(metric_id)
+            elif metric_id in PCAP_REFERENCE_METRICS and reference_dataset is not None:
+                spec = dict(spec)
+                spec["template"] = pcap_reference_metric_template(metric_id, reference_dataset["path"])
+            elif metric_id == "service_port_consistency_profile":
+                # Never inherit a service definition from another discovered plan.
+                # Raw-PCAP service identity must be asserted for this capture.
+                spec = dict(spec)
+                spec["template"] = None
+                if service_port_configuration:
+                    spec["template"] = pcap_service_port_template(
+                        service_port_configuration.get("service_name", ""),
+                        service_port_configuration.get("expected_ports", []),
+                    )
 
-        state, reason, missing = _configuration_state(spec, dataset)
+        state, reason, missing = _configuration_state(spec, dataset, reference_dataset)
         included = state == "ready"
         status_counts[state] = status_counts.get(state, 0) + 1
         status_by_metric[metric_id] = {
@@ -270,6 +335,19 @@ def build_plan(
             ),
         },
     }
+    plan["plan_creation"]["reference_dataset"] = (
+        str(reference_dataset["path"]) if reference_dataset is not None else None
+    )
+    plan["plan_creation"]["reference_dataset_format"] = (
+        reference_dataset["format"] if reference_dataset is not None else None
+    )
+    if service_port_configuration:
+        plan["plan_creation"]["service_port_configuration"] = {
+            "service_name": str(service_port_configuration.get("service_name", "")),
+            "expected_ports": sorted({int(port) for port in service_port_configuration.get("expected_ports", [])}),
+            "population_mode": "all_rows",
+            "assumption": "candidate capture independently known to represent one service",
+        }
     validate_plan_schema(plan)
 
     report = {
@@ -289,6 +367,9 @@ def build_plan(
             else None
         ),
     }
+    report["reference_dataset"] = str(reference_dataset["path"]) if reference_dataset is not None else None
+    report["reference_dataset_format"] = reference_dataset["format"] if reference_dataset is not None else None
+    report["service_port_configuration"] = service_port_configuration
     return plan, report
 
 

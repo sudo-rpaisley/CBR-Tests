@@ -15,6 +15,7 @@ from scapy.utils import PcapReader
 PCAP_DIRECT_METRICS = {
     "protocol_validity_profile",
     "timestamp_coherence_profile",
+    "handshake_plausibility_profile",
 }
 
 # Existing metrics that can consume the canonical decoded-packet view without
@@ -62,6 +63,34 @@ PCAP_PACKET_METRICS = (
     | PCAP_PACKET_TEMPORAL_METRICS
 )
 
+PCAP_REFERENCE_METRICS = {
+    "feature_wise_wasserstein_distance_from_reference",
+    "feature_wise_ks_statistic_from_reference",
+    "feature_wise_energy_distance_from_reference",
+    "feature_set_mmd_score_from_reference",
+    "pearson_matrix_deviation_from_reference",
+    "spearman_matrix_deviation_from_reference",
+    "distance_correlation_matrix_deviation_from_reference",
+    "inter_arrival_distribution_divergence_from_reference",
+    "burstiness_deviation_from_reference",
+    "hourly_activity_divergence_from_reference",
+    "protocol_mix_divergence_from_reference",
+    "port_use_divergence_from_reference",
+}
+
+PCAP_REFERENCE_UNSUPPORTED_REASONS = {
+    "slice_proportion_deviation_from_reference": "slice_metadata_required",
+    "per_slice_class_divergence_from_reference": "slice_metadata_required",
+    "per_slice_feature_distribution_deviation_from_reference": "slice_metadata_required",
+    "flow_statistic_deviation_from_reference": "flow_segmentation_policy_required",
+}
+
+PCAP_EXPLICIT_PACKET_METRICS = {"service_port_consistency_profile"}
+PCAP_PACKET_BACKED_METRICS = (
+    PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
+)
+# Keep this name reserved for the configuration-free automatic set. Optional
+# reference/service metrics are packet-backed but are not automatically runnable.
 PCAP_SUPPORTED_METRICS = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
 
 # These metrics are intentionally *not* automatically enabled for raw PCAP.
@@ -77,12 +106,10 @@ PCAP_SELF_DERIVED_METRICS = {
     "non_negative_duration_ratio",
 }
 
-# These metrics could consume reconstructed information, but their scientific
-# interpretation depends on capture-boundary or experiment context that must be
-# supplied explicitly rather than guessed by the automatic planner.
-PCAP_CONTEXT_CONFIGURATION_REASONS = {
-    "handshake_plausibility_profile": "capture_boundary_policy_required",
-}
+# Context-sensitive raw-PCAP metrics that still require explicit research
+# configuration. Handshake plausibility is intentionally absent: its native PCAP
+# implementation only evaluates attempts whose opening SYN is actually observed.
+PCAP_CONTEXT_CONFIGURATION_REASONS = {}
 
 PCAP_PACKET_COLUMNS = {
     "Packet Index",
@@ -702,6 +729,125 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                 "method": "Compare autocorrelation of first- and second-half UTC hourly packet counts at configured lags.",
                 "parameters": {"timestamp_unit": "s", "lags": [1, 24]},
             },
+        },
+    }
+    template = templates.get(metric_id)
+    return None if template is None else deepcopy(template)
+
+
+
+def pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict:
+    """Build a service-port metric only for an explicitly single-service capture.
+
+    The service population must come from independent experiment knowledge. The
+    framework never infers a service from the same ports it is about to test.
+    """
+
+    name = str(service_name).strip()
+    ports = sorted({int(port) for port in expected_ports})
+    if not name:
+        raise ValueError("service_name must not be empty")
+    if not ports or any(port < 0 or port > 65535 for port in ports):
+        raise ValueError("expected service ports must contain integers in 0-65535")
+    return {
+        "metric_id": "service_port_consistency_profile",
+        "label": "Service-Port Consistency Profile",
+        "input_requirements": {
+            "port_fields": ["Source Port", "Destination Port"],
+        },
+        "calculation": {
+            "method": "pcap_single_service_port_consistency",
+            "parameters": {
+                "service_name": name,
+                "expected_ports": ports,
+                "match_mode": "any_port",
+                "population_mode": "all_rows",
+                "pass_threshold": 1.0,
+                "warn_threshold": 0.0,
+                "max_examples": 10,
+                "population_assumption_source": "explicit_plan_configuration",
+            },
+        },
+    }
+
+
+def pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None:
+    """Return a same-representation packet-level reference metric template."""
+
+    reference_path = str(Path(reference_dataset_path).expanduser().resolve())
+    numeric_fields = ["Packet Length", "Inter Arrival Time"]
+    templates = {
+        "feature_wise_wasserstein_distance_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Feature Wasserstein Distance From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "candidate_fields": numeric_fields},
+            "calculation": {"method": "packet_reference_wasserstein", "parameters": {"max_sample_size": 1000}},
+        },
+        "feature_wise_ks_statistic_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Feature KS Statistic From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "candidate_fields": numeric_fields},
+            "calculation": {"method": "packet_reference_ks", "parameters": {"max_sample_size": 1000}},
+        },
+        "feature_wise_energy_distance_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Feature Energy Distance From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "candidate_fields": numeric_fields},
+            "calculation": {"method": "packet_reference_energy_distance", "parameters": {"max_sample_size": 1000}},
+        },
+        "feature_set_mmd_score_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Feature-Set MMD From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "candidate_fields": numeric_fields},
+            "calculation": {"method": "standardized_multivariate_rbf_mmd", "parameters": {"max_sample_size": 500}},
+        },
+        "pearson_matrix_deviation_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Pearson Matrix Deviation From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "candidate_fields": numeric_fields},
+            "calculation": {"method": "packet_reference_pearson", "parameters": {}},
+        },
+        "spearman_matrix_deviation_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Spearman Matrix Deviation From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "candidate_fields": numeric_fields},
+            "calculation": {"method": "packet_reference_spearman", "parameters": {}},
+        },
+        "distance_correlation_matrix_deviation_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Distance-Correlation Deviation From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "candidate_fields": numeric_fields},
+            "calculation": {"method": "packet_reference_distance_correlation", "parameters": {"max_sample_size": 1000}},
+        },
+        "inter_arrival_distribution_divergence_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Inter-Arrival Divergence From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "timestamp_field": "Timestamp"},
+            "calculation": {"method": "packet_reference_inter_arrival", "parameters": {"timestamp_unit": "s"}},
+        },
+        "burstiness_deviation_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Burstiness Deviation From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "timestamp_field": "Timestamp"},
+            "calculation": {"method": "packet_reference_burstiness", "parameters": {"timestamp_unit": "s"}},
+        },
+        "hourly_activity_divergence_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Hourly Activity Divergence From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "timestamp_field": "Timestamp"},
+            "calculation": {"method": "packet_reference_hourly_activity", "parameters": {"timestamp_unit": "s"}},
+        },
+        "protocol_mix_divergence_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Protocol-Mix Divergence From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "protocol_field": "Protocol"},
+            "calculation": {"method": "packet_reference_protocol_mix", "parameters": {}},
+        },
+        "port_use_divergence_from_reference": {
+            "metric_id": metric_id,
+            "label": "Packet Port-Use Divergence From Reference",
+            "input_requirements": {"reference_dataset_path": reference_path, "port_fields": ["Source Port", "Destination Port"]},
+            "calculation": {"method": "packet_reference_port_use", "parameters": {}},
         },
     }
     template = templates.get(metric_id)

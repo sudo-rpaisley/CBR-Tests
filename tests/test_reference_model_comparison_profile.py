@@ -1,4 +1,9 @@
 import pandas as pd
+from scapy.layers.inet import IP, TCP, UDP
+from scapy.packet import Raw
+from scapy.utils import wrpcap
+
+from runner.pcap_adapter import build_pcap_packet_dataframe, pcap_reference_metric_template
 
 from tests.reference_model_comparison_profile import (
     compute_feature_wise_ks_statistic_from_reference,
@@ -54,3 +59,46 @@ def test_reference_slice_and_protocol_metrics(tmp_path):
     assert compute_per_slice_class_divergence_from_reference(current, metric)["summary"]["per_slice_class_divergence_from_reference"] > 0.0
     assert compute_protocol_mix_divergence_from_reference(current, metric)["summary"]["protocol_mix_divergence_from_reference"] == 0.333333
     assert compute_port_use_divergence_from_reference(current, metric)["summary"]["port_use_divergence_from_reference"] > 0.0
+
+
+
+def test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path):
+    candidate_path = tmp_path / "candidate.pcap"
+    reference_path = tmp_path / "reference.pcap"
+    candidate_packets = [
+        IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=10000, dport=80, flags="S") / Raw(b"a"),
+        IP(src="10.0.0.2", dst="10.0.0.1") / TCP(sport=80, dport=10000, flags="SA") / Raw(b"bb"),
+        IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=10000, dport=80, flags="A") / Raw(b"ccc"),
+        IP(src="10.0.0.3", dst="10.0.0.4") / UDP(sport=20000, dport=53) / Raw(b"dddd"),
+    ]
+    reference_packets = [
+        IP(src="10.1.0.1", dst="10.1.0.2") / TCP(sport=11000, dport=80, flags="S") / Raw(b"aa"),
+        IP(src="10.1.0.2", dst="10.1.0.1") / TCP(sport=80, dport=11000, flags="SA") / Raw(b"bbbb"),
+        IP(src="10.1.0.1", dst="10.1.0.2") / TCP(sport=11000, dport=80, flags="A") / Raw(b"cccccc"),
+        IP(src="10.1.0.3", dst="10.1.0.4") / UDP(sport=21000, dport=53) / Raw(b"dddddddd"),
+    ]
+    for packets, path, timestamps in (
+        (candidate_packets, candidate_path, (1.0, 2.0, 4.0, 8.0)),
+        (reference_packets, reference_path, (1.0, 3.0, 6.0, 10.0)),
+    ):
+        for packet, timestamp in zip(packets, timestamps):
+            packet.time = timestamp
+        wrpcap(str(path), packets)
+
+    current = build_pcap_packet_dataframe(candidate_path)
+    from tests.reference_model_comparison_profile import (
+        compute_feature_set_mmd_score_from_reference,
+        compute_inter_arrival_distribution_divergence_from_reference,
+    )
+    temporal_metric = pcap_reference_metric_template("inter_arrival_distribution_divergence_from_reference", reference_path)
+    temporal = compute_inter_arrival_distribution_divergence_from_reference(current, temporal_metric)
+    assert temporal["summary"]["timestamp_unit"] == "s"
+    assert temporal["summary"]["current_gap_count"] == 3
+    assert temporal["summary"]["reference_gap_count"] == 3
+    assert temporal["summary"]["inter_arrival_distribution_divergence_from_reference"] is not None
+
+    mmd_metric = pcap_reference_metric_template("feature_set_mmd_score_from_reference", reference_path)
+    mmd = compute_feature_set_mmd_score_from_reference(current, mmd_metric)["summary"]
+    assert mmd["runnable"] is True
+    assert mmd["fields"] == ["Packet Length", "Inter Arrival Time"]
+    assert mmd["feature_set_mmd_score_from_reference"] is not None

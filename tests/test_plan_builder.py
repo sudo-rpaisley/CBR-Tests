@@ -5,7 +5,13 @@ import pytest
 
 from create_plan import _slug
 from runner.metric_catalog import available_metric_ids, build_metric_catalog
-from runner.pcap_adapter import PCAP_DIRECT_METRICS, PCAP_PACKET_METRICS, PCAP_SELF_DERIVED_METRICS
+from runner.pcap_adapter import (
+    PCAP_DIRECT_METRICS,
+    PCAP_PACKET_METRICS,
+    PCAP_REFERENCE_METRICS,
+    PCAP_REFERENCE_UNSUPPORTED_REASONS,
+    PCAP_SELF_DERIVED_METRICS,
+)
 from runner.plan_builder import build_plan, write_plan
 from runner.schema import validate_plan_schema
 
@@ -164,3 +170,66 @@ def test_write_plan_is_valid_and_requires_force_for_overwrite(tmp_path):
         write_plan(output, plan)
 
     write_plan(output, plan, overwrite=True)
+
+
+
+def test_pcap_handshake_is_automatically_runnable_without_boundary_policy(tmp_path):
+    dataset = tmp_path / "capture.pcap"
+    dataset.write_bytes(b"pcap-placeholder")
+    plan, report = build_plan(plan_id="handshake", name="Handshake", dataset_path=dataset)
+    assert "handshake_plausibility_profile" in {metric["metric_id"] for metric in plan["metrics"]}
+    assert report["metrics"]["handshake_plausibility_profile"]["status"] == "ready"
+
+
+def test_pcap_service_port_requires_explicit_single_service_assertion(tmp_path):
+    dataset = tmp_path / "capture.pcap"
+    dataset.write_bytes(b"pcap-placeholder")
+    plan, report = build_plan(plan_id="service-blocked", name="Service blocked", dataset_path=dataset)
+    assert "service_port_consistency_profile" not in {metric["metric_id"] for metric in plan["metrics"]}
+    assert report["metrics"]["service_port_consistency_profile"]["reason"] == "service_definition_required"
+
+    configured_plan, configured_report = build_plan(
+        plan_id="service-ready",
+        name="Service ready",
+        dataset_path=dataset,
+        service_port_configuration={"service_name": "dns", "expected_ports": [53], "population_mode": "all_rows"},
+    )
+    configured = {metric["metric_id"]: metric for metric in configured_plan["metrics"]}
+    assert configured_report["metrics"]["service_port_consistency_profile"]["status"] == "ready"
+    params = configured["service_port_consistency_profile"]["calculation"]["parameters"]
+    assert params["population_mode"] == "all_rows"
+    assert params["pass_threshold"] == 1.0
+    assert params["warn_threshold"] == 0.0
+
+
+def test_pcap_reference_metrics_unlock_only_with_independent_reference_pcap(tmp_path):
+    candidate = tmp_path / "candidate.pcap"
+    reference = tmp_path / "reference.pcap"
+    candidate.write_bytes(b"candidate-placeholder")
+    reference.write_bytes(b"reference-placeholder")
+    plan, report = build_plan(
+        plan_id="reference-pcap", name="Reference PCAP", dataset_path=candidate, reference_dataset_path=reference
+    )
+    metric_ids = {metric["metric_id"] for metric in plan["metrics"]}
+    assert PCAP_REFERENCE_METRICS.issubset(metric_ids)
+    assert report["reference_dataset"] == str(reference.resolve())
+    for metric_id in PCAP_REFERENCE_UNSUPPORTED_REASONS:
+        assert metric_id not in metric_ids
+        assert report["metrics"][metric_id]["reason"] == PCAP_REFERENCE_UNSUPPORTED_REASONS[metric_id]
+
+
+def test_pcap_reference_rejects_self_comparison_and_representation_mismatch(tmp_path):
+    candidate = tmp_path / "candidate.pcap"
+    candidate.write_bytes(b"candidate-placeholder")
+    with pytest.raises(ValueError, match="must be independent"):
+        build_plan(plan_id="self-reference", name="Self reference", dataset_path=candidate, reference_dataset_path=candidate)
+
+    reference_csv = tmp_path / "reference.csv"
+    pd.DataFrame({"Packet Length": [1, 2], "Inter Arrival Time": [0.1, 0.2]}).to_csv(reference_csv, index=False)
+    plan, report = build_plan(
+        plan_id="mismatched-reference", name="Mismatched reference", dataset_path=candidate, reference_dataset_path=reference_csv
+    )
+    metric_ids = {metric["metric_id"] for metric in plan["metrics"]}
+    assert not (PCAP_REFERENCE_METRICS & metric_ids)
+    for metric_id in PCAP_REFERENCE_METRICS:
+        assert report["metrics"][metric_id]["reason"] == "pcap_reference_representation_mismatch"
