@@ -715,8 +715,11 @@ Network/protocol realism implementation module awaiting migration from the test 
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `classify_ip_value(ip_value) -> str` (L5) | function | Public | Classify an IP field value as one of: missing, ipv4, ipv6, invalid. |
-| `run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L26) | function | Public | Runs protocol validity metric. |
+| `classify_ip_value(ip_value) -> str` (L5) | function | Public | Classify an IP field value as missing, IPv4, IPv6, or invalid. |
+| `_port_is_valid(value) -> bool` (L23) | function | Internal | Implementation helper for port is valid. |
+| `_suspicious_tcp_flags(flags: int) -> list[str]` (L31) | function | Internal | Return unusual flag combinations without declaring them structurally invalid. SYN+FIN and SYN+RST are useful indicators of scans, crafted packets, malformed generators, or adversarial traffic. Security datasets can legitimately contain them, so they are descriptive evidence unless a plan explicitly opts them into the structural validity decision. |
+| `run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L51) | function | Public | Check deterministic packet structure and report non-deterministic anomalies. The validity ratio covers decoded IPv4/IPv6 packets only. Non-IP frames are reported separately rather than being silently counted as valid IP packets. A packet becomes structurally invalid only for deterministic problems such as address-family mismatch, impossible decoded ports, an unfragmented IPv4 TCP/ UDP protocol declaration with no matching transport layer, or an impossibly short network-layer packet. Suspicious TCP flag combinations are descriptive by default because attack/security traffic may contain them legitimately. |
+| `run_protocol_validity_metric.record_issue(packet_index: int, reason: str, **evidence) -> None` (L108) | nested function | Internal | Implementation helper for record issue. |
 
 ## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/derived_rate_consistency_profile.py`
 

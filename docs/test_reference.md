@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **141 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **145 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -229,9 +229,19 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_ipv4_values_are_classified()` (L4) | Verifies that ipv4 values are classified. | `classify_ip_value` |
-| `test_ipv6_values_are_classified()` (L9) | Verifies that ipv6 values are classified. | `classify_ip_value` |
-| `test_invalid_values_are_separate_from_missing()` (L14) | Verifies that invalid values are separate from missing. | `classify_ip_value` |
+| `test_ipv4_values_are_classified()` (L13) | Verifies that ipv4 values are classified. | `classify_ip_value` |
+| `test_ipv6_values_are_classified()` (L18) | Verifies that ipv6 values are classified. | `classify_ip_value` |
+| `test_invalid_values_are_separate_from_missing()` (L23) | Verifies that invalid values are separate from missing. | `classify_ip_value` |
+| `test_protocol_validity_checks_ports_protocol_structure_and_addresses(tmp_path)` (L37) | Verifies that protocol validity checks ports protocol structure and addresses. | `_write_packets`, `run_protocol_validity_metric`, `IP`, `TCP`, `Raw`, `UDP` |
+| `test_protocol_validity_detects_declared_tcp_without_decodable_tcp_header(tmp_path)` (L61) | Verifies that protocol validity detects declared TCP without decodable TCP header. | `_write_packets`, `run_protocol_validity_metric`, `IP`, `Raw` |
+| `test_suspicious_tcp_flags_are_reported_but_not_invalid_by_default(tmp_path)` (L78) | Verifies that suspicious TCP flags are reported but not invalid by default. | `_write_packets`, `run_protocol_validity_metric`, `IP`, `TCP` |
+| `test_suspicious_tcp_flags_can_affect_status_only_when_explicitly_configured(tmp_path)` (L96) | Verifies that suspicious TCP flags can affect status only when explicitly configured. | `_write_packets`, `run_protocol_validity_metric`, `IP`, `TCP` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_packets(path: Path, packets) -> None` (L31) | Implementation helper for write packets. |
 
 ## `tests/test_reference_model_comparison_profile.py`
 
