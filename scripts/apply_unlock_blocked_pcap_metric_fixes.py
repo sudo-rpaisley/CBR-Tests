@@ -69,7 +69,7 @@ def update_existing_pcap_contract_tests() -> None:
     assert report["metrics"]["handshake_plausibility_profile"]["reason"] == "capture_boundary_policy_required"
 '''
     new = '''    assert report["metrics"]["handshake_plausibility_profile"]["status"] == "ready"
-    assert report["metrics"]["handshake_plausibility_profile"]["reason"] is None
+    assert "reason" not in report["metrics"]["handshake_plausibility_profile"]
 '''
     if old not in text:
         raise RuntimeError("Expected old handshake plan assertions not found")
