@@ -425,9 +425,10 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                 "candidate_fields": ["Source IP", "Destination IP"],
             },
             "calculation": {
+                "method": "Profile decoded source/destination IP address categories and apply only explicitly configured special-use policy categories.",
                 "parameters": {
                     "invalid_ratio_fail_threshold": 0.01,
-                }
+                },
             },
         },
         "valid_port_range_profile": {
@@ -437,11 +438,12 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                 "candidate_fields": ["Source Port", "Destination Port"],
             },
             "calculation": {
+                "method": "Validate decoded TCP/UDP source and destination ports against the configured integer port range.",
                 "parameters": {
                     "valid_min_port": 0,
                     "valid_max_port": 65535,
                     "invalid_ratio_fail_threshold": 0.01,
-                }
+                },
             },
         },
     }
