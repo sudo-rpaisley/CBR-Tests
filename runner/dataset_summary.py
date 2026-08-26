@@ -321,10 +321,20 @@ def format_dataset_summary(data: dict[str, Any]) -> str:
     ]
 
     if data["missing_cell_count"] is not None:
+        missing_ratio = (
+            f"{data['missing_cell_ratio']:.4%}"
+            if data["missing_cell_ratio"] is not None
+            else "n/a"
+        )
+        duplicate_ratio = (
+            f"{data['duplicate_row_ratio']:.4%}"
+            if data["duplicate_row_ratio"] is not None
+            else "n/a"
+        )
         lines.extend(
             [
-                f"- **Missing cells:** {data['missing_cell_count']:,} ({data['missing_cell_ratio']:.4%})",
-                f"- **Exact duplicate rows:** {data['duplicate_row_count']:,} ({data['duplicate_row_ratio']:.4%})",
+                f"- **Missing cells:** {data['missing_cell_count']:,} ({missing_ratio})",
+                f"- **Exact duplicate rows:** {data['duplicate_row_count']:,} ({duplicate_ratio})",
             ]
         )
     elif data["record_type"].startswith("decoded"):

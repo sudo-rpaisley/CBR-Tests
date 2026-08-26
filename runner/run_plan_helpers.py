@@ -185,6 +185,17 @@ def parse_run_plan_args() -> argparse.Namespace:
     parser.add_argument("--output", help="Output path (required when --case points to a plan JSON)")
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
     parser.add_argument("--force-output", action="store_true", help="Allow replacement of an existing output file")
+    parser.add_argument(
+        "--dataset-summary",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Create/reuse a hash-validated Markdown dataset summary beside the dataset (default: enabled)",
+    )
+    parser.add_argument(
+        "--refresh-dataset-summary",
+        action="store_true",
+        help="Regenerate the dataset summary even when its stored dataset hash still matches",
+    )
     parser.add_argument("--field-translation", help="Optional JSON file mapping dataset column names to test field names")
     parser.add_argument(
         "--no-update-field-translation",

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from runner.contract import enforce_skip_policy, validate_loaded_dataset_applicability
 from runner.dataset_loading import is_tabular_dataset, load_shared_tabular_dataset
+from runner.dataset_summary import ensure_dataset_summary
 from runner.dispatch import build_metric_handlers
 from runner.execution import auto_worker_count, render_live_taxonomy, run_metrics_parallel
 from runner.field_translation import (
@@ -257,6 +258,36 @@ def run_once(args):
     ):
         print_phase_status("PCAP", "Building canonical packet view")
         shared_tabular_df = build_pcap_packet_dataframe(dataset_path)
+
+    if getattr(args, "dataset_summary", True):
+        dataset_sha256 = provenance.get("dataset", {}).get("sha256")
+        if dataset_sha256:
+            try:
+                print_phase_status("Dataset summary", "Checking dataset-side summary cache")
+                dataset_summary_info = ensure_dataset_summary(
+                    dataset_path,
+                    dataset_sha256=dataset_sha256,
+                    dataframe=shared_tabular_df,
+                    force=bool(getattr(args, "refresh_dataset_summary", False)),
+                )
+                provenance["dataset_summary"] = dataset_summary_info
+                print_phase_status(
+                    "Dataset summary",
+                    f"{dataset_summary_info['status'].capitalize()}: {dataset_summary_info['path']}",
+                )
+            except (OSError, ValueError) as exc:
+                provenance["dataset_summary"] = {
+                    "status": "error",
+                    "error": str(exc),
+                }
+                print(f"WARNING: Dataset summary could not be created or refreshed: {exc}")
+        else:
+            provenance["dataset_summary"] = {
+                "status": "error",
+                "error": "dataset_sha256_unavailable",
+            }
+    else:
+        provenance["dataset_summary"] = {"status": "suppressed"}
 
     def _load_dataset_for_metric(path: Path):
         return load_tabular_dataset(path, field_translation=field_translation)
