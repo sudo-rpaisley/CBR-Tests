@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **135 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **137 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -414,23 +414,25 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_build_default_tui_fields_discovers_case_and_plan_choices(tmp_path)` (L31) | Verifies that build default tui fields discovers case and plan choices. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases' / 'case_a.json').write_text`, `(tmp_path / 'plans' / 'plan_a.json').write_text`, `build_default_tui_fields`, `next`, `_args` |
-| `test_apply_tui_fields_converts_blank_optional_values_and_worker_count()` (L44) | Verifies that apply tui fields converts blank optional values and worker count. | `_args`, `build_default_tui_fields`, `apply_tui_fields` |
-| `test_validate_required_run_args_rejects_missing_case()` (L62) | Verifies that validate required run args rejects missing case. | `pytest.raises`, `validate_required_run_args`, `_args` |
-| `test_dataset_field_uses_file_browser()` (L67) | Verifies that dataset field uses file browser. | `build_default_tui_fields`, `next`, `_args` |
-| `test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path)` (L77) | Verifies that list file browser entries sorts directories first and skips internal dirs. | `(tmp_path / 'z_data.csv').write_text`, `(tmp_path / 'datasets').mkdir`, `(tmp_path / 'datasets' / 'sample.csv').write_text`, `(tmp_path / '.git').mkdir` |
-| `test_describe_tui_field_explains_selected_field_actions()` (L90) | Verifies that describe tui field explains selected field actions. | `build_default_tui_fields`, `next`, `describe_tui_field`, `any`, `_args` |
-| `test_worker_field_shows_detected_max_workers()` (L102) | Verifies that worker field shows detected max workers. | `build_default_tui_fields`, `next`, `describe_tui_field`, `_args`, `detected_max_workers` |
-| `test_post_dry_run_result_lines_offer_run_action()` (L113) | Verifies that post dry run result lines offer run action. | `_result_lines`, `_args` |
-| `test_post_dry_run_result_lines_show_attention_for_skips()` (L121) | Verifies that post dry run result lines show attention for skips. | `_result_lines`, `_args` |
-| `test_default_outcome_path_includes_case_stem_and_timestamp_shape()` (L127) | Verifies that default outcome path includes case stem and timestamp shape. | `default_outcome_path`, `value.startswith`, `value.endswith` |
-| `test_report_fields_explain_each_report_format()` (L134) | Verifies that report fields explain each report format. | `build_default_tui_fields`, `next`, `_args` |
-| `test_result_sections_include_expandable_human_readable_metric_results(tmp_path)` (L145) | Verifies that result sections include expandable human readable metric results. | `output.write_text`, `build_result_sections`, `any` |
-| `test_field_mapping_choices_remove_already_selected_columns()` (L162) | Verifies that field mapping choices remove already selected columns. | `_field_mapping_choices` |
-| `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L171) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
+| `test_build_default_tui_fields_discovers_case_and_plan_choices(tmp_path)` (L32) | Verifies that build default tui fields discovers case and plan choices. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases' / 'case_a.json').write_text`, `(tmp_path / 'plans' / 'plan_a.json').write_text`, `build_default_tui_fields`, `next`, `_args` |
+| `test_apply_tui_fields_converts_blank_optional_values_and_worker_count()` (L45) | Verifies that apply tui fields converts blank optional values and worker count. | `_args`, `build_default_tui_fields`, `apply_tui_fields` |
+| `test_validate_required_run_args_rejects_missing_case()` (L63) | Verifies that validate required run args rejects missing case. | `pytest.raises`, `validate_required_run_args`, `_args` |
+| `test_dataset_field_uses_file_browser()` (L68) | Verifies that dataset field uses file browser. | `build_default_tui_fields`, `next`, `_args` |
+| `test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path)` (L78) | Verifies that list file browser entries sorts directories first and skips internal dirs. | `(tmp_path / 'z_data.csv').write_text`, `(tmp_path / 'datasets').mkdir`, `(tmp_path / 'datasets' / 'sample.csv').write_text`, `(tmp_path / '.git').mkdir` |
+| `test_describe_tui_field_explains_selected_field_actions()` (L91) | Verifies that describe tui field explains selected field actions. | `build_default_tui_fields`, `next`, `describe_tui_field`, `any`, `_args` |
+| `test_worker_field_shows_detected_max_workers()` (L103) | Verifies that worker field shows detected max workers. | `build_default_tui_fields`, `next`, `describe_tui_field`, `_args`, `detected_max_workers` |
+| `test_post_dry_run_result_lines_offer_run_action()` (L114) | Verifies that post dry run result lines offer run action. | `_result_lines`, `_args` |
+| `test_post_dry_run_result_lines_show_attention_for_skips()` (L122) | Verifies that post dry run result lines show attention for skips. | `_result_lines`, `_args` |
+| `test_default_outcome_path_uses_plan_title_and_timestamp(tmp_path)` (L128) | Verifies that default outcome path uses plan title and timestamp. | `(tmp_path / 'plans').mkdir`, `plan.write_text`, `default_outcome_path`, `datetime` |
+| `test_default_outcome_path_uses_referenced_plan_title_for_case(tmp_path)` (L142) | Verifies that default outcome path uses referenced plan title for case. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `(tmp_path / 'cases' / 'case_example.json').write_text`, `default_outcome_path`, `datetime` |
+| `test_default_output_is_auto_managed_unless_explicit(tmp_path)` (L163) | Verifies that default output is auto managed unless explicit. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `build_default_tui_fields`, `next`, `automatic_output.value.startswith`, `_args` |
+| `test_report_fields_explain_each_report_format()` (L181) | Verifies that report fields explain each report format. | `build_default_tui_fields`, `next`, `_args` |
+| `test_result_sections_include_expandable_human_readable_metric_results(tmp_path)` (L192) | Verifies that result sections include expandable human readable metric results. | `output.write_text`, `build_result_sections`, `any` |
+| `test_field_mapping_choices_remove_already_selected_columns()` (L209) | Verifies that field mapping choices remove already selected columns. | `_field_mapping_choices` |
+| `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L218) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_args(**overrides)` (L8) | Implementation helper for args. |
+| `_args(**overrides)` (L9) | Implementation helper for args. |

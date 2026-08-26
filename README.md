@@ -27,7 +27,7 @@ For an interactive run setup, use:
 python run_plan.py --tui
 ```
 
-The curses TUI lets you select an existing case or plan, browse for a dataset, configure execution and field-translation options, run mapping dry-runs, and review results without having to remember the command-line flags. `--case` is not required when `--tui` is used. The TUI feeds the selected values into the same hardened runner as the normal CLI, so plan validation, output safety, skip policy and provenance checks still apply.
+The curses TUI lets you select an existing case or plan, browse for a dataset, configure execution and field-translation options, run mapping dry-runs, and review results without having to remember the command-line flags. `--case` is not required when `--tui` is used. The outcome filename is auto-filled from the selected plan/case title with a date/time suffix and refreshes at run time unless you type a custom output path. The TUI feeds the selected values into the same hardened runner as the normal CLI, so plan validation, output safety, skip policy and provenance checks still apply.
 
 `--tui` is the setup/navigation interface. `--display interactive` is the live ANSI dashboard shown while a configured run is executing.
 

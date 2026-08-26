@@ -3,6 +3,7 @@ from __future__ import annotations
 import curses
 import json
 import os
+import re
 from curses import textpad
 from dataclasses import dataclass
 from datetime import datetime
@@ -12,12 +13,65 @@ from pathlib import Path
 DISPLAY_MODES = ("compact", "full", "quiet", "interactive")
 
 
-def default_outcome_path(case_path: str | None = None) -> str:
-    stem = Path(case_path or "tui_run").stem
+def _outcome_filename_slug(value: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_").lower()
+    return slug or "run"
+
+
+def _selected_run_title(case_path: str | None, repo_root: Path) -> str:
+    if not case_path:
+        return "tui_run"
+
+    selected = Path(case_path).expanduser()
+    if not selected.is_absolute():
+        selected = repo_root / selected
+
+    try:
+        payload = json.loads(selected.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        payload = {}
+
+    if isinstance(payload, dict):
+        plan_meta = payload.get("plan_meta")
+        if isinstance(plan_meta, dict) and plan_meta.get("name"):
+            return str(plan_meta["name"])
+        for key in ("title", "name"):
+            if payload.get(key):
+                return str(payload[key])
+
+        test_plan = payload.get("test_plan")
+        if isinstance(test_plan, dict) and test_plan.get("path"):
+            plan_path = Path(str(test_plan["path"])).expanduser()
+            if not plan_path.is_absolute():
+                plan_path = selected.parent / plan_path
+            try:
+                plan_payload = json.loads(plan_path.resolve().read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError, TypeError):
+                plan_payload = {}
+            plan_meta = plan_payload.get("plan_meta") if isinstance(plan_payload, dict) else None
+            if isinstance(plan_meta, dict) and plan_meta.get("name"):
+                return str(plan_meta["name"])
+
+        dataset = payload.get("dataset")
+        if isinstance(dataset, dict) and dataset.get("name"):
+            return str(dataset["name"])
+
+    stem = Path(case_path).stem
     if stem.endswith("_plan"):
         stem = stem[:-5]
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    return str(Path("outcomes") / f"outcome_{stem}_{timestamp}.json")
+    return stem or "tui_run"
+
+
+def default_outcome_path(
+    case_path: str | None = None,
+    *,
+    repo_root: Path | None = None,
+    now: datetime | None = None,
+) -> str:
+    root = (repo_root or Path.cwd()).expanduser().resolve()
+    title = _selected_run_title(case_path, root)
+    timestamp = (now or datetime.now()).strftime("%Y-%m-%d_%H-%M-%S")
+    return str(Path("outcomes") / f"outcome_{_outcome_filename_slug(title)}_{timestamp}.json")
 
 
 def detected_max_workers() -> int:
@@ -40,6 +94,7 @@ class TuiField:
     choices: tuple[str, ...] = ()
     help: str = ""
     section: str = "Run setup"
+    auto: bool = False
 
 
 def _discover_files(root: Path, patterns: tuple[str, ...]) -> tuple[str, ...]:
@@ -76,10 +131,11 @@ def build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiFie
     case_choices = _discover_files(root, ("cases/*.json", "plans/*.json"))
     taxonomy_choices = ("",) + _discover_files(root, ("taxonomy/*.json", "plans/*taxonomy*.json"))
     translation_choices = ("",) + _discover_files(root, ("examples/field_translations/*.json",))
+    selected_case = args.case or (case_choices[0] if case_choices else "")
     return [
-        TuiField("case", "Case or plan JSON", "choice", args.case or (case_choices[0] if case_choices else ""), case_choices, "Pick a ready-to-run case, or pick a direct plan and provide dataset/output below.", "Required inputs"),
+        TuiField("case", "Case or plan JSON", "choice", selected_case, case_choices, "Pick a ready-to-run case, or pick a direct plan and provide dataset/output below.", "Required inputs"),
         TuiField("dataset", "Dataset file", "file", args.dataset or "", (), "Browse to the CSV/TSV/XLSX/PCAP file to test. Case files may already provide this.", "Required inputs"),
-        TuiField("output", "Outcome JSON", "text", args.output or default_outcome_path(args.case or (case_choices[0] if case_choices else None)), (), "Where the run result JSON should be written. Auto-filled with a readable date/time filename; case files may already provide this.", "Required inputs"),
+        TuiField("output", "Outcome JSON", "text", args.output or default_outcome_path(selected_case or None, repo_root=root), (), "Where the run result JSON should be written. By default this follows the selected plan/case title and receives a fresh date/time suffix when the run starts; edit it only when you want a custom filename.", "Required inputs", auto=args.output is None),
         TuiField("case_id", "Ad-hoc case ID", "text", args.case_id or "ad_hoc_case", (), "Label written to the outcome when you run a plan directly instead of a case.", "Required inputs"),
         TuiField("display", "Live display mode", "choice", args.display or "interactive", DISPLAY_MODES, "Choose how much progress detail to show after the run starts.", "Execution"),
         TuiField("workers", "Worker count", "int", "" if args.workers is None else str(args.workers), (), "Leave blank for automatic worker selection; enter 1 for serial execution. The detected maximum is shown beside this field.", "Execution"),
@@ -236,6 +292,10 @@ def _run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None:
         if key in (ord("q"), 27):
             return None
         if key == ord("r"):
+            output_field = next((item for item in fields if item.name == "output"), None)
+            case_field = next((item for item in fields if item.name == "case"), None)
+            if output_field is not None and output_field.auto:
+                output_field.value = default_outcome_path(str(case_field.value or "") if case_field else None, repo_root=repo_root)
             return fields
         if key in (curses.KEY_UP, ord("k")):
             selected = max(0, selected - 1)
@@ -246,6 +306,8 @@ def _run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None:
         elif key == ord("e") and fields[selected].kind in {"file", "text", "int"}:
             field = fields[selected]
             field.value = _edit_text(stdscr, min(height - 2, selected - start + 3), 29, str(field.value or ""), max(8, width - 30))
+            if field.name == "output":
+                field.auto = False
         elif key in (10, 13):
             field = fields[selected]
             if field.kind == "bool":
@@ -253,12 +315,18 @@ def _run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None:
             elif field.kind == "choice" and field.choices:
                 idx = field.choices.index(field.value) if field.value in field.choices else -1
                 field.value = field.choices[(idx + 1) % len(field.choices)]
+                if field.name == "case":
+                    output_field = next((item for item in fields if item.name == "output"), None)
+                    if output_field is not None and output_field.auto:
+                        output_field.value = default_outcome_path(str(field.value or ""), repo_root=repo_root)
             elif field.kind == "file":
                 browsed = _browse_file(stdscr, repo_root, str(field.value or ""))
                 if browsed is not None:
                     field.value = browsed
             else:
                 field.value = _edit_text(stdscr, min(height - 2, selected - start + 3), 29, str(field.value or ""), max(8, width - 30))
+                if field.name == "output":
+                    field.auto = False
 
 
 def launch_tui(args, repo_root: Path | None = None):

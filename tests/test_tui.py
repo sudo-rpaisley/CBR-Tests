@@ -1,3 +1,4 @@
+from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
@@ -124,11 +125,57 @@ def test_post_dry_run_result_lines_show_attention_for_skips():
     assert "Attention: 1 metric(s) skipped or blocked by missing fields" in lines
 
 
-def test_default_outcome_path_includes_case_stem_and_timestamp_shape():
-    value = default_outcome_path("cases/case_example.json")
+def test_default_outcome_path_uses_plan_title_and_timestamp(tmp_path):
+    (tmp_path / "plans").mkdir()
+    plan = tmp_path / "plans" / "example_plan.json"
+    plan.write_text('{"plan_meta": {"name": "DeepSecure Flow Feature Plan"}}', encoding="utf-8")
 
-    assert value.startswith("outcomes/outcome_case_example_")
-    assert value.endswith(".json")
+    value = default_outcome_path(
+        "plans/example_plan.json",
+        repo_root=tmp_path,
+        now=datetime(2026, 8, 26, 10, 45, 30),
+    )
+
+    assert value == "outcomes/outcome_deepsecure_flow_feature_plan_2026-08-26_10-45-30.json"
+
+
+def test_default_outcome_path_uses_referenced_plan_title_for_case(tmp_path):
+    (tmp_path / "plans").mkdir()
+    (tmp_path / "cases").mkdir()
+    (tmp_path / "plans" / "example_plan.json").write_text(
+        '{"plan_meta": {"name": "Reference Fidelity Experiment"}}',
+        encoding="utf-8",
+    )
+    (tmp_path / "cases" / "case_example.json").write_text(
+        '{"case_id": "case_example", "test_plan": {"path": "../plans/example_plan.json"}}',
+        encoding="utf-8",
+    )
+
+    value = default_outcome_path(
+        "cases/case_example.json",
+        repo_root=tmp_path,
+        now=datetime(2026, 8, 26, 10, 45, 30),
+    )
+
+    assert value == "outcomes/outcome_reference_fidelity_experiment_2026-08-26_10-45-30.json"
+
+
+def test_default_output_is_auto_managed_unless_explicit(tmp_path):
+    (tmp_path / "plans").mkdir()
+    (tmp_path / "plans" / "example_plan.json").write_text(
+        '{"plan_meta": {"name": "Example Plan"}}',
+        encoding="utf-8",
+    )
+
+    automatic = build_default_tui_fields(_args(), repo_root=tmp_path)
+    explicit = build_default_tui_fields(_args(output="outcomes/custom.json"), repo_root=tmp_path)
+
+    automatic_output = next(field for field in automatic if field.name == "output")
+    explicit_output = next(field for field in explicit if field.name == "output")
+    assert automatic_output.auto is True
+    assert automatic_output.value.startswith("outcomes/outcome_example_plan_")
+    assert explicit_output.auto is False
+    assert explicit_output.value == "outcomes/custom.json"
 
 
 def test_report_fields_explain_each_report_format():

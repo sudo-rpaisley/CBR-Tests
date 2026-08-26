@@ -565,40 +565,42 @@ Python symbols defined by `runner/tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `default_outcome_path(case_path: str | None = None) -> str` (L15) | function | Public | Implementation helper for default outcome path. |
-| `detected_max_workers() -> int` (L23) | function | Public | Implementation helper for detected max workers. |
-| `FileBrowserEntry` (L28) | class | Public | Data model for FileBrowserEntry. |
-| `TuiField` (L35) | class | Public | Data model for TuiField. |
-| `_discover_files(root: Path, patterns: tuple[str, ...]) -> tuple[str, ...]` (L45) | function | Internal | Implementation helper for discover files. |
-| `_display_path(path: Path, root: Path) -> str` (L52) | function | Internal | Implementation helper for display path. |
-| `list_file_browser_entries(directory: Path, root: Path) -> list[FileBrowserEntry]` (L60) | function | Public | Implementation helper for list file browser entries. |
-| `build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiField]` (L74) | function | Public | Builds default tui fields. |
-| `apply_tui_fields(args, fields: list[TuiField])` (L98) | function | Public | Implementation helper for apply tui fields. |
-| `validate_required_run_args(args) -> None` (L110) | function | Public | Validates required run args. |
-| `_format_value(field: TuiField) -> str` (L115) | function | Internal | Implementation helper for format value. |
-| `field_action_hint(field: TuiField) -> str` (L125) | function | Public | Implementation helper for field action hint. |
-| `describe_tui_field(field: TuiField) -> list[str]` (L135) | function | Public | Implementation helper for describe tui field. |
-| `_edit_text(stdscr, y: int, x: int, initial: str, width: int) -> str` (L144) | function | Internal | Implementation helper for edit text. |
-| `_initial_browser_directory(initial: str, root: Path) -> Path` (L154) | function | Internal | Implementation helper for initial browser directory. |
-| `_browse_file(stdscr, root: Path, initial: str) -> str | None` (L166) | function | Internal | Implementation helper for browse file. |
-| `_run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None` (L211) | function | Internal | Implementation helper for run curses. |
-| `launch_tui(args, repo_root: Path | None = None)` (L264) | function | Public | Implementation helper for launch tui. |
-| `_result_lines(result: dict | None, args) -> list[str]` (L272) | function | Internal | Implementation helper for result lines. |
-| `_field_mapping_choices(dataset_columns: list[str], mappings: dict[str, str], field: str) -> list[str]` (L295) | function | Internal | Implementation helper for field mapping choices. |
-| `save_field_mappings(path: Path, mappings: dict[str, str]) -> None` (L303) | function | Public | Implementation helper for save field mappings. |
-| `_field_mapping_curses(stdscr, result: dict) -> str` (L314) | function | Internal | Implementation helper for field mapping curses. |
-| `show_field_mapping_menu(result: dict) -> str` (L362) | function | Public | Implementation helper for show field mapping menu. |
-| `_confirm_run_after_errors(stdscr, skipped_count: int, result: dict | None = None) -> str` (L366) | function | Internal | Implementation helper for confirm run after errors. |
-| `ResultSection` (L391) | class | Public | Data model for ResultSection. |
-| `_load_outcome_payload(output_path: str | None) -> dict` (L397) | function | Internal | Implementation helper for load outcome payload. |
-| `_scalar_summary_items(payload: object, limit: int = 4) -> list[str]` (L406) | function | Internal | Implementation helper for scalar summary items. |
-| `_test_result_for_metric(test_results: dict, metric_id: str) -> object` (L419) | function | Internal | Implementation helper for test result for metric. |
-| `_metric_result_line(metric: dict, test_results: dict) -> str` (L428) | function | Internal | Implementation helper for metric result line. |
-| `_outcome_result_sections(output_path: str | None) -> tuple[list[str], list[str], list[str], list[str]]` (L444) | function | Internal | Implementation helper for outcome result sections. |
-| `build_result_sections(result: dict | None) -> list[ResultSection]` (L467) | function | Public | Builds result sections. |
-| `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L491) | function | Internal | Implementation helper for visible result rows. |
-| `_post_run_curses(stdscr, result: dict | None, args) -> str` (L501) | function | Internal | Implementation helper for post run curses. |
-| `show_post_run_menu(result: dict | None, args) -> str` (L542) | function | Public | Implementation helper for show post run menu. |
+| `_outcome_filename_slug(value: str) -> str` (L16) | function | Internal | Implementation helper for outcome filename slug. |
+| `_selected_run_title(case_path: str | None, repo_root: Path) -> str` (L21) | function | Internal | Implementation helper for selected run title. |
+| `default_outcome_path(case_path: str | None = None, *, repo_root: Path | None = None, now: datetime | None = None) -> str` (L65) | function | Public | Implementation helper for default outcome path. |
+| `detected_max_workers() -> int` (L77) | function | Public | Implementation helper for detected max workers. |
+| `FileBrowserEntry` (L82) | class | Public | Data model for FileBrowserEntry. |
+| `TuiField` (L89) | class | Public | Data model for TuiField. |
+| `_discover_files(root: Path, patterns: tuple[str, ...]) -> tuple[str, ...]` (L100) | function | Internal | Implementation helper for discover files. |
+| `_display_path(path: Path, root: Path) -> str` (L107) | function | Internal | Implementation helper for display path. |
+| `list_file_browser_entries(directory: Path, root: Path) -> list[FileBrowserEntry]` (L115) | function | Public | Implementation helper for list file browser entries. |
+| `build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiField]` (L129) | function | Public | Builds default tui fields. |
+| `apply_tui_fields(args, fields: list[TuiField])` (L154) | function | Public | Implementation helper for apply tui fields. |
+| `validate_required_run_args(args) -> None` (L166) | function | Public | Validates required run args. |
+| `_format_value(field: TuiField) -> str` (L171) | function | Internal | Implementation helper for format value. |
+| `field_action_hint(field: TuiField) -> str` (L181) | function | Public | Implementation helper for field action hint. |
+| `describe_tui_field(field: TuiField) -> list[str]` (L191) | function | Public | Implementation helper for describe tui field. |
+| `_edit_text(stdscr, y: int, x: int, initial: str, width: int) -> str` (L200) | function | Internal | Implementation helper for edit text. |
+| `_initial_browser_directory(initial: str, root: Path) -> Path` (L210) | function | Internal | Implementation helper for initial browser directory. |
+| `_browse_file(stdscr, root: Path, initial: str) -> str | None` (L222) | function | Internal | Implementation helper for browse file. |
+| `_run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None` (L267) | function | Internal | Implementation helper for run curses. |
+| `launch_tui(args, repo_root: Path | None = None)` (L332) | function | Public | Implementation helper for launch tui. |
+| `_result_lines(result: dict | None, args) -> list[str]` (L340) | function | Internal | Implementation helper for result lines. |
+| `_field_mapping_choices(dataset_columns: list[str], mappings: dict[str, str], field: str) -> list[str]` (L363) | function | Internal | Implementation helper for field mapping choices. |
+| `save_field_mappings(path: Path, mappings: dict[str, str]) -> None` (L371) | function | Public | Implementation helper for save field mappings. |
+| `_field_mapping_curses(stdscr, result: dict) -> str` (L382) | function | Internal | Implementation helper for field mapping curses. |
+| `show_field_mapping_menu(result: dict) -> str` (L430) | function | Public | Implementation helper for show field mapping menu. |
+| `_confirm_run_after_errors(stdscr, skipped_count: int, result: dict | None = None) -> str` (L434) | function | Internal | Implementation helper for confirm run after errors. |
+| `ResultSection` (L459) | class | Public | Data model for ResultSection. |
+| `_load_outcome_payload(output_path: str | None) -> dict` (L465) | function | Internal | Implementation helper for load outcome payload. |
+| `_scalar_summary_items(payload: object, limit: int = 4) -> list[str]` (L474) | function | Internal | Implementation helper for scalar summary items. |
+| `_test_result_for_metric(test_results: dict, metric_id: str) -> object` (L487) | function | Internal | Implementation helper for test result for metric. |
+| `_metric_result_line(metric: dict, test_results: dict) -> str` (L496) | function | Internal | Implementation helper for metric result line. |
+| `_outcome_result_sections(output_path: str | None) -> tuple[list[str], list[str], list[str], list[str]]` (L512) | function | Internal | Implementation helper for outcome result sections. |
+| `build_result_sections(result: dict | None) -> list[ResultSection]` (L535) | function | Public | Builds result sections. |
+| `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L559) | function | Internal | Implementation helper for visible result rows. |
+| `_post_run_curses(stdscr, result: dict | None, args) -> str` (L569) | function | Internal | Implementation helper for post run curses. |
+| `show_post_run_menu(result: dict | None, args) -> str` (L610) | function | Public | Implementation helper for show post run menu. |
 
 ## `scripts/build_documentation_inventory.py`
 
