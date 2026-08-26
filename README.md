@@ -1,6 +1,6 @@
 # CBR Tests Runner
 
-CBR Tests is a plan-driven Python runner for evaluating dataset quality and realism. It supports tabular and packet-capture inputs, serial or bounded parallel execution, canonical field translation, taxonomy-based reporting, and versioned JSON outcomes.
+CBR Tests is a plan-driven Python runner for evaluating dataset quality and realism. It supports tabular and packet-capture inputs, serial or bounded parallel execution, canonical field translation, taxonomy-based reporting, versioned JSON outcomes, and automatically generated human-readable Markdown summaries.
 
 ## Quick start
 
@@ -17,7 +17,7 @@ python run_plan.py \
   --no-update-field-translation
 ```
 
-This writes `outcomes/quickstart_example.json` using the repository’s self-contained sample dataset.
+This writes the authoritative `outcomes/quickstart_example.json` plus `outcomes/quickstart_example.summary.md`, a concise human-readable companion containing the execution/domain-status counts, findings that need attention, reason codes, key evidence, suggested actions, and a result row for every metric. The summary deliberately does not invent an aggregate realism score.
 
 ### Interactive terminal UI
 
@@ -63,6 +63,8 @@ python run_plan.py \
   --output outcomes/example.json \
   --case-id example_local
 ```
+
+The requested JSON output is always accompanied by a Markdown summary using the same stem, so the example above also writes `outcomes/example.summary.md`.
 
 ### Raw PCAP support
 
