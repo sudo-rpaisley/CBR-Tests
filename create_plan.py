@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import textwrap
 
 from runner.metric_catalog import available_metric_ids, build_metric_catalog
 from runner.plan_builder import build_plan, write_plan
@@ -81,6 +82,22 @@ def _confirm_overwrite(output_path: Path) -> bool:
     return answer in {"y", "yes"}
 
 
+def _print_wrapped(prefix: str, text: str, *, width: int = 108) -> None:
+    available = max(30, width - len(prefix))
+    lines = textwrap.wrap(str(text), width=available) or [""]
+    print(prefix + lines[0])
+    continuation = " " * len(prefix)
+    for line in lines[1:]:
+        print(continuation + line)
+
+
+def _compact_metric_ids(metric_ids: list[str], *, limit: int = 8) -> str:
+    metric_ids = sorted(metric_ids)
+    if len(metric_ids) <= limit:
+        return ", ".join(metric_ids)
+    return ", ".join(metric_ids[:limit]) + f", +{len(metric_ids) - limit} more"
+
+
 def _print_report(report: dict) -> None:
     print("\nPlan preflight summary")
     print(f"  Available tests:       {report['available_metric_count']}")
@@ -103,7 +120,26 @@ def _print_report(report: dict) -> None:
             missing = details.get("missing_fields", [])
             if missing:
                 print("      missing: " + ", ".join(missing))
+            advice = details.get("advice", {})
+            if advice.get("title"):
+                print("      needed: " + str(advice["title"]))
 
+    actions = report.get("unlock_actions", [])
+    if actions:
+        print("\nHow to unlock more tests")
+        for action in actions:
+            count = int(action.get("metric_count", 0))
+            suffix = "" if action.get("actionable", True) else " [requires different input/support]"
+            print(f"  - {action['title']} ({count} test{'s' if count != 1 else ''}){suffix}")
+            _print_wrapped("      ", str(action.get("advice", "")))
+            missing = action.get("missing_fields", [])
+            if missing:
+                _print_wrapped("      Missing fields: ", ", ".join(missing))
+            if action.get("example"):
+                _print_wrapped("      Example: ", str(action["example"]))
+            metric_ids = action.get("metric_ids", [])
+            if metric_ids:
+                _print_wrapped("      Affects: ", _compact_metric_ids(metric_ids))
 
 def _list_tests() -> None:
     for entry in build_metric_catalog():

@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import pytest
 
-from create_plan import _slug
+from create_plan import _print_report, _slug
 from runner.metric_catalog import available_metric_ids, build_metric_catalog
 from runner.pcap_adapter import (
     PCAP_DIRECT_METRICS,
@@ -233,3 +233,58 @@ def test_pcap_reference_rejects_self_comparison_and_representation_mismatch(tmp_
     assert not (PCAP_REFERENCE_METRICS & metric_ids)
     for metric_id in PCAP_REFERENCE_METRICS:
         assert report["metrics"][metric_id]["reason"] == "pcap_reference_representation_mismatch"
+
+
+def test_pcap_preflight_exclusions_include_unlock_advice(tmp_path):
+    dataset = tmp_path / "capture.pcap"
+    dataset.write_bytes(b"pcap-placeholder")
+
+    _plan, report = build_plan(plan_id="advice", name="Advice", dataset_path=dataset)
+
+    service = report["metrics"]["service_port_consistency_profile"]
+    assert service["advice"]["action_key"] == "single_service_evidence"
+    assert "--single-service" in service["advice"]["example"]
+
+    reference = report["metrics"][next(iter(PCAP_REFERENCE_METRICS))]
+    assert reference["advice"]["action_key"] == "independent_reference_pcap"
+    assert "--reference-dataset" in reference["advice"]["example"]
+
+    self_derived = report["metrics"][next(iter(PCAP_SELF_DERIVED_METRICS))]
+    assert self_derived["advice"]["action_key"] == "independent_flow_export"
+    assert self_derived["advice"]["actionable"] is False
+
+    actions = {action["action_key"]: action for action in report["unlock_actions"]}
+    expected_reference_count = len(PCAP_REFERENCE_METRICS) + len(PCAP_REFERENCE_UNSUPPORTED_REASONS)
+    assert actions["independent_reference_pcap"]["metric_count"] == expected_reference_count
+    assert actions["single_service_evidence"]["metric_count"] == 1
+
+
+def test_tabular_missing_fields_advise_mapping_without_fabrication(tmp_path):
+    dataset = tmp_path / "minimal.csv"
+    pd.DataFrame({"Source Port": [12345, 443], "Destination Port": [53, 443]}).to_csv(dataset, index=False)
+
+    _plan, report = build_plan(plan_id="mapping-advice", name="Mapping Advice", dataset_path=dataset)
+    blocked = [
+        details for details in report["metrics"].values()
+        if details.get("reason") == "required_fields_not_resolved" and details.get("missing_fields")
+    ]
+    assert blocked
+    advice = blocked[0]["advice"]
+    assert advice["action_key"] == "field_mapping"
+    assert "Do not fabricate absent fields" in advice["advice"]
+    assert "--field-translation" in advice["example"]
+
+
+def test_print_report_shows_grouped_unlock_guidance(tmp_path, capsys):
+    dataset = tmp_path / "capture.pcap"
+    dataset.write_bytes(b"pcap-placeholder")
+    _plan, report = build_plan(plan_id="printed-advice", name="Printed Advice", dataset_path=dataset)
+
+    _print_report(report)
+    output = capsys.readouterr().out
+
+    assert "How to unlock more tests" in output
+    assert "--reference-dataset" in output
+    assert "--single-service" in output
+    assert "Use independently exported flow fields" in output
+    assert "needed:" in output

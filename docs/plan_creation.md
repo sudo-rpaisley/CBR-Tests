@@ -32,7 +32,9 @@ Every candidate metric is classified as one of:
 - `needs_configuration`: the metric needs information that must not be guessed, such as a reference dataset, service definition, allowed slice IDs, attack windows, train/test split details, or benchmark-model configuration;
 - `not_applicable`: the metric is incompatible with the supplied input type, such as a packet-capture-only metric on a CSV file.
 
-Only `ready` metrics are written into the plan. The other states are shown in the preflight report so users can see why tests were excluded.
+Only `ready` metrics are written into the plan. The other states are shown in the preflight report so users can see why tests were excluded. Each excluded metric also carries research-safe advice describing what evidence, mapping, configuration, input representation or implementation support is needed before that test can run.
+
+The CLI groups repeated remedies under **How to unlock more tests**. For example, one independent reference PCAP may unlock many reference-comparison metrics at once, while slice, attack-window, split or benchmark tests explain the specific experiment ground truth they still require. Advice never recommends fabricating absent fields or bypassing preflight merely to increase the test count.
 
 Generated plans default to:
 
@@ -194,7 +196,9 @@ The CLI reports:
 - how many were runnable and therefore written into the plan;
 - how many were excluded;
 - the reason for each exclusion;
-- unresolved required fields where applicable.
+- unresolved required fields where applicable;
+- the evidence/configuration needed to unlock each excluded test;
+- grouped actions showing how many tests each remedy could unlock.
 
 Generated plans include a `plan_creation` object recording the same high-level provenance, including the dataset, input format, field-translation file when used, candidate metric count, runnable metric count, and excluded metric count.
 
