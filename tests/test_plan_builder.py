@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import pytest
 
+from create_plan import _slug
 from runner.metric_catalog import PCAP_ONLY_METRICS, available_metric_ids, build_metric_catalog
 from runner.plan_builder import build_plan, write_plan
 from runner.schema import validate_plan_schema
@@ -13,6 +14,8 @@ def test_metric_catalog_covers_runtime_dispatcher():
     catalogue_ids = {entry["metric_id"] for entry in build_metric_catalog()}
     assert catalogue_ids == runtime_ids
     assert runtime_ids
+    assert _slug("DeepSecure DrDoS DNS") == "deepsecure-drdos-dns"
+    assert _slug("  My Plan 2026!  ") == "my-plan-2026"
 
 
 def test_automatic_plan_requires_dataset():

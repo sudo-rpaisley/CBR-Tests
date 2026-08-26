@@ -126,7 +126,7 @@ Python symbols defined by `create_plan.py`.
 | `_list_tests() -> None` (L72) | function | Internal | Implementation helper for list tests. |
 | `_check_plan(path: Path) -> int` (L80) | function | Internal | Implementation helper for check plan. |
 | `parse_args() -> argparse.Namespace` (L97) | function | Public | Parses args. |
-| `main() -> int` (L118) | function | Public | Implementation helper for main. |
+| `main() -> int` (L127) | function | Public | Implementation helper for main. |
 
 ## `export_outcomes_for_graphs.py`
 

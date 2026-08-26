@@ -54,17 +54,57 @@ Running:
 python create_plan.py
 ```
 
-starts a small wizard that asks for a plan ID, name, dataset, and output path. The dataset is required because it is the basis for deciding which tests belong in the plan.
+starts the plan creator. The interactive workflow asks only for the **plan name**. The plan ID is derived automatically by lower-casing the name and replacing punctuation/whitespace with hyphens.
+
+For example:
+
+```text
+Plan name: DeepSecure DrDoS DNS
+Plan ID:   deepsecure-drdos-dns
+```
+
+The dataset is then selected through the terminal file browser. The browser starts in the repository `datasets/` directory when that directory exists; you can navigate with the arrow keys and press Enter to open a directory or select a dataset file.
+
+The output path is derived automatically and does not need to be entered:
+
+```text
+plans/<plan-id>_plan.json
+```
+
+For the example above, the default output is:
+
+```text
+plans/deepsecure-drdos-dns_plan.json
+```
+
+The creator shows the derived plan ID, selected dataset and output path before preflight, then asks whether to save the runnable-only plan.
 
 ## Dataset-aware creation
 
+The same defaults apply in scripted use. Supply a name and dataset:
+
 ```bash
 python create_plan.py \
-  --plan-id deepsecure-dns \
+  --name "DeepSecure DNS" \
+  --dataset datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv
+```
+
+This derives plan ID `deepsecure-dns` and writes to:
+
+```text
+plans/deepsecure-dns_plan.json
+```
+
+Use `--output` only when a different destination is genuinely needed:
+
+```bash
+python create_plan.py \
   --name "DeepSecure DNS" \
   --dataset datasets/DeepSecure/CICDDoS2019/01-12/DrDoS_DNS.csv \
-  --output plans/deepsecure_dns_plan.json
+  --output plans/custom_name.json
 ```
+
+`--plan-id` remains accepted only for compatibility with older scripts. It is no longer an independent value: if supplied, it must match the ID derived from `--name`.
 
 For supported tabular datasets the builder reads the header, applies existing field-alias detection, chooses the closest available metric template, and includes only metrics whose required fields and configuration can be resolved. It never modifies the dataset.
 
@@ -72,11 +112,9 @@ If the dataset already has a standard `<dataset>.field_translation.json` sidecar
 
 ```bash
 python create_plan.py \
-  --plan-id example \
   --name "Example" \
   --dataset datasets/example.csv \
-  --field-translation field_translations/example.json \
-  --output plans/example_plan.json
+  --field-translation field_translations/example.json
 ```
 
 ## Selection controls
@@ -84,8 +122,8 @@ python create_plan.py \
 Every available test is considered by default. Narrow the candidate set with:
 
 ```bash
-python create_plan.py --include valid_port_range_profile,reserved_ip_address_profile ...
-python create_plan.py --exclude benchmark_model_accuracy,benchmark_model_f1_score ...
+python create_plan.py --name "Port Checks" --dataset datasets/example.csv --include valid_port_range_profile,reserved_ip_address_profile
+python create_plan.py --name "No Benchmarks" --dataset datasets/example.csv --exclude benchmark_model_accuracy,benchmark_model_f1_score
 ```
 
 `--include` and `--exclude` may be repeated and may contain comma-separated metric IDs. These controls determine what is considered; they do not force an unrunnable test into the plan.

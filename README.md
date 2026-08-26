@@ -104,10 +104,16 @@ No project license has yet been declared. Add an appropriate license before publ
 
 ## Automatic dataset-aware plan creation
 
-Generate a plan containing only tests that preflight as structurally runnable for a supplied dataset:
+Interactive plan creation asks for a plan name, derives the plan ID automatically, lets you browse for the dataset, and defaults the output to `plans/<plan-id>_plan.json`:
 
 ```bash
-python create_plan.py --plan-id my-plan --dataset path/to/dataset.csv
+python create_plan.py
 ```
 
-The creator discovers metrics from the live dispatcher, applies field translations, excludes tests that need unresolved fields/configuration or an incompatible input type, and writes only runnable metrics. See [Creating plans](docs/plan_creation.md) for the full workflow.
+For scripted use, provide the plan name and dataset. For example:
+
+```bash
+python create_plan.py --name "My Plan" --dataset path/to/dataset.csv
+```
+
+This writes `plans/my-plan_plan.json`. The creator discovers metrics from the live dispatcher, applies field translations, excludes tests that need unresolved fields/configuration or an incompatible input type, and writes only runnable metrics. See [Creating plans](docs/plan_creation.md) for the full workflow.
