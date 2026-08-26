@@ -113,10 +113,15 @@ Timestamp, duration, timing-drift, hourly, and periodicity calculations.
 | `compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict` (L181) | function | Public | Computes burstiness coefficient deviation and returns a structured result. |
 | `_hourly_counts(timestamps: list[pd.Timestamp]) -> list[int]` (L208) | function | Internal | Implementation helper for hourly counts. |
 | `_probabilities(counts: list[int]) -> list[float]` (L215) | function | Internal | Implementation helper for probabilities. |
-| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L220) | function | Public | Computes hourly activity distribution divergence and returns a structured result. |
-| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L246) | function | Public | Computes diurnal pattern similarity score and returns a structured result. |
-| `_autocorrelation(values: list[int], lag: int) -> float | None` (L269) | function | Internal | Implementation helper for autocorrelation. |
-| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L281) | function | Public | Computes periodicity preservation score and returns a structured result. |
+| `_daily_hour_vectors(timestamps: list[pd.Timestamp]) -> list[tuple[str, list[int]]]` (L220) | function | Internal | Return one 24-hour UTC activity vector per observed calendar day. |
+| `_mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]` (L233) | function | Internal | Implementation helper for mean pairwise total variation. |
+| `_cosine_similarity(left: list[int], right: list[int]) -> float | None` (L250) | function | Internal | Implementation helper for cosine similarity. |
+| `_mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]` (L259) | function | Internal | Implementation helper for mean pairwise cosine similarity. |
+| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L271) | function | Public | Measure day-to-day divergence in UTC hour-of-day activity distributions. Comparing chronological packet halves confounds the result with capture time: an eight-hour regular capture, for example, puts different hours in each half and appears maximally divergent. This implementation instead compares one 24-hour profile per observed calendar day and therefore requires at least two observed days before producing a value. |
+| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L314) | function | Public | Measure day-to-day similarity of UTC hour-of-day activity shapes. |
+| `_continuous_hourly_counts(timestamps: list[pd.Timestamp]) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]` (L347) | function | Internal | Implementation helper for continuous hourly counts. |
+| `_lag_repeat_similarity(values: list[int], lag: int, minimum_pairs: int) -> tuple[float | None, int]` (L361) | function | Internal | Implementation helper for lag repeat similarity. |
+| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L381) | function | Public | Measure how closely hourly activity repeats at configured temporal lags. The previous implementation autocorrelated two 24-element hour-of-day histograms, so a lag of 24 could never be evaluated. Here the lag is applied to the actual continuous hourly activity series: lag 24 therefore compares each observed hour with the corresponding hour one day later. |
 
 ## `cbr_tests/metrics/timestamp_coherence.py`
 

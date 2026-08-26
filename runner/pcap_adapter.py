@@ -705,29 +705,29 @@ def pcap_metric_template(metric_id: str) -> dict | None:
         },
         "hourly_activity_distribution_divergence": {
             "metric_id": "hourly_activity_distribution_divergence",
-            "label": "Packet Hourly Activity Divergence",
+            "label": "Packet Day-to-Day Hourly Activity Divergence",
             "input_requirements": {"timestamp_field": "Timestamp"},
             "calculation": {
-                "method": "Compare first- and second-half UTC hourly packet activity distributions.",
-                "parameters": {"timestamp_unit": "s"},
+                "method": "Measure mean pairwise total-variation divergence between UTC hour-of-day activity profiles from separate observed days.",
+                "parameters": {"timestamp_unit": "s", "minimum_day_count": 2},
             },
         },
         "diurnal_pattern_similarity_score": {
             "metric_id": "diurnal_pattern_similarity_score",
-            "label": "Packet Diurnal Pattern Similarity",
+            "label": "Packet Day-to-Day Diurnal Pattern Similarity",
             "input_requirements": {"timestamp_field": "Timestamp"},
             "calculation": {
-                "method": "Compare first- and second-half UTC hourly packet-count shapes using cosine similarity.",
-                "parameters": {"timestamp_unit": "s"},
+                "method": "Measure mean pairwise cosine similarity between UTC hour-of-day packet-count profiles from separate observed days.",
+                "parameters": {"timestamp_unit": "s", "minimum_day_count": 2},
             },
         },
         "periodicity_preservation_score": {
             "metric_id": "periodicity_preservation_score",
-            "label": "Packet Periodicity Preservation Score",
+            "label": "Packet Hourly Periodicity Repeat Similarity",
             "input_requirements": {"timestamp_field": "Timestamp"},
             "calculation": {
-                "method": "Compare autocorrelation of first- and second-half UTC hourly packet counts at configured lags.",
-                "parameters": {"timestamp_unit": "s", "lags": [1, 24]},
+                "method": "Compare the continuous UTC hourly packet-count series with lagged copies; lag 24 directly measures one-day repeat similarity.",
+                "parameters": {"timestamp_unit": "s", "lags": [24], "minimum_lag_pairs": 2},
             },
         },
     }
