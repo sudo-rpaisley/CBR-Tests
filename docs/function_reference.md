@@ -679,14 +679,6 @@ Python symbols defined by `runner/tui.py`.
 | `_post_run_curses(stdscr, result: dict | None, args) -> str` (L569) | function | Internal | Implementation helper for post run curses. |
 | `show_post_run_menu(result: dict | None, args) -> str` (L610) | function | Public | Implementation helper for show post run menu. |
 
-## `scripts/apply_preflight_advice_patch.py`
-
-Python symbols defined by `scripts/apply_preflight_advice_patch.py`.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `replace_once(path: str, old: str, new: str) -> None` (L4) | function | Public | Implementation helper for replace once. |
-
 ## `scripts/build_documentation_inventory.py`
 
 Repository inventory generator used for documentation audits.
