@@ -77,7 +77,7 @@ For the example above, the default output is:
 plans/deepsecure-drdos-dns_plan.json
 ```
 
-The creator shows the derived plan ID, selected dataset and output path before preflight, then asks whether to save the runnable-only plan.
+The creator shows the derived plan ID, selected dataset and output path before preflight, then asks whether to save the runnable-only plan. If that output path already exists, interactive mode warns that the plan exists and, after save confirmation, asks explicitly whether the existing plan should be overwritten. Declining leaves the existing plan unchanged. Scripted/non-interactive use remains conservative and still requires `--force` to replace an existing plan.
 
 ## Dataset-aware creation
 

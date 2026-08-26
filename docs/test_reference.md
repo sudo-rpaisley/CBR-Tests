@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **150 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **153 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -31,6 +31,29 @@ Parallel correctness, timestamps, atomic writes, and schema regression coverage.
 | `_metric(metric_id: str) -> dict` (L15) | Implementation helper for metric. |
 | `test_parallel_fail_fast_marks_unsubmitted_metrics._failed(_dataset, _metric_config)` (L28) | Implementation helper for failed. |
 | `test_parallel_fail_fast_marks_unsubmitted_metrics._unexpected(_dataset, metric_config)` (L32) | Implementation helper for unexpected. |
+
+## `tests/test_create_plan_overwrite.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_interactive_builder_can_confirm_overwrite(monkeypatch, tmp_path)` (L41) | Verifies that interactive builder can confirm overwrite. | `_dataset`, `output.write_text`, `iter`, `monkeypatch.setattr`, `_TTYInput`, `create_plan.main`, `output.read_text`, `_args` |
+| `test_interactive_builder_can_decline_overwrite(monkeypatch, tmp_path)` (L57) | Verifies that interactive builder can decline overwrite. | `_dataset`, `output.write_text`, `iter`, `monkeypatch.setattr`, `_TTYInput`, `create_plan.main`, `output.read_text`, `_args` |
+| `test_noninteractive_builder_still_requires_force_to_replace(monkeypatch, tmp_path)` (L72) | Verifies that noninteractive builder still requires force to replace. | `_dataset`, `output.write_text`, `monkeypatch.setattr`, `_NonTTYInput`, `pytest.raises`, `create_plan.main`, `output.read_text`, `_args` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_TTYInput` (L8) | Data model for TTYInput. |
+| `_TTYInput.isatty(self)` (L9) | Implementation helper for isatty. |
+| `_NonTTYInput` (L13) | Data model for NonTTYInput. |
+| `_NonTTYInput.isatty(self)` (L14) | Implementation helper for isatty. |
+| `_args(dataset, output, *, force = False)` (L18) | Implementation helper for args. |
+| `_dataset(path)` (L34) | Implementation helper for dataset. |
 
 ## `tests/test_data_quality_profile.py`
 
