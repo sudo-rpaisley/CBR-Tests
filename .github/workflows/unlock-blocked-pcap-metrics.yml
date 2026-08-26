@@ -23,15 +23,41 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - name: Apply implementation
         run: python scripts/apply_unlock_blocked_pcap_metrics.py
-      - name: Repair generated prompt escapes
+      - name: Repair generated safeguards
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path("create_plan.py")
-          text = path.read_text(encoding="utf-8")
+
+          create_path = Path("create_plan.py")
+          text = create_path.read_text(encoding="utf-8")
           text = text.replace('answer = input("\nAdd an independent reference PCAP', 'answer = input("\\nAdd an independent reference PCAP')
           text = text.replace('answer = input("\nIs the entire capture', 'answer = input("\\nIs the entire capture')
-          path.write_text(text, encoding="utf-8")
+          create_path.write_text(text, encoding="utf-8")
+
+          builder_path = Path("runner/plan_builder.py")
+          text = builder_path.read_text(encoding="utf-8")
+          old = '''            elif metric_id == "service_port_consistency_profile" and service_port_configuration:
+                spec = dict(spec)
+                spec["template"] = pcap_service_port_template(
+                    service_port_configuration.get("service_name", ""),
+                    service_port_configuration.get("expected_ports", []),
+                )
+'''
+          new = '''            elif metric_id == "service_port_consistency_profile":
+                # Do not inherit a service definition discovered from another
+                # plan/template. Raw-PCAP service identity must be supplied for
+                # this capture explicitly to avoid circular or leaked assumptions.
+                spec = dict(spec)
+                spec["template"] = None
+                if service_port_configuration:
+                    spec["template"] = pcap_service_port_template(
+                        service_port_configuration.get("service_name", ""),
+                        service_port_configuration.get("expected_ports", []),
+                    )
+'''
+          if old not in text:
+              raise SystemExit("Expected service-template preflight block not found")
+          builder_path.write_text(text.replace(old, new, 1), encoding="utf-8")
           PY
       - name: Validate targeted behaviour
         run: |
