@@ -645,35 +645,6 @@ Python symbols defined by `runner/tui.py`.
 | `_post_run_curses(stdscr, result: dict | None, args) -> str` (L569) | function | Internal | Implementation helper for post run curses. |
 | `show_post_run_menu(result: dict | None, args) -> str` (L610) | function | Public | Implementation helper for show post run menu. |
 
-## `scripts/apply_unlock_blocked_pcap_metric_fixes.py`
-
-Python symbols defined by `scripts/apply_unlock_blocked_pcap_metric_fixes.py`.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `fix_prompt_escapes() -> None` (L4) | function | Public | Implementation helper for fix prompt escapes. |
-| `isolate_pcap_service_configuration() -> None` (L18) | function | Public | Implementation helper for isolate PCAP service configuration. |
-| `preserve_automatic_support_set_semantics() -> None` (L44) | function | Public | Implementation helper for preserve automatic support set semantics. |
-| `update_existing_pcap_contract_tests() -> None` (L57) | function | Public | Updates existing PCAP contract tests. |
-
-## `scripts/apply_unlock_blocked_pcap_metrics.py`
-
-Python symbols defined by `scripts/apply_unlock_blocked_pcap_metrics.py`.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `replace_once(path: str, old: str, new: str) -> None` (L6) | function | Public | Implementation helper for replace once. |
-| `patch_pcap_adapter() -> None` (L14) | function | Public | Implementation helper for patch PCAP adapter. |
-| `write_handshake_metric() -> None` (L193) | function | Public | Writes handshake metric. |
-| `patch_dispatch() -> None` (L403) | function | Public | Implementation helper for patch dispatch. |
-| `patch_reference_metrics() -> None` (L416) | function | Public | Implementation helper for patch reference metrics. |
-| `patch_plan_builder() -> None` (L646) | function | Public | Implementation helper for patch plan builder. |
-| `patch_create_plan() -> None` (L848) | function | Public | Implementation helper for patch create plan. |
-| `patch_run_plan() -> None` (L977) | function | Public | Implementation helper for patch run plan. |
-| `write_tests() -> None` (L990) | function | Public | Writes tests. |
-| `patch_docs() -> None` (L1190) | function | Public | Implementation helper for patch docs. |
-| `main() -> None` (L1258) | function | Public | Implementation helper for main. |
-
 ## `scripts/build_documentation_inventory.py`
 
 Repository inventory generator used for documentation audits.
