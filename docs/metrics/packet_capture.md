@@ -4,14 +4,18 @@ This page documents every dispatcher metric in the **Raw packet capture checks**
 
 ## `protocol_validity_profile`
 
-Scans raw IPv4/IPv6 packets for valid addresses and basic protocol/port/length/flag plausibility.
+Scans decoded IPv4/IPv6 packets for deterministic structural validity and separately reports suspicious-but-potentially-legitimate TCP behaviour.
 
 - **Implementation:** `tests/metrics/.../valid_ip_address_profile.py` (production implementation awaiting migration)
 - **Supplied-plan usage:** `dad_plan`
 - **Inputs:** Raw PCAP/PCAPNG.
-- **Primary output:** Packet validity counts, issue counts, field counts, examples, ratio, status.
-- **Interpretation:** Pass ≥0.99, warn ≥0.95, else fail.
-- **Current caveat:** A broad packet heuristic; it is not full protocol conformance validation.
+- **Structural checks:** IP address parseability and family agreement, decoded TCP/UDP port bounds, direct TCP/UDP protocol-to-layer consistency where that can be established safely, positive/credible network-layer length, and decoded IPv4/IPv6 structure.
+- **Descriptive checks:** unusual TCP flag combinations such as SYN+FIN and SYN+RST. These are reported but do not reduce the validity ratio by default because attack/security captures can legitimately contain crafted packets.
+- **Non-IP frames:** reported separately and excluded from the IPv4/IPv6 validity denominator rather than being silently counted as valid IP packets.
+- **IPv4 fragments:** transport-layer consistency is not asserted for non-initial fragments because the transport header may legitimately be absent.
+- **Primary output:** checked/valid/structurally-invalid packet counts, address counts, invalid port count, protocol mismatch count, unusual TCP flag evidence, issue examples, validity ratio, and status.
+- **Interpretation:** default pass ≥0.99, warn ≥0.95, else fail over checked IPv4/IPv6 packets. Thresholds may be explicitly configured. Suspicious TCP flags affect status only when `suspicious_tcp_flags_affect_status` is explicitly enabled.
+- **Current caveat:** This is basic structural plausibility, not full RFC/protocol conformance validation. Successful Scapy decoding itself constrains which malformed fields can be observed.
 
 ## `timestamp_coherence_profile`
 
