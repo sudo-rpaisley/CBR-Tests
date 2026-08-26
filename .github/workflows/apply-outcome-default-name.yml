@@ -1,0 +1,85 @@
+name: Apply outcome default naming
+
+on:
+  push:
+    branches:
+      - agent/outcome-default-name
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/outcome-default-name
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Patch TUI and tests
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          tui = Path('runner/tui.py')
+          text = tui.read_text(encoding='utf-8')
+          text = text.replace('import os\n', 'import os\nimport re\n')
+          old = '''def default_outcome_path(case_path: str | None = None) -> str:\n    stem = Path(case_path or "tui_run").stem\n    if stem.endswith("_plan"):\n        stem = stem[:-5]\n    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")\n    return str(Path("outcomes") / f"outcome_{stem}_{timestamp}.json")\n'''
+          new = '''def _outcome_filename_slug(value: str) -> str:\n    slug = re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_").lower()\n    return slug or "run"\n\n\ndef _selected_run_title(case_path: str | None, repo_root: Path) -> str:\n    if not case_path:\n        return "tui_run"\n\n    selected = Path(case_path).expanduser()\n    if not selected.is_absolute():\n        selected = repo_root / selected\n\n    try:\n        payload = json.loads(selected.read_text(encoding="utf-8"))\n    except (OSError, json.JSONDecodeError, TypeError):\n        payload = {}\n\n    if isinstance(payload, dict):\n        plan_meta = payload.get("plan_meta")\n        if isinstance(plan_meta, dict) and plan_meta.get("name"):\n            return str(plan_meta["name"])\n        for key in ("title", "name"):\n            if payload.get(key):\n                return str(payload[key])\n\n        test_plan = payload.get("test_plan")\n        if isinstance(test_plan, dict) and test_plan.get("path"):\n            plan_path = Path(str(test_plan["path"])).expanduser()\n            if not plan_path.is_absolute():\n                plan_path = selected.parent / plan_path\n            try:\n                plan_payload = json.loads(plan_path.resolve().read_text(encoding="utf-8"))\n            except (OSError, json.JSONDecodeError, TypeError):\n                plan_payload = {}\n            plan_meta = plan_payload.get("plan_meta") if isinstance(plan_payload, dict) else None\n            if isinstance(plan_meta, dict) and plan_meta.get("name"):\n                return str(plan_meta["name"])\n\n        dataset = payload.get("dataset")\n        if isinstance(dataset, dict) and dataset.get("name"):\n            return str(dataset["name"])\n\n    stem = Path(case_path).stem\n    if stem.endswith("_plan"):\n        stem = stem[:-5]\n    return stem or "tui_run"\n\n\ndef default_outcome_path(\n    case_path: str | None = None,\n    *,\n    repo_root: Path | None = None,\n    now: datetime | None = None,\n) -> str:\n    root = (repo_root or Path.cwd()).expanduser().resolve()\n    title = _selected_run_title(case_path, root)\n    timestamp = (now or datetime.now()).strftime("%Y-%m-%d_%H-%M-%S")\n    return str(Path("outcomes") / f"outcome_{_outcome_filename_slug(title)}_{timestamp}.json")\n'''
+          if old not in text:
+              raise SystemExit('default_outcome_path block not found')
+          text = text.replace(old, new)
+          text = text.replace('    section: str = "Run setup"\n', '    section: str = "Run setup"\n    auto: bool = False\n')
+          text = text.replace('    translation_choices = ("",) + _discover_files(root, ("examples/field_translations/*.json",))\n    return [\n        TuiField("case", "Case or plan JSON", "choice", args.case or (case_choices[0] if case_choices else ""), case_choices, "Pick a ready-to-run case, or pick a direct plan and provide dataset/output below.", "Required inputs"),\n', '    translation_choices = ("",) + _discover_files(root, ("examples/field_translations/*.json",))\n    selected_case = args.case or (case_choices[0] if case_choices else "")\n    return [\n        TuiField("case", "Case or plan JSON", "choice", selected_case, case_choices, "Pick a ready-to-run case, or pick a direct plan and provide dataset/output below.", "Required inputs"),\n')
+          text = text.replace('        TuiField("output", "Outcome JSON", "text", args.output or default_outcome_path(args.case or (case_choices[0] if case_choices else None)), (), "Where the run result JSON should be written. Auto-filled with a readable date/time filename; case files may already provide this.", "Required inputs"),\n', '        TuiField("output", "Outcome JSON", "text", args.output or default_outcome_path(selected_case or None, repo_root=root), (), "Where the run result JSON should be written. By default this follows the selected plan/case title and receives a fresh date/time suffix when the run starts; edit it only when you want a custom filename.", "Required inputs", auto=args.output is None),\n')
+          text = text.replace('        if key == ord("r"):\n            return fields\n', '        if key == ord("r"):\n            output_field = next((item for item in fields if item.name == "output"), None)\n            case_field = next((item for item in fields if item.name == "case"), None)\n            if output_field is not None and output_field.auto:\n                output_field.value = default_outcome_path(str(case_field.value or "") if case_field else None, repo_root=repo_root)\n            return fields\n')
+          text = text.replace('            field.value = _edit_text(stdscr, min(height - 2, selected - start + 3), 29, str(field.value or ""), max(8, width - 30))\n', '            field.value = _edit_text(stdscr, min(height - 2, selected - start + 3), 29, str(field.value or ""), max(8, width - 30))\n            if field.name == "output":\n                field.auto = False\n', 1)
+          old_choice = '''            elif field.kind == "choice" and field.choices:\n                idx = field.choices.index(field.value) if field.value in field.choices else -1\n                field.value = field.choices[(idx + 1) % len(field.choices)]\n'''
+          new_choice = '''            elif field.kind == "choice" and field.choices:\n                idx = field.choices.index(field.value) if field.value in field.choices else -1\n                field.value = field.choices[(idx + 1) % len(field.choices)]\n                if field.name == "case":\n                    output_field = next((item for item in fields if item.name == "output"), None)\n                    if output_field is not None and output_field.auto:\n                        output_field.value = default_outcome_path(str(field.value or ""), repo_root=repo_root)\n'''
+          if old_choice not in text:
+              raise SystemExit('choice block not found')
+          text = text.replace(old_choice, new_choice)
+          old_else = '''            else:\n                field.value = _edit_text(stdscr, min(height - 2, selected - start + 3), 29, str(field.value or ""), max(8, width - 30))\n'''
+          new_else = '''            else:\n                field.value = _edit_text(stdscr, min(height - 2, selected - start + 3), 29, str(field.value or ""), max(8, width - 30))\n                if field.name == "output":\n                    field.auto = False\n'''
+          if old_else not in text:
+              raise SystemExit('enter text edit block not found')
+          text = text.replace(old_else, new_else, 1)
+          tui.write_text(text, encoding='utf-8')
+
+          tests = Path('tests/test_tui.py')
+          text = tests.read_text(encoding='utf-8')
+          text = text.replace('from types import SimpleNamespace\n', 'from datetime import datetime\nfrom types import SimpleNamespace\n')
+          old_test = '''def test_default_outcome_path_includes_case_stem_and_timestamp_shape():\n    value = default_outcome_path("cases/case_example.json")\n\n    assert value.startswith("outcomes/outcome_case_example_")\n    assert value.endswith(".json")\n'''
+          new_test = '''def test_default_outcome_path_uses_plan_title_and_timestamp(tmp_path):\n    (tmp_path / "plans").mkdir()\n    plan = tmp_path / "plans" / "example_plan.json"\n    plan.write_text('{"plan_meta": {"name": "DeepSecure Flow Feature Plan"}}', encoding="utf-8")\n\n    value = default_outcome_path(\n        "plans/example_plan.json",\n        repo_root=tmp_path,\n        now=datetime(2026, 8, 26, 10, 45, 30),\n    )\n\n    assert value == "outcomes/outcome_deepsecure_flow_feature_plan_2026-08-26_10-45-30.json"\n\n\ndef test_default_outcome_path_uses_referenced_plan_title_for_case(tmp_path):\n    (tmp_path / "plans").mkdir()\n    (tmp_path / "cases").mkdir()\n    (tmp_path / "plans" / "example_plan.json").write_text(\n        '{"plan_meta": {"name": "Reference Fidelity Experiment"}}',\n        encoding="utf-8",\n    )\n    (tmp_path / "cases" / "case_example.json").write_text(\n        '{"case_id": "case_example", "test_plan": {"path": "../plans/example_plan.json"}}',\n        encoding="utf-8",\n    )\n\n    value = default_outcome_path(\n        "cases/case_example.json",\n        repo_root=tmp_path,\n        now=datetime(2026, 8, 26, 10, 45, 30),\n    )\n\n    assert value == "outcomes/outcome_reference_fidelity_experiment_2026-08-26_10-45-30.json"\n\n\ndef test_default_output_is_auto_managed_unless_explicit(tmp_path):\n    (tmp_path / "plans").mkdir()\n    (tmp_path / "plans" / "example_plan.json").write_text(\n        '{"plan_meta": {"name": "Example Plan"}}',\n        encoding="utf-8",\n    )\n\n    automatic = build_default_tui_fields(_args(), repo_root=tmp_path)\n    explicit = build_default_tui_fields(_args(output="outcomes/custom.json"), repo_root=tmp_path)\n\n    automatic_output = next(field for field in automatic if field.name == "output")\n    explicit_output = next(field for field in explicit if field.name == "output")\n    assert automatic_output.auto is True\n    assert automatic_output.value.startswith("outcomes/outcome_example_plan_")\n    assert explicit_output.auto is False\n    assert explicit_output.value == "outcomes/custom.json"\n'''
+          if old_test not in text:
+              raise SystemExit('default outcome test block not found')
+          text = text.replace(old_test, new_test)
+          tests.write_text(text, encoding='utf-8')
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+          old_sentence = 'The curses TUI lets you select an existing case or plan, browse for a dataset, configure execution and field-translation options, run mapping dry-runs, and review results without having to remember the command-line flags. `--case` is not required when `--tui` is used.'
+          new_sentence = old_sentence + ' The outcome filename is auto-filled from the selected plan/case title with a date/time suffix and refreshes at run time unless you type a custom output path.'
+          if old_sentence not in text:
+              raise SystemExit('README TUI sentence not found')
+          readme.write_text(text.replace(old_sentence, new_sentence), encoding='utf-8')
+          PY
+      - name: Install dev dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Regenerate references
+        run: python scripts/build_reference_documentation.py
+      - name: Validate changes
+        run: |
+          python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
+          python -m pytest -q tests/test_tui.py
+          python scripts/build_reference_documentation.py --check
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add runner/tui.py tests/test_tui.py README.md docs/function_reference.md docs/test_reference.md
+          git commit -m "Derive outcome filename from selected run title"
+          git push origin HEAD:agent/outcome-default-name
