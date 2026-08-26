@@ -16,15 +16,41 @@ PCAP_DIRECT_METRICS = {
     "timestamp_coherence_profile",
 }
 
-# Existing tabular metrics that can be evaluated without changing their
-# scientific meaning once a PCAP has been reconstructed into canonical flows.
-PCAP_FLOW_METRICS = {
+# Existing metrics that can consume fields copied directly from packet records.
+# These checks are independent of the flow reconstruction calculations below.
+PCAP_PACKET_METRICS = {
+    "reserved_ip_address_profile",
     "valid_port_range_profile",
+}
+
+PCAP_SUPPORTED_METRICS = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
+
+# These metrics are intentionally *not* automatically enabled for raw PCAP.
+# Their tabular forms test whether separately exported flow fields agree with one
+# another. If CBR-Tests derives both sides of those equations from the same PCAP,
+# a pass would mostly validate this adapter rather than the source dataset.
+PCAP_SELF_DERIVED_METRICS = {
     "tcp_flag_consistency_profile",
     "flow_duration_consistency_profile",
     "packet_byte_consistency_profile",
+    "derived_rate_consistency_profile",
 }
 
+PCAP_PACKET_COLUMNS = {
+    "Packet Index",
+    "Timestamp",
+    "Source IP",
+    "Destination IP",
+    "Source Port",
+    "Destination Port",
+    "Protocol",
+    "IP Version",
+    "Packet Length",
+    "TCP Flags",
+}
+
+# Canonical flow view retained for later sequence/reference metrics. It is not
+# currently used to manufacture extra self-consistency passes in a PCAP plan.
 PCAP_FLOW_COLUMNS = {
     "Timestamp",
     "Flow End Timestamp",
@@ -65,6 +91,78 @@ PCAP_FLOW_COLUMNS = {
 
 def is_packet_capture(path: Path) -> bool:
     return Path(path).suffix.lower() in {".pcap", ".pcapng"}
+
+
+def _packet_fields(packet) -> dict[str, Any] | None:
+    if IP in packet:
+        ip_layer = packet[IP]
+        src_ip = str(ip_layer.src)
+        dst_ip = str(ip_layer.dst)
+        protocol = int(ip_layer.proto)
+        ip_version = 4
+    elif IPv6 in packet:
+        ip_layer = packet[IPv6]
+        src_ip = str(ip_layer.src)
+        dst_ip = str(ip_layer.dst)
+        ip_version = 6
+        # IPv6 extension headers can make the base next-header field differ from
+        # the eventual transport protocol. Prefer the decoded transport layer.
+        if TCP in packet:
+            protocol = 6
+        elif UDP in packet:
+            protocol = 17
+        else:
+            protocol = int(ip_layer.nh)
+    else:
+        return None
+
+    src_port: int | None = None
+    dst_port: int | None = None
+    tcp_flags: int | None = None
+    if TCP in packet:
+        transport = packet[TCP]
+        src_port = int(transport.sport)
+        dst_port = int(transport.dport)
+        tcp_flags = int(transport.flags)
+    elif UDP in packet:
+        transport = packet[UDP]
+        src_port = int(transport.sport)
+        dst_port = int(transport.dport)
+
+    return {
+        "Timestamp": float(packet.time),
+        "Source IP": src_ip,
+        "Destination IP": dst_ip,
+        "Source Port": src_port,
+        "Destination Port": dst_port,
+        "Protocol": protocol,
+        "IP Version": ip_version,
+        "Packet Length": int(len(packet)),
+        "TCP Flags": tcp_flags,
+    }
+
+
+def build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame:
+    """Return one canonical row per decoded IPv4/IPv6 packet.
+
+    Values in this view are copied from decoded packet fields rather than derived
+    from reconstructed flows, so packet-level metrics can operate on raw capture
+    evidence without first inventing exporter-specific flow semantics.
+    """
+
+    path = Path(dataset_path).expanduser().resolve()
+    if not is_packet_capture(path):
+        raise ValueError(f"Not a PCAP/PCAPNG dataset: {path}")
+
+    rows: list[dict[str, Any]] = []
+    with PcapReader(str(path)) as reader:
+        for packet_index, packet in enumerate(reader):
+            fields = _packet_fields(packet)
+            if fields is None:
+                continue
+            rows.append({"Packet Index": packet_index, **fields})
+
+    return pd.DataFrame(rows, columns=sorted(PCAP_PACKET_COLUMNS))
 
 
 def _endpoint_key(ip: str, port: int | None) -> tuple[str, int]:
@@ -199,7 +297,6 @@ class _FlowState:
         self.length_count += 1
 
         if tcp_flags is not None:
-            # Scapy follows the conventional FIN,SYN,RST,PSH,ACK,URG,ECE,CWR bit positions.
             masks = {
                 "FIN": 0x01,
                 "SYN": 0x02,
@@ -260,13 +357,13 @@ class _FlowState:
 
 
 def build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame:
-    """Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple flow table.
+    """Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view.
 
     The first observed packet defines the forward direction. Packet lengths are
-    captured frame lengths and durations/IATs are expressed in seconds. The
-    adapter deliberately performs no idle-timeout splitting: it reconstructs one
-    record per bidirectional 5-tuple for the capture so downstream invariants do
-    not depend on an arbitrary exporter timeout.
+    captured frame lengths and durations/IATs are expressed in seconds. No idle
+    timeout is guessed: one row is produced per bidirectional 5-tuple across the
+    capture. Consequently this view is infrastructure for later sequence and
+    reference metrics, not evidence that self-derived flow arithmetic is realistic.
     """
 
     path = Path(dataset_path).expanduser().resolve()
@@ -276,39 +373,19 @@ def build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame:
     flows: dict[tuple[Any, ...], _FlowState] = {}
     with PcapReader(str(path)) as reader:
         for packet in reader:
-            if IP in packet:
-                ip_layer = packet[IP]
-                src_ip = str(ip_layer.src)
-                dst_ip = str(ip_layer.dst)
-                protocol = int(ip_layer.proto)
-            elif IPv6 in packet:
-                ip_layer = packet[IPv6]
-                src_ip = str(ip_layer.src)
-                dst_ip = str(ip_layer.dst)
-                if TCP in packet:
-                    protocol = 6
-                elif UDP in packet:
-                    protocol = 17
-                else:
-                    protocol = int(ip_layer.nh)
-            else:
+            fields = _packet_fields(packet)
+            if fields is None:
                 continue
 
-            src_port: int | None = None
-            dst_port: int | None = None
-            tcp_flags: int | None = None
-            if TCP in packet:
-                transport = packet[TCP]
-                src_port = int(transport.sport)
-                dst_port = int(transport.dport)
-                tcp_flags = int(transport.flags)
-            elif UDP in packet:
-                transport = packet[UDP]
-                src_port = int(transport.sport)
-                dst_port = int(transport.dport)
+            src_ip = fields["Source IP"]
+            dst_ip = fields["Destination IP"]
+            src_port = fields["Source Port"]
+            dst_port = fields["Destination Port"]
+            protocol = fields["Protocol"]
+            timestamp = fields["Timestamp"]
+            packet_length = fields["Packet Length"]
+            tcp_flags = fields["TCP Flags"]
 
-            timestamp = float(packet.time)
-            packet_length = int(len(packet))
             key = _flow_key(protocol, src_ip, dst_ip, src_port, dst_port)
             state = flows.get(key)
             if state is None:
@@ -338,7 +415,21 @@ def build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame:
 
 
 def pcap_metric_template(metric_id: str) -> dict | None:
+    """Return only templates whose PCAP inputs are copied from packet evidence."""
+
     templates = {
+        "reserved_ip_address_profile": {
+            "metric_id": "reserved_ip_address_profile",
+            "label": "Reserved/Special-Use IP Address Profile",
+            "input_requirements": {
+                "candidate_fields": ["Source IP", "Destination IP"],
+            },
+            "calculation": {
+                "parameters": {
+                    "invalid_ratio_fail_threshold": 0.01,
+                }
+            },
+        },
         "valid_port_range_profile": {
             "metric_id": "valid_port_range_profile",
             "label": "Valid Port Range Profile",
@@ -350,75 +441,6 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                     "valid_min_port": 0,
                     "valid_max_port": 65535,
                     "invalid_ratio_fail_threshold": 0.01,
-                }
-            },
-        },
-        "tcp_flag_consistency_profile": {
-            "metric_id": "tcp_flag_consistency_profile",
-            "label": "TCP Flag Consistency Profile",
-            "input_requirements": {
-                "field_map": {
-                    "protocol": "Protocol",
-                    "total_fwd_packets": "Total Fwd Packets",
-                    "total_bwd_packets": "Total Backward Packets",
-                    "fin_flag_count": "FIN Flag Count",
-                    "syn_flag_count": "SYN Flag Count",
-                    "rst_flag_count": "RST Flag Count",
-                    "psh_flag_count": "PSH Flag Count",
-                    "ack_flag_count": "ACK Flag Count",
-                    "urg_flag_count": "URG Flag Count",
-                    "cwe_flag_count": "CWE Flag Count",
-                    "ece_flag_count": "ECE Flag Count",
-                }
-            },
-            "calculation": {
-                "parameters": {
-                    "tcp_protocol_values": [6, "6", "TCP", "tcp"],
-                    "non_tcp_flags_must_be_zero": True,
-                    "max_examples": 10,
-                }
-            },
-        },
-        "flow_duration_consistency_profile": {
-            "metric_id": "flow_duration_consistency_profile",
-            "label": "Flow Duration Consistency Profile",
-            "input_requirements": {
-                "field_map": {
-                    "flow_duration": "Flow Duration",
-                    "flow_iat_mean": "Flow IAT Mean",
-                    "flow_iat_max": "Flow IAT Max",
-                    "flow_iat_min": "Flow IAT Min",
-                    "flow_iat_std": "Flow IAT Std",
-                    "fwd_iat_total": "Fwd IAT Total",
-                    "bwd_iat_total": "Bwd IAT Total",
-                }
-            },
-            "calculation": {"parameters": {"tolerance": 1e-9, "max_examples": 10}},
-        },
-        "packet_byte_consistency_profile": {
-            "metric_id": "packet_byte_consistency_profile",
-            "label": "Packet/Byte Consistency Profile",
-            "input_requirements": {
-                "field_map": {
-                    "total_fwd_packets": "Total Fwd Packets",
-                    "total_bwd_packets": "Total Backward Packets",
-                    "total_len_fwd_packets": "Total Length of Fwd Packets",
-                    "total_len_bwd_packets": "Total Length of Bwd Packets",
-                    "fwd_pkt_len_min": "Fwd Packet Length Min",
-                    "fwd_pkt_len_mean": "Fwd Packet Length Mean",
-                    "fwd_pkt_len_max": "Fwd Packet Length Max",
-                    "bwd_pkt_len_min": "Bwd Packet Length Min",
-                    "bwd_pkt_len_mean": "Bwd Packet Length Mean",
-                    "bwd_pkt_len_max": "Bwd Packet Length Max",
-                    "packet_length_std": "Packet Length Std",
-                    "packet_length_variance": "Packet Length Variance",
-                }
-            },
-            "calculation": {
-                "parameters": {
-                    "tolerance": 1e-9,
-                    "variance_tolerance": 1e-6,
-                    "max_examples": 10,
                 }
             },
         },
