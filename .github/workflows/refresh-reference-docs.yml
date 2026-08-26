@@ -1,0 +1,31 @@
+name: Refresh generated reference docs
+
+on:
+  push:
+    branches:
+      - agent/unlock-blocked-pcap-metrics
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/unlock-blocked-pcap-metrics
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/build_reference_documentation.py
+      - name: Commit refreshed references and remove temporary workflow
+        run: |
+          rm .github/workflows/refresh-reference-docs.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/function_reference.md docs/test_reference.md .github/workflows/refresh-reference-docs.yml
+          git commit -m "Refresh generated reference documentation"
+          git push
