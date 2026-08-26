@@ -66,7 +66,7 @@ def _enabled_categories(categories: list[str], params: dict) -> list[str]:
     return [
         category
         for category in categories
-        if bool(params.get(CATEGORY_PARAMETER.get(category, ""), True))
+        if bool(params.get(CATEGORY_PARAMETER.get(category, ""), False))
     ]
 
 
@@ -199,13 +199,15 @@ def run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bo
             field_summaries[field]["valid_address_count"] += 1
             ip_version_counts["ipv4" if addr.version == 4 else "ipv6"] += 1
 
-            categories = _enabled_categories(get_reserved_categories(addr), params)
+            observed_categories = get_reserved_categories(addr)
+            for category in observed_categories:
+                reserved_category_counts[category] += 1
+
+            categories = _enabled_categories(observed_categories, params)
             if categories:
                 reserved_address_count += 1
                 field_summaries[field]["reserved_address_count"] += 1
                 row_reserved = True
-                for category in categories:
-                    reserved_category_counts[category] += 1
                 if len(reserved_examples) < 20:
                     reserved_examples.append({
                         "row_index": int(row_idx),

@@ -4,7 +4,8 @@ import pandas as pd
 import pytest
 
 from create_plan import _slug
-from runner.metric_catalog import PCAP_ONLY_METRICS, available_metric_ids, build_metric_catalog
+from runner.metric_catalog import available_metric_ids, build_metric_catalog
+from runner.pcap_adapter import PCAP_DIRECT_METRICS, PCAP_PACKET_METRICS, PCAP_SELF_DERIVED_METRICS
 from runner.plan_builder import build_plan, write_plan
 from runner.schema import validate_plan_schema
 
@@ -119,16 +120,20 @@ def test_existing_field_translation_sidecar_can_make_metric_runnable(tmp_path):
     assert report["field_translation_path"] == str(sidecar.resolve())
 
 
-def test_pcap_plan_contains_only_packet_capture_metrics(tmp_path):
+def test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_path):
     dataset = tmp_path / "capture.pcap"
     dataset.write_bytes(b"pcap-placeholder")
 
     plan, report = build_plan(plan_id="pcap", name="PCAP", dataset_path=dataset)
     metric_ids = {metric["metric_id"] for metric in plan["metrics"]}
+    expected = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
 
-    assert metric_ids == PCAP_ONLY_METRICS
-    assert report["runnable_metric_count"] == len(PCAP_ONLY_METRICS)
+    assert metric_ids == expected
+    assert report["runnable_metric_count"] == len(expected)
     assert all(metric["enabled"] is True for metric in plan["metrics"])
+    for metric_id in PCAP_SELF_DERIVED_METRICS:
+        assert metric_id not in metric_ids
+        assert report["metrics"][metric_id]["reason"] == "self_derived_pcap_invariant_not_independent"
 
 
 def test_include_exclude_rejects_unknown_metric_ids(tmp_path):

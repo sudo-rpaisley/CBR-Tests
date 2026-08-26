@@ -27,6 +27,7 @@ from runner.parallel_progress import build_parallel_progress_callback
 from runner.parallel_results import collect_parallel_metric_results
 from runner.progress import print_live_status
 from runner.provenance import build_provenance_manifest
+from runner.pcap_adapter import PCAP_PACKET_METRICS, build_pcap_packet_dataframe, is_packet_capture
 from runner.run_context import prepare_run_context
 from runner.run_display import print_phase_status, print_title_box
 from runner.run_plan_helpers import (
@@ -251,6 +252,11 @@ def run_once(args):
             run_state=run_state,
         )
         validate_loaded_dataset_applicability(plan, shared_tabular_df)
+    elif is_packet_capture(dataset_path) and any(
+        metric["metric_id"] in PCAP_PACKET_METRICS for metric in metrics
+    ):
+        print_phase_status("PCAP", "Building canonical packet view")
+        shared_tabular_df = build_pcap_packet_dataframe(dataset_path)
 
     def _load_dataset_for_metric(path: Path):
         return load_tabular_dataset(path, field_translation=field_translation)
@@ -274,7 +280,7 @@ def run_once(args):
             f"Run Title: {plan['plan_meta']['name']} ({plan['plan_meta']['plan_id']})",
             f"Case ID: {case_id}",
             f"Run ID: {provenance['run_id']}",
-            f"Rows: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]} | Metrics: {total_metrics}",
+            f"{'Packets' if is_packet_capture(dataset_path) else 'Rows'}: {len(shared_tabular_df):,} | Columns: {shared_tabular_df.shape[1]} | Metrics: {total_metrics}",
             f"Execution: {mode} | Workers: {workers}",
             f"Source Field: {source_field}",
             f"Destination Field: {destination_field}",
