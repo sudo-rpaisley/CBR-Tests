@@ -1,0 +1,58 @@
+name: Validate plan overwrite flow
+
+on:
+  push:
+    branches:
+      - agent/interactive-plan-overwrite
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/interactive-plan-overwrite
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install development dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Update user documentation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('docs/plan_creation.md')
+          text = path.read_text(encoding='utf-8')
+          old = "The creator shows the derived plan ID, selected dataset and output path before preflight, then asks whether to save the runnable-only plan.\n"
+          new = (
+              "The creator shows the derived plan ID, selected dataset and output path before preflight, then asks whether to save the runnable-only plan. "
+              "If that output path already exists, interactive mode warns that the plan exists and, after save confirmation, asks explicitly whether the existing plan should be overwritten. "
+              "Declining leaves the existing plan unchanged. Scripted/non-interactive use remains conservative and still requires `--force` to replace an existing plan.\n"
+          )
+          if old not in text:
+              raise SystemExit('Expected interactive creation paragraph not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Validate implementation
+        run: |
+          python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
+          python -m pytest -q tests/test_create_plan_overwrite.py tests/test_plan_builder.py
+          python -m pytest -q
+      - name: Regenerate references
+        run: python scripts/build_reference_documentation.py
+      - name: Verify generated references and documentation
+        run: |
+          python scripts/build_reference_documentation.py --check
+          python scripts/check_docs_links.py
+      - name: Commit validated implementation and remove temporary workflow
+        run: |
+          rm .github/workflows/validate-plan-overwrite.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add create_plan.py tests/test_create_plan_overwrite.py docs/plan_creation.md docs/function_reference.md docs/test_reference.md .github/workflows/validate-plan-overwrite.yml
+          git commit -m "Add interactive plan overwrite confirmation" || exit 0
+          git push origin HEAD:agent/interactive-plan-overwrite
