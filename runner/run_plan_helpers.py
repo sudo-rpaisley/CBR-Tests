@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from runner.human_summary import default_human_summary_path, format_human_summary
 from runner.progress import set_live_header
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy
 from runner.tui import launch_tui, validate_required_run_args
@@ -59,28 +60,54 @@ def build_outcome(
     return outcome
 
 
-def write_outcome(output_path: Path, outcome: dict) -> None:
-    """Write an outcome atomically, creating its destination directory first."""
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
+def _open_atomic_text_file(destination: Path) -> tuple[int, Path]:
     fd, temporary_name = tempfile.mkstemp(
-        prefix=f".{output_path.name}.",
+        prefix=f".{destination.name}.",
         suffix=".tmp",
-        dir=output_path.parent,
+        dir=destination.parent,
         text=True,
     )
-    temporary_path = Path(temporary_name)
+    return fd, Path(temporary_name)
+
+
+def write_outcome(output_path: Path, outcome: dict) -> Path:
+    """Write the authoritative JSON outcome and its human-readable Markdown companion.
+
+    Both files are fully written and fsynced before either destination is replaced.
+    The summary is published first and the JSON outcome second, so publication of a
+    new JSON outcome implies that its companion summary was already published.
+
+    Returns the companion summary path.
+    """
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path = default_human_summary_path(output_path)
+    summary_text = format_human_summary(outcome, outcome_path=output_path)
+
+    json_fd, temporary_json_path = _open_atomic_text_file(output_path)
+    summary_fd, temporary_summary_path = _open_atomic_text_file(summary_path)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        with os.fdopen(json_fd, "w", encoding="utf-8") as handle:
             json.dump(outcome, handle, indent=2, allow_nan=False)
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary_path, output_path)
+
+        with os.fdopen(summary_fd, "w", encoding="utf-8") as handle:
+            handle.write(summary_text)
+            if not summary_text.endswith("\n"):
+                handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        os.replace(temporary_summary_path, summary_path)
+        os.replace(temporary_json_path, output_path)
     except Exception:
-        temporary_path.unlink(missing_ok=True)
+        temporary_json_path.unlink(missing_ok=True)
+        temporary_summary_path.unlink(missing_ok=True)
         raise
+
+    return summary_path
 
 
 def detect_ip_fields(tabular_df) -> tuple[str, str]:
