@@ -137,19 +137,27 @@ Python symbols defined by `create_plan.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_slug(value: str) -> str` (L15) | function | Internal | Implementation helper for slug. |
-| `_split_metric_args(values: list[str] | None) -> list[str] | None` (L20) | function | Internal | Implementation helper for split metric args. |
-| `_parse_expected_ports(value: str | None) -> list[int]` (L29) | function | Internal | Implementation helper for parse expected ports. |
-| `_browse_dataset_file() -> str | None` (L47) | function | Internal | Implementation helper for browse dataset file. |
-| `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L55) | function | Internal | Implementation helper for prompt. |
-| `_confirm_overwrite(output_path: Path) -> bool` (L75) | function | Internal | Ask an interactive user whether an existing plan may be replaced. |
-| `_print_wrapped(prefix: str, text: str, *, width: int = 108) -> None` (L85) | function | Internal | Implementation helper for print wrapped. |
-| `_compact_metric_ids(metric_ids: list[str], *, limit: int = 8) -> str` (L94) | function | Internal | Implementation helper for compact metric ids. |
-| `_print_report(report: dict) -> None` (L101) | function | Internal | Implementation helper for print report. |
-| `_list_tests() -> None` (L144) | function | Internal | Implementation helper for list tests. |
-| `_check_plan(path: Path) -> int` (L152) | function | Internal | Implementation helper for check plan. |
-| `parse_args() -> argparse.Namespace` (L169) | function | Public | Parses args. |
-| `main() -> int` (L202) | function | Public | Implementation helper for main. |
+| `_slug(value: str) -> str` (L23) | function | Internal | Implementation helper for slug. |
+| `_split_metric_args(values: list[str] | None) -> list[str] | None` (L28) | function | Internal | Implementation helper for split metric args. |
+| `_parse_expected_ports(value: str | None) -> list[int]` (L37) | function | Internal | Implementation helper for parse expected ports. |
+| `_browse_dataset_file() -> str | None` (L55) | function | Internal | Implementation helper for browse dataset file. |
+| `_browse_dataset_files() -> list[str]` (L64) | function | Internal | Interactively collect one or more datasets using the existing file browser. |
+| `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L86) | function | Internal | Implementation helper for prompt. |
+| `_confirm_overwrite(output_path: Path) -> bool` (L112) | function | Internal | Ask an interactive user whether an existing plan may be replaced. |
+| `_print_wrapped(prefix: str, text: str, *, width: int = 108) -> None` (L122) | function | Internal | Implementation helper for print wrapped. |
+| `_compact_metric_ids(metric_ids: list[str], *, limit: int = 8) -> str` (L131) | function | Internal | Implementation helper for compact metric ids. |
+| `_print_report(report: dict) -> None` (L138) | function | Internal | Implementation helper for print report. |
+| `_list_tests() -> None` (L182) | function | Internal | Implementation helper for list tests. |
+| `_check_plan(path: Path) -> int` (L190) | function | Internal | Implementation helper for check plan. |
+| `_deduplicate_dataset_values(values: list[str]) -> list[Path]` (L207) | function | Internal | Implementation helper for deduplicate dataset values. |
+| `_portable_path(path: Path, repo_root: Path) -> str` (L219) | function | Internal | Implementation helper for portable path. |
+| `_job_slug(dataset_path: Path, index: int, used: set[str]) -> str` (L227) | function | Internal | Implementation helper for job slug. |
+| `_filter_plan_to_metric_ids(plan: dict, metric_ids: set[str]) -> None` (L236) | function | Internal | Implementation helper for filter plan to metric ids. |
+| `_write_json_atomic(path: Path, payload: dict, *, overwrite: bool = False) -> Path` (L250) | function | Internal | Implementation helper for write JSON atomic. |
+| `_build_single_plan(*, plan_id: str, name: str, description: str, dataset_path: Path, field_translation_path: Path | None, include_metric_ids: list[str] | None, exclude_metric_ids: list[str] | None, reference_dataset_path: Path | None, service_port_configuration: dict | None) -> tuple[dict, dict]` (L273) | function | Internal | Implementation helper for build single plan. |
+| `_create_batch(*, plan_id: str, name: str, description: str, dataset_paths: list[Path], field_translation_path: Path | None, include_metric_ids: list[str] | None, exclude_metric_ids: list[str] | None, reference_dataset_path: Path | None, service_port_configuration: dict | None, output_path: Path, force: bool, per_dataset_metrics: bool, interactive: bool) -> Path` (L298) | function | Internal | Implementation helper for create batch. |
+| `parse_args() -> argparse.Namespace` (L438) | function | Public | Parses args. |
+| `main() -> int` (L501) | function | Public | Implementation helper for main. |
 
 ## `export_outcomes_for_graphs.py`
 
@@ -159,6 +167,20 @@ Flattens selected outcome fields into CSV tables for graphing.
 | --- | --- | --- | --- |
 | `load_json(path: Path) -> dict` (L11) | function | Public | Loads JSON. |
 | `main()` (L16) | function | Public | Implementation helper for main. |
+
+## `run_batch.py`
+
+Python symbols defined by `run_batch.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_slug(value: str) -> str` (L15) | function | Internal | Implementation helper for slug. |
+| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L20) | function | Internal | Implementation helper for resolve repo path. |
+| `load_batch(path: Path) -> dict` (L25) | function | Public | Loads batch. |
+| `_read_outcome_status(path: Path) -> str` (L50) | function | Internal | Implementation helper for read outcome status. |
+| `_write_batch_summary(path: Path, payload: dict) -> Path` (L58) | function | Internal | Implementation helper for write batch summary. |
+| `parse_args() -> argparse.Namespace` (L66) | function | Public | Parses args. |
+| `main() -> int` (L115) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
