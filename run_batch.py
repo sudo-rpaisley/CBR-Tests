@@ -132,7 +132,10 @@ def main() -> int:
 
     print("=" * 88)
     print(f"Batch: {meta.get('name', meta['batch_id'])} ({meta['batch_id']})")
-    print(f"Datasets: {len(jobs)}")
+    print(f"Jobs: {len(jobs)}")
+    print(f"Candidate datasets: {meta.get('dataset_count', len(jobs))}")
+    if meta.get("reference_dataset_count"):
+        print(f"Reference datasets: {meta.get('reference_dataset_count')}")
     print(f"Metric policy: {meta.get('metric_policy', 'unspecified')}")
     print(f"Execution: sequential")
     print(f"Outputs: {output_dir}")
@@ -142,11 +145,16 @@ def main() -> int:
         dataset_path = _resolve_repo_path(repo_root, str(job["dataset_path"]))
         plan_path = _resolve_repo_path(repo_root, str(job["plan_path"]))
         dataset_slug = _slug(dataset_path.stem)
-        output_path = output_dir / f"outcome_{index:02d}_{dataset_slug}_{timestamp}.json"
+        reference_value = job.get("reference_dataset_path")
+        reference_path = _resolve_repo_path(repo_root, str(reference_value)) if reference_value else None
+        reference_slug = f"_vs_{_slug(reference_path.stem)}" if reference_path is not None else ""
+        output_path = output_dir / f"outcome_{index:02d}_{dataset_slug}{reference_slug}_{timestamp}.json"
 
         print()
         print("-" * 88)
         print(f"[{index}/{len(jobs)}] {dataset_path.name}")
+        if reference_path is not None:
+            print(f"Reference: {reference_path.name}")
         print(f"Plan: {plan_path}")
         print(f"Output: {output_path}")
         print("-" * 88)
@@ -185,6 +193,7 @@ def main() -> int:
         result = {
             "job_id": job["job_id"],
             "dataset_path": str(dataset_path),
+            "reference_dataset_path": str(reference_path) if reference_path is not None else None,
             "plan_path": str(plan_path),
             "output_path": str(output_path),
             "process_return_code": completed.returncode,

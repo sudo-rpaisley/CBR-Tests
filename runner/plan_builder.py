@@ -12,6 +12,7 @@ from runner.field_translation import (
     available_translated_fields,
     default_field_translation_path,
     detect_standard_pcap_field_translation_for_dataset,
+    field_resolver,
     load_field_translation,
     merge_field_translations,
     read_tabular_dataset_columns,
@@ -44,6 +45,162 @@ def dataset_format(dataset_path: Path | None) -> str | None:
         return None
     suffix = dataset_path.suffix.lower()
     return suffix[1:] if suffix.startswith(".") else suffix
+
+
+def _canonical_fields(columns: list[str], translation: dict[str, str]) -> set[str]:
+    return {translation.get(column, column) for column in columns}
+
+
+def _sample_numeric_fields(
+    dataset_path: Path,
+    columns: list[str],
+    translation: dict[str, str],
+    *,
+    sample_rows: int = 250,
+) -> set[str]:
+    """Identify numeric-compatible canonical fields from a small deterministic prefix sample."""
+
+    if not columns:
+        return set()
+    import pandas as pd
+
+    suffix = dataset_path.suffix.lower()
+    try:
+        if suffix in {".csv", ".tsv"}:
+            frame = pd.read_csv(
+                dataset_path,
+                sep="\t" if suffix == ".tsv" else ",",
+                skipinitialspace=True,
+                low_memory=False,
+                nrows=sample_rows,
+            )
+        else:
+            frame = pd.read_excel(dataset_path, nrows=sample_rows)
+    except Exception:
+        return set()
+
+    frame.columns = [str(column).strip() for column in frame.columns]
+    numeric: set[str] = set()
+    for raw_field in frame.columns:
+        series = frame[raw_field]
+        non_null = series.dropna()
+        if len(non_null) < 2:
+            continue
+        converted = pd.to_numeric(non_null, errors="coerce")
+        if float(converted.notna().mean()) >= 0.8:
+            numeric.add(translation.get(raw_field, raw_field))
+    return numeric
+
+
+def _reference_field_map(candidate: dict, reference: dict, fields: list[str]) -> dict[str, str]:
+    candidate_resolver = field_resolver(candidate.get("field_translation", {}), candidate.get("columns", []))
+    reference_resolver = field_resolver(reference.get("field_translation", {}), reference.get("columns", []))
+    mapping: dict[str, str] = {}
+    for canonical in fields:
+        candidate_field = candidate_resolver.get(canonical, canonical)
+        reference_field = reference_resolver.get(canonical, canonical)
+        if candidate_field != reference_field:
+            mapping[reference_field] = candidate_field
+    return mapping
+
+
+def tabular_reference_metric_template(
+    metric_id: str,
+    label: str,
+    candidate: dict,
+    reference: dict,
+) -> dict | None:
+    """Build a reference-comparison template from fields shared by two tabular datasets."""
+
+    common_fields = set(candidate.get("canonical_fields", set())) & set(reference.get("canonical_fields", set()))
+    common_numeric = sorted(
+        set(candidate.get("numeric_fields", set())) & set(reference.get("numeric_fields", set()))
+    )
+    reference_path = str(reference["path"])
+    requirements: dict = {"reference_dataset_path": reference_path}
+    parameters: dict = {}
+
+    feature_metrics = {
+        "feature_wise_wasserstein_distance_from_reference",
+        "feature_wise_ks_statistic_from_reference",
+        "feature_wise_energy_distance_from_reference",
+        "flow_statistic_deviation_from_reference",
+    }
+    matrix_metrics = {
+        "feature_set_mmd_score_from_reference",
+        "pearson_matrix_deviation_from_reference",
+        "spearman_matrix_deviation_from_reference",
+        "distance_correlation_matrix_deviation_from_reference",
+    }
+    temporal_metrics = {
+        "inter_arrival_distribution_divergence_from_reference",
+        "burstiness_deviation_from_reference",
+        "hourly_activity_divergence_from_reference",
+    }
+
+    required_fields: list[str] = []
+    if metric_id in feature_metrics:
+        if not common_numeric:
+            return None
+        requirements["candidate_fields"] = common_numeric
+        required_fields = list(common_numeric)
+        parameters["max_sample_size"] = 1000
+    elif metric_id in matrix_metrics:
+        if len(common_numeric) < 2:
+            return None
+        requirements["candidate_fields"] = common_numeric
+        required_fields = list(common_numeric)
+        parameters["max_sample_size"] = 500 if metric_id == "feature_set_mmd_score_from_reference" else 1000
+    elif metric_id in temporal_metrics:
+        timestamp_field = "timestamp" if "timestamp" in common_fields else "Timestamp" if "Timestamp" in common_fields else None
+        if timestamp_field is None:
+            return None
+        requirements["timestamp_field"] = timestamp_field
+        required_fields = [timestamp_field]
+    elif metric_id == "protocol_mix_divergence_from_reference":
+        if "Protocol" not in common_fields:
+            return None
+        requirements["protocol_field"] = "Protocol"
+        required_fields = ["Protocol"]
+    elif metric_id == "port_use_divergence_from_reference":
+        port_fields = [field for field in ("Source Port", "Destination Port") if field in common_fields]
+        if not port_fields:
+            return None
+        requirements["port_fields"] = port_fields
+        required_fields = list(port_fields)
+    elif metric_id == "slice_proportion_deviation_from_reference":
+        if "slice" not in common_fields:
+            return None
+        requirements["slice_field"] = "slice"
+        required_fields = ["slice"]
+    elif metric_id == "per_slice_class_divergence_from_reference":
+        if not {"slice", "label"}.issubset(common_fields):
+            return None
+        requirements.update({"slice_field": "slice", "label_field": "label"})
+        required_fields = ["slice", "label"]
+    elif metric_id == "per_slice_feature_distribution_deviation_from_reference":
+        if "slice" not in common_fields or not common_numeric:
+            return None
+        requirements.update({"slice_field": "slice", "candidate_fields": common_numeric})
+        required_fields = ["slice", *common_numeric]
+    else:
+        return None
+
+    mapping_fields = [field for field in required_fields if field in common_fields]
+    template = {
+        "metric_id": metric_id,
+        "label": label,
+        "input_requirements": requirements,
+        "field_requirements": {"required": required_fields},
+        "calculation": {
+            "method": f"tabular_{metric_id}",
+            "parameters": parameters,
+        },
+    }
+    reference_map = _reference_field_map(candidate, reference, mapping_fields)
+    if reference_map:
+        template["reference_field_map"] = reference_map
+    return template
 
 
 def inspect_dataset(
@@ -99,11 +256,25 @@ def inspect_dataset(
         if columns
         else set(PCAP_PACKET_COLUMNS) if suffix in PCAP_SUFFIXES else set()
     )
+    canonical_fields = (
+        _canonical_fields(columns, translation)
+        if columns
+        else set(PCAP_PACKET_COLUMNS) if suffix in PCAP_SUFFIXES else set()
+    )
+    numeric_fields = (
+        _sample_numeric_fields(dataset_path, columns, translation)
+        if suffix in TABULAR_SUFFIXES
+        else {"Timestamp", "Source Port", "Destination Port", "Protocol", "IP Version", "Packet Length", "TCP Flags", "Inter Arrival Time"}
+        if suffix in PCAP_SUFFIXES
+        else set()
+    )
     return {
         "path": dataset_path,
         "format": dataset_format(dataset_path),
         "columns": columns,
         "available_fields": fields,
+        "canonical_fields": canonical_fields,
+        "numeric_fields": numeric_fields,
         "field_translation": translation,
         "field_translation_path": resolved_translation_path,
     }
@@ -154,6 +325,24 @@ def _configuration_state(
         missing = [field for field in required if field not in available]
         if missing:
             return "needs_mapping", "pcap_adapter_fields_missing", missing
+        return "ready", None, []
+
+    if not is_pcap and metric_id.endswith("_from_reference"):
+        if reference_dataset is None:
+            return "needs_configuration", "reference_dataset_required", []
+        if reference_dataset.get("format") not in {"csv", "tsv", "xlsx", "xls"}:
+            return "needs_configuration", "reference_representation_mismatch", []
+        if template is None:
+            return "needs_configuration", "reference_shared_fields_missing", []
+        required = required_fields(template)
+        available = dataset.get("available_fields", set())
+        missing = [field for field in required if field not in available]
+        if missing:
+            return "needs_mapping", "required_fields_not_resolved", missing
+        reference_available = reference_dataset.get("available_fields", set())
+        reference_missing = [field for field in required if field not in reference_available]
+        if reference_missing:
+            return "needs_mapping", "reference_required_fields_not_resolved", reference_missing
         return "ready", None, []
 
     if manual_reason:
@@ -278,6 +467,14 @@ def build_plan(
                         service_port_configuration.get("service_name", ""),
                         service_port_configuration.get("expected_ports", []),
                     )
+        elif reference_dataset is not None and metric_id.endswith("_from_reference"):
+            spec = dict(spec)
+            spec["template"] = tabular_reference_metric_template(
+                metric_id,
+                spec["label"],
+                dataset,
+                reference_dataset,
+            )
 
         state, reason, missing = _configuration_state(spec, dataset, reference_dataset)
         included = state == "ready"
@@ -349,6 +546,11 @@ def build_plan(
     )
     plan["plan_creation"]["reference_dataset_format"] = (
         reference_dataset["format"] if reference_dataset is not None else None
+    )
+    plan["plan_creation"]["reference_field_translation"] = (
+        str(reference_dataset["field_translation_path"])
+        if reference_dataset is not None and reference_dataset.get("field_translation_path") is not None
+        else None
     )
     if service_port_configuration:
         plan["plan_creation"]["service_port_configuration"] = {

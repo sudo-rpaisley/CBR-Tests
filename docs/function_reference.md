@@ -142,22 +142,23 @@ Python symbols defined by `create_plan.py`.
 | `_parse_expected_ports(value: str | None) -> list[int]` (L37) | function | Internal | Implementation helper for parse expected ports. |
 | `_browse_dataset_file() -> str | None` (L55) | function | Internal | Implementation helper for browse dataset file. |
 | `_browse_dataset_files() -> list[str]` (L64) | function | Internal | Interactively collect one or more datasets using the existing file browser. |
-| `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L86) | function | Internal | Implementation helper for prompt. |
-| `_confirm_overwrite(output_path: Path) -> bool` (L112) | function | Internal | Ask an interactive user whether an existing plan may be replaced. |
-| `_print_wrapped(prefix: str, text: str, *, width: int = 108) -> None` (L122) | function | Internal | Implementation helper for print wrapped. |
-| `_compact_metric_ids(metric_ids: list[str], *, limit: int = 8) -> str` (L131) | function | Internal | Implementation helper for compact metric ids. |
-| `_print_report(report: dict) -> None` (L138) | function | Internal | Implementation helper for print report. |
-| `_list_tests() -> None` (L182) | function | Internal | Implementation helper for list tests. |
-| `_check_plan(path: Path) -> int` (L190) | function | Internal | Implementation helper for check plan. |
-| `_deduplicate_dataset_values(values: list[str]) -> list[Path]` (L207) | function | Internal | Implementation helper for deduplicate dataset values. |
-| `_portable_path(path: Path, repo_root: Path) -> str` (L219) | function | Internal | Implementation helper for portable path. |
-| `_job_slug(dataset_path: Path, index: int, used: set[str]) -> str` (L227) | function | Internal | Implementation helper for job slug. |
-| `_filter_plan_to_metric_ids(plan: dict, metric_ids: set[str]) -> None` (L236) | function | Internal | Implementation helper for filter plan to metric ids. |
-| `_write_json_atomic(path: Path, payload: dict, *, overwrite: bool = False) -> Path` (L250) | function | Internal | Implementation helper for write JSON atomic. |
-| `_build_single_plan(*, plan_id: str, name: str, description: str, dataset_path: Path, field_translation_path: Path | None, include_metric_ids: list[str] | None, exclude_metric_ids: list[str] | None, reference_dataset_path: Path | None, service_port_configuration: dict | None) -> tuple[dict, dict]` (L273) | function | Internal | Implementation helper for build single plan. |
-| `_create_batch(*, plan_id: str, name: str, description: str, dataset_paths: list[Path], field_translation_path: Path | None, include_metric_ids: list[str] | None, exclude_metric_ids: list[str] | None, reference_dataset_path: Path | None, service_port_configuration: dict | None, output_path: Path, force: bool, per_dataset_metrics: bool, interactive: bool) -> Path` (L298) | function | Internal | Implementation helper for create batch. |
-| `parse_args() -> argparse.Namespace` (L438) | function | Public | Parses args. |
-| `main() -> int` (L501) | function | Public | Implementation helper for main. |
+| `_browse_reference_files() -> list[str]` (L86) | function | Internal | Interactively collect one or more independent reference datasets. |
+| `_prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None` (L108) | function | Internal | Implementation helper for prompt. |
+| `_confirm_overwrite(output_path: Path) -> bool` (L134) | function | Internal | Ask an interactive user whether an existing plan may be replaced. |
+| `_print_wrapped(prefix: str, text: str, *, width: int = 108) -> None` (L144) | function | Internal | Implementation helper for print wrapped. |
+| `_compact_metric_ids(metric_ids: list[str], *, limit: int = 8) -> str` (L153) | function | Internal | Implementation helper for compact metric ids. |
+| `_print_report(report: dict) -> None` (L160) | function | Internal | Implementation helper for print report. |
+| `_list_tests() -> None` (L204) | function | Internal | Implementation helper for list tests. |
+| `_check_plan(path: Path) -> int` (L212) | function | Internal | Implementation helper for check plan. |
+| `_deduplicate_dataset_values(values: list[str]) -> list[Path]` (L229) | function | Internal | Implementation helper for deduplicate dataset values. |
+| `_portable_path(path: Path, repo_root: Path) -> str` (L241) | function | Internal | Implementation helper for portable path. |
+| `_job_slug(dataset_path: Path, index: int, used: set[str]) -> str` (L249) | function | Internal | Implementation helper for job slug. |
+| `_filter_plan_to_metric_ids(plan: dict, metric_ids: set[str]) -> None` (L258) | function | Internal | Implementation helper for filter plan to metric ids. |
+| `_write_json_atomic(path: Path, payload: dict, *, overwrite: bool = False) -> Path` (L272) | function | Internal | Implementation helper for write JSON atomic. |
+| `_build_single_plan(*, plan_id: str, name: str, description: str, dataset_path: Path, field_translation_path: Path | None, include_metric_ids: list[str] | None, exclude_metric_ids: list[str] | None, reference_dataset_path: Path | None, service_port_configuration: dict | None) -> tuple[dict, dict]` (L295) | function | Internal | Implementation helper for build single plan. |
+| `_create_batch(*, plan_id: str, name: str, description: str, dataset_paths: list[Path], field_translation_path: Path | None, include_metric_ids: list[str] | None, exclude_metric_ids: list[str] | None, reference_dataset_paths: list[Path] | None = None, service_port_configuration: dict | None, output_path: Path, force: bool, per_dataset_metrics: bool, interactive: bool, reference_dataset_path: Path | None = None) -> Path` (L320) | function | Internal | Implementation helper for create batch. |
+| `parse_args() -> argparse.Namespace` (L507) | function | Public | Parses args. |
+| `main() -> int` (L574) | function | Public | Implementation helper for main. |
 
 ## `export_outcomes_for_graphs.py`
 
@@ -536,12 +537,16 @@ Python symbols defined by `runner/plan_builder.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `dataset_format(dataset_path: Path | None) -> str | None` (L42) | function | Public | Implementation helper for dataset format. |
-| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L49) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
-| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L112) | function | Internal | Implementation helper for configuration state. |
-| `_metric_from_spec(metric_spec: dict) -> dict` (L194) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
-| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L215) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
-| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L386) | function | Public | Validate and atomically write a generated plan. |
+| `dataset_format(dataset_path: Path | None) -> str | None` (L43) | function | Public | Implementation helper for dataset format. |
+| `_canonical_fields(columns: list[str], translation: dict[str, str]) -> set[str]` (L50) | function | Internal | Implementation helper for canonical fields. |
+| `_sample_numeric_fields(dataset_path: Path, columns: list[str], translation: dict[str, str], *, sample_rows: int = 250) -> set[str]` (L54) | function | Internal | Identify numeric-compatible canonical fields from a small deterministic prefix sample. |
+| `_reference_field_map(candidate: dict, reference: dict, fields: list[str]) -> dict[str, str]` (L95) | function | Internal | Implementation helper for reference field map. |
+| `tabular_reference_metric_template(metric_id: str, label: str, candidate: dict, reference: dict) -> dict | None` (L107) | function | Public | Build a reference-comparison template from fields shared by two tabular datasets. |
+| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L206) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
+| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L283) | function | Internal | Implementation helper for configuration state. |
+| `_metric_from_spec(metric_spec: dict) -> dict` (L383) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
+| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L404) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
+| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L588) | function | Public | Validate and atomically write a generated plan. |
 
 ## `runner/preflight_advice.py`
 
@@ -914,38 +919,39 @@ Reference-comparison metric implementations awaiting package migration.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `_reference_path(metric: dict) -> str | None` (L21) | function | Internal | Implementation helper for reference path. |
-| `_load_reference_df(metric: dict) -> pd.DataFrame` (L31) | function | Internal | Implementation helper for load reference dataframe. |
-| `_candidate_fields(metric: dict) -> list[str]` (L63) | function | Internal | Implementation helper for candidate fields. |
-| `_even_positions(length: int, maximum: int) -> list[int]` (L67) | function | Internal | Implementation helper for even positions. |
-| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L76) | function | Internal | Implementation helper for numeric values. |
-| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L86) | function | Internal | Implementation helper for sample dataframe. |
-| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L92) | function | Internal | Implementation helper for numeric matrix. |
-| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L101) | function | Internal | Implementation helper for multivariate rbf MMD. |
-| `_multivariate_rbf_mmd.squared_distances(left, right)` (L112) | nested function | Internal | Implementation helper for squared distances. |
-| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L132) | function | Internal | Implementation helper for feature metric. |
-| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L155) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
-| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L159) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
-| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L163) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
-| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L167) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
-| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L189) | function | Internal | Implementation helper for matrix deviation. |
-| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L201) | function | Internal | Implementation helper for correlation profile. |
-| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L213) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
-| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L220) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
-| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L227) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
-| `_timestamp_field(metric: dict) -> str` (L241) | function | Internal | Implementation helper for timestamp field. |
-| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L245) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
-| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L253) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
-| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L261) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
-| `_slice_field(metric: dict) -> str` (L273) | function | Internal | Implementation helper for slice field. |
-| `_label_field(metric: dict) -> str` (L277) | function | Internal | Implementation helper for label field. |
-| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L281) | function | Internal | Implementation helper for categorical distribution. |
-| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float` (L289) | function | Internal | Implementation helper for tv distance. |
-| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L294) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
-| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L300) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
-| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L316) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
-| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L337) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
-| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L344) | function | Public | Computes port use divergence from reference and returns a structured result. |
-| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L353) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
+| `_apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.DataFrame` (L31) | function | Internal | Implementation helper for apply reference field map. |
+| `_load_reference_df(metric: dict) -> pd.DataFrame` (L52) | function | Internal | Implementation helper for load reference dataframe. |
+| `_candidate_fields(metric: dict) -> list[str]` (L84) | function | Internal | Implementation helper for candidate fields. |
+| `_even_positions(length: int, maximum: int) -> list[int]` (L88) | function | Internal | Implementation helper for even positions. |
+| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L97) | function | Internal | Implementation helper for numeric values. |
+| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L107) | function | Internal | Implementation helper for sample dataframe. |
+| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L113) | function | Internal | Implementation helper for numeric matrix. |
+| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L122) | function | Internal | Implementation helper for multivariate rbf MMD. |
+| `_multivariate_rbf_mmd.squared_distances(left, right)` (L133) | nested function | Internal | Implementation helper for squared distances. |
+| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L153) | function | Internal | Implementation helper for feature metric. |
+| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L176) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
+| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L180) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
+| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L184) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
+| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L188) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
+| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L210) | function | Internal | Implementation helper for matrix deviation. |
+| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L222) | function | Internal | Implementation helper for correlation profile. |
+| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L234) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
+| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L241) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
+| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L248) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
+| `_timestamp_field(metric: dict) -> str` (L262) | function | Internal | Implementation helper for timestamp field. |
+| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L266) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
+| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L274) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
+| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L282) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
+| `_slice_field(metric: dict) -> str` (L294) | function | Internal | Implementation helper for slice field. |
+| `_label_field(metric: dict) -> str` (L298) | function | Internal | Implementation helper for label field. |
+| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L302) | function | Internal | Implementation helper for categorical distribution. |
+| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float` (L310) | function | Internal | Implementation helper for tv distance. |
+| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L315) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
+| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L321) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
+| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L337) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
+| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L358) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
+| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L365) | function | Public | Computes port use divergence from reference and returns a structured result. |
+| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L374) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
 
 ## `tests/slice_representation_profile.py`
 

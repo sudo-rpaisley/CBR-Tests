@@ -28,10 +28,31 @@ _REFERENCE_DF_CACHE: dict[str, pd.DataFrame] = {}
 _REFERENCE_DF_CACHE_LOCK = Lock()
 
 
+def _apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.DataFrame:
+    mapping = metric.get("reference_field_map", {})
+    if not isinstance(mapping, dict) or not mapping:
+        return dataframe
+    rename_map = {
+        str(source): str(target)
+        for source, target in mapping.items()
+        if str(source).strip() and str(target).strip() and source != target
+    }
+    collisions = [
+        target
+        for source, target in rename_map.items()
+        if target in dataframe.columns and target not in rename_map
+    ]
+    if collisions:
+        raise ValueError(
+            "Reference field mapping would overwrite existing columns: " + ", ".join(sorted(set(collisions)))
+        )
+    return dataframe.rename(columns=rename_map)
+
+
 def _load_reference_df(metric: dict) -> pd.DataFrame:
     shared = metric.get("_reference_df")
     if isinstance(shared, pd.DataFrame):
-        return shared
+        return _apply_reference_field_map(shared.copy(), metric)
 
     path_value = _reference_path(metric)
     if not path_value:
@@ -44,7 +65,7 @@ def _load_reference_df(metric: dict) -> pd.DataFrame:
     with _REFERENCE_DF_CACHE_LOCK:
         cached = _REFERENCE_DF_CACHE.get(cache_key)
         if cached is not None:
-            return cached
+            return _apply_reference_field_map(cached.copy(), metric)
         suffix = path.suffix.lower()
         if is_packet_capture(path):
             dataframe = build_pcap_packet_dataframe(path)
@@ -57,7 +78,7 @@ def _load_reference_df(metric: dict) -> pd.DataFrame:
         if dataframe.empty:
             raise ValueError(f"Reference dataset contains no usable rows: {path}")
         _REFERENCE_DF_CACHE[cache_key] = dataframe
-        return dataframe
+        return _apply_reference_field_map(dataframe.copy(), metric)
 
 
 def _candidate_fields(metric: dict) -> list[str]:
