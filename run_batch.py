@@ -243,6 +243,7 @@ def main() -> int:
         except ValueError:
             batch_started_at = datetime.now(timezone.utc)
         prior_results = result_map(state)
+        interrupted_job = state.get("current_job") if isinstance(state.get("current_job"), dict) else None
         print(
             f"Resuming checkpoint: {state_path} "
             f"({len(prior_results)}/{total_jobs} previously attempted)"
@@ -272,6 +273,7 @@ def main() -> int:
         )
         write_batch_state(state_path, state)
         prior_results = {}
+        interrupted_job = None
 
     results: list[dict] = []
     interrupted = False
@@ -297,6 +299,12 @@ def main() -> int:
         reference_path = _resolve_repo_path(repo_root, str(reference_value)) if reference_value else None
         prior = prior_results.get(job_id)
         should_retry = bool(prior and args.retry_failed and _result_needs_attention(prior))
+        was_interrupted_current = bool(
+            args.resume
+            and prior is None
+            and interrupted_job
+            and str(interrupted_job.get("job_id")) == job_id
+        )
 
         if prior is not None and not should_retry:
             results.append(prior)
@@ -307,7 +315,12 @@ def main() -> int:
             )
             continue
 
-        attempt = int(prior.get("attempt", 1)) + 1 if should_retry and prior else 1
+        if should_retry and prior:
+            attempt = int(prior.get("attempt", 1)) + 1
+        elif was_interrupted_current:
+            attempt = int(interrupted_job.get("attempt", 1)) + 1
+        else:
+            attempt = 1
         output_path = _outcome_path_for_attempt(
             output_dir=output_dir,
             index=index,
@@ -494,7 +507,8 @@ def main() -> int:
     _write_batch_summary(summary_path, summary)
 
     state["status"] = batch_status
-    state["current_job"] = None
+    if not interrupted:
+        state["current_job"] = None
     state["results"] = results
     state["last_invocation_finished_at"] = batch_finished_at.isoformat()
     if batch_status == "completed":

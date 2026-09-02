@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **201 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **207 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -59,6 +59,27 @@ Tests and local helpers in this module.
 | `_write_outcome(path: Path, *, ks: float, protocol: float, result_status: str = 'pass') -> None` (L12) | Implementation helper for write outcome. |
 | `_read_csv(path: Path) -> list[dict[str, str]]` (L55) | Implementation helper for read csv. |
 
+## `tests/test_batch_state.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_batch_state_round_trip_and_manifest_validation(tmp_path)` (L77) | Verifies that batch state round trip and manifest validation. | `_batch_payload`, `build_initial_batch_state`, `default_batch_state_path`, `write_batch_state`, `load_batch_state`, `validate_resume_state`, `replace_result`, `batch_manifest_fingerprint` |
+| `test_resume_validation_rejects_changed_manifest(tmp_path)` (L101) | Verifies that resume validation rejects changed manifest. | `_batch_payload`, `build_initial_batch_state`, `pytest.raises`, `validate_resume_state` |
+| `test_interrupted_batch_resumes_without_rerunning_completed_job(monkeypatch, tmp_path)` (L116) | Verifies that interrupted batch resumes without rerunning completed job. | `_batch_payload`, `monkeypatch.setattr`, `_args`, `load_batch_state`, `first_commands.append`, `output.parent.mkdir`, `output.write_text`, `SimpleNamespace` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_batch_payload(tmp_path: Path) -> tuple[Path, dict]` (L23) | Implementation helper for batch payload. |
+| `_args(batch_path: Path, *, resume: bool = False, retry_failed: bool = False) -> Namespace` (L60) | Implementation helper for args. |
+| `test_interrupted_batch_resumes_without_rerunning_completed_job.first_run(command, cwd, check, env)` (L124) | Implementation helper for first run. |
+| `test_interrupted_batch_resumes_without_rerunning_completed_job.resumed_run(command, cwd, check, env)` (L148) | Implementation helper for resumed run. |
+
 ## `tests/test_batch_tui.py`
 
 Tests and local helpers in this module.
@@ -67,19 +88,22 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_comparison_job_count_excludes_self_comparisons(tmp_path)` (L12) | Verifies that comparison job count excludes self comparisons. | `tui_batch.comparison_job_count` |
-| `test_build_batch_spec_normalises_and_validates()` (L25) | Verifies that build batch spec normalises and validates. | `tui_batch.build_batch_spec` |
-| `test_build_batch_spec_rejects_invalid_values(kwargs, message)` (L48) | Verifies that build batch spec rejects invalid values. | `pytest.mark.parametrize`, `pytest.raises`, `tui_batch.build_batch_spec` |
-| `test_unified_tui_routes_batch_mode(monkeypatch)` (L53) | Verifies that unified tui routes batch mode. | `Namespace`, `monkeypatch.setattr`, `unified_tui.launch_unified_tui` |
-| `test_unified_tui_routes_single_mode(monkeypatch)` (L69) | Verifies that unified tui routes single mode. | `Namespace`, `monkeypatch.setattr`, `unified_tui.launch_unified_tui` |
-| `test_execute_batch_spec_uses_existing_batch_pipeline(monkeypatch, tmp_path)` (L78) | Verifies that execute batch spec uses existing batch pipeline. | `dataset.write_text`, `reference.write_text`, `monkeypatch.setattr`, `tui_batch.execute_batch_spec`, `created.update`, `kwargs['output_path'].parent.mkdir`, `kwargs['output_path'].write_text`, `commands.append` |
+| `test_comparison_job_count_excludes_self_comparisons(tmp_path)` (L13) | Verifies that comparison job count excludes self comparisons. | `tui_batch.comparison_job_count` |
+| `test_build_batch_spec_normalises_and_validates()` (L26) | Verifies that build batch spec normalises and validates. | `tui_batch.build_batch_spec` |
+| `test_build_batch_spec_rejects_invalid_values(kwargs, message)` (L49) | Verifies that build batch spec rejects invalid values. | `pytest.mark.parametrize`, `pytest.raises`, `tui_batch.build_batch_spec` |
+| `test_unified_tui_routes_batch_mode(monkeypatch)` (L54) | Verifies that unified tui routes batch mode. | `Namespace`, `monkeypatch.setattr`, `unified_tui.launch_unified_tui` |
+| `test_unified_tui_routes_single_mode(monkeypatch)` (L70) | Verifies that unified tui routes single mode. | `Namespace`, `monkeypatch.setattr`, `unified_tui.launch_unified_tui` |
+| `test_execute_batch_spec_uses_existing_batch_pipeline(monkeypatch, tmp_path)` (L79) | Verifies that execute batch spec uses existing batch pipeline. | `dataset.write_text`, `reference.write_text`, `monkeypatch.setattr`, `tui_batch.execute_batch_spec`, `created.update`, `kwargs['output_path'].parent.mkdir`, `kwargs['output_path'].write_text`, `commands.append` |
+| `test_default_batch_run_id_is_timestamped()` (L144) | Verifies that default batch run id is timestamped. | `tui_batch.default_batch_run_id`, `datetime` |
+| `test_build_batch_spec_rejects_unsupported_dataset_type()` (L148) | Verifies that build batch spec rejects unsupported dataset type. | `pytest.raises`, `tui_batch.build_batch_spec` |
+| `test_batch_browser_only_lists_supported_dataset_files(tmp_path)` (L153) | Verifies that batch browser only lists supported dataset files. | `(tmp_path / 'nested').mkdir`, `(tmp_path / 'candidate.csv').write_text`, `(tmp_path / 'capture.pcap').write_bytes`, `(tmp_path / 'notes.md').write_text`, `(tmp_path / 'plan.json').write_text`, `tui_batch._browser_entries` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L86) | Implementation helper for fake create batch. |
-| `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L104) | Implementation helper for fake run. |
+| `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L87) | Implementation helper for fake create batch. |
+| `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L105) | Implementation helper for fake run. |
 
 ## `tests/test_correctness_reproducibility.py`
 
