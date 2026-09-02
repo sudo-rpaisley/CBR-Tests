@@ -3,15 +3,22 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 
+from runner.batch_progress import (
+    build_batch_child_environment,
+    build_batch_progress_lines,
+    render_batch_progress,
+)
 from runner.batch_reports import write_comparison_reports
 
 
 BATCH_SCHEMA_VERSION = 1
+ATTENTION_STATUSES = {"failed", "error", "cancelled", "not_written"}
 
 
 def _slug(value: str) -> str:
@@ -63,6 +70,37 @@ def _write_batch_summary(path: Path, payload: dict) -> Path:
         json.dump(payload, handle, indent=2)
         handle.write("\n")
     return path
+
+
+def _result_needs_attention(result: dict) -> bool:
+    return (
+        int(result.get("process_return_code", 0)) != 0
+        or str(result.get("outcome_status", "unknown")) in ATTENTION_STATUSES
+    )
+
+
+def _print_batch_position(
+    *,
+    meta: dict,
+    current_job: int,
+    total_jobs: int,
+    results: list[dict],
+    candidate_name: str,
+    reference_name: str | None,
+) -> None:
+    failed_count = sum(1 for result in results if _result_needs_attention(result))
+    lines = build_batch_progress_lines(
+        batch_name=str(meta.get("name") or meta["batch_id"]),
+        batch_id=str(meta["batch_id"]),
+        current_job=current_job,
+        total_jobs=total_jobs,
+        completed_jobs=len(results),
+        failed_jobs=failed_count,
+        candidate_name=candidate_name,
+        reference_name=reference_name,
+    )
+    for line in lines[1:3]:
+        print(line)
 
 
 def parse_args() -> argparse.Namespace:
@@ -121,6 +159,7 @@ def main() -> int:
     batch = load_batch(batch_path)
     meta = batch["batch_meta"]
     jobs = batch["jobs"]
+    total_jobs = len(jobs)
 
     output_value = args.output_dir or batch.get("output_directory") or str(
         Path("outcomes") / str(meta["batch_id"])
@@ -134,13 +173,14 @@ def main() -> int:
 
     print("=" * 88)
     print(f"Batch: {meta.get('name', meta['batch_id'])} ({meta['batch_id']})")
-    print(f"Jobs: {len(jobs)}")
-    print(f"Candidate datasets: {meta.get('dataset_count', len(jobs))}")
+    print(f"Jobs: {total_jobs}")
+    print(f"Candidate datasets: {meta.get('dataset_count', total_jobs)}")
     if meta.get("reference_dataset_count"):
         print(f"Reference datasets: {meta.get('reference_dataset_count')}")
     print(f"Metric policy: {meta.get('metric_policy', 'unspecified')}")
     print("Execution: sequential")
     print(f"Outputs: {output_dir}")
+    print(f"Batch progress: {render_batch_progress(0, total_jobs)}")
     print("=" * 88)
 
     for index, job in enumerate(jobs, start=1):
@@ -154,7 +194,15 @@ def main() -> int:
 
         print()
         print("-" * 88)
-        print(f"[{index}/{len(jobs)}] {dataset_path.name}")
+        _print_batch_position(
+            meta=meta,
+            current_job=index,
+            total_jobs=total_jobs,
+            results=results,
+            candidate_name=dataset_path.name,
+            reference_name=reference_path.name if reference_path is not None else None,
+        )
+        print(f"Current job: {index}/{total_jobs} — {dataset_path.name}")
         if reference_path is not None:
             print(f"Reference: {reference_path.name}")
         print(f"Plan: {plan_path}")
@@ -188,8 +236,26 @@ def main() -> int:
         if args.refresh_dataset_summary:
             command.append("--refresh-dataset-summary")
 
+        failed_before_current = sum(1 for result in results if _result_needs_attention(result))
+        child_environment = build_batch_child_environment(
+            os.environ,
+            batch_name=str(meta.get("name") or meta["batch_id"]),
+            batch_id=str(meta["batch_id"]),
+            current_job=index,
+            total_jobs=total_jobs,
+            completed_jobs=len(results),
+            failed_jobs=failed_before_current,
+            candidate_name=dataset_path.name,
+            reference_name=reference_path.name if reference_path is not None else None,
+        )
+
         started_at = datetime.now(timezone.utc)
-        completed = subprocess.run(command, cwd=repo_root, check=False)
+        completed = subprocess.run(
+            command,
+            cwd=repo_root,
+            check=False,
+            env=child_environment,
+        )
         finished_at = datetime.now(timezone.utc)
         outcome_status = _read_outcome_status(output_path) if output_path.exists() else "not_written"
         result = {
@@ -204,6 +270,13 @@ def main() -> int:
             "finished_at": finished_at.isoformat(),
         }
         results.append(result)
+        failed_count = sum(1 for item in results if _result_needs_attention(item))
+        successful_count = len(results) - failed_count
+
+        print(
+            f"Batch progress: {render_batch_progress(len(results), total_jobs)} "
+            f"| {successful_count} successful | {failed_count} needing attention"
+        )
 
         if completed.returncode != 0:
             print(f"Batch job process failed with return code {completed.returncode}.")
@@ -219,11 +292,7 @@ def main() -> int:
             print(f"Dataset run completed with outcome status: {outcome_status}")
 
     batch_finished_at = datetime.now(timezone.utc)
-    failed_jobs = [
-        result for result in results
-        if result["process_return_code"] != 0
-        or result["outcome_status"] in {"failed", "error", "cancelled", "not_written"}
-    ]
+    failed_jobs = [result for result in results if _result_needs_attention(result)]
 
     comparison_reports: dict = {}
     comparison_report_error: str | None = None
@@ -245,10 +314,10 @@ def main() -> int:
         "batch_manifest": str(batch_path),
         "started_at": batch_started_at.isoformat(),
         "finished_at": batch_finished_at.isoformat(),
-        "requested_job_count": len(jobs),
+        "requested_job_count": total_jobs,
         "completed_job_count": len(results),
         "failed_job_count": len(failed_jobs),
-        "status": "completed" if not failed_jobs and len(results) == len(jobs) else "needs_attention",
+        "status": "completed" if not failed_jobs and len(results) == total_jobs else "needs_attention",
         "results": results,
         "comparison_reports": comparison_reports,
     }
@@ -261,7 +330,8 @@ def main() -> int:
     print()
     print("=" * 88)
     print(f"Batch status: {summary['status']}")
-    print(f"Completed jobs: {len(results)}/{len(jobs)}")
+    print(f"Batch progress: {render_batch_progress(len(results), total_jobs)}")
+    print(f"Completed jobs: {len(results)}/{total_jobs}")
     print(f"Jobs needing attention: {len(failed_jobs)}")
     print(f"Batch summary: {summary_path}")
     if comparison_reports:
@@ -270,7 +340,7 @@ def main() -> int:
         print(f"Comparison Markdown: {comparison_reports['comparison_markdown']}")
         print(f"Metric matrices: {comparison_reports['comparison_matrices_directory']}")
     print("=" * 88)
-    return 1 if failed_jobs or len(results) != len(jobs) else 0
+    return 1 if failed_jobs or len(results) != total_jobs else 0
 
 
 if __name__ == "__main__":
