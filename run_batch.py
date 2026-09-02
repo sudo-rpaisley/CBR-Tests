@@ -15,6 +15,15 @@ from runner.batch_progress import (
     render_batch_progress,
 )
 from runner.batch_reports import write_comparison_reports
+from runner.batch_state import (
+    build_initial_batch_state,
+    default_batch_state_path,
+    load_batch_state,
+    replace_result,
+    result_map,
+    validate_resume_state,
+    write_batch_state,
+)
 
 
 BATCH_SCHEMA_VERSION = 1
@@ -103,6 +112,40 @@ def _print_batch_position(
         print(line)
 
 
+def _outcome_path_for_attempt(
+    *,
+    output_dir: Path,
+    index: int,
+    dataset_path: Path,
+    reference_path: Path | None,
+    timestamp: str,
+    attempt: int,
+) -> Path:
+    dataset_slug = _slug(dataset_path.stem)
+    reference_slug = f"_vs_{_slug(reference_path.stem)}" if reference_path is not None else ""
+    retry_suffix = "" if attempt <= 1 else f"_retry{attempt:02d}"
+    return output_dir / (
+        f"outcome_{index:02d}_{dataset_slug}{reference_slug}_{timestamp}{retry_suffix}.json"
+    )
+
+
+def _attempt_history(prior: dict | None) -> list[dict]:
+    if not prior:
+        return []
+    history = list(prior.get("attempt_history") or [])
+    history.append(
+        {
+            "attempt": int(prior.get("attempt", 1)),
+            "output_path": prior.get("output_path"),
+            "process_return_code": prior.get("process_return_code"),
+            "outcome_status": prior.get("outcome_status"),
+            "started_at": prior.get("started_at"),
+            "finished_at": prior.get("finished_at"),
+        }
+    )
+    return history
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run a multi-dataset CBR-Tests batch sequentially."
@@ -130,6 +173,16 @@ def parse_args() -> argparse.Namespace:
         help="Stop the dataset batch after the first process/run failure",
     )
     parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from output-dir/batch_state.json, skipping jobs already attempted",
+    )
+    parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="With --resume, retry prior jobs needing attention before continuing pending jobs",
+    )
+    parser.add_argument(
         "--no-update-field-translation",
         action="store_true",
         help="Do not create or update field-translation sidecars during batch execution",
@@ -149,7 +202,10 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Refresh dataset summary sidecars for every job",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.retry_failed and not args.resume:
+        parser.error("--retry-failed requires --resume")
+    return args
 
 
 def main() -> int:
@@ -166,10 +222,59 @@ def main() -> int:
     )
     output_dir = _resolve_repo_path(repo_root, str(output_value))
     output_dir.mkdir(parents=True, exist_ok=True)
+    state_path = default_batch_state_path(output_dir)
 
-    batch_started_at = datetime.now(timezone.utc)
-    timestamp = batch_started_at.strftime("%Y-%m-%d_%H-%M-%S")
+    if args.resume:
+        if not state_path.exists():
+            raise SystemExit(
+                f"error: no batch checkpoint exists at {state_path}; start the batch without --resume first"
+            )
+        state = load_batch_state(state_path)
+        validate_resume_state(state, batch_path=batch_path, batch=batch)
+        recorded_output_dir = Path(str(state.get("output_directory", ""))).expanduser().resolve()
+        if recorded_output_dir != output_dir.resolve():
+            raise SystemExit(
+                "error: the checkpoint belongs to a different output directory; "
+                "resume using the original --output-dir"
+            )
+        timestamp = str(state["run_timestamp"])
+        try:
+            batch_started_at = datetime.fromisoformat(str(state["started_at"]))
+        except ValueError:
+            batch_started_at = datetime.now(timezone.utc)
+        prior_results = result_map(state)
+        print(
+            f"Resuming checkpoint: {state_path} "
+            f"({len(prior_results)}/{total_jobs} previously attempted)"
+        )
+        if args.retry_failed:
+            retry_count = sum(1 for result in prior_results.values() if _result_needs_attention(result))
+            print(f"Retry failed/attention jobs: {retry_count}")
+    else:
+        existing_incomplete = None
+        if state_path.exists():
+            try:
+                existing_incomplete = load_batch_state(state_path)
+            except (OSError, ValueError, json.JSONDecodeError):
+                existing_incomplete = None
+        if existing_incomplete and str(existing_incomplete.get("status")) in {"running", "interrupted"}:
+            raise SystemExit(
+                f"error: unfinished checkpoint exists at {state_path}; use --resume to continue it"
+            )
+        batch_started_at = datetime.now(timezone.utc)
+        timestamp = batch_started_at.strftime("%Y-%m-%d_%H-%M-%S")
+        state = build_initial_batch_state(
+            batch_path=batch_path,
+            batch=batch,
+            output_dir=output_dir,
+            run_timestamp=timestamp,
+            started_at=batch_started_at.isoformat(),
+        )
+        write_batch_state(state_path, state)
+        prior_results = {}
+
     results: list[dict] = []
+    interrupted = False
 
     print("=" * 88)
     print(f"Batch: {meta.get('name', meta['batch_id'])} ({meta['batch_id']})")
@@ -180,17 +285,37 @@ def main() -> int:
     print(f"Metric policy: {meta.get('metric_policy', 'unspecified')}")
     print("Execution: sequential")
     print(f"Outputs: {output_dir}")
-    print(f"Batch progress: {render_batch_progress(0, total_jobs)}")
+    print(f"Checkpoint: {state_path}")
+    print(f"Batch progress: {render_batch_progress(len(prior_results) if args.resume else 0, total_jobs)}")
     print("=" * 88)
 
     for index, job in enumerate(jobs, start=1):
+        job_id = str(job["job_id"])
         dataset_path = _resolve_repo_path(repo_root, str(job["dataset_path"]))
         plan_path = _resolve_repo_path(repo_root, str(job["plan_path"]))
-        dataset_slug = _slug(dataset_path.stem)
         reference_value = job.get("reference_dataset_path")
         reference_path = _resolve_repo_path(repo_root, str(reference_value)) if reference_value else None
-        reference_slug = f"_vs_{_slug(reference_path.stem)}" if reference_path is not None else ""
-        output_path = output_dir / f"outcome_{index:02d}_{dataset_slug}{reference_slug}_{timestamp}.json"
+        prior = prior_results.get(job_id)
+        should_retry = bool(prior and args.retry_failed and _result_needs_attention(prior))
+
+        if prior is not None and not should_retry:
+            results.append(prior)
+            status = str(prior.get("outcome_status") or "unknown")
+            print(
+                f"[{index}/{total_jobs}] Resume: keeping prior result for {dataset_path.name} "
+                f"({status})"
+            )
+            continue
+
+        attempt = int(prior.get("attempt", 1)) + 1 if should_retry and prior else 1
+        output_path = _outcome_path_for_attempt(
+            output_dir=output_dir,
+            index=index,
+            dataset_path=dataset_path,
+            reference_path=reference_path,
+            timestamp=timestamp,
+            attempt=attempt,
+        )
 
         print()
         print("-" * 88)
@@ -202,7 +327,8 @@ def main() -> int:
             candidate_name=dataset_path.name,
             reference_name=reference_path.name if reference_path is not None else None,
         )
-        print(f"Current job: {index}/{total_jobs} — {dataset_path.name}")
+        action = "Retrying" if attempt > 1 else "Running"
+        print(f"Current job: {index}/{total_jobs} — {action} {dataset_path.name} (attempt {attempt})")
         if reference_path is not None:
             print(f"Reference: {reference_path.name}")
         print(f"Plan: {plan_path}")
@@ -219,7 +345,7 @@ def main() -> int:
             "--output",
             str(output_path),
             "--case-id",
-            str(job["job_id"]),
+            job_id,
             "--display",
             args.display,
         ]
@@ -249,17 +375,41 @@ def main() -> int:
             reference_name=reference_path.name if reference_path is not None else None,
         )
 
+        state["status"] = "running"
+        state["current_job"] = {
+            "job_id": job_id,
+            "job_index": index,
+            "attempt": attempt,
+            "dataset_path": str(dataset_path),
+            "reference_dataset_path": str(reference_path) if reference_path is not None else None,
+            "output_path": str(output_path),
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        }
+        write_batch_state(state_path, state)
+
         started_at = datetime.now(timezone.utc)
-        completed = subprocess.run(
-            command,
-            cwd=repo_root,
-            check=False,
-            env=child_environment,
-        )
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=repo_root,
+                check=False,
+                env=child_environment,
+            )
+        except KeyboardInterrupt:
+            interrupted = True
+            state["status"] = "interrupted"
+            state["interrupted_at"] = datetime.now(timezone.utc).isoformat()
+            if isinstance(state.get("current_job"), dict):
+                state["current_job"]["status"] = "interrupted"
+            write_batch_state(state_path, state)
+            print("\nBatch interrupted. Completed jobs are checkpointed and can be resumed with --resume.")
+            break
+
         finished_at = datetime.now(timezone.utc)
         outcome_status = _read_outcome_status(output_path) if output_path.exists() else "not_written"
         result = {
-            "job_id": job["job_id"],
+            "job_id": job_id,
+            "attempt": attempt,
             "dataset_path": str(dataset_path),
             "reference_dataset_path": str(reference_path) if reference_path is not None else None,
             "plan_path": str(plan_path),
@@ -269,6 +419,12 @@ def main() -> int:
             "started_at": started_at.isoformat(),
             "finished_at": finished_at.isoformat(),
         }
+        history = _attempt_history(prior)
+        if history:
+            result["attempt_history"] = history
+        replace_result(state, result)
+        state["current_job"] = None
+        write_batch_state(state_path, state)
         results.append(result)
         failed_count = sum(1 for item in results if _result_needs_attention(item))
         successful_count = len(results) - failed_count
@@ -307,17 +463,27 @@ def main() -> int:
         comparison_report_error = str(exc)
         print(f"WARNING: Comparison CSV/Markdown reports could not be generated: {exc}")
 
+    if interrupted:
+        batch_status = "interrupted"
+    elif not failed_jobs and len(results) == total_jobs:
+        batch_status = "completed"
+    else:
+        batch_status = "needs_attention"
+
     summary = {
         "schema_version": 1,
         "batch_id": meta["batch_id"],
         "batch_name": meta.get("name"),
         "batch_manifest": str(batch_path),
+        "batch_state": str(state_path),
         "started_at": batch_started_at.isoformat(),
         "finished_at": batch_finished_at.isoformat(),
         "requested_job_count": total_jobs,
         "completed_job_count": len(results),
         "failed_job_count": len(failed_jobs),
-        "status": "completed" if not failed_jobs and len(results) == total_jobs else "needs_attention",
+        "status": batch_status,
+        "resumed": bool(args.resume),
+        "retry_failed": bool(args.retry_failed),
         "results": results,
         "comparison_reports": comparison_reports,
     }
@@ -327,19 +493,34 @@ def main() -> int:
     summary_path = output_dir / f"batch_summary_{timestamp}.json"
     _write_batch_summary(summary_path, summary)
 
+    state["status"] = batch_status
+    state["current_job"] = None
+    state["results"] = results
+    state["last_invocation_finished_at"] = batch_finished_at.isoformat()
+    if batch_status == "completed":
+        state["finished_at"] = batch_finished_at.isoformat()
+    write_batch_state(state_path, state)
+
     print()
     print("=" * 88)
     print(f"Batch status: {summary['status']}")
     print(f"Batch progress: {render_batch_progress(len(results), total_jobs)}")
     print(f"Completed jobs: {len(results)}/{total_jobs}")
     print(f"Jobs needing attention: {len(failed_jobs)}")
+    print(f"Checkpoint: {state_path}")
     print(f"Batch summary: {summary_path}")
+    if batch_status == "interrupted":
+        print(f"Resume command: python run_batch.py --batch {batch_path} --resume")
+    elif failed_jobs:
+        print(f"Retry attention jobs: python run_batch.py --batch {batch_path} --resume --retry-failed")
     if comparison_reports:
         print(f"Comparison overview CSV: {comparison_reports['comparison_overview_csv']}")
         print(f"Comparison long CSV: {comparison_reports['comparison_long_csv']}")
         print(f"Comparison Markdown: {comparison_reports['comparison_markdown']}")
         print(f"Metric matrices: {comparison_reports['comparison_matrices_directory']}")
     print("=" * 88)
+    if interrupted:
+        return 130
     return 1 if failed_jobs or len(results) != total_jobs else 0
 
 
