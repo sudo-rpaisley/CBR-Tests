@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **197 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **201 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -26,6 +26,19 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_metric_ids(plan: dict) -> set[str]` (L11) | Implementation helper for metric ids. |
+
+## `tests/test_batch_progress.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_render_batch_progress_reports_completed_fraction()` (L9) | Verifies that render batch progress reports completed fraction. | `render_batch_progress`, `line.startswith` |
+| `test_build_batch_progress_lines_show_current_job_and_status_counts()` (L17) | Verifies that build batch progress lines show current job and status counts. | `build_batch_progress_lines` |
+| `test_child_environment_round_trips_into_dashboard_lines()` (L38) | Verifies that child environment round trips into dashboard lines. | `build_batch_child_environment`, `batch_progress_lines_from_environment` |
+| `test_dashboard_batch_context_is_absent_for_normal_single_runs()` (L61) | Verifies that dashboard batch context is absent for normal single runs. | `batch_progress_lines_from_environment` |
 
 ## `tests/test_batch_reports.py`
 
