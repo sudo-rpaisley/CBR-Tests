@@ -1,0 +1,106 @@
+name: Finalize batch progress display
+
+on:
+  push:
+    branches:
+      - feature/batch-progress-display
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: "!contains(github.event.head_commit.message, '[batch-progress-finalized]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/batch-progress-display
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Inject batch context into live runner header
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('runner/run_plan_helpers.py')
+          text = path.read_text(encoding='utf-8')
+
+          import_anchor = 'from runner.human_summary import default_human_summary_path, format_human_summary\n'
+          import_line = 'from runner.batch_progress import batch_progress_lines_from_environment\n'
+          if import_line not in text:
+              if import_anchor not in text:
+                  raise SystemExit('run_plan_helpers import anchor not found')
+              text = text.replace(import_anchor, import_line + import_anchor, 1)
+
+          old = '''def update_live_header(\n    lines: list[str],\n    status_lines: list[str] | None = None,\n    width: int = 108,\n) -> None:\n    set_live_header(build_title_box_lines(lines, status_lines, width=width))\n'''
+          new = '''def update_live_header(\n    lines: list[str],\n    status_lines: list[str] | None = None,\n    width: int = 108,\n) -> None:\n    batch_lines = batch_progress_lines_from_environment()\n    set_live_header(build_title_box_lines([*batch_lines, *lines], status_lines, width=width))\n'''
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('run_plan_helpers update_live_header block not found')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Compile and run tests
+        run: |
+          python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
+          python -m pytest -q
+
+      - name: Regenerate reference documentation
+        run: python scripts/build_reference_documentation.py
+
+      - name: Validate generated docs and links
+        run: |
+          python scripts/build_reference_documentation.py --check
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          from urllib.parse import unquote
+
+          failures = []
+          pattern = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
+          for document in [Path('README.md'), *sorted(Path('docs').rglob('*.md'))]:
+              text = document.read_text(encoding='utf-8')
+              for raw_target in pattern.findall(text):
+                  target = raw_target.strip().split()[0].strip('<>')
+                  if not target or target.startswith(('http://', 'https://', 'mailto:', '#')):
+                      continue
+                  path_text = unquote(target.split('#', 1)[0])
+                  if path_text and not (document.parent / path_text).resolve().exists():
+                      failures.append(f'{document}: {target}')
+          if failures:
+              raise SystemExit('Broken local documentation links:\n' + '\n'.join(failures))
+          PY
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/finalize-batch-progress.yml
+
+      - name: Commit finalized feature
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add run_batch.py runner/batch_progress.py runner/run_plan_helpers.py tests/test_batch_progress.py docs/batch_runner_tui.md docs/function_reference.md docs/test_reference.md .github/workflows/finalize-batch-progress.yml
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Finalize batch progress display [batch-progress-finalized]'
+          git push origin HEAD:feature/batch-progress-display
