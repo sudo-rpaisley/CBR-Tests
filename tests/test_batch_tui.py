@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from argparse import Namespace
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -110,6 +111,7 @@ def test_execute_batch_spec_uses_existing_batch_pipeline(monkeypatch, tmp_path):
     result = tui_batch.execute_batch_spec(
         {
             "name": "Experiment",
+            "run_id": "20260902-122000",
             "datasets": [str(dataset)],
             "references": [str(reference)],
             "workers": 3,
@@ -122,6 +124,7 @@ def test_execute_batch_spec_uses_existing_batch_pipeline(monkeypatch, tmp_path):
         repo_root=tmp_path,
     )
 
+    assert created["plan_id"] == "experiment-20260902-122000"
     assert created["dataset_paths"] == [dataset.resolve()]
     assert created["reference_dataset_paths"] == [reference.resolve()]
     assert created["per_dataset_metrics"] is False
@@ -136,3 +139,28 @@ def test_execute_batch_spec_uses_existing_batch_pipeline(monkeypatch, tmp_path):
     assert "--no-dataset-summary" in command
     assert "--refresh-dataset-summary" in command
     assert "--fail-fast" in command
+
+
+def test_default_batch_run_id_is_timestamped():
+    assert tui_batch.default_batch_run_id(datetime(2026, 9, 2, 12, 20, 45)) == "20260902-122045"
+
+
+def test_build_batch_spec_rejects_unsupported_dataset_type():
+    with pytest.raises(ValueError, match="Unsupported candidate dataset type"):
+        tui_batch.build_batch_spec(name="x", datasets=["notes.md"])
+
+
+def test_batch_browser_only_lists_supported_dataset_files(tmp_path):
+    (tmp_path / "nested").mkdir()
+    (tmp_path / "candidate.csv").write_text("a\n1\n", encoding="utf-8")
+    (tmp_path / "capture.pcap").write_bytes(b"")
+    (tmp_path / "notes.md").write_text("ignore", encoding="utf-8")
+    (tmp_path / "plan.json").write_text("{}", encoding="utf-8")
+
+    entries = tui_batch._browser_entries(tmp_path, tmp_path)
+    labels = {entry.label for entry in entries}
+    assert "nested/" in labels
+    assert "candidate.csv" in labels
+    assert "capture.pcap" in labels
+    assert "notes.md" not in labels
+    assert "plan.json" not in labels

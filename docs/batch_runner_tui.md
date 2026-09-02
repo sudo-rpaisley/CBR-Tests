@@ -33,10 +33,16 @@ Enter       open a directory or select/unselect a file
 d           finish selection
 c           clear the current selection
 Backspace   go to the parent directory
+e           type/paste a path or directory
+R           jump to the repository root
+H           jump to the current user home directory
+M           jump to /media when available
 q / Esc     cancel without changing the field
 ```
 
-Selected files are marked with `[x]`, and the footer shows the selection count.
+Selected files are marked with `[x]`, and the footer shows the selection count. The browser only exposes supported dataset files (`.csv`, `.tsv`, `.xlsx`, `.xls`, `.pcap`, `.pcapng`) while still showing directories for navigation.
+
+Each TUI batch also receives an automatically generated run ID such as `20260902-122045`. The human-readable batch name remains reusable, while the generated plan/batch ID combines the name and run ID so repeated experiments do not collide by default.
 
 ## Execution
 
@@ -66,3 +72,23 @@ That means batch TUI runs retain the existing behaviour for:
 - comparison overview, long-form and per-metric matrix CSV reports.
 
 Batch mode automatically builds generated per-job plans from all structurally runnable tests. Use **Per-job runnable metrics** only when coverage is more important than strict cross-job comparability.
+
+## Checkpoints, resume and retry
+
+`run_batch.py` writes an atomic `batch_state.json` checkpoint in the batch output directory before and after job execution. The checkpoint records the exact batch-manifest SHA-256 fingerprint, run timestamp, current job and completed results. A resume is rejected if the manifest has changed, preventing a partially completed experiment from silently continuing with different plans or datasets.
+
+If a run is interrupted, resume it with:
+
+```bash
+python run_batch.py --batch plans/<batch>_batch.json --resume
+```
+
+Previously completed/attempted jobs are skipped. A job that was actively running when interruption occurred is restarted automatically as a new attempt with a new outcome filename such as `_retry02`, so a possibly partial first output is never overwritten.
+
+To deliberately rerun jobs whose previous result needs attention, use:
+
+```bash
+python run_batch.py --batch plans/<batch>_batch.json --resume --retry-failed
+```
+
+Retry attempts retain attempt history in the batch checkpoint and write new outcome files rather than replacing the previous attempt.

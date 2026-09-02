@@ -175,15 +175,17 @@ Python symbols defined by `run_batch.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_slug(value: str) -> str` (L24) | function | Internal | Implementation helper for slug. |
-| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L29) | function | Internal | Implementation helper for resolve repo path. |
-| `load_batch(path: Path) -> dict` (L34) | function | Public | Loads batch. |
-| `_read_outcome_status(path: Path) -> str` (L59) | function | Internal | Implementation helper for read outcome status. |
-| `_write_batch_summary(path: Path, payload: dict) -> Path` (L67) | function | Internal | Implementation helper for write batch summary. |
-| `_result_needs_attention(result: dict) -> bool` (L75) | function | Internal | Implementation helper for result needs attention. |
-| `_print_batch_position(*, meta: dict, current_job: int, total_jobs: int, results: list[dict], candidate_name: str, reference_name: str | None) -> None` (L82) | function | Internal | Implementation helper for print batch position. |
-| `parse_args() -> argparse.Namespace` (L106) | function | Public | Parses args. |
-| `main() -> int` (L155) | function | Public | Implementation helper for main. |
+| `_slug(value: str) -> str` (L33) | function | Internal | Implementation helper for slug. |
+| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L38) | function | Internal | Implementation helper for resolve repo path. |
+| `load_batch(path: Path) -> dict` (L43) | function | Public | Loads batch. |
+| `_read_outcome_status(path: Path) -> str` (L68) | function | Internal | Implementation helper for read outcome status. |
+| `_write_batch_summary(path: Path, payload: dict) -> Path` (L76) | function | Internal | Implementation helper for write batch summary. |
+| `_result_needs_attention(result: dict) -> bool` (L84) | function | Internal | Implementation helper for result needs attention. |
+| `_print_batch_position(*, meta: dict, current_job: int, total_jobs: int, results: list[dict], candidate_name: str, reference_name: str | None) -> None` (L91) | function | Internal | Implementation helper for print batch position. |
+| `_outcome_path_for_attempt(*, output_dir: Path, index: int, dataset_path: Path, reference_path: Path | None, timestamp: str, attempt: int) -> Path` (L115) | function | Internal | Implementation helper for outcome path for attempt. |
+| `_attempt_history(prior: dict | None) -> list[dict]` (L132) | function | Internal | Implementation helper for attempt history. |
+| `parse_args() -> argparse.Namespace` (L149) | function | Public | Parses args. |
+| `main() -> int` (L211) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -224,6 +226,22 @@ Python symbols defined by `runner/batch_reports.py`.
 | `_format_markdown_value(value: Any) -> str` (L102) | function | Internal | Implementation helper for format markdown value. |
 | `_markdown_table(row_header: str, row_labels: list[str], column_labels: list[str], cells: dict[tuple[str, str], str]) -> list[str]` (L110) | function | Internal | Implementation helper for markdown table. |
 | `write_comparison_reports(*, output_dir: Path, timestamp: str, batch_meta: dict, results: list[dict]) -> dict[str, Any]` (L121) | function | Public | Write human-readable and analysis-friendly candidate/reference reports. Only jobs with an explicit reference dataset participate. Existing JSON outcomes remain authoritative; these files are denormalised views intended for comparison, spreadsheets and statistical analysis. |
+
+## `runner/batch_state.py`
+
+Python symbols defined by `runner/batch_state.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_utc_now_iso() -> str` (L15) | function | Internal | Implementation helper for utc now iso. |
+| `batch_manifest_fingerprint(batch: dict) -> str` (L19) | function | Public | Return a stable SHA-256 fingerprint of the parsed batch manifest. |
+| `default_batch_state_path(output_dir: Path) -> Path` (L26) | function | Public | Implementation helper for default batch state path. |
+| `build_initial_batch_state(*, batch_path: Path, batch: dict, output_dir: Path, run_timestamp: str, started_at: str | None = None) -> dict` (L30) | function | Public | Builds initial batch state. |
+| `load_batch_state(path: Path) -> dict` (L58) | function | Public | Loads batch state. |
+| `validate_resume_state(state: dict, *, batch_path: Path, batch: dict) -> None` (L79) | function | Public | Validates resume state. |
+| `write_batch_state(path: Path, payload: dict) -> Path` (L101) | function | Public | Atomically write a batch checkpoint so interruption cannot leave partial JSON. |
+| `result_map(state: dict) -> dict[str, dict]` (L130) | function | Public | Implementation helper for result map. |
+| `replace_result(state: dict, result: dict) -> None` (L138) | function | Public | Implementation helper for replace result. |
 
 ## `runner/contract.py`
 
@@ -771,17 +789,22 @@ Python symbols defined by `runner/tui_batch.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `BatchTuiSpec` (L21) | class | Public | Data model for BatchTuiSpec. |
-| `BatchTuiSpec.as_dict(self) -> dict[str, Any]` (L33) | method | Public | Implementation helper for as dict. |
-| `comparison_job_count(datasets: list[str], references: list[str]) -> int` (L48) | function | Public | Return the runnable candidate/reference job count, excluding self-comparisons. |
-| `build_batch_spec(*, name: str, datasets: list[str], references: list[str] | None = None, per_dataset_metrics: bool = False, workers: int | None = None, display: str = 'compact', force: bool = False, dataset_summary: bool = True, refresh_dataset_summary: bool = False, fail_fast: bool = False) -> dict[str, Any]` (L58) | function | Public | Validate and normalise the batch settings selected in the TUI. |
-| `_normalise_initial_paths(values: list[str], root: Path) -> tuple[list[str], set[Path]]` (L100) | function | Internal | Implementation helper for normalise initial paths. |
-| `_toggle_selected(path: Path, selected: set[Path], ordered: list[str], root: Path) -> None` (L115) | function | Internal | Implementation helper for toggle selected. |
-| `_multi_file_browser(stdscr, root: Path, initial_values: list[str], *, title: str, allow_empty: bool) -> list[str] | None` (L129) | function | Internal | Implementation helper for multi file browser. |
-| `_format_list(values: list[str]) -> str` (L210) | function | Internal | Implementation helper for format list. |
-| `_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L219) | function | Internal | Implementation helper for batch setup curses. |
-| `launch_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L370) | function | Public | Implementation helper for launch batch tui. |
-| `execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> dict[str, Any]` (L397) | function | Public | Create and execute the batch selected in the TUI using the standard batch pipeline. |
+| `is_supported_dataset_path(path: Path | str) -> bool` (L24) | function | Public | Implementation helper for is supported dataset path. |
+| `default_batch_run_id(now: datetime | None = None) -> str` (L28) | function | Public | Implementation helper for default batch run id. |
+| `BatchTuiSpec` (L33) | class | Public | Data model for BatchTuiSpec. |
+| `BatchTuiSpec.as_dict(self) -> dict[str, Any]` (L46) | method | Public | Implementation helper for as dict. |
+| `comparison_job_count(datasets: list[str], references: list[str]) -> int` (L62) | function | Public | Return the runnable candidate/reference job count, excluding self-comparisons. |
+| `_validate_dataset_suffixes(values: list[str], *, label: str) -> None` (L72) | function | Internal | Implementation helper for validate dataset suffixes. |
+| `build_batch_spec(*, name: str, datasets: list[str], references: list[str] | None = None, run_id: str | None = None, per_dataset_metrics: bool = False, workers: int | None = None, display: str = 'compact', force: bool = False, dataset_summary: bool = True, refresh_dataset_summary: bool = False, fail_fast: bool = False) -> dict[str, Any]` (L81) | function | Public | Validate and normalise the batch settings selected in the TUI. |
+| `_normalise_initial_paths(values: list[str], root: Path) -> tuple[list[str], set[Path]]` (L130) | function | Internal | Implementation helper for normalise initial paths. |
+| `_toggle_selected(path: Path, selected: set[Path], ordered: list[str], root: Path) -> None` (L145) | function | Internal | Implementation helper for toggle selected. |
+| `_browser_entries(current_dir: Path, root: Path)` (L158) | function | Internal | Implementation helper for browser entries. |
+| `_typed_browser_path(value: str, *, current_dir: Path, root: Path) -> Path` (L166) | function | Internal | Implementation helper for typed browser path. |
+| `_multi_file_browser(stdscr, root: Path, initial_values: list[str], *, title: str, allow_empty: bool) -> list[str] | None` (L173) | function | Internal | Implementation helper for multi file browser. |
+| `_format_list(values: list[str]) -> str` (L299) | function | Internal | Implementation helper for format list. |
+| `_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L308) | function | Internal | Implementation helper for batch setup curses. |
+| `launch_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L461) | function | Public | Implementation helper for launch batch tui. |
+| `execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> dict[str, Any]` (L489) | function | Public | Create and execute the batch selected in the TUI using the standard batch pipeline. |
 
 ## `runner/unified_tui.py`
 
