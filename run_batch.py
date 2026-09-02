@@ -234,7 +234,7 @@ def main() -> int:
             batch_meta=meta,
             results=results,
         )
-    except (OSError, ValueError, TypeError) as exc:
+    except Exception as exc:  # Supplementary reporting must never hide the authoritative batch result.
         comparison_report_error = str(exc)
         print(f"WARNING: Comparison CSV/Markdown reports could not be generated: {exc}")
 
