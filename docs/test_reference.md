@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **181 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **184 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -8,6 +8,24 @@ python -m pytest -q
 ```
 
 Run one test with `python -m pytest -q path/to/test.py::test_name`.
+
+## `tests/test_batch_plan.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_create_batch_generates_sequential_manifest_and_common_metric_plans(tmp_path)` (L15) | Verifies that create batch generates sequential manifest and common metric plans. | `_create_batch`, `load_batch`, `manifest_path.resolve`, `validate_plan_schema`, `plans.append`, `_metric_ids`, `plan_path.is_absolute`, `(Path.cwd() / plan_path).resolve` |
+| `test_batch_can_keep_dataset_specific_metric_sets(tmp_path)` (L69) | Verifies that batch can keep dataset specific metric sets. | `_create_batch`, `load_batch`, `manifest_path.resolve` |
+| `test_load_batch_rejects_invalid_manifest(tmp_path)` (L111) | Verifies that load batch rejects invalid manifest. | `path.write_text`, `load_batch`, `AssertionError` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_metric_ids(plan: dict) -> set[str]` (L11) | Implementation helper for metric ids. |
 
 ## `tests/test_correctness_reproducibility.py`
 
