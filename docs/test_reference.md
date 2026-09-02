@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **191 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **197 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -45,6 +45,28 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_write_outcome(path: Path, *, ks: float, protocol: float, result_status: str = 'pass') -> None` (L12) | Implementation helper for write outcome. |
 | `_read_csv(path: Path) -> list[dict[str, str]]` (L55) | Implementation helper for read csv. |
+
+## `tests/test_batch_tui.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_comparison_job_count_excludes_self_comparisons(tmp_path)` (L12) | Verifies that comparison job count excludes self comparisons. | `tui_batch.comparison_job_count` |
+| `test_build_batch_spec_normalises_and_validates()` (L25) | Verifies that build batch spec normalises and validates. | `tui_batch.build_batch_spec` |
+| `test_build_batch_spec_rejects_invalid_values(kwargs, message)` (L48) | Verifies that build batch spec rejects invalid values. | `pytest.mark.parametrize`, `pytest.raises`, `tui_batch.build_batch_spec` |
+| `test_unified_tui_routes_batch_mode(monkeypatch)` (L53) | Verifies that unified tui routes batch mode. | `Namespace`, `monkeypatch.setattr`, `unified_tui.launch_unified_tui` |
+| `test_unified_tui_routes_single_mode(monkeypatch)` (L69) | Verifies that unified tui routes single mode. | `Namespace`, `monkeypatch.setattr`, `unified_tui.launch_unified_tui` |
+| `test_execute_batch_spec_uses_existing_batch_pipeline(monkeypatch, tmp_path)` (L78) | Verifies that execute batch spec uses existing batch pipeline. | `dataset.write_text`, `reference.write_text`, `monkeypatch.setattr`, `tui_batch.execute_batch_spec`, `created.update`, `kwargs['output_path'].parent.mkdir`, `kwargs['output_path'].write_text`, `commands.append` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L86) | Implementation helper for fake create batch. |
+| `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L104) | Implementation helper for fake run. |
 
 ## `tests/test_correctness_reproducibility.py`
 

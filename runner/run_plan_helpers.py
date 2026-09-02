@@ -11,7 +11,18 @@ from pathlib import Path
 from runner.human_summary import default_human_summary_path, format_human_summary
 from runner.progress import set_live_header
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy
-from runner.tui import launch_tui, validate_required_run_args
+from runner.tui import launch_tui as _legacy_launch_tui, validate_required_run_args
+from runner.unified_tui import launch_unified_tui
+
+# Keep the historical module-level launch_tui hook so tests and callers that
+# monkeypatch it continue to work. Normal execution uses the unified chooser.
+launch_tui = _legacy_launch_tui
+
+
+def _launch_tui_entry(args):
+    if launch_tui is not _legacy_launch_tui:
+        return launch_tui(args)
+    return launch_unified_tui(args)
 
 SOURCE_FIELD_CANDIDATES = ("Source IP", "Src IP", "source_ip", "src_ip")
 DESTINATION_FIELD_CANDIDATES = ("Destination IP", "Dst IP", "destination_ip", "dst_ip")
@@ -252,9 +263,10 @@ def parse_run_plan_args() -> argparse.Namespace:
             args.display = "interactive"
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             raise SystemExit("error: --tui requires an interactive terminal")
-        args = launch_tui(args)
-        args.tui_session = True
-    validate_required_run_args(args)
+        args = _launch_tui_entry(args)
+        args.tui_session = not bool(getattr(args, "tui_batch_spec", None))
+    if not getattr(args, "tui_batch_spec", None):
+        validate_required_run_args(args)
     return args
 
 
