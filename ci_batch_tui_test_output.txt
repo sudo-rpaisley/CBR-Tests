@@ -1,0 +1,55 @@
+........................................................................ [ 36%]
+........................................................................ [ 72%]
+.......F...............................................                  [100%]
+=================================== FAILURES ===================================
+_________________ test_parse_run_plan_args_tui_can_supply_case _________________
+
+obj = <module 'runner.run_plan_helpers' from '/home/runner/work/CBR-Tests/CBR-Tests/runner/run_plan_helpers.py'>
+name = 'launch_tui', ann = 'runner.run_plan_helpers'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+>           obj = getattr(obj, name)
+                  ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'runner.run_plan_helpers' has no attribute 'launch_tui'
+
+/opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/_pytest/monkeypatch.py:95: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f671f8b6d90>
+
+    def test_parse_run_plan_args_tui_can_supply_case(monkeypatch):
+        monkeypatch.setattr("sys.argv", ["run_plan.py", "--tui"])
+        monkeypatch.setattr("runner.run_plan_helpers.sys.stdin", SimpleNamespace(isatty=lambda: True))
+        monkeypatch.setattr("runner.run_plan_helpers.sys.stdout", SimpleNamespace(isatty=lambda: True))
+    
+        def _fake_launch_tui(args):
+            args.case = "cases/selected.json"
+            args.tui = False
+            return args
+    
+>       monkeypatch.setattr("runner.run_plan_helpers.launch_tui", _fake_launch_tui)
+
+tests/test_run_plan_helpers.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/_pytest/monkeypatch.py:109: in derive_importpath
+    annotated_getattr(target, attr, ann=module)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+obj = <module 'runner.run_plan_helpers' from '/home/runner/work/CBR-Tests/CBR-Tests/runner/run_plan_helpers.py'>
+name = 'launch_tui', ann = 'runner.run_plan_helpers'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+            obj = getattr(obj, name)
+        except AttributeError as e:
+>           raise AttributeError(
+                f"{type(obj).__name__!r} object at {ann} has no attribute {name!r}"
+            ) from e
+E           AttributeError: 'module' object at runner.run_plan_helpers has no attribute 'launch_tui'
+
+/opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/_pytest/monkeypatch.py:97: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_run_plan_helpers.py::test_parse_run_plan_args_tui_can_supply_case - AttributeError: 'module' object at runner.run_plan_helpers has no attribute 'launch_tui'
+1 failed, 198 passed in 5.40s

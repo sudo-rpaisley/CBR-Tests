@@ -433,6 +433,12 @@ def run_once(args):
 
 def main():
     args = parse_run_plan_args()
+    batch_spec = getattr(args, "tui_batch_spec", None)
+    if batch_spec:
+        from runner.tui_batch import execute_batch_spec
+
+        return execute_batch_spec(batch_spec)
+
     while True:
         result = run_once(args)
         if not getattr(args, "tui_session", False):
