@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **184 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **188 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -276,6 +276,25 @@ Production-package and compatibility-import boundaries.
 | --- | --- | --- |
 | `test_legacy_metric_modules_reexport_production_implementations()` (L28) | Verifies that legacy metric modules reexport production implementations. | Assertions and fixtures in the module |
 | `test_dispatch_does_not_import_moved_metric_implementations_from_tests()` (L54) | Verifies that dispatch does not import moved metric implementations from tests. | `inspect.getsource`, `any` |
+
+## `tests/test_multi_reference_workflow.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_tabular_reference_plan_unlocks_reference_metrics(tmp_path)` (L32) | Verifies that tabular reference plan unlocks reference metrics. | `_write_flow_csv`, `build_plan`, `reference.resolve` |
+| `test_reference_sidecar_maps_different_raw_column_names(tmp_path)` (L58) | Verifies that reference sidecar maps different raw column names. | `candidate_translation.write_text`, `reference_translation.write_text`, `build_plan`, `translate_metric_fields`, `compute_feature_wise_ks_statistic_from_reference`, `load_field_translation` |
+| `test_batch_builds_candidate_reference_cross_product(tmp_path, monkeypatch)` (L120) | Verifies that batch builds candidate reference cross product. | `monkeypatch.chdir`, `create_plan._create_batch`, `_write_flow_csv`, `output.read_text` |
+| `test_reference_browser_collects_multiple_files(monkeypatch)` (L160) | Verifies that reference browser collects multiple files. | `iter`, `monkeypatch.setattr`, `create_plan._browse_reference_files`, `next` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_flow_csv(path: Path, *, offset: float = 0.0) -> None` (L14) | Implementation helper for write flow csv. |
 
 ## `tests/test_pcap_adapter.py`
 

@@ -326,13 +326,20 @@ def _create_batch(
     field_translation_path: Path | None,
     include_metric_ids: list[str] | None,
     exclude_metric_ids: list[str] | None,
-    reference_dataset_paths: list[Path],
+    reference_dataset_paths: list[Path] | None = None,
     service_port_configuration: dict | None,
     output_path: Path,
     force: bool,
     per_dataset_metrics: bool,
     interactive: bool,
+    reference_dataset_path: Path | None = None,
 ) -> Path:
+    reference_dataset_paths = list(reference_dataset_paths or [])
+    if reference_dataset_path is not None:
+        legacy_reference = Path(reference_dataset_path).expanduser().resolve()
+        if all(path.expanduser().resolve() != legacy_reference for path in reference_dataset_paths):
+            reference_dataset_paths.append(legacy_reference)
+
     repo_root = Path.cwd().resolve()
     batch_plan_dir = output_path.parent / f"{plan_id}_batch_plans"
     used_slugs: set[str] = set()
