@@ -1,0 +1,45 @@
+name: Apply multi-reference browser patch
+
+on:
+  push:
+    branches:
+      - feature/multi-reference-browser-selection
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[multi-reference-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/multi-reference-browser-selection
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile patch script
+        run: python -m py_compile scripts/_apply_multi_reference_patch.py
+
+      - name: Apply patch
+        run: python scripts/_apply_multi_reference_patch.py
+
+      - name: Compile changed sources
+        run: python -m py_compile create_plan.py runner/plan_builder.py tests/reference_model_comparison_profile.py run_batch.py
+
+      - name: Commit patch
+        run: |
+          if git diff --quiet -- create_plan.py runner/plan_builder.py tests/reference_model_comparison_profile.py run_batch.py; then
+            echo "Patch already applied."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add create_plan.py runner/plan_builder.py tests/reference_model_comparison_profile.py run_batch.py
+          git commit -m "Add multi-reference comparison matrix and browser selection [multi-reference-applied]"
+          git push origin HEAD:feature/multi-reference-browser-selection
