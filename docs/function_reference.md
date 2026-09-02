@@ -175,13 +175,15 @@ Python symbols defined by `run_batch.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_slug(value: str) -> str` (L17) | function | Internal | Implementation helper for slug. |
-| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L22) | function | Internal | Implementation helper for resolve repo path. |
-| `load_batch(path: Path) -> dict` (L27) | function | Public | Loads batch. |
-| `_read_outcome_status(path: Path) -> str` (L52) | function | Internal | Implementation helper for read outcome status. |
-| `_write_batch_summary(path: Path, payload: dict) -> Path` (L60) | function | Internal | Implementation helper for write batch summary. |
-| `parse_args() -> argparse.Namespace` (L68) | function | Public | Parses args. |
-| `main() -> int` (L117) | function | Public | Implementation helper for main. |
+| `_slug(value: str) -> str` (L24) | function | Internal | Implementation helper for slug. |
+| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L29) | function | Internal | Implementation helper for resolve repo path. |
+| `load_batch(path: Path) -> dict` (L34) | function | Public | Loads batch. |
+| `_read_outcome_status(path: Path) -> str` (L59) | function | Internal | Implementation helper for read outcome status. |
+| `_write_batch_summary(path: Path, payload: dict) -> Path` (L67) | function | Internal | Implementation helper for write batch summary. |
+| `_result_needs_attention(result: dict) -> bool` (L75) | function | Internal | Implementation helper for result needs attention. |
+| `_print_batch_position(*, meta: dict, current_job: int, total_jobs: int, results: list[dict], candidate_name: str, reference_name: str | None) -> None` (L82) | function | Internal | Implementation helper for print batch position. |
+| `parse_args() -> argparse.Namespace` (L106) | function | Public | Parses args. |
+| `main() -> int` (L155) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -194,6 +196,18 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 | `run_once(args)` (L83) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
 | `run_once._load_dataset_for_metric(path: Path)` (L292) | nested function | Internal | Implementation helper for load dataset for metric. |
 | `main()` (L434) | function | Public | Implementation helper for main. |
+
+## `runner/batch_progress.py`
+
+Python symbols defined by `runner/batch_progress.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_as_int(value: object, default: int = 0) -> int` (L10) | function | Internal | Implementation helper for as int. |
+| `render_batch_progress(completed: int, total: int, width: int = 30) -> str` (L17) | function | Public | Return a compact completion bar for a sequential dataset batch. |
+| `build_batch_progress_lines(*, batch_name: str, batch_id: str, current_job: int, total_jobs: int, completed_jobs: int, failed_jobs: int, candidate_name: str, reference_name: str | None = None) -> list[str]` (L28) | function | Public | Build the persistent batch context shown above a child run's metric progress. |
+| `build_batch_child_environment(base_environment: Mapping[str, str] | None, *, batch_name: str, batch_id: str, current_job: int, total_jobs: int, completed_jobs: int, failed_jobs: int, candidate_name: str, reference_name: str | None = None) -> dict[str, str]` (L66) | function | Public | Return an environment carrying batch progress into a child run_plan process. |
+| `batch_progress_lines_from_environment(environment: Mapping[str, str] | None = None) -> list[str]` (L95) | function | Public | Read optional batch context from the environment for a child run dashboard. |
 
 ## `runner/batch_reports.py`
 
@@ -630,19 +644,19 @@ CLI parsing, headers, signal handlers, outcome construction, and atomic writes.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_launch_tui_entry(args)` (L22) | function | Internal | Implementation helper for launch tui entry. |
-| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L31) | function | Public | Builds outcome. |
-| `_open_atomic_text_file(destination: Path) -> tuple[int, Path]` (L74) | function | Internal | Implementation helper for open atomic text file. |
-| `write_outcome(output_path: Path, outcome: dict) -> Path` (L84) | function | Public | Write the authoritative JSON outcome and its human-readable Markdown companion. Both files are fully written and fsynced before either destination is replaced. The summary is published first and the JSON outcome second, so publication of a new JSON outcome implies that its companion summary was already published. Returns the companion summary path. |
-| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L124) | function | Public | Detects IP fields. |
-| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L130) | function | Public | Builds title box lines. |
-| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L142) | function | Public | Builds base header lines. |
-| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L165) | function | Public | Configures signal handlers. |
-| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L166) | nested function | Internal | Implementation helper for handle sigint. |
-| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L172) | nested function | Internal | Implementation helper for handle sigusr1. |
-| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L176) | nested function | Internal | Implementation helper for handle sigusr2. |
-| `parse_run_plan_args() -> argparse.Namespace` (L187) | function | Public | Parses run plan args. |
-| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L273) | function | Public | Updates live header. |
+| `_launch_tui_entry(args)` (L23) | function | Internal | Implementation helper for launch tui entry. |
+| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L32) | function | Public | Builds outcome. |
+| `_open_atomic_text_file(destination: Path) -> tuple[int, Path]` (L75) | function | Internal | Implementation helper for open atomic text file. |
+| `write_outcome(output_path: Path, outcome: dict) -> Path` (L85) | function | Public | Write the authoritative JSON outcome and its human-readable Markdown companion. Both files are fully written and fsynced before either destination is replaced. The summary is published first and the JSON outcome second, so publication of a new JSON outcome implies that its companion summary was already published. Returns the companion summary path. |
+| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L125) | function | Public | Detects IP fields. |
+| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L131) | function | Public | Builds title box lines. |
+| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L143) | function | Public | Builds base header lines. |
+| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L166) | function | Public | Configures signal handlers. |
+| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L167) | nested function | Internal | Implementation helper for handle sigint. |
+| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L173) | nested function | Internal | Implementation helper for handle sigusr1. |
+| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L177) | nested function | Internal | Implementation helper for handle sigusr2. |
+| `parse_run_plan_args() -> argparse.Namespace` (L188) | function | Public | Parses run plan args. |
+| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L274) | function | Public | Updates live header. |
 
 ## `runner/run_plan_serial.py`
 

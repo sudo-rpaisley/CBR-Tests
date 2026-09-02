@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from runner.batch_progress import batch_progress_lines_from_environment
 from runner.human_summary import default_human_summary_path, format_human_summary
 from runner.progress import set_live_header
 from runner.taxonomy import build_plan_taxonomy, build_result_taxonomy, build_test_results_taxonomy
@@ -275,4 +276,5 @@ def update_live_header(
     status_lines: list[str] | None = None,
     width: int = 108,
 ) -> None:
-    set_live_header(build_title_box_lines(lines, status_lines, width=width))
+    batch_lines = batch_progress_lines_from_environment()
+    set_live_header(build_title_box_lines([*batch_lines, *lines], status_lines, width=width))
