@@ -500,22 +500,27 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.list_tests:
+    if getattr(args, "list_tests", False):
         _list_tests()
         return 0
-    if args.check:
+    if getattr(args, "check", None):
         return _check_plan(Path(args.check).expanduser().resolve())
 
-    name = _prompt(args.name, "Plan name", required=True)
+    name = _prompt(getattr(args, "name", None), "Plan name", required=True)
     assert name is not None
     plan_id = _slug(name)
-    if args.plan_id and args.plan_id != plan_id:
+    supplied_plan_id = getattr(args, "plan_id", None)
+    if supplied_plan_id and supplied_plan_id != plan_id:
         raise ValueError(
             f"Plan ID is derived from the plan name. '{name}' becomes '{plan_id}', "
-            f"but --plan-id was '{args.plan_id}'. Remove --plan-id or make it match."
+            f"but --plan-id was '{supplied_plan_id}'. Remove --plan-id or make it match."
         )
 
-    dataset_values = list(args.dataset or [])
+    dataset_arg = getattr(args, "dataset", None)
+    if isinstance(dataset_arg, (str, Path)):
+        dataset_values = [str(dataset_arg)]
+    else:
+        dataset_values = list(dataset_arg or [])
     if not dataset_values:
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             raise ValueError("At least one --dataset path is required in non-interactive mode.")
@@ -530,12 +535,14 @@ def main() -> int:
 
     all_pcap = all(path.suffix.lower() in PCAP_SUFFIXES for path in dataset_paths)
     any_pcap = any(path.suffix.lower() in PCAP_SUFFIXES for path in dataset_paths)
-    if any_pcap and not all_pcap and (args.single_service or args.reference_dataset):
+    single_service_arg = getattr(args, "single_service", None)
+    reference_arg = getattr(args, "reference_dataset", None)
+    if any_pcap and not all_pcap and (single_service_arg or reference_arg):
         raise ValueError(
             "PCAP-specific reference/service configuration cannot be shared across a mixed PCAP/tabular batch."
         )
 
-    reference_value = getattr(args, "reference_dataset", None)
+    reference_value = reference_arg
     if all_pcap and not reference_value and sys.stdin.isatty() and sys.stdout.isatty():
         answer = input("\nAdd one independent reference PCAP for reference-comparison metrics? [y/N] ").strip().lower()
         if answer in {"y", "yes"}:
@@ -544,7 +551,7 @@ def main() -> int:
                 print("Reference selection cancelled; reference-comparison metrics remain excluded.")
     reference_dataset_path = Path(reference_value).expanduser().resolve() if reference_value else None
 
-    single_service = getattr(args, "single_service", None)
+    single_service = single_service_arg
     expected_ports = _parse_expected_ports(getattr(args, "expected_service_ports", None))
     if bool(single_service) != bool(expected_ports):
         raise ValueError("--single-service and --expected-service-ports must be supplied together.")
@@ -567,21 +574,27 @@ def main() -> int:
             "population_mode": "all_rows",
         }
 
-    field_translation_path = Path(args.field_translation) if args.field_translation else None
-    description = args.description or "Automatically generated CBR-Tests plan."
-    include_metric_ids = _split_metric_args(args.include)
-    exclude_metric_ids = _split_metric_args(args.exclude)
+    field_translation_value = getattr(args, "field_translation", None)
+    field_translation_path = Path(field_translation_value) if field_translation_value else None
+    description = getattr(args, "description", None) or "Automatically generated CBR-Tests plan."
+    include_metric_ids = _split_metric_args(getattr(args, "include", None))
+    exclude_metric_ids = _split_metric_args(getattr(args, "exclude", None))
     interactive = sys.stdin.isatty()
+    per_dataset_metrics = bool(getattr(args, "per_dataset_metrics", False))
+    force = bool(getattr(args, "force", False))
+    output_value = getattr(args, "output", None)
 
     if len(dataset_paths) > 1:
-        output_path = Path(args.output) if args.output else Path("plans") / f"{plan_id}_batch.json"
+        output_path = Path(output_value) if output_value else Path("plans") / f"{plan_id}_batch.json"
         print(f"\nBatch ID:     {plan_id}")
         print(f"Datasets:     {len(dataset_paths)}")
         for index, path in enumerate(dataset_paths, start=1):
             print(f"  {index:>2}. {path}")
         if reference_dataset_path:
             print(f"Reference:    {reference_dataset_path}")
-        print(f"Metric policy:{' per-dataset' if args.per_dataset_metrics else ' common across all datasets'}")
+        print(
+            f"Metric policy:{' per-dataset' if per_dataset_metrics else ' common across all datasets'}"
+        )
         print(f"Output path:  {output_path}")
         try:
             _create_batch(
@@ -595,8 +608,8 @@ def main() -> int:
                 reference_dataset_path=reference_dataset_path,
                 service_port_configuration=service_port_configuration,
                 output_path=output_path,
-                force=args.force,
-                per_dataset_metrics=args.per_dataset_metrics,
+                force=force,
+                per_dataset_metrics=per_dataset_metrics,
                 interactive=interactive,
             )
         except KeyboardInterrupt as exc:
@@ -605,7 +618,7 @@ def main() -> int:
         return 0
 
     dataset_path = dataset_paths[0]
-    output_path = Path(args.output) if args.output else Path("plans") / f"{plan_id}_plan.json"
+    output_path = Path(output_value) if output_value else Path("plans") / f"{plan_id}_plan.json"
 
     if sys.stdout.isatty():
         print(f"\nPlan ID:     {plan_id}")
@@ -618,7 +631,7 @@ def main() -> int:
                 f"{service_port_configuration['expected_ports']} (explicit single-service capture)"
             )
         print(f"Output path: {output_path}")
-        if output_path.exists() and not args.force:
+        if output_path.exists() and not force:
             print("Output status: existing plan (overwrite confirmation will be requested before saving)")
 
     plan, report = _build_single_plan(
@@ -640,7 +653,7 @@ def main() -> int:
             print("Plan not saved.")
             return 0
 
-    overwrite = args.force
+    overwrite = force
     if output_path.exists() and not overwrite and interactive:
         overwrite = _confirm_overwrite(output_path)
         if not overwrite:
