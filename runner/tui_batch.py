@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import curses
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 import subprocess
 import sys
@@ -17,9 +18,21 @@ from runner.tui import (
 )
 
 
+SUPPORTED_DATASET_SUFFIXES = frozenset({".csv", ".tsv", ".xlsx", ".xls", ".pcap", ".pcapng"})
+
+
+def is_supported_dataset_path(path: Path | str) -> bool:
+    return Path(path).suffix.lower() in SUPPORTED_DATASET_SUFFIXES
+
+
+def default_batch_run_id(now: datetime | None = None) -> str:
+    return (now or datetime.now()).strftime("%Y%m%d-%H%M%S")
+
+
 @dataclass
 class BatchTuiSpec:
     name: str
+    run_id: str
     datasets: list[str]
     references: list[str]
     per_dataset_metrics: bool = False
@@ -33,6 +46,7 @@ class BatchTuiSpec:
     def as_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
+            "run_id": self.run_id,
             "datasets": list(self.datasets),
             "references": list(self.references),
             "per_dataset_metrics": self.per_dataset_metrics,
@@ -55,11 +69,21 @@ def comparison_job_count(datasets: list[str], references: list[str]) -> int:
     return sum(candidate != reference for candidate in candidate_paths for reference in reference_paths)
 
 
+def _validate_dataset_suffixes(values: list[str], *, label: str) -> None:
+    invalid = [value for value in values if not is_supported_dataset_path(value)]
+    if invalid:
+        supported = ", ".join(sorted(SUPPORTED_DATASET_SUFFIXES))
+        raise ValueError(
+            f"Unsupported {label} dataset type: {invalid[0]}. Supported extensions: {supported}"
+        )
+
+
 def build_batch_spec(
     *,
     name: str,
     datasets: list[str],
     references: list[str] | None = None,
+    run_id: str | None = None,
     per_dataset_metrics: bool = False,
     workers: int | None = None,
     display: str = "compact",
@@ -73,10 +97,15 @@ def build_batch_spec(
     cleaned_name = str(name).strip()
     if not cleaned_name:
         raise ValueError("Batch name is required.")
+    cleaned_run_id = str(run_id or default_batch_run_id()).strip()
+    if not cleaned_run_id:
+        raise ValueError("Batch run ID is required.")
     candidates = list(dict.fromkeys(str(value).strip() for value in datasets if str(value).strip()))
     refs = list(dict.fromkeys(str(value).strip() for value in (references or []) if str(value).strip()))
     if not candidates:
         raise ValueError("Select at least one candidate dataset.")
+    _validate_dataset_suffixes(candidates, label="candidate")
+    _validate_dataset_suffixes(refs, label="reference")
     if display not in DISPLAY_MODES:
         raise ValueError(f"Unknown display mode: {display}")
     if workers is not None and int(workers) < 1:
@@ -85,6 +114,7 @@ def build_batch_spec(
         raise ValueError("Every selected comparison is a self-comparison. Select an independent reference dataset.")
     return BatchTuiSpec(
         name=cleaned_name,
+        run_id=cleaned_run_id,
         datasets=candidates,
         references=refs,
         per_dataset_metrics=bool(per_dataset_metrics),
@@ -117,13 +147,27 @@ def _toggle_selected(path: Path, selected: set[Path], ordered: list[str], root: 
     display = _display_path(resolved, root)
     if resolved in selected:
         selected.remove(resolved)
-        ordered[:] = [value for value in ordered if Path(value).name != Path(display).name or value != display]
         if display in ordered:
             ordered.remove(display)
     else:
         selected.add(resolved)
         if display not in ordered:
             ordered.append(display)
+
+
+def _browser_entries(current_dir: Path, root: Path):
+    return [
+        entry
+        for entry in list_file_browser_entries(current_dir, root)
+        if entry.is_dir or is_supported_dataset_path(entry.path)
+    ]
+
+
+def _typed_browser_path(value: str, *, current_dir: Path, root: Path) -> Path:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = current_dir / path
+    return path.resolve()
 
 
 def _multi_file_browser(
@@ -139,12 +183,15 @@ def _multi_file_browser(
     current_dir = _initial_browser_directory(str(initial_dir), root)
     ordered, selected_paths = _normalise_initial_paths(initial_values, root)
     selected_index = 0
-    message = "Space toggle  Enter open/toggle  d done  c clear  Backspace parent  q cancel"
+    default_message = (
+        "Space toggle  Enter open/toggle  d done  c clear  e path  R repo  H home  M /media  q cancel"
+    )
+    message = default_message
 
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
-        entries = list_file_browser_entries(current_dir, root)
+        entries = _browser_entries(current_dir, root)
         if selected_index >= len(entries):
             selected_index = max(0, len(entries) - 1)
 
@@ -164,7 +211,7 @@ def _multi_file_browser(
             attr = curses.A_REVERSE if index == selected_index else curses.A_NORMAL
             stdscr.addstr(row, 0, f"{cursor} {checked} {entry.label}"[: width - 1], attr)
 
-        footer = f"{len(ordered)} selected"
+        footer = f"{len(ordered)} selected | files: {', '.join(sorted(SUPPORTED_DATASET_SUFFIXES))}"
         if ordered:
             preview = ", ".join(Path(value).name for value in ordered[-3:])
             footer += f" | latest: {preview}"
@@ -176,14 +223,54 @@ def _multi_file_browser(
         if key in (ord("d"), ord("D")):
             if ordered or allow_empty:
                 return ordered
-            message = "Select at least one file before pressing d."
+            message = "Select at least one supported dataset before pressing d."
             continue
         if key in (ord("c"), ord("C")):
             ordered.clear()
             selected_paths.clear()
+            message = default_message
+            continue
+        if key == ord("R"):
+            current_dir = root
+            selected_index = 0
+            message = default_message
+            continue
+        if key == ord("H"):
+            current_dir = Path.home().expanduser().resolve()
+            selected_index = 0
+            message = default_message
+            continue
+        if key == ord("M"):
+            media = Path("/media")
+            if media.is_dir():
+                current_dir = media.resolve()
+                selected_index = 0
+                message = default_message
+            else:
+                message = "/media is not available on this system."
+            continue
+        if key == ord("e"):
+            typed = _edit_text(stdscr, min(height - 2, 4), 0, str(current_dir), max(8, width - 1)).strip()
+            if not typed:
+                message = default_message
+                continue
+            target = _typed_browser_path(typed, current_dir=current_dir, root=root)
+            if target.is_dir():
+                current_dir = target
+                selected_index = 0
+                message = default_message
+            elif target.is_file() and is_supported_dataset_path(target):
+                _toggle_selected(target, selected_paths, ordered, root)
+                current_dir = target.parent
+                selected_index = 0
+                message = f"Selected: {target.name}"
+            elif target.is_file():
+                message = f"Unsupported dataset type: {target.suffix or '(no extension)'}"
+            else:
+                message = f"Path does not exist: {target}"
             continue
         if key in (curses.KEY_BACKSPACE, 127, 8):
-            if current_dir != root and current_dir.parent != current_dir:
+            if current_dir.parent != current_dir:
                 current_dir = current_dir.parent.resolve()
                 selected_index = 0
             continue
@@ -199,12 +286,14 @@ def _multi_file_browser(
         entry = entries[selected_index]
         if key == ord(" ") and not entry.is_dir:
             _toggle_selected(entry.path, selected_paths, ordered, root)
+            message = default_message
         elif key in (10, 13):
             if entry.is_dir:
                 current_dir = entry.path.resolve()
                 selected_index = 0
             else:
                 _toggle_selected(entry.path, selected_paths, ordered, root)
+            message = default_message
 
 
 def _format_list(values: list[str]) -> str:
@@ -274,14 +363,15 @@ def _batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str
             marker = ">" if row - 4 == selected else " "
             attr = curses.A_REVERSE if row - 4 == selected else curses.A_NORMAL
             line = f"{marker} {labels[key_name]:28} {values[key_name]}"
-            if row < height - 5:
+            if row < height - 6:
                 stdscr.addstr(row, 0, line[: width - 1], attr)
 
-        summary_row = max(4, height - 4)
+        summary_row = max(4, height - 5)
         stdscr.hline(summary_row, 0, curses.ACS_HLINE, max(1, width - 1))
-        stdscr.addstr(summary_row + 1, 0, f"Candidates: {len(candidates)} | References: {len(references)} | Jobs: {jobs}"[: width - 1], curses.A_BOLD)
-        stdscr.addstr(summary_row + 2, 0, "Batch mode automatically builds per-job plans using all structurally runnable tests."[: width - 1])
-        stdscr.addstr(summary_row + 3, 0, "Reference self-comparisons are excluded automatically."[: width - 1])
+        stdscr.addstr(summary_row + 1, 0, f"Run ID: {state.get('run_id')}"[: width - 1], curses.A_BOLD)
+        stdscr.addstr(summary_row + 2, 0, f"Candidates: {len(candidates)} | References: {len(references)} | Jobs: {jobs}"[: width - 1], curses.A_BOLD)
+        stdscr.addstr(summary_row + 3, 0, "Batch mode automatically builds per-job plans using all structurally runnable tests."[: width - 1])
+        stdscr.addstr(summary_row + 4, 0, "Reference self-comparisons are excluded automatically."[: width - 1])
 
         key = stdscr.getch()
         if key in (ord("q"), ord("Q"), 27):
@@ -290,6 +380,7 @@ def _batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str
             try:
                 return build_batch_spec(
                     name=str(state.get("name") or ""),
+                    run_id=str(state.get("run_id") or ""),
                     datasets=candidates,
                     references=references,
                     per_dataset_metrics=bool(state.get("per_dataset_metrics")),
@@ -378,6 +469,7 @@ def launch_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]:
         datasets = []
     initial = {
         "name": "comparison-batch",
+        "run_id": default_batch_run_id(),
         "datasets": datasets,
         "references": [],
         "per_dataset_metrics": False,
@@ -402,6 +494,7 @@ def execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> d
     root = (repo_root or Path.cwd()).expanduser().resolve()
     validated = build_batch_spec(
         name=str(spec.get("name") or ""),
+        run_id=str(spec.get("run_id") or default_batch_run_id()),
         datasets=list(spec.get("datasets") or []),
         references=list(spec.get("references") or []),
         per_dataset_metrics=bool(spec.get("per_dataset_metrics")),
@@ -412,7 +505,7 @@ def execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> d
         refresh_dataset_summary=bool(spec.get("refresh_dataset_summary")),
         fail_fast=bool(spec.get("fail_fast")),
     )
-    plan_id = _slug(validated["name"])
+    plan_id = f"{_slug(validated['name'])}-{validated['run_id']}"
     dataset_paths = _deduplicate_dataset_values(validated["datasets"])
     reference_paths = _deduplicate_dataset_values(validated["references"])
     batch_path = root / "plans" / f"{plan_id}_batch.json"
@@ -420,7 +513,7 @@ def execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> d
     _create_batch(
         plan_id=plan_id,
         name=validated["name"],
-        description="Batch created from the CBR Test Runner TUI.",
+        description=f"Batch created from the CBR Test Runner TUI. Run ID: {validated['run_id']}.",
         dataset_paths=dataset_paths,
         field_translation_path=None,
         include_metric_ids=None,
@@ -458,6 +551,7 @@ def execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> d
         "status": "completed" if completed.returncode == 0 else "needs_attention",
         "process_return_code": completed.returncode,
         "batch_path": str(batch_path),
+        "run_id": validated["run_id"],
         "candidate_count": len(dataset_paths),
         "reference_count": len(reference_paths),
         "job_count": comparison_job_count(validated["datasets"], validated["references"]),
