@@ -10,7 +10,7 @@ Run:
 python create_plan.py
 ```
 
-When a file is needed, the interactive builder opens the repository file browser. Candidate datasets and reference datasets are selected by browsing; the interactive workflow does not require typing their paths.
+When a file is needed, the interactive builder opens the repository file browser. Candidate datasets and reference datasets are selected by browsing; the interactive workflow does not require typing their paths. Existing field-translation sidecars are discovered automatically, so the normal interactive workflow does not ask users to type a translation-file path either.
 
 After selecting a candidate dataset, choose whether to add another. The builder then asks whether reference datasets should be added. Reference selection uses the same browser and can be repeated.
 
