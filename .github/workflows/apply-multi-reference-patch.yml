@@ -23,6 +23,19 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Repair temporary patch script tail
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/_apply_multi_reference_patch.py')
+          text = path.read_text(encoding='utf-8')
+          bad = 'def main() -> None:\\n    patch_create_plan()\\n    patch_plan_builder()\\n    patch_reference_loader()\\n    patch_run_batch()\\n\\n\\nif __name__ == "__main__":\\n    main()\\n'
+          good = 'def main() -> None:\n    patch_create_plan()\n    patch_plan_builder()\n    patch_reference_loader()\n    patch_run_batch()\n\n\nif __name__ == "__main__":\n    main()\n'
+          if bad not in text:
+              raise SystemExit('Expected temporary patch-script tail was not found')
+          path.write_text(text.replace(bad, good, 1), encoding='utf-8')
+          PY
+
       - name: Compile patch script
         run: python -m py_compile scripts/_apply_multi_reference_patch.py
 
@@ -34,12 +47,12 @@ jobs:
 
       - name: Commit patch
         run: |
-          if git diff --quiet -- create_plan.py runner/plan_builder.py tests/reference_model_comparison_profile.py run_batch.py; then
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/_apply_multi_reference_patch.py create_plan.py runner/plan_builder.py tests/reference_model_comparison_profile.py run_batch.py
+          if git diff --cached --quiet; then
             echo "Patch already applied."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add create_plan.py runner/plan_builder.py tests/reference_model_comparison_profile.py run_batch.py
           git commit -m "Add multi-reference comparison matrix and browser selection [multi-reference-applied]"
           git push origin HEAD:feature/multi-reference-browser-selection
