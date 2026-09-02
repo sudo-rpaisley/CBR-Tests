@@ -175,13 +175,13 @@ Python symbols defined by `run_batch.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_slug(value: str) -> str` (L15) | function | Internal | Implementation helper for slug. |
-| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L20) | function | Internal | Implementation helper for resolve repo path. |
-| `load_batch(path: Path) -> dict` (L25) | function | Public | Loads batch. |
-| `_read_outcome_status(path: Path) -> str` (L50) | function | Internal | Implementation helper for read outcome status. |
-| `_write_batch_summary(path: Path, payload: dict) -> Path` (L58) | function | Internal | Implementation helper for write batch summary. |
-| `parse_args() -> argparse.Namespace` (L66) | function | Public | Parses args. |
-| `main() -> int` (L115) | function | Public | Implementation helper for main. |
+| `_slug(value: str) -> str` (L17) | function | Internal | Implementation helper for slug. |
+| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L22) | function | Internal | Implementation helper for resolve repo path. |
+| `load_batch(path: Path) -> dict` (L27) | function | Public | Loads batch. |
+| `_read_outcome_status(path: Path) -> str` (L52) | function | Internal | Implementation helper for read outcome status. |
+| `_write_batch_summary(path: Path, payload: dict) -> Path` (L60) | function | Internal | Implementation helper for write batch summary. |
+| `parse_args() -> argparse.Namespace` (L68) | function | Public | Parses args. |
+| `main() -> int` (L117) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -194,6 +194,22 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 | `run_once(args)` (L83) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
 | `run_once._load_dataset_for_metric(path: Path)` (L292) | nested function | Internal | Implementation helper for load dataset for metric. |
 | `main()` (L434) | function | Public | Implementation helper for main. |
+
+## `runner/batch_reports.py`
+
+Python symbols defined by `runner/batch_reports.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_load_json(path: Path) -> dict | None` (L12) | function | Internal | Implementation helper for load JSON. |
+| `_is_scalar(value: Any) -> bool` (L20) | function | Internal | Implementation helper for is scalar. |
+| `_metric_record_map(outcome: dict) -> dict[str, dict]` (L24) | function | Internal | Implementation helper for metric record map. |
+| `extract_primary_metric_value(metric_id: str, test_result: Any) -> tuple[Any, Any, dict]` (L35) | function | Public | Return a stable scalar comparison value, optional max value and summary. Reference-comparison implementations expose either ``summary[metric_id]`` or ``summary['mean_' + metric_id]`` as their batch-comparable scalar. The latter is used by feature-wise metrics that also retain per-field detail. |
+| `_unique_labels(paths: list[str]) -> dict[str, str]` (L71) | function | Internal | Create compact labels while disambiguating duplicate file names. |
+| `_write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> Path` (L93) | function | Internal | Implementation helper for write csv. |
+| `_format_markdown_value(value: Any) -> str` (L102) | function | Internal | Implementation helper for format markdown value. |
+| `_markdown_table(row_header: str, row_labels: list[str], column_labels: list[str], cells: dict[tuple[str, str], str]) -> list[str]` (L110) | function | Internal | Implementation helper for markdown table. |
+| `write_comparison_reports(*, output_dir: Path, timestamp: str, batch_meta: dict, results: list[dict]) -> dict[str, Any]` (L121) | function | Public | Write human-readable and analysis-friendly candidate/reference reports. Only jobs with an explicit reference dataset participate. Existing JSON outcomes remain authoritative; these files are denormalised views intended for comparison, spreadsheets and statistical analysis. |
 
 ## `runner/contract.py`
 

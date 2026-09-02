@@ -8,6 +8,8 @@ import re
 import subprocess
 import sys
 
+from runner.batch_reports import write_comparison_reports
+
 
 BATCH_SCHEMA_VERSION = 1
 
@@ -137,7 +139,7 @@ def main() -> int:
     if meta.get("reference_dataset_count"):
         print(f"Reference datasets: {meta.get('reference_dataset_count')}")
     print(f"Metric policy: {meta.get('metric_policy', 'unspecified')}")
-    print(f"Execution: sequential")
+    print("Execution: sequential")
     print(f"Outputs: {output_dir}")
     print("=" * 88)
 
@@ -222,6 +224,20 @@ def main() -> int:
         if result["process_return_code"] != 0
         or result["outcome_status"] in {"failed", "error", "cancelled", "not_written"}
     ]
+
+    comparison_reports: dict = {}
+    comparison_report_error: str | None = None
+    try:
+        comparison_reports = write_comparison_reports(
+            output_dir=output_dir,
+            timestamp=timestamp,
+            batch_meta=meta,
+            results=results,
+        )
+    except Exception as exc:  # Supplementary reporting must never hide the authoritative batch result.
+        comparison_report_error = str(exc)
+        print(f"WARNING: Comparison CSV/Markdown reports could not be generated: {exc}")
+
     summary = {
         "schema_version": 1,
         "batch_id": meta["batch_id"],
@@ -234,7 +250,11 @@ def main() -> int:
         "failed_job_count": len(failed_jobs),
         "status": "completed" if not failed_jobs and len(results) == len(jobs) else "needs_attention",
         "results": results,
+        "comparison_reports": comparison_reports,
     }
+    if comparison_report_error:
+        summary["comparison_report_error"] = comparison_report_error
+
     summary_path = output_dir / f"batch_summary_{timestamp}.json"
     _write_batch_summary(summary_path, summary)
 
@@ -244,6 +264,11 @@ def main() -> int:
     print(f"Completed jobs: {len(results)}/{len(jobs)}")
     print(f"Jobs needing attention: {len(failed_jobs)}")
     print(f"Batch summary: {summary_path}")
+    if comparison_reports:
+        print(f"Comparison overview CSV: {comparison_reports['comparison_overview_csv']}")
+        print(f"Comparison long CSV: {comparison_reports['comparison_long_csv']}")
+        print(f"Comparison Markdown: {comparison_reports['comparison_markdown']}")
+        print(f"Metric matrices: {comparison_reports['comparison_matrices_directory']}")
     print("=" * 88)
     return 1 if failed_jobs or len(results) != len(jobs) else 0
 

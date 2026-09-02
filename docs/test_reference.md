@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **188 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **191 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -26,6 +26,25 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_metric_ids(plan: dict) -> set[str]` (L11) | Implementation helper for metric ids. |
+
+## `tests/test_batch_reports.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_extract_primary_metric_value_prefers_exact_then_mean_summary()` (L60) | Verifies that extract primary metric value prefers exact then mean summary. | `extract_primary_metric_value` |
+| `test_write_comparison_reports_creates_wide_long_and_metric_matrices(tmp_path)` (L78) | Verifies that write comparison reports creates wide long and metric matrices. | `write_comparison_reports`, `_read_csv`, `next`, `_write_outcome`, `results.append` |
+| `test_write_comparison_reports_returns_empty_for_non_reference_batch(tmp_path)` (L158) | Verifies that write comparison reports returns empty for non reference batch. | `write_comparison_reports` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_outcome(path: Path, *, ks: float, protocol: float, result_status: str = 'pass') -> None` (L12) | Implementation helper for write outcome. |
+| `_read_csv(path: Path) -> list[dict[str, str]]` (L55) | Implementation helper for read csv. |
 
 ## `tests/test_correctness_reproducibility.py`
 
