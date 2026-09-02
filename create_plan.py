@@ -83,6 +83,28 @@ def _browse_dataset_files() -> list[str]:
             return selected
 
 
+def _browse_reference_files() -> list[str]:
+    """Interactively collect one or more independent reference datasets."""
+
+    selected: list[str] = []
+    while True:
+        value = _browse_dataset_file()
+        if value is None:
+            if not selected:
+                return []
+            print("Reference selection cancelled; keeping the references already selected.")
+            return selected
+        if value not in selected:
+            selected.append(value)
+            print(f"Selected reference {len(selected)}: {value}")
+        else:
+            print(f"Reference already selected: {value}")
+
+        answer = input("Add another reference dataset? [y/N] ").strip().lower()
+        if answer not in {"y", "yes"}:
+            return selected
+
+
 def _prompt(
     value: str | None,
     label: str,
@@ -304,7 +326,7 @@ def _create_batch(
     field_translation_path: Path | None,
     include_metric_ids: list[str] | None,
     exclude_metric_ids: list[str] | None,
-    reference_dataset_path: Path | None,
+    reference_dataset_paths: list[Path],
     service_port_configuration: dict | None,
     output_path: Path,
     force: bool,
@@ -316,12 +338,41 @@ def _create_batch(
     used_slugs: set[str] = set()
     generated: list[dict] = []
 
-    print(f"\nBuilding batch plan for {len(dataset_paths)} datasets")
-    for index, dataset_path in enumerate(dataset_paths, start=1):
-        slug = _job_slug(dataset_path, index, used_slugs)
+    combinations: list[tuple[Path, Path | None]] = []
+    if reference_dataset_paths:
+        for dataset_path in dataset_paths:
+            for reference_path in reference_dataset_paths:
+                if dataset_path.resolve() == reference_path.resolve():
+                    print(f"Skipping self-comparison: {dataset_path}")
+                    continue
+                combinations.append((dataset_path, reference_path))
+    else:
+        combinations = [(dataset_path, None) for dataset_path in dataset_paths]
+
+    if not combinations:
+        raise ValueError("No runnable candidate/reference combinations remain after excluding self-comparisons.")
+
+    print(
+        f"\nBuilding batch plan for {len(dataset_paths)} candidate dataset(s), "
+        f"{len(reference_dataset_paths)} reference dataset(s), and {len(combinations)} job(s)"
+    )
+    for index, (dataset_path, reference_path) in enumerate(combinations, start=1):
+        base_slug = _job_slug(dataset_path, index, used_slugs)
+        if reference_path is not None:
+            reference_slug = _slug(reference_path.stem)
+            slug = f"{base_slug}-vs-{reference_slug}"
+            if slug in used_slugs:
+                slug = f"{slug}-{index:02d}"
+            used_slugs.add(slug)
+        else:
+            slug = base_slug
         child_plan_id = f"{plan_id}-{slug}"
         child_name = f"{name} — {dataset_path.name}"
-        print(f"\n[{index}/{len(dataset_paths)}] Preflighting {dataset_path}")
+        if reference_path is not None:
+            child_name += f" vs {reference_path.name}"
+        print(f"\n[{index}/{len(combinations)}] Preflighting {dataset_path}")
+        if reference_path is not None:
+            print(f"    Reference: {reference_path}")
         plan, report = _build_single_plan(
             plan_id=child_plan_id,
             name=child_name,
@@ -330,13 +381,14 @@ def _create_batch(
             field_translation_path=field_translation_path,
             include_metric_ids=include_metric_ids,
             exclude_metric_ids=exclude_metric_ids,
-            reference_dataset_path=reference_dataset_path,
+            reference_dataset_path=reference_path,
             service_port_configuration=service_port_configuration,
         )
         _print_report(report)
         generated.append(
             {
                 "dataset_path": dataset_path,
+                "reference_dataset_path": reference_path,
                 "slug": slug,
                 "plan": plan,
                 "report": report,
@@ -353,17 +405,17 @@ def _create_batch(
         common_metric_ids = set.intersection(*metric_sets) if metric_sets else set()
         if not common_metric_ids:
             raise ValueError(
-                "No metric is runnable across every selected dataset. "
+                "No metric is runnable across every selected candidate/reference job. "
                 "Resolve field mappings, choose more compatible datasets, or use --per-dataset-metrics."
             )
         print(
             f"\nBatch common metric set: {len(common_metric_ids)} tests runnable across all "
-            f"{len(dataset_paths)} datasets."
+            f"{len(generated)} jobs."
         )
         for item in generated:
             _filter_plan_to_metric_ids(item["plan"], common_metric_ids)
     else:
-        print("\nBatch metric policy: each dataset keeps its own runnable metric set.")
+        print("\nBatch metric policy: each candidate/reference job keeps its own runnable metric set.")
 
     if interactive:
         answer = input("\nSave this dataset batch and its generated plans? [Y/n] ").strip().lower()
@@ -390,6 +442,7 @@ def _create_batch(
 
     jobs = []
     for index, item in enumerate(generated, start=1):
+        reference_path = item["reference_dataset_path"]
         item["plan"].setdefault("plan_creation", {})["batch"] = {
             "batch_id": plan_id,
             "batch_name": name,
@@ -404,6 +457,9 @@ def _create_batch(
             {
                 "job_id": f"{plan_id}-{index:02d}-{item['slug']}",
                 "dataset_path": str(item["dataset_path"].resolve()),
+                "reference_dataset_path": (
+                    str(reference_path.resolve()) if reference_path is not None else None
+                ),
                 "plan_path": _portable_path(item["plan_path"], repo_root),
                 "runnable_metric_count": len(item["plan"].get("metrics", [])),
                 "metric_ids": [metric["metric_id"] for metric in item["plan"].get("metrics", [])],
@@ -419,18 +475,24 @@ def _create_batch(
             "created_at": datetime.now(timezone.utc).isoformat(),
             "execution_mode": "sequential",
             "dataset_count": len(dataset_paths),
+            "reference_dataset_count": len(reference_dataset_paths),
+            "job_count": len(jobs),
+            "comparison_mode": "candidate_reference_matrix" if reference_dataset_paths else "dataset_batch",
             "metric_policy": (
                 "per_dataset" if per_dataset_metrics else "common_across_all_datasets"
             ),
         },
         "output_directory": str(Path("outcomes") / plan_id),
         "common_metric_ids": sorted(common_metric_ids) if common_metric_ids is not None else None,
-        "reference_dataset": str(reference_dataset_path.resolve()) if reference_dataset_path else None,
+        "reference_datasets": [str(path.resolve()) for path in reference_dataset_paths],
+        "reference_dataset": (
+            str(reference_dataset_paths[0].resolve()) if len(reference_dataset_paths) == 1 else None
+        ),
         "jobs": jobs,
     }
     written = _write_json_atomic(output_path, batch_payload, overwrite=overwrite)
     print(f"\nBatch manifest written: {written}")
-    print(f"Generated per-dataset plans: {batch_plan_dir.resolve()}")
+    print(f"Generated per-job plans: {batch_plan_dir.resolve()}")
     print(f"Run the batch with: python run_batch.py --batch {written}")
     return written
 
@@ -465,7 +527,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--reference-dataset",
-        help="Optional independent reference dataset. Raw-PCAP reference comparison requires a PCAP/PCAPNG reference.",
+        action="append",
+        help=(
+            "Optional independent reference dataset. Repeat --reference-dataset to compare every selected "
+            "candidate against several references. Interactive mode uses the file browser instead of typed paths."
+        ),
     )
     parser.add_argument(
         "--single-service",
@@ -542,14 +608,25 @@ def main() -> int:
             "PCAP-specific reference/service configuration cannot be shared across a mixed PCAP/tabular batch."
         )
 
-    reference_value = reference_arg
-    if all_pcap and not reference_value and sys.stdin.isatty() and sys.stdout.isatty():
-        answer = input("\nAdd one independent reference PCAP for reference-comparison metrics? [y/N] ").strip().lower()
+    if isinstance(reference_arg, (str, Path)):
+        reference_values = [str(reference_arg)]
+    else:
+        reference_values = list(reference_arg or [])
+
+    if not reference_values and sys.stdin.isatty() and sys.stdout.isatty():
+        answer = input(
+            "\nAdd one or more independent reference datasets for comparison metrics? [y/N] "
+        ).strip().lower()
         if answer in {"y", "yes"}:
-            reference_value = _browse_dataset_file()
-            if reference_value is None:
-                print("Reference selection cancelled; reference-comparison metrics remain excluded.")
-    reference_dataset_path = Path(reference_value).expanduser().resolve() if reference_value else None
+            reference_values = _browse_reference_files()
+            if not reference_values:
+                print("No references selected; reference-comparison metrics remain excluded.")
+
+    reference_dataset_paths = _deduplicate_dataset_values(reference_values)
+    if all_pcap and any(path.suffix.lower() not in PCAP_SUFFIXES for path in reference_dataset_paths):
+        raise ValueError("Raw-PCAP candidates can only use PCAP/PCAPNG reference datasets.")
+    if not all_pcap and any(path.suffix.lower() in PCAP_SUFFIXES for path in reference_dataset_paths):
+        raise ValueError("Tabular candidates cannot use raw-PCAP reference datasets.")
 
     single_service = single_service_arg
     expected_ports = _parse_expected_ports(getattr(args, "expected_service_ports", None))
@@ -584,14 +661,16 @@ def main() -> int:
     force = bool(getattr(args, "force", False))
     output_value = getattr(args, "output", None)
 
-    if len(dataset_paths) > 1:
+    if len(dataset_paths) > 1 or len(reference_dataset_paths) > 1:
         output_path = Path(output_value) if output_value else Path("plans") / f"{plan_id}_batch.json"
         print(f"\nBatch ID:     {plan_id}")
         print(f"Datasets:     {len(dataset_paths)}")
         for index, path in enumerate(dataset_paths, start=1):
             print(f"  {index:>2}. {path}")
-        if reference_dataset_path:
-            print(f"Reference:    {reference_dataset_path}")
+        if reference_dataset_paths:
+            print(f"References:   {len(reference_dataset_paths)}")
+            for index, path in enumerate(reference_dataset_paths, start=1):
+                print(f"  R{index:>2}. {path}")
         print(
             f"Metric policy:{' per-dataset' if per_dataset_metrics else ' common across all datasets'}"
         )
@@ -605,7 +684,7 @@ def main() -> int:
                 field_translation_path=field_translation_path,
                 include_metric_ids=include_metric_ids,
                 exclude_metric_ids=exclude_metric_ids,
-                reference_dataset_path=reference_dataset_path,
+                reference_dataset_paths=reference_dataset_paths,
                 service_port_configuration=service_port_configuration,
                 output_path=output_path,
                 force=force,
@@ -618,6 +697,7 @@ def main() -> int:
         return 0
 
     dataset_path = dataset_paths[0]
+    reference_dataset_path = reference_dataset_paths[0] if reference_dataset_paths else None
     output_path = Path(output_value) if output_value else Path("plans") / f"{plan_id}_plan.json"
 
     if sys.stdout.isatty():

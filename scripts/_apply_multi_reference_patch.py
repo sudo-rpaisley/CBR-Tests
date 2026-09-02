@@ -149,4 +149,12 @@ def patch_run_batch() -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def main() -> None:\n    patch_create_plan()\n    patch_plan_builder()\n    patch_reference_loader()\n    patch_run_batch()\n\n\nif __name__ == "__main__":\n    main()\n
+def main() -> None:
+    patch_create_plan()
+    patch_plan_builder()
+    patch_reference_loader()
+    patch_run_batch()
+
+
+if __name__ == "__main__":
+    main()
