@@ -1,15 +1,23 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import sys
+import tempfile
 import textwrap
 
 from runner.metric_catalog import available_metric_ids, build_metric_catalog
 from runner.plan_builder import build_plan, write_plan
 from runner.schema import validate_plan_schema
+from runner.taxonomy import build_plan_taxonomy
+
+
+BATCH_SCHEMA_VERSION = 1
+PCAP_SUFFIXES = {".pcap", ".pcapng"}
 
 
 def _slug(value: str) -> str:
@@ -47,12 +55,41 @@ def _parse_expected_ports(value: str | None) -> list[int]:
 def _browse_dataset_file() -> str | None:
     import curses
     from runner.tui import _browse_file
+
     repo_root = Path.cwd()
     initial = "datasets" if (repo_root / "datasets").is_dir() else ""
     return curses.wrapper(lambda stdscr: _browse_file(stdscr, repo_root, initial))
 
 
-def _prompt(value: str | None, label: str, default: str | None = None, *, required: bool = False) -> str | None:
+def _browse_dataset_files() -> list[str]:
+    """Interactively collect one or more datasets using the existing file browser."""
+
+    selected: list[str] = []
+    while True:
+        value = _browse_dataset_file()
+        if value is None:
+            if not selected:
+                return []
+            print("Dataset selection cancelled; keeping the datasets already selected.")
+            return selected
+        if value not in selected:
+            selected.append(value)
+            print(f"Selected dataset {len(selected)}: {value}")
+        else:
+            print(f"Dataset already selected: {value}")
+
+        answer = input("Add another dataset to this plan batch? [y/N] ").strip().lower()
+        if answer not in {"y", "yes"}:
+            return selected
+
+
+def _prompt(
+    value: str | None,
+    label: str,
+    default: str | None = None,
+    *,
+    required: bool = False,
+) -> str | None:
     if value:
         return value
     if not sys.stdin.isatty():
@@ -141,6 +178,7 @@ def _print_report(report: dict) -> None:
             if metric_ids:
                 _print_wrapped("      Affects: ", _compact_metric_ids(metric_ids))
 
+
 def _list_tests() -> None:
     for entry in build_metric_catalog():
         path = " / ".join(entry["taxonomy_path"])
@@ -166,9 +204,243 @@ def _check_plan(path: Path) -> int:
     return 1 if unknown else 0
 
 
+def _deduplicate_dataset_values(values: list[str]) -> list[Path]:
+    datasets: list[Path] = []
+    seen: set[Path] = set()
+    for value in values:
+        path = Path(value).expanduser().resolve()
+        if path in seen:
+            continue
+        seen.add(path)
+        datasets.append(path)
+    return datasets
+
+
+def _portable_path(path: Path, repo_root: Path) -> str:
+    path = path.expanduser().resolve()
+    try:
+        return str(path.relative_to(repo_root))
+    except ValueError:
+        return str(path)
+
+
+def _job_slug(dataset_path: Path, index: int, used: set[str]) -> str:
+    base = _slug(dataset_path.stem)
+    candidate = base
+    if candidate in used:
+        candidate = f"{base}-{index:02d}"
+    used.add(candidate)
+    return candidate
+
+
+def _filter_plan_to_metric_ids(plan: dict, metric_ids: set[str]) -> None:
+    plan["metrics"] = [
+        metric for metric in plan.get("metrics", [])
+        if metric.get("metric_id") in metric_ids
+    ]
+    if not plan["metrics"]:
+        raise ValueError("The common metric set is empty after batch filtering.")
+    plan["plan_taxonomy"] = build_plan_taxonomy(plan["metrics"])
+    plan_creation = plan.setdefault("plan_creation", {})
+    plan_creation["batch_common_metric_count"] = len(plan["metrics"])
+    plan_creation["batch_metric_policy"] = "common_across_all_datasets"
+    validate_plan_schema(plan)
+
+
+def _write_json_atomic(path: Path, payload: dict, *, overwrite: bool = False) -> Path:
+    path = path.expanduser().resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and not overwrite:
+        raise FileExistsError(f"File already exists: {path}. Use --force to replace it.")
+
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent, text=True
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, path)
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
+    return path
+
+
+def _build_single_plan(
+    *,
+    plan_id: str,
+    name: str,
+    description: str,
+    dataset_path: Path,
+    field_translation_path: Path | None,
+    include_metric_ids: list[str] | None,
+    exclude_metric_ids: list[str] | None,
+    reference_dataset_path: Path | None,
+    service_port_configuration: dict | None,
+) -> tuple[dict, dict]:
+    return build_plan(
+        plan_id=plan_id,
+        name=name,
+        description=description,
+        dataset_path=dataset_path,
+        field_translation_path=field_translation_path,
+        include_metric_ids=include_metric_ids,
+        exclude_metric_ids=exclude_metric_ids,
+        reference_dataset_path=reference_dataset_path,
+        service_port_configuration=service_port_configuration,
+    )
+
+
+def _create_batch(
+    *,
+    plan_id: str,
+    name: str,
+    description: str,
+    dataset_paths: list[Path],
+    field_translation_path: Path | None,
+    include_metric_ids: list[str] | None,
+    exclude_metric_ids: list[str] | None,
+    reference_dataset_path: Path | None,
+    service_port_configuration: dict | None,
+    output_path: Path,
+    force: bool,
+    per_dataset_metrics: bool,
+    interactive: bool,
+) -> Path:
+    repo_root = Path.cwd().resolve()
+    batch_plan_dir = output_path.parent / f"{plan_id}_batch_plans"
+    used_slugs: set[str] = set()
+    generated: list[dict] = []
+
+    print(f"\nBuilding batch plan for {len(dataset_paths)} datasets")
+    for index, dataset_path in enumerate(dataset_paths, start=1):
+        slug = _job_slug(dataset_path, index, used_slugs)
+        child_plan_id = f"{plan_id}-{slug}"
+        child_name = f"{name} — {dataset_path.name}"
+        print(f"\n[{index}/{len(dataset_paths)}] Preflighting {dataset_path}")
+        plan, report = _build_single_plan(
+            plan_id=child_plan_id,
+            name=child_name,
+            description=description,
+            dataset_path=dataset_path,
+            field_translation_path=field_translation_path,
+            include_metric_ids=include_metric_ids,
+            exclude_metric_ids=exclude_metric_ids,
+            reference_dataset_path=reference_dataset_path,
+            service_port_configuration=service_port_configuration,
+        )
+        _print_report(report)
+        generated.append(
+            {
+                "dataset_path": dataset_path,
+                "slug": slug,
+                "plan": plan,
+                "report": report,
+                "plan_path": batch_plan_dir / f"{index:02d}_{slug}_plan.json",
+            }
+        )
+
+    common_metric_ids: set[str] | None = None
+    if not per_dataset_metrics:
+        metric_sets = [
+            {metric["metric_id"] for metric in item["plan"].get("metrics", [])}
+            for item in generated
+        ]
+        common_metric_ids = set.intersection(*metric_sets) if metric_sets else set()
+        if not common_metric_ids:
+            raise ValueError(
+                "No metric is runnable across every selected dataset. "
+                "Resolve field mappings, choose more compatible datasets, or use --per-dataset-metrics."
+            )
+        print(
+            f"\nBatch common metric set: {len(common_metric_ids)} tests runnable across all "
+            f"{len(dataset_paths)} datasets."
+        )
+        for item in generated:
+            _filter_plan_to_metric_ids(item["plan"], common_metric_ids)
+    else:
+        print("\nBatch metric policy: each dataset keeps its own runnable metric set.")
+
+    if interactive:
+        answer = input("\nSave this dataset batch and its generated plans? [Y/n] ").strip().lower()
+        if answer not in {"", "y", "yes"}:
+            raise KeyboardInterrupt("Batch save cancelled by user.")
+
+    existing_paths = [item["plan_path"] for item in generated if item["plan_path"].exists()]
+    if output_path.exists():
+        existing_paths.append(output_path)
+    overwrite = force
+    if existing_paths and not overwrite and interactive:
+        print("\nThe following batch files already exist:")
+        for path in existing_paths:
+            print(f"  - {path}")
+        answer = input("Overwrite the existing batch files? [y/N] ").strip().lower()
+        overwrite = answer in {"y", "yes"}
+        if not overwrite:
+            raise KeyboardInterrupt("Batch save cancelled; existing files were left unchanged.")
+
+    if existing_paths and not overwrite:
+        raise FileExistsError(
+            "One or more batch output files already exist. Use --force to replace them."
+        )
+
+    jobs = []
+    for index, item in enumerate(generated, start=1):
+        item["plan"].setdefault("plan_creation", {})["batch"] = {
+            "batch_id": plan_id,
+            "batch_name": name,
+            "job_index": index,
+            "job_count": len(generated),
+            "metric_policy": (
+                "per_dataset" if per_dataset_metrics else "common_across_all_datasets"
+            ),
+        }
+        write_plan(item["plan_path"], item["plan"], overwrite=overwrite)
+        jobs.append(
+            {
+                "job_id": f"{plan_id}-{index:02d}-{item['slug']}",
+                "dataset_path": str(item["dataset_path"].resolve()),
+                "plan_path": _portable_path(item["plan_path"], repo_root),
+                "runnable_metric_count": len(item["plan"].get("metrics", [])),
+                "metric_ids": [metric["metric_id"] for metric in item["plan"].get("metrics", [])],
+            }
+        )
+
+    batch_payload = {
+        "schema_version": BATCH_SCHEMA_VERSION,
+        "batch_meta": {
+            "batch_id": plan_id,
+            "name": name,
+            "description": description,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "execution_mode": "sequential",
+            "dataset_count": len(dataset_paths),
+            "metric_policy": (
+                "per_dataset" if per_dataset_metrics else "common_across_all_datasets"
+            ),
+        },
+        "output_directory": str(Path("outcomes") / plan_id),
+        "common_metric_ids": sorted(common_metric_ids) if common_metric_ids is not None else None,
+        "reference_dataset": str(reference_dataset_path.resolve()) if reference_dataset_path else None,
+        "jobs": jobs,
+    }
+    written = _write_json_atomic(output_path, batch_payload, overwrite=overwrite)
+    print(f"\nBatch manifest written: {written}")
+    print(f"Generated per-dataset plans: {batch_plan_dir.resolve()}")
+    print(f"Run the batch with: python run_batch.py --batch {written}")
+    return written
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create validated CBR-Tests plans containing only tests runnable on a dataset."
+        description=(
+            "Create validated CBR-Tests plans containing only tests runnable on a dataset, "
+            "or create a sequential batch from multiple datasets."
+        )
     )
     parser.add_argument(
         "--plan-id",
@@ -179,21 +451,48 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--name", help="Human-readable plan name; the plan ID is derived from this name")
     parser.add_argument("--description", help="Plan description")
-    parser.add_argument("--dataset", help="Dataset to inspect; interactive mode opens a file browser when omitted")
+    parser.add_argument(
+        "--dataset",
+        action="append",
+        help=(
+            "Dataset to inspect. Repeat --dataset to create a sequential multi-dataset batch. "
+            "Interactive mode can select several datasets when omitted."
+        ),
+    )
     parser.add_argument(
         "--field-translation",
-        help="Optional field translation JSON. If omitted, an existing dataset sidecar is used automatically.",
+        help="Optional field translation JSON. If omitted, each dataset's existing sidecar is used automatically.",
     )
-    parser.add_argument("--reference-dataset", help="Optional independent reference dataset. Raw-PCAP reference comparison requires a PCAP/PCAPNG reference.")
-    parser.add_argument("--single-service", help="Explicitly assert that the entire PCAP represents this one application service.")
-    parser.add_argument("--expected-service-ports", help="Comma-separated expected ports for --single-service, e.g. 53 or 80,8080.")
+    parser.add_argument(
+        "--reference-dataset",
+        help="Optional independent reference dataset. Raw-PCAP reference comparison requires a PCAP/PCAPNG reference.",
+    )
+    parser.add_argument(
+        "--single-service",
+        help="Explicitly assert that the entire PCAP represents this one application service.",
+    )
+    parser.add_argument(
+        "--expected-service-ports",
+        help="Comma-separated expected ports for --single-service, e.g. 53 or 80,8080.",
+    )
     parser.add_argument(
         "--output",
-        help="Destination JSON path; defaults to plans/<derived-plan-id>_plan.json",
+        help=(
+            "Destination JSON path. For one dataset this is the plan JSON. For multiple datasets "
+            "this is the batch manifest."
+        ),
+    )
+    parser.add_argument(
+        "--per-dataset-metrics",
+        action="store_true",
+        help=(
+            "For a multi-dataset batch, keep each dataset's full runnable metric set instead of "
+            "restricting every generated plan to the metric IDs runnable across all datasets."
+        ),
     )
     parser.add_argument("--include", action="append", help="Only consider these metric IDs (repeat or comma-separate)")
     parser.add_argument("--exclude", action="append", help="Do not consider these metric IDs (repeat or comma-separate)")
-    parser.add_argument("--force", action="store_true", help="Replace an existing output plan without prompting")
+    parser.add_argument("--force", action="store_true", help="Replace existing plan/batch outputs without prompting")
     parser.add_argument("--list-tests", action="store_true", help="List all tests discoverable by plan creation")
     parser.add_argument("--check", metavar="PLAN", help="Validate a plan and compare it with the live registry")
     return parser.parse_args()
@@ -216,44 +515,96 @@ def main() -> int:
             f"but --plan-id was '{args.plan_id}'. Remove --plan-id or make it match."
         )
 
-    dataset_value = args.dataset
-    if not dataset_value:
+    dataset_values = list(args.dataset or [])
+    if not dataset_values:
         if not sys.stdin.isatty() or not sys.stdout.isatty():
-            raise ValueError("Dataset path is required in non-interactive mode.")
-        dataset_value = _browse_dataset_file()
-        if dataset_value is None:
+            raise ValueError("At least one --dataset path is required in non-interactive mode.")
+        dataset_values = _browse_dataset_files()
+        if not dataset_values:
             print("Dataset selection cancelled. Plan not created.")
             return 0
 
-    dataset_path = Path(dataset_value)
-    is_pcap = dataset_path.suffix.lower() in {".pcap", ".pcapng"}
+    dataset_paths = _deduplicate_dataset_values(dataset_values)
+    if not dataset_paths:
+        raise ValueError("At least one dataset must be selected.")
+
+    all_pcap = all(path.suffix.lower() in PCAP_SUFFIXES for path in dataset_paths)
+    any_pcap = any(path.suffix.lower() in PCAP_SUFFIXES for path in dataset_paths)
+    if any_pcap and not all_pcap and (args.single_service or args.reference_dataset):
+        raise ValueError(
+            "PCAP-specific reference/service configuration cannot be shared across a mixed PCAP/tabular batch."
+        )
 
     reference_value = getattr(args, "reference_dataset", None)
-    if is_pcap and not reference_value and sys.stdin.isatty() and sys.stdout.isatty():
-        answer = input("\nAdd an independent reference PCAP for reference-comparison metrics? [y/N] ").strip().lower()
+    if all_pcap and not reference_value and sys.stdin.isatty() and sys.stdout.isatty():
+        answer = input("\nAdd one independent reference PCAP for reference-comparison metrics? [y/N] ").strip().lower()
         if answer in {"y", "yes"}:
             reference_value = _browse_dataset_file()
             if reference_value is None:
                 print("Reference selection cancelled; reference-comparison metrics remain excluded.")
-    reference_dataset_path = Path(reference_value) if reference_value else None
+    reference_dataset_path = Path(reference_value).expanduser().resolve() if reference_value else None
 
     single_service = getattr(args, "single_service", None)
     expected_ports = _parse_expected_ports(getattr(args, "expected_service_ports", None))
     if bool(single_service) != bool(expected_ports):
         raise ValueError("--single-service and --expected-service-ports must be supplied together.")
-    if is_pcap and not single_service and sys.stdin.isatty() and sys.stdout.isatty():
-        answer = input("\nIs the entire capture independently known to represent one application service? [y/N] ").strip().lower()
+    if all_pcap and not single_service and sys.stdin.isatty() and sys.stdout.isatty():
+        answer = input(
+            "\nAre all selected captures independently known to represent the same one application service? [y/N] "
+        ).strip().lower()
         if answer in {"y", "yes"}:
             single_service = _prompt(None, "Service name", required=True)
-            expected_ports = _parse_expected_ports(_prompt(None, "Expected service port(s), comma-separated", required=True))
+            expected_ports = _parse_expected_ports(
+                _prompt(None, "Expected service port(s), comma-separated", required=True)
+            )
             if not expected_ports:
                 raise ValueError("At least one expected service port is required.")
     service_port_configuration = None
     if single_service and expected_ports:
-        service_port_configuration = {"service_name": single_service, "expected_ports": expected_ports, "population_mode": "all_rows"}
+        service_port_configuration = {
+            "service_name": single_service,
+            "expected_ports": expected_ports,
+            "population_mode": "all_rows",
+        }
 
     field_translation_path = Path(args.field_translation) if args.field_translation else None
     description = args.description or "Automatically generated CBR-Tests plan."
+    include_metric_ids = _split_metric_args(args.include)
+    exclude_metric_ids = _split_metric_args(args.exclude)
+    interactive = sys.stdin.isatty()
+
+    if len(dataset_paths) > 1:
+        output_path = Path(args.output) if args.output else Path("plans") / f"{plan_id}_batch.json"
+        print(f"\nBatch ID:     {plan_id}")
+        print(f"Datasets:     {len(dataset_paths)}")
+        for index, path in enumerate(dataset_paths, start=1):
+            print(f"  {index:>2}. {path}")
+        if reference_dataset_path:
+            print(f"Reference:    {reference_dataset_path}")
+        print(f"Metric policy:{' per-dataset' if args.per_dataset_metrics else ' common across all datasets'}")
+        print(f"Output path:  {output_path}")
+        try:
+            _create_batch(
+                plan_id=plan_id,
+                name=name,
+                description=description,
+                dataset_paths=dataset_paths,
+                field_translation_path=field_translation_path,
+                include_metric_ids=include_metric_ids,
+                exclude_metric_ids=exclude_metric_ids,
+                reference_dataset_path=reference_dataset_path,
+                service_port_configuration=service_port_configuration,
+                output_path=output_path,
+                force=args.force,
+                per_dataset_metrics=args.per_dataset_metrics,
+                interactive=interactive,
+            )
+        except KeyboardInterrupt as exc:
+            print(str(exc) or "Batch creation cancelled.")
+            return 0
+        return 0
+
+    dataset_path = dataset_paths[0]
     output_path = Path(args.output) if args.output else Path("plans") / f"{plan_id}_plan.json"
 
     if sys.stdout.isatty():
@@ -262,25 +613,27 @@ def main() -> int:
         if reference_dataset_path:
             print(f"Reference:   {reference_dataset_path}")
         if service_port_configuration:
-            print(f"Service:     {service_port_configuration['service_name']} on {service_port_configuration['expected_ports']} (explicit single-service capture)")
+            print(
+                f"Service:     {service_port_configuration['service_name']} on "
+                f"{service_port_configuration['expected_ports']} (explicit single-service capture)"
+            )
         print(f"Output path: {output_path}")
         if output_path.exists() and not args.force:
             print("Output status: existing plan (overwrite confirmation will be requested before saving)")
 
-    plan, report = build_plan(
+    plan, report = _build_single_plan(
         plan_id=plan_id,
         name=name,
         description=description,
         dataset_path=dataset_path,
         field_translation_path=field_translation_path,
-        include_metric_ids=_split_metric_args(args.include),
-        exclude_metric_ids=_split_metric_args(args.exclude),
+        include_metric_ids=include_metric_ids,
+        exclude_metric_ids=exclude_metric_ids,
         reference_dataset_path=reference_dataset_path,
         service_port_configuration=service_port_configuration,
     )
     _print_report(report)
 
-    interactive = sys.stdin.isatty()
     if interactive:
         answer = input("\nSave this runnable-only plan? [Y/n] ").strip().lower()
         if answer not in {"", "y", "yes"}:
