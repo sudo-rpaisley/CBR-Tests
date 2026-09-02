@@ -1,0 +1,89 @@
+name: Finalize batch-aware TUI
+
+on:
+  push:
+    branches:
+      - feature/batch-aware-runner-tui
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: "!contains(github.event.head_commit.message, '[batch-tui-finalized]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/batch-aware-runner-tui
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Wire unified TUI into runner
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          helpers = Path('runner/run_plan_helpers.py')
+          text = helpers.read_text(encoding='utf-8')
+          old_import = 'from runner.tui import launch_tui, validate_required_run_args\n'
+          new_import = (
+              'from runner.tui import validate_required_run_args\n'
+              'from runner.unified_tui import launch_unified_tui\n'
+          )
+          if old_import not in text:
+              raise SystemExit('expected run_plan_helpers TUI import not found')
+          text = text.replace(old_import, new_import, 1)
+
+          old_launch = '''        args = launch_tui(args)\n        args.tui_session = True\n    validate_required_run_args(args)\n    return args\n'''
+          new_launch = '''        args = launch_unified_tui(args)\n        args.tui_session = not bool(getattr(args, "tui_batch_spec", None))\n    if not getattr(args, "tui_batch_spec", None):\n        validate_required_run_args(args)\n    return args\n'''
+          if old_launch not in text:
+              raise SystemExit('expected run_plan_helpers launch block not found')
+          helpers.write_text(text.replace(old_launch, new_launch, 1), encoding='utf-8')
+
+          runner = Path('run_plan.py')
+          text = runner.read_text(encoding='utf-8')
+          old_main = '''def main():\n    args = parse_run_plan_args()\n    while True:\n'''
+          new_main = '''def main():\n    args = parse_run_plan_args()\n    batch_spec = getattr(args, "tui_batch_spec", None)\n    if batch_spec:\n        from runner.tui_batch import execute_batch_spec\n\n        return execute_batch_spec(batch_spec)\n\n    while True:\n'''
+          if old_main not in text:
+              raise SystemExit('expected run_plan main block not found')
+          runner.write_text(text.replace(old_main, new_main, 1), encoding='utf-8')
+          PY
+
+      - name: Compile and run tests
+        run: |
+          python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
+          python -m pytest -q
+
+      - name: Regenerate reference documentation
+        run: python scripts/build_reference_documentation.py
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/finalize-batch-aware-tui.yml
+
+      - name: Commit finalized feature
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add run_plan.py runner/run_plan_helpers.py runner/tui_batch.py runner/unified_tui.py tests/test_batch_tui.py docs/batch_runner_tui.md docs/function_reference.md docs/test_reference.md .github/workflows/finalize-batch-aware-tui.yml
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Finalize batch-aware runner TUI [batch-tui-finalized]'
+          git push origin HEAD:feature/batch-aware-runner-tui
