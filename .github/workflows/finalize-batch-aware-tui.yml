@@ -46,29 +46,55 @@ jobs:
               'from runner.tui import validate_required_run_args\n'
               'from runner.unified_tui import launch_unified_tui\n'
           )
-          if old_import not in text:
+          if old_import in text:
+              text = text.replace(old_import, new_import, 1)
+          elif 'from runner.unified_tui import launch_unified_tui\n' not in text:
               raise SystemExit('expected run_plan_helpers TUI import not found')
-          text = text.replace(old_import, new_import, 1)
 
           old_launch = '''        args = launch_tui(args)\n        args.tui_session = True\n    validate_required_run_args(args)\n    return args\n'''
           new_launch = '''        args = launch_unified_tui(args)\n        args.tui_session = not bool(getattr(args, "tui_batch_spec", None))\n    if not getattr(args, "tui_batch_spec", None):\n        validate_required_run_args(args)\n    return args\n'''
-          if old_launch not in text:
+          if old_launch in text:
+              text = text.replace(old_launch, new_launch, 1)
+          elif new_launch not in text:
               raise SystemExit('expected run_plan_helpers launch block not found')
-          helpers.write_text(text.replace(old_launch, new_launch, 1), encoding='utf-8')
+          helpers.write_text(text, encoding='utf-8')
 
           runner = Path('run_plan.py')
           text = runner.read_text(encoding='utf-8')
           old_main = '''def main():\n    args = parse_run_plan_args()\n    while True:\n'''
           new_main = '''def main():\n    args = parse_run_plan_args()\n    batch_spec = getattr(args, "tui_batch_spec", None)\n    if batch_spec:\n        from runner.tui_batch import execute_batch_spec\n\n        return execute_batch_spec(batch_spec)\n\n    while True:\n'''
-          if old_main not in text:
+          if old_main in text:
+              text = text.replace(old_main, new_main, 1)
+          elif new_main not in text:
               raise SystemExit('expected run_plan main block not found')
-          runner.write_text(text.replace(old_main, new_main, 1), encoding='utf-8')
+          runner.write_text(text, encoding='utf-8')
           PY
 
       - name: Compile and run tests
         run: |
-          python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' .
-          python -m pytest -q
+          set +e
+          python -m compileall -q -x '(^|/)(\.git|\.venv|venv)/' . > ci_batch_tui_test_output.txt 2>&1
+          compile_status=$?
+          python -m pytest -q >> ci_batch_tui_test_output.txt 2>&1
+          test_status=$?
+          if [ "$compile_status" -ne 0 ]; then status=$compile_status; else status=$test_status; fi
+          echo "$status" > ci_batch_tui_test_status.txt
+          cat ci_batch_tui_test_output.txt
+          exit 0
+
+      - name: Persist validation failure for inspection
+        run: |
+          status="$(cat ci_batch_tui_test_status.txt)"
+          if [ "$status" -eq 0 ]; then
+            rm -f ci_batch_tui_test_output.txt ci_batch_tui_test_status.txt
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add run_plan.py runner/run_plan_helpers.py ci_batch_tui_test_output.txt
+          git commit -m 'Capture batch TUI validation failure [batch-tui-finalized]'
+          git push origin HEAD:feature/batch-aware-runner-tui
+          exit 1
 
       - name: Regenerate reference documentation
         run: python scripts/build_reference_documentation.py
