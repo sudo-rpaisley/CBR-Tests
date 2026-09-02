@@ -630,18 +630,19 @@ CLI parsing, headers, signal handlers, outcome construction, and atomic writes.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L20) | function | Public | Builds outcome. |
-| `_open_atomic_text_file(destination: Path) -> tuple[int, Path]` (L63) | function | Internal | Implementation helper for open atomic text file. |
-| `write_outcome(output_path: Path, outcome: dict) -> Path` (L73) | function | Public | Write the authoritative JSON outcome and its human-readable Markdown companion. Both files are fully written and fsynced before either destination is replaced. The summary is published first and the JSON outcome second, so publication of a new JSON outcome implies that its companion summary was already published. Returns the companion summary path. |
-| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L113) | function | Public | Detects IP fields. |
-| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L119) | function | Public | Builds title box lines. |
-| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L131) | function | Public | Builds base header lines. |
-| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L154) | function | Public | Configures signal handlers. |
-| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L155) | nested function | Internal | Implementation helper for handle sigint. |
-| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L161) | nested function | Internal | Implementation helper for handle sigusr1. |
-| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L165) | nested function | Internal | Implementation helper for handle sigusr2. |
-| `parse_run_plan_args() -> argparse.Namespace` (L176) | function | Public | Parses run plan args. |
-| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L261) | function | Public | Updates live header. |
+| `_launch_tui_entry(args)` (L22) | function | Internal | Implementation helper for launch tui entry. |
+| `build_outcome(status: str, case_id: str, plan_id: str, metrics: list[dict], dataset_path: Path, metric_results: list[dict], test_results: dict, run_started_at: datetime, run_start_perf: float, column_validations: dict, skipped_metrics: list[dict] | None = None, all_metrics: list[dict] | None = None, provenance: dict | None = None) -> dict` (L31) | function | Public | Builds outcome. |
+| `_open_atomic_text_file(destination: Path) -> tuple[int, Path]` (L74) | function | Internal | Implementation helper for open atomic text file. |
+| `write_outcome(output_path: Path, outcome: dict) -> Path` (L84) | function | Public | Write the authoritative JSON outcome and its human-readable Markdown companion. Both files are fully written and fsynced before either destination is replaced. The summary is published first and the JSON outcome second, so publication of a new JSON outcome implies that its companion summary was already published. Returns the companion summary path. |
+| `detect_ip_fields(tabular_df) -> tuple[str, str]` (L124) | function | Public | Detects IP fields. |
+| `build_title_box_lines(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> list[str]` (L130) | function | Public | Builds title box lines. |
+| `build_base_header_lines(plan: dict, case_id: str, dataset_path: Path, output_path: Path, include_dataset_size: bool = False) -> list[str]` (L142) | function | Public | Builds base header lines. |
+| `configure_signal_handlers(control_state: dict, shutdown_requested: dict) -> None` (L165) | function | Public | Configures signal handlers. |
+| `configure_signal_handlers._handle_sigint(_signum, _frame)` (L166) | nested function | Internal | Implementation helper for handle sigint. |
+| `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L172) | nested function | Internal | Implementation helper for handle sigusr1. |
+| `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L176) | nested function | Internal | Implementation helper for handle sigusr2. |
+| `parse_run_plan_args() -> argparse.Namespace` (L187) | function | Public | Parses run plan args. |
+| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L273) | function | Public | Updates live header. |
 
 ## `runner/run_plan_serial.py`
 
@@ -749,6 +750,33 @@ Python symbols defined by `runner/tui.py`.
 | `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L561) | function | Internal | Implementation helper for visible result rows. |
 | `_post_run_curses(stdscr, result: dict | None, args) -> str` (L571) | function | Internal | Implementation helper for post run curses. |
 | `show_post_run_menu(result: dict | None, args) -> str` (L612) | function | Public | Implementation helper for show post run menu. |
+
+## `runner/tui_batch.py`
+
+Python symbols defined by `runner/tui_batch.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `BatchTuiSpec` (L21) | class | Public | Data model for BatchTuiSpec. |
+| `BatchTuiSpec.as_dict(self) -> dict[str, Any]` (L33) | method | Public | Implementation helper for as dict. |
+| `comparison_job_count(datasets: list[str], references: list[str]) -> int` (L48) | function | Public | Return the runnable candidate/reference job count, excluding self-comparisons. |
+| `build_batch_spec(*, name: str, datasets: list[str], references: list[str] | None = None, per_dataset_metrics: bool = False, workers: int | None = None, display: str = 'compact', force: bool = False, dataset_summary: bool = True, refresh_dataset_summary: bool = False, fail_fast: bool = False) -> dict[str, Any]` (L58) | function | Public | Validate and normalise the batch settings selected in the TUI. |
+| `_normalise_initial_paths(values: list[str], root: Path) -> tuple[list[str], set[Path]]` (L100) | function | Internal | Implementation helper for normalise initial paths. |
+| `_toggle_selected(path: Path, selected: set[Path], ordered: list[str], root: Path) -> None` (L115) | function | Internal | Implementation helper for toggle selected. |
+| `_multi_file_browser(stdscr, root: Path, initial_values: list[str], *, title: str, allow_empty: bool) -> list[str] | None` (L129) | function | Internal | Implementation helper for multi file browser. |
+| `_format_list(values: list[str]) -> str` (L210) | function | Internal | Implementation helper for format list. |
+| `_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L219) | function | Internal | Implementation helper for batch setup curses. |
+| `launch_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L370) | function | Public | Implementation helper for launch batch tui. |
+| `execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> dict[str, Any]` (L397) | function | Public | Create and execute the batch selected in the TUI using the standard batch pipeline. |
+
+## `runner/unified_tui.py`
+
+Python symbols defined by `runner/unified_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_choose_mode_curses(stdscr) -> str | None` (L13) | function | Internal | Implementation helper for choose mode curses. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L45) | function | Public | Launch the single-run TUI or the batch/comparison TUI from one entry point. |
 
 ## `scripts/build_documentation_inventory.py`
 
