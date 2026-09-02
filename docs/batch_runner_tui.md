@@ -42,6 +42,17 @@ Selected files are marked with `[x]`, and the footer shows the selection count.
 
 Press `r` on the batch setup screen to run the selected experiment. The TUI reuses the normal plan-builder and batch-runner pipeline rather than implementing separate metric execution.
 
+During execution, batch position remains visible above the current job's normal metric progress. For example:
+
+```text
+Batch: Reference experiment (reference-experiment)
+Batch progress: [#######-----------------------]  25% (6/24 complete) | running job 7/24
+Batch results so far: 5 successful | 1 needing attention | 17 waiting after current
+Candidate: synthetic-b.csv | Reference: real-a.csv
+```
+
+The batch progress bar counts completed jobs, while `running job N/total` shows the current position. This avoids implying that a long-running job is complete before its outcome has actually been written. The same completed/total progress is printed between jobs and in the final batch summary, including compact/quiet runs where the live dashboard is not being redrawn.
+
 That means batch TUI runs retain the existing behaviour for:
 
 - per-dataset preflight;
