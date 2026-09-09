@@ -4,26 +4,11 @@ from pathlib import Path
 
 
 TABULAR_FORMATS = {"csv", "tsv", "xlsx", "xls"}
-PACKET_CAPTURE_FORMATS = {"pcap", "pcapng"}
 
 
 def dataset_format(dataset_path: Path) -> str:
     """Return the normalized dataset format derived from its filename suffix."""
     return dataset_path.suffix.lower().lstrip(".")
-
-
-def dataset_format_family(value: str) -> str:
-    """Return the compatibility family used for plan applicability checks.
-
-    Classic PCAP and PCAPNG are alternative container formats for packet-capture
-    data. CBR-Tests' packet adapter supports both, so a plan that declares either
-    one should accept the other rather than treating the filename extension as a
-    different dataset representation.
-    """
-    normalized = str(value).strip().lower().lstrip(".")
-    if normalized in PACKET_CAPTURE_FORMATS:
-        return "pcap"
-    return normalized
 
 
 def validate_dataset_format_applicability(plan: dict, dataset_path: Path) -> None:
@@ -34,9 +19,8 @@ def validate_dataset_format_applicability(plan: dict, dataset_path: Path) -> Non
         return
 
     allowed_formats = {str(value).strip().lower().lstrip(".") for value in allowed}
-    allowed_families = {dataset_format_family(value) for value in allowed_formats}
     actual = dataset_format(dataset_path)
-    if dataset_format_family(actual) not in allowed_families:
+    if actual not in allowed_formats and not (actual in {"pcap", "pcapng"} and allowed_formats & {"pcap", "pcapng"}):
         raise ValueError(
             f"Dataset format '{actual or 'unknown'}' is not permitted by this plan; "
             f"allowed formats: {', '.join(sorted(allowed_formats))}."
