@@ -20,7 +20,7 @@ def validate_dataset_format_applicability(plan: dict, dataset_path: Path) -> Non
 
     allowed_formats = {str(value).strip().lower().lstrip(".") for value in allowed}
     actual = dataset_format(dataset_path)
-    if actual not in allowed_formats:
+    if actual not in allowed_formats and not (actual in {"pcap", "pcapng"} and allowed_formats & {"pcap", "pcapng"}):
         raise ValueError(
             f"Dataset format '{actual or 'unknown'}' is not permitted by this plan; "
             f"allowed formats: {', '.join(sorted(allowed_formats))}."

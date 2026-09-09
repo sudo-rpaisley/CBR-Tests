@@ -58,8 +58,8 @@ def test_plan_schema_validates_applicability_types():
 
 
 def test_dataset_format_applicability_is_enforced(tmp_path: Path):
-    with pytest.raises(ValueError, match="not permitted"):
-        validate_dataset_format_applicability(_plan(), tmp_path / "capture.pcap")
+    with pytest.raises(ValueError, match="not permitted"): validate_dataset_format_applicability(_plan(), tmp_path / "capture.pcap")
+    for declared_format, dataset_name in (("pcap", "capture.pcapng"), ("pcapng", "capture.pcap"), (".PCAP", "capture.PCAPNG")): plan = _plan(); plan["applicability"]["dataset_formats"] = [declared_format]; validate_dataset_format_applicability(plan, tmp_path / dataset_name)
 
 
 def test_numeric_applicability_is_enforced():
