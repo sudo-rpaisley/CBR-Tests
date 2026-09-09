@@ -62,6 +62,25 @@ def test_dataset_format_applicability_is_enforced(tmp_path: Path):
         validate_dataset_format_applicability(_plan(), tmp_path / "capture.pcap")
 
 
+@pytest.mark.parametrize(
+    ("declared_format", "dataset_name"),
+    [
+        ("pcap", "capture.pcapng"),
+        ("pcapng", "capture.pcap"),
+        (".PCAP", "capture.PCAPNG"),
+    ],
+)
+def test_packet_capture_formats_share_plan_compatibility_family(
+    tmp_path: Path,
+    declared_format: str,
+    dataset_name: str,
+):
+    plan = _plan()
+    plan["applicability"]["dataset_formats"] = [declared_format]
+
+    validate_dataset_format_applicability(plan, tmp_path / dataset_name)
+
+
 def test_numeric_applicability_is_enforced():
     dataframe = pd.DataFrame({"numeric": [1, 2], "text": ["a", "b"]})
     with pytest.raises(ValueError, match="requires at least 2"):
