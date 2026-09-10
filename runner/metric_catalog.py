@@ -21,6 +21,9 @@ MANUAL_CONFIGURATION_REASONS = {
     "service_port_consistency_profile": "service_definition_required",
     "valid_slice_identifier_profile": "allowed_slice_ids_required",
     "slice_identifier_consistency_profile": "slice_consistency_rules_required",
+    "per_slice_sample_coverage_ratio": "expected_slice_ids_required",
+    "per_slice_class_coverage_ratio": "expected_classes_required",
+    "cross_slice_identifier_leakage_ratio": "slice_exclusivity_policy_required",
     "attack_window_alignment_score": "attack_window_configuration_required",
     "pre_post_attack_label_bleed_ratio": "attack_window_configuration_required",
     "train_test_duplicate_overlap_ratio": "split_configuration_required",
@@ -159,6 +162,15 @@ def sanitize_manual_template(metric: dict, reason: str) -> dict:
         params["allowed_slice_ids"] = []
     elif reason == "slice_consistency_rules_required" and isinstance(params, dict):
         params["rules"] = []
+    elif reason == "expected_slice_ids_required" and isinstance(inputs, dict):
+        inputs["expected_slice_ids"] = []
+    elif reason == "expected_classes_required" and isinstance(inputs, dict):
+        inputs["expected_classes"] = []
+    elif reason == "slice_exclusivity_policy_required":
+        if isinstance(inputs, dict):
+            inputs["identifier_fields"] = []
+        if isinstance(params, dict):
+            params["expect_slice_exclusive"] = False
     elif reason == "attack_window_configuration_required" and isinstance(params, dict):
         for key in list(params):
             if "attack" in key or "window" in key:
