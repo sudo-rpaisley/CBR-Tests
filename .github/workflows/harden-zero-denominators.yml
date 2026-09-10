@@ -1,0 +1,87 @@
+name: Harden zero-denominator metric states
+
+on:
+  push:
+    branches:
+      - overhaul/metric-conformance
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: overhaul/metric-conformance
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply zero-denominator hardening and regression tests
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          temporal = Path('cbr_tests/metrics/temporal.py')
+          text = temporal.read_text()
+          old = '''            "start_end_timestamp_consistency_ratio": (\n                round(consistent_count / parseable_count, 6)\n                if parseable_count\n                else 0.0\n            ),\n            "denominator_policy": "parseable_start_end_pairs",\n'''
+          new = '''            "start_end_timestamp_consistency_ratio": (\n                round(consistent_count / parseable_count, 6)\n                if parseable_count\n                else None\n            ),\n            "runnable": parseable_count > 0,\n            "denominator_policy": "parseable_start_end_pairs",\n'''
+          if old not in text:
+              raise SystemExit('start/end target block not found')
+          text = text.replace(old, new, 1)
+
+          old = '''            "non_negative_duration_ratio": (\n                round(non_negative_count / valid_count, 6) if valid_count else 0.0\n            ),\n            "denominator_policy": "parseable_duration_values",\n'''
+          new = '''            "non_negative_duration_ratio": (\n                round(non_negative_count / valid_count, 6) if valid_count else None\n            ),\n            "runnable": valid_count > 0,\n            "denominator_policy": "parseable_duration_values",\n'''
+          if old not in text:
+              raise SystemExit('duration target block not found')
+          temporal.write_text(text.replace(old, new, 1))
+
+          quality = Path('cbr_tests/metrics/data_quality.py')
+          text = quality.read_text()
+          text = text.replace(
+              'round(field_missing_count / row_count, 6) if row_count else 0.0',
+              'round(field_missing_count / row_count, 6) if row_count else None',
+              1,
+          )
+          old = '''            "missing_value_ratio": (\n                round(missing_cells / total_cells, 6) if total_cells else 0.0\n            ),\n'''
+          new = '''            "missing_value_ratio": (\n                round(missing_cells / total_cells, 6) if total_cells else None\n            ),\n            "runnable": total_cells > 0,\n'''
+          if old not in text:
+              raise SystemExit('missing-value target block not found')
+          text = text.replace(old, new, 1)
+          old = '''            "duplicate_row_ratio": (\n                round(duplicate_row_count / row_count, 6) if row_count else 0.0\n            ),\n'''
+          new = '''            "duplicate_row_ratio": (\n                round(duplicate_row_count / row_count, 6) if row_count else None\n            ),\n            "runnable": row_count > 0,\n'''
+          if old not in text:
+              raise SystemExit('duplicate target block not found')
+          quality.write_text(text.replace(old, new, 1))
+
+          temporal_tests = Path('tests/test_temporal_metrics_profile.py')
+          text = temporal_tests.read_text()
+          addition = '''\n\ndef test_temporal_consistency_zero_denominators_are_not_numeric_scores():\n    df = pd.DataFrame({\n        "start": ["bad"],\n        "end": ["also-bad"],\n        "duration": ["not-a-duration"],\n    })\n\n    start_end = compute_start_end_timestamp_consistency_ratio(\n        df,\n        {"input_requirements": {"start_timestamp_field": "start", "end_timestamp_field": "end"}},\n    )["summary"]\n    duration = compute_non_negative_duration_ratio(\n        df,\n        {"input_requirements": {"duration_field": "duration"}},\n    )["summary"]\n\n    assert start_end["parseable_pair_count"] == 0\n    assert start_end["start_end_timestamp_consistency_ratio"] is None\n    assert start_end["runnable"] is False\n    assert duration["valid_duration_count"] == 0\n    assert duration["non_negative_duration_ratio"] is None\n    assert duration["runnable"] is False\n'''
+          if 'test_temporal_consistency_zero_denominators_are_not_numeric_scores' not in text:
+              temporal_tests.write_text(text.rstrip() + addition + '\n')
+
+          quality_tests = Path('tests/test_data_quality_profile.py')
+          text = quality_tests.read_text()
+          addition = '''\n\ndef test_data_quality_zero_denominators_are_not_numeric_scores():\n    df = pd.DataFrame({"a": pd.Series(dtype="float64"), "src": pd.Series(dtype="object")})\n\n    missing = compute_missing_value_ratio(\n        df,\n        {"input_requirements": {"candidate_fields": ["a"]}},\n    )\n    duplicate = compute_duplicate_row_ratio(\n        df,\n        {"input_requirements": {"subset_fields": ["src"]}},\n    )\n\n    assert missing["summary"]["total_cells"] == 0\n    assert missing["summary"]["missing_value_ratio"] is None\n    assert missing["summary"]["runnable"] is False\n    assert missing["fields"][0]["missing_value_ratio"] is None\n    assert duplicate["summary"]["row_count"] == 0\n    assert duplicate["summary"]["duplicate_row_ratio"] is None\n    assert duplicate["summary"]["runnable"] is False\n'''
+          if 'test_data_quality_zero_denominators_are_not_numeric_scores' not in text:
+              quality_tests.write_text(text.rstrip() + addition + '\n')
+          PY
+
+      - name: Regenerate generated documentation
+        run: python scripts/build_reference_documentation.py
+
+      - name: Commit hardening
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cbr_tests/metrics/temporal.py cbr_tests/metrics/data_quality.py tests/test_temporal_metrics_profile.py tests/test_data_quality_profile.py docs/function_reference.md docs/test_reference.md
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "Treat zero-denominator metrics as not executable"
+          git push origin HEAD:overhaul/metric-conformance
