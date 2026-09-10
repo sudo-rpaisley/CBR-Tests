@@ -12,18 +12,19 @@ from scapy.layers.inet6 import IPv6
 from scapy.utils import PcapReader
 
 
+# Direct metrics read packet captures themselves rather than consuming the
+# canonical decoded-packet dataframe. The old protocol_validity_profile remains
+# runnable for compatibility/diagnostics but is no longer an automatic taxonomy
+# leaf: Valid IP Address Ratio now has its own canonical implementation.
 PCAP_DIRECT_METRICS = {
-    "protocol_validity_profile",
     "timestamp_coherence_profile",
     "handshake_plausibility_profile",
 }
 
-# Existing metrics that can consume the canonical decoded-packet view without
-# requiring dataset-specific research assumptions.  These are grouped by the
-# question they ask so automatic PCAP planning can expose every currently safe
-# runnable metric rather than an arbitrary shortlist.
+# Metrics that can consume the canonical decoded-packet view without requiring
+# dataset-specific research assumptions.
 PCAP_PACKET_NETWORK_METRICS = {
-    "reserved_ip_address_profile",
+    "valid_ip_address_ratio",
     "valid_port_range_profile",
 }
 
@@ -85,18 +86,17 @@ PCAP_REFERENCE_UNSUPPORTED_REASONS = {
     "flow_statistic_deviation_from_reference": "flow_segmentation_policy_required",
 }
 
-PCAP_EXPLICIT_PACKET_METRICS = {"service_port_consistency_profile"}
+# Explicit packet-backed metrics require scenario configuration and therefore are
+# not part of the configuration-free automatic set.
+PCAP_EXPLICIT_PACKET_METRICS = {
+    "service_port_consistency_profile",
+    "reserved_address_misuse_ratio",
+}
 PCAP_PACKET_BACKED_METRICS = (
     PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
 )
-# Keep this name reserved for the configuration-free automatic set. Optional
-# reference/service metrics are packet-backed but are not automatically runnable.
 PCAP_SUPPORTED_METRICS = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
 
-# These metrics are intentionally *not* automatically enabled for raw PCAP.
-# Their tabular forms test whether separately exported flow fields agree with one
-# another. If CBR-Tests derives both sides of those equations from the same PCAP,
-# a pass would mostly validate this adapter rather than the source dataset.
 PCAP_SELF_DERIVED_METRICS = {
     "tcp_flag_consistency_profile",
     "flow_duration_consistency_profile",
@@ -106,10 +106,9 @@ PCAP_SELF_DERIVED_METRICS = {
     "non_negative_duration_ratio",
 }
 
-# Context-sensitive raw-PCAP metrics that still require explicit research
-# configuration. Handshake plausibility is intentionally absent: its native PCAP
-# implementation only evaluates attempts whose opening SYN is actually observed.
-PCAP_CONTEXT_CONFIGURATION_REASONS = {}
+PCAP_CONTEXT_CONFIGURATION_REASONS = {
+    "reserved_address_misuse_ratio": "address_policy_required",
+}
 
 PCAP_PACKET_COLUMNS = {
     "Packet Index",
@@ -125,8 +124,6 @@ PCAP_PACKET_COLUMNS = {
     "Inter Arrival Time",
 }
 
-# Canonical flow view retained for later sequence/reference metrics. It is not
-# currently used to manufacture extra self-consistency passes in a PCAP plan.
 PCAP_FLOW_COLUMNS = {
     "Timestamp",
     "Flow End Timestamp",
@@ -181,8 +178,6 @@ def _packet_fields(packet) -> dict[str, Any] | None:
         src_ip = str(ip_layer.src)
         dst_ip = str(ip_layer.dst)
         ip_version = 6
-        # IPv6 extension headers can make the base next-header field differ from
-        # the eventual transport protocol. Prefer the decoded transport layer.
         if TCP in packet:
             protocol = 6
         elif UDP in packet:
@@ -219,13 +214,7 @@ def _packet_fields(packet) -> dict[str, Any] | None:
 
 
 def build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame:
-    """Return one canonical row per decoded IPv4/IPv6 packet.
-
-    Values in this view are copied from decoded packet fields rather than derived
-    from reconstructed flows, so packet-level metrics can operate on raw capture
-    evidence without first inventing exporter-specific flow semantics.
-    """
-
+    """Return one canonical row per decoded IPv4/IPv6 packet."""
     path = Path(dataset_path).expanduser().resolve()
     if not is_packet_capture(path):
         raise ValueError(f"Not a PCAP/PCAPNG dataset: {path}")
@@ -445,15 +434,7 @@ class _FlowState:
 
 
 def build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame:
-    """Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view.
-
-    The first observed packet defines the forward direction. Packet lengths are
-    captured frame lengths and durations/IATs are expressed in seconds. No idle
-    timeout is guessed: one row is produced per bidirectional 5-tuple across the
-    capture. Consequently this view is infrastructure for later sequence and
-    reference metrics, not evidence that self-derived flow arithmetic is realistic.
-    """
-
+    """Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view."""
     path = Path(dataset_path).expanduser().resolve()
     if not is_packet_capture(path):
         raise ValueError(f"Not a PCAP/PCAPNG dataset: {path}")
@@ -503,18 +484,32 @@ def build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame:
 
 
 def pcap_metric_template(metric_id: str) -> dict | None:
-    """Return a deterministic template for a metric safe on decoded packet evidence.
-
-    The templates deliberately avoid dataset-specific policy such as service
-    definitions, allowed slice IDs, reference datasets, attack windows, or model
-    configuration.  Numeric dependency/drift metrics use packet length and
-    capture-order inter-arrival time because those quantities have meaningful
-    continuous scales; TCP flag bitmasks and port identifiers are not treated as
-    ordinal measurements for correlation.
-    """
+    """Return a deterministic template for a metric safe on decoded packet evidence."""
 
     numeric_analysis_fields = ["Packet Length", "Inter Arrival Time"]
     templates = {
+        "valid_ip_address_ratio": {
+            "metric_id": "valid_ip_address_ratio",
+            "label": "Valid IP Address Ratio",
+            "input_requirements": {
+                "candidate_fields": ["Source IP", "Destination IP"],
+            },
+            "calculation": {
+                "method": "Count syntactically valid non-missing decoded source/destination IP values divided by all non-missing candidate IP values.",
+                "parameters": {},
+            },
+        },
+        "reserved_address_misuse_ratio": {
+            "metric_id": "reserved_address_misuse_ratio",
+            "label": "Reserved-Address Misuse Ratio",
+            "input_requirements": {
+                "candidate_fields": ["Source IP", "Destination IP"],
+            },
+            "calculation": {
+                "method": "Count scenario-policy-inconsistent special-use addresses divided by syntactically valid candidate IP values.",
+                "parameters": {"misuse_categories": []},
+            },
+        },
         "reserved_ip_address_profile": {
             "metric_id": "reserved_ip_address_profile",
             "label": "Reserved/Special-Use IP Address Profile",
@@ -522,7 +517,7 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                 "candidate_fields": ["Source IP", "Destination IP"],
             },
             "calculation": {
-                "method": "Profile decoded source/destination IP address categories and apply only explicitly configured special-use policy categories.",
+                "method": "Legacy descriptive profile of decoded source/destination IP address categories.",
                 "parameters": {
                     "invalid_ratio_fail_threshold": 0.01,
                 },
@@ -735,14 +730,8 @@ def pcap_metric_template(metric_id: str) -> dict | None:
     return None if template is None else deepcopy(template)
 
 
-
 def pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict:
-    """Build a service-port metric only for an explicitly single-service capture.
-
-    The service population must come from independent experiment knowledge. The
-    framework never infers a service from the same ports it is about to test.
-    """
-
+    """Build a service-port metric only for an explicitly single-service capture."""
     name = str(service_name).strip()
     ports = sorted({int(port) for port in expected_ports})
     if not name:
