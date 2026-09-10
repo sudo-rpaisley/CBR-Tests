@@ -5,7 +5,11 @@ from pathlib import Path
 import pandas as pd
 
 from runner.tabular import load_tabular_dataset
-from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
+from cbr_tests.metrics.decision_rules import (
+    classify_ratio,
+    describe_measurement_parameter,
+    resolve_ratio_decision_rule,
+)
 
 
 _DURATION_TO_SECONDS = {
@@ -203,6 +207,20 @@ def run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tup
                 "duration_unit": duration_unit,
                 "relative_tolerance": relative_tolerance,
                 "absolute_tolerance": absolute_tolerance,
+                "measurement_parameters": {
+                    "relative_tolerance": describe_measurement_parameter(
+                        parameters,
+                        parameter_name="relative_tolerance",
+                        default=0.02,
+                        value=relative_tolerance,
+                    ),
+                    "absolute_tolerance": describe_measurement_parameter(
+                        parameters,
+                        parameter_name="absolute_tolerance",
+                        default=1e-6,
+                        value=absolute_tolerance,
+                    ),
+                },
                 "decision_rule": decision_rule,
                 "examples": examples,
                 "status": status,
