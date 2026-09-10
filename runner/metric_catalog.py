@@ -17,6 +17,7 @@ DEFAULT_PLANS_DIR = REPOSITORY_ROOT / "plans"
 PCAP_ONLY_METRICS = PCAP_DIRECT_METRICS
 
 MANUAL_CONFIGURATION_REASONS = {
+    "reserved_address_misuse_ratio": "address_policy_required",
     "service_port_consistency_profile": "service_definition_required",
     "valid_slice_identifier_profile": "allowed_slice_ids_required",
     "slice_identifier_consistency_profile": "slice_consistency_rules_required",
@@ -149,6 +150,8 @@ def sanitize_manual_template(metric: dict, reason: str) -> dict:
 
     if reason == "reference_dataset_required":
         _blank_reference_paths(metric)
+    elif reason == "address_policy_required" and isinstance(params, dict):
+        params["misuse_categories"] = []
     elif reason == "service_definition_required" and isinstance(params, dict):
         params["service_name"] = ""
         params["expected_ports"] = []
