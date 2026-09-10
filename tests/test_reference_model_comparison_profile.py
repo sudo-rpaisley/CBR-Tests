@@ -6,15 +6,18 @@ from scapy.utils import wrpcap
 from runner.pcap_adapter import build_pcap_packet_dataframe, pcap_reference_metric_template
 
 from tests.reference_model_comparison_profile import (
+    compute_burstiness_deviation_from_reference,
     compute_distance_correlation_matrix_deviation_from_reference,
     compute_feature_set_mmd_score_from_reference,
     compute_feature_wise_energy_distance_from_reference,
     compute_feature_wise_ks_statistic_from_reference,
     compute_feature_wise_wasserstein_distance_from_reference,
+    compute_flow_statistic_deviation_from_reference,
     compute_hourly_activity_divergence_from_reference,
     compute_inter_arrival_distribution_divergence_from_reference,
     compute_pearson_matrix_deviation_from_reference,
     compute_per_slice_class_divergence_from_reference,
+    compute_per_slice_feature_distribution_deviation_from_reference,
     compute_port_use_divergence_from_reference,
     compute_protocol_mix_divergence_from_reference,
     compute_slice_proportion_deviation_from_reference,
@@ -65,6 +68,7 @@ def test_reference_distributional_metric_oracles(tmp_path):
 
     mmd = compute_feature_set_mmd_score_from_reference(current, metric)["summary"]
     assert mmd["standardization"] == "pooled_mean_and_standard_deviation"
+    assert mmd["estimator"] == "biased_empirical_mmd_squared"
     assert mmd["rbf_bandwidth"] == 1.206045
     assert mmd["feature_set_mmd_score_from_reference"] == 0.196735
 
@@ -118,6 +122,133 @@ def test_reference_distance_correlation_matrix_deviation_oracle(tmp_path):
     assert result["distance_correlation_matrix_deviation_from_reference"] == 0.47336
 
 
+def test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone():
+    current = pd.DataFrame({"timestamp": [0, 1, 3, 6]})
+    reference = pd.DataFrame({"timestamp": [0, 1, 2, 3]})
+    metric = {
+        "_reference_df": reference,
+        "input_requirements": {"timestamp_field": "timestamp"},
+        "calculation": {"parameters": {"timestamp_unit": "s"}},
+    }
+
+    iat = compute_inter_arrival_distribution_divergence_from_reference(current, metric)["summary"]
+    assert iat["comparison_scope"] == "global_sorted_timestamp_sequence"
+    assert iat["divergence"] == "two_sample_ks_statistic"
+    assert iat["inter_arrival_distribution_divergence_from_reference"] == 0.666667
+
+    burst = compute_burstiness_deviation_from_reference(current, metric)["summary"]
+    assert burst["burstiness_deviation_from_reference"] == 0.579796
+
+    hourly_metric = {
+        "_reference_df": pd.DataFrame({"timestamp": [0, 7200]}),
+        "input_requirements": {"timestamp_field": "timestamp"},
+        "calculation": {"parameters": {"timestamp_unit": "s", "activity_timezone": "UTC"}},
+    }
+    hourly = compute_hourly_activity_divergence_from_reference(
+        pd.DataFrame({"timestamp": [0, 3600]}), hourly_metric
+    )["summary"]
+    assert hourly["timestamp_unit"] == "s"
+    assert hourly["activity_timezone"] == "UTC"
+    assert hourly["divergence"] == "total_variation_distance_over_24_hour_bins"
+    assert hourly["hourly_activity_divergence_from_reference"] == 0.5
+
+
+def test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals():
+    current = pd.DataFrame({
+        "slice": ["s1", "s1", "s2", None],
+        "label": ["a", "a", "a", "a"],
+        "f": [0.0, 0.0, 5.0, 99.0],
+    })
+    reference = pd.DataFrame({
+        "slice": ["s1", "s1", "s3", None],
+        "label": ["a", "b", "b", "b"],
+        "f": [0.0, 1.0, 7.0, 99.0],
+    })
+    metric = {
+        "_reference_df": reference,
+        "input_requirements": {
+            "slice_field": "slice",
+            "label_field": "label",
+            "candidate_fields": ["f"],
+        },
+    }
+
+    slice_prop = compute_slice_proportion_deviation_from_reference(current, metric)["summary"]
+    assert slice_prop["current_valid_slice_count"] == 3
+    assert slice_prop["reference_valid_slice_count"] == 3
+    assert slice_prop["slice_proportion_deviation_from_reference"] == 0.333333
+
+    classes = compute_per_slice_class_divergence_from_reference(current, metric)
+    assert classes["summary"]["shared_slice_count"] == 1
+    assert classes["summary"]["candidate_only_slices"] == ["s2"]
+    assert classes["summary"]["reference_only_slices"] == ["s3"]
+    assert classes["summary"]["per_slice_class_divergence_from_reference"] == 0.5
+
+    features = compute_per_slice_feature_distribution_deviation_from_reference(current, metric)
+    assert features["summary"]["shared_slice_count"] == 1
+    assert features["summary"]["comparison_count"] == 1
+    assert features["summary"]["per_slice_feature_distribution_deviation_from_reference"] == 0.5
+
+
+def test_reference_protocol_and_port_metrics_exclude_missing_categories():
+    current = pd.DataFrame({
+        "Protocol": [6, 6, 17, None],
+        "Source Port": [80, 80, None, None],
+        "Destination Port": [1000, 1001, None, None],
+    })
+    reference = pd.DataFrame({
+        "Protocol": [6, 17, 17, None],
+        "Source Port": [80, 53, None, None],
+        "Destination Port": [1000, 1000, None, None],
+    })
+    metric = {
+        "_reference_df": reference,
+        "input_requirements": {
+            "protocol_field": "Protocol",
+            "port_fields": ["Source Port", "Destination Port"],
+        },
+    }
+
+    protocol = compute_protocol_mix_divergence_from_reference(current, metric)["summary"]
+    assert protocol["current_valid_protocol_count"] == 3
+    assert protocol["reference_valid_protocol_count"] == 3
+    assert protocol["protocol_mix_divergence_from_reference"] == 0.333333
+
+    ports = compute_port_use_divergence_from_reference(current, metric)
+    assert ports["summary"]["runnable_field_count"] == 2
+    assert ports["summary"]["port_use_divergence_from_reference"] == 0.5
+    assert [row["total_variation_distance"] for row in ports["fields"]] == [0.5, 0.5]
+
+
+def test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation():
+    current = pd.DataFrame({"Flow Duration": [1.0, 2.0]})
+    reference = pd.DataFrame({"Flow Duration": [1.0, 3.0]})
+    metric = {
+        "_reference_df": reference,
+        "input_requirements": {
+            "candidate_fields": ["Flow Duration"],
+            "flow_definition_id": "bidirectional-5tuple-timeout60",
+            "reference_flow_definition_id": "bidirectional-5tuple-timeout60",
+        },
+    }
+    result = compute_flow_statistic_deviation_from_reference(current, metric)
+    assert result["fields"][0]["flow_statistic_deviation_from_reference"] == 0.5
+    assert result["summary"]["distance"] == "feature_wise_wasserstein_1"
+    assert result["summary"]["flow_segmentation_comparability"] == "matched"
+    assert result["summary"]["interpretation_ready"] is True
+
+    mismatched = {
+        **metric,
+        "input_requirements": {
+            **metric["input_requirements"],
+            "reference_flow_definition_id": "unidirectional-5tuple-timeout30",
+        },
+    }
+    mismatch_result = compute_flow_statistic_deviation_from_reference(current, mismatched)["summary"]
+    assert mismatch_result["flow_segmentation_comparability"] == "mismatched"
+    assert mismatch_result["interpretation_ready"] is False
+
+
 def test_reference_slice_and_protocol_metrics(tmp_path):
     reference_path = tmp_path / "reference.csv"
     current = pd.DataFrame({
@@ -141,7 +272,6 @@ def test_reference_slice_and_protocol_metrics(tmp_path):
     assert compute_per_slice_class_divergence_from_reference(current, metric)["summary"]["per_slice_class_divergence_from_reference"] > 0.0
     assert compute_protocol_mix_divergence_from_reference(current, metric)["summary"]["protocol_mix_divergence_from_reference"] == 0.333333
     assert compute_port_use_divergence_from_reference(current, metric)["summary"]["port_use_divergence_from_reference"] > 0.0
-
 
 
 def test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path):
@@ -174,6 +304,11 @@ def test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path):
     assert temporal["summary"]["current_gap_count"] == 3
     assert temporal["summary"]["reference_gap_count"] == 3
     assert temporal["summary"]["inter_arrival_distribution_divergence_from_reference"] is not None
+
+    hourly_metric = pcap_reference_metric_template("hourly_activity_divergence_from_reference", reference_path)
+    hourly = compute_hourly_activity_divergence_from_reference(current, hourly_metric)["summary"]
+    assert hourly["timestamp_unit"] == "s"
+    assert hourly["activity_timezone"] == "UTC"
 
     mmd_metric = pcap_reference_metric_template("feature_set_mmd_score_from_reference", reference_path)
     mmd = compute_feature_set_mmd_score_from_reference(current, mmd_metric)["summary"]
