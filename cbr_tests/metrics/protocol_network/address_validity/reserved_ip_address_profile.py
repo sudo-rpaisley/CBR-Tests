@@ -2,6 +2,7 @@ from pathlib import Path
 from ipaddress import ip_address, ip_network
 
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import resolve_maximum_ratio_failure_rule
 
 
 IPV4_DOC_NETS = [
@@ -117,12 +118,13 @@ def run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bo
     import pandas as pd
 
     params = metric.get("calculation", {}).get("parameters", {})
-    invalid_ratio_fail_threshold = float(params.get("invalid_ratio_fail_threshold", 0.01))
-    if not 0 <= invalid_ratio_fail_threshold <= 1:
-        return False, {
-            "error": "invalid_ratio_fail_threshold must be between 0 and 1.",
-            "reason_code": "invalid_metric_configuration",
-        }
+    try:
+        failure_rule = resolve_maximum_ratio_failure_rule(
+            params, parameter_name="invalid_ratio_fail_threshold", default=0.01
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
+    invalid_ratio_fail_threshold = failure_rule["failure_threshold"]
 
     df = metric.get("_shared_df")
     if df is None:
@@ -268,6 +270,11 @@ def run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bo
                 "reserved_address_ratio": reserved_address_ratio,
                 "reserved_row_ratio": reserved_row_ratio,
                 "invalid_ratio_fail_threshold": invalid_ratio_fail_threshold,
+                "decision_rule": {
+                    **failure_rule,
+                    "warning_policy": "warn_on_any_invalid_or_policy-counted_special-use_address_below_failure_threshold",
+                    "compatibility_note": "legacy profile; canonical reserved-address misuse ratio is computed separately",
+                },
                 "ip_version_counts": ip_version_counts,
                 "reserved_category_counts": reserved_category_counts,
                 "field_summaries": [field_summaries[f] for f in checked_fields],
