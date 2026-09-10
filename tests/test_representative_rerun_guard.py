@@ -22,9 +22,30 @@ def test_representative_rerun_rejects_legacy_intrinsic_plan(tmp_path):
     plan = tmp_path / "legacy.json"
     plan.write_text(json.dumps(_plan("wasserstein_feature_distance")), encoding="utf-8")
 
-    with pytest.raises(SystemExit, match="require canonical metric IDs") as exc:
+    with pytest.raises(SystemExit, match="canonical metric-conformance contract") as exc:
         _reject_legacy_representative_plan(plan)
     assert "migrate_plan_to_canonical_ids.py" in str(exc.value)
+
+
+def test_representative_rerun_rejects_compatibility_only_protocol_profile(tmp_path):
+    plan = tmp_path / "legacy_protocol.json"
+    plan.write_text(json.dumps(_plan("protocol_validity_profile")), encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc:
+        _reject_legacy_representative_plan(plan)
+    message = str(exc.value)
+    assert "Compatibility-only profile IDs (1)" in message
+    assert "regenerate this plan" in message
+    assert "Valid IP Address Ratio" in message
+
+
+def test_representative_rerun_rejects_legacy_reserved_address_profile(tmp_path):
+    plan = tmp_path / "legacy_reserved.json"
+    plan.write_text(json.dumps(_plan("reserved_ip_address_profile")), encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc:
+        _reject_legacy_representative_plan(plan)
+    assert "requires an explicit address-use policy" in str(exc.value)
 
 
 def test_representative_rerun_accepts_canonical_plan(tmp_path):
