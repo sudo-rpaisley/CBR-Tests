@@ -71,6 +71,7 @@ def compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict:
         )
 
     duplicate_row_count = int(duplicate_mask.sum())
+    runnable = row_count > 0 and bool(subset_fields)
     return {
         "summary": {
             "row_count": row_count,
@@ -81,8 +82,8 @@ def compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict:
             "duplicate_row_count": duplicate_row_count,
             "duplicate_group_count": duplicate_group_count,
             "duplicate_row_ratio": (
-                round(duplicate_row_count / row_count, 6) if row_count else None
+                round(duplicate_row_count / row_count, 6) if runnable else None
             ),
-            "runnable": row_count > 0 and bool(subset_fields),
+            "runnable": runnable,
         }
     }
