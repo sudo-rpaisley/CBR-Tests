@@ -11,6 +11,22 @@ from cbr_tests.plan_migration import legacy_intrinsic_metric_ids
 from cbr_tests.rerun_workflow import run_and_compare
 
 
+# These older raw-PCAP profiles remain executable for historical compatibility,
+# but they no longer represent canonical leaves one-to-one. A representative
+# post-overhaul plan should be regenerated rather than silently carrying them
+# forward.
+COMPATIBILITY_ONLY_REPRESENTATIVE_METRICS = {
+    "protocol_validity_profile": (
+        "The canonical Valid IP Address Ratio is now a dedicated metric; the old "
+        "protocol profile mixes several packet-validity concepts."
+    ),
+    "reserved_ip_address_profile": (
+        "Reserved-address misuse now requires an explicit address-use policy and "
+        "cannot be inferred from the legacy profile."
+    ),
+}
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
@@ -41,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-legacy-metric-ids",
         action="store_true",
         help=(
-            "Allow a representative rerun to use pre-overhaul intrinsic metric IDs. "
+            "Allow a representative rerun to use pre-overhaul/compatibility metric IDs. "
             "This is intended only for deliberate compatibility experiments."
         ),
     )
@@ -87,20 +103,50 @@ def _resolved_plan_payload(run_definition: Path) -> tuple[Path, dict]:
     return source, payload
 
 
+def _compatibility_only_metric_ids(plan: dict) -> list[str]:
+    return [
+        str(metric.get("metric_id"))
+        for metric in plan.get("metrics", [])
+        if isinstance(metric, dict)
+        and metric.get("metric_id") in COMPATIBILITY_ONLY_REPRESENTATIVE_METRICS
+    ]
+
+
 def _reject_legacy_representative_plan(run_definition: Path) -> None:
     plan_path, plan = _resolved_plan_payload(run_definition)
-    legacy = legacy_intrinsic_metric_ids(plan)
-    if not legacy:
+    legacy_intrinsic = legacy_intrinsic_metric_ids(plan)
+    compatibility_only = _compatibility_only_metric_ids(plan)
+    if not legacy_intrinsic and not compatibility_only:
         return
-    joined = "\n  - ".join(legacy)
-    raise SystemExit(
-        "Representative reruns require canonical metric IDs. "
-        f"The selected plan contains {len(legacy)} legacy intrinsic ID(s):\n"
-        f"  - {joined}\n"
-        "Migrate it first with:\n"
-        f"  python scripts/migrate_plan_to_canonical_ids.py {plan_path}\n"
-        "Use --allow-legacy-metric-ids only for a deliberate compatibility run."
+
+    lines = [
+        "Representative reruns require the canonical metric-conformance contract.",
+    ]
+    if legacy_intrinsic:
+        lines.append(f"Legacy intrinsic metric IDs ({len(legacy_intrinsic)}):")
+        lines.extend(f"  - {metric_id}" for metric_id in legacy_intrinsic)
+        lines.extend(
+            [
+                "These can be renamed safely with:",
+                f"  python scripts/migrate_plan_to_canonical_ids.py {plan_path}",
+            ]
+        )
+    if compatibility_only:
+        lines.append(f"Compatibility-only profile IDs ({len(compatibility_only)}):")
+        for metric_id in compatibility_only:
+            lines.append(
+                f"  - {metric_id}: {COMPATIBILITY_ONLY_REPRESENTATIVE_METRICS[metric_id]}"
+            )
+        lines.extend(
+            [
+                "Because those profiles do not have one-to-one canonical replacements,",
+                "regenerate this plan with the current dataset-aware builder before the representative rerun.",
+            ]
+        )
+    lines.append(
+        "Use --allow-legacy-metric-ids only for a deliberate compatibility experiment, not a final representative rerun."
     )
+    raise SystemExit("\n".join(lines))
 
 
 def main() -> int:
