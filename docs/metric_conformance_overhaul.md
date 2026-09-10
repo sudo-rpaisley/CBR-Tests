@@ -10,6 +10,10 @@ The companion `sudo-rpaisley/paper-draft` branch `overhaul/metric-conformance` c
 
 A passing unit test is not sufficient evidence of conformance if it merely reproduces the implementation. Each canonical metric has a paper-side verification record and is expected to have deterministic executable coverage derived from the written equation.
 
+Where a measured value is converted into PASS/WARN/FAIL, a separate decision chain is now recorded:
+
+`metric value -> threshold/tolerance provenance -> decision policy -> verdict`
+
 ## Conformance rules
 
 1. Do not change an equation merely to make existing code pass.
@@ -21,6 +25,7 @@ A passing unit test is not sufficient evidence of conformance if it merely repro
 7. For metrics with a reference dataset, record the reference identity and any field mapping, sampling, normalisation or preprocessing applied.
 8. For classification metrics, make binary/multiclass averaging semantics explicit rather than inferring a positive class silently.
 9. A zero denominator is not a numerical realism observation: non-executable cases return `None` with an explicit runnable/applicability state where applicable.
+10. Measurement tolerances that alter a numerator must be reported with their provenance rather than hidden as implementation constants.
 
 ## Resolved definition and implementation conflicts
 
@@ -39,6 +44,9 @@ The initial audit found several material mismatches. They have now been resolved
 | Train/test identifier contamination | Uses the fraction of unique test identifiers already present in training, with raw counts retained. |
 | Task metrics | Binary semantics require an explicit positive label rather than silently inferring one. |
 | Zero-denominator cases | Temporal consistency and data-quality ratios now report `None`/not-runnable instead of a misleading numerical zero. |
+| Production code location | Label, slice, reference-comparison and protocol/network handlers now dispatch from `cbr_tests/metrics/`; old `tests/` paths are compatibility wrappers only. |
+| Verdict thresholds | Embedded ratio cut-offs are separated from the metric equation and emitted as explicit decision-policy metadata with provenance. |
+| Measurement tolerances | Flow-duration, packet-byte and derived-rate tolerances are emitted as operationalisation parameters with provenance because they can alter the metric numerator. |
 
 ## Taxonomy and runtime alignment
 
@@ -48,7 +56,21 @@ The initial audit found several material mismatches. They have now been resolved
 - Reference Model Comparison and Task-Based Validation remain separate top-level branches.
 - post-review/supporting additions such as `derived_rate_consistency_ratio`, `timestamp_coherence_profile`, and `column_quality_profile` are explicitly marked and are not silently counted as members of the original expert-reviewed 61 leaves.
 
-The test suite now enforces that every metric ID advertised by `master_taxonomy.json` is present in the actual handler set produced by `runner.dispatch.build_metric_handlers()`. The paper-side validator separately verifies all 61 leaf contracts and their runtime-ID bindings, giving a machine-checked chain from paper leaf to executable handler.
+The test suite enforces that every metric ID advertised by `master_taxonomy.json` is present in the actual handler set produced by `runner.dispatch.build_metric_handlers()`. The paper-side validator separately verifies all 61 leaf contracts and their runtime-ID bindings, giving a machine-checked chain from paper leaf to executable handler.
+
+## Threshold audit
+
+`docs/threshold_audit.md` now distinguishes:
+
+- normative/domain constraints;
+- literature-derived thresholds where a source actually defines one;
+- empirically calibrated thresholds;
+- scenario-configured thresholds;
+- framework defaults retained only for reproducibility;
+- eligibility/reliability rules that are not realism thresholds;
+- measurement tolerances that alter the operationalised metric rather than only the verdict.
+
+Framework defaults such as `0.99/0.95`, `0.95/0.80`, `0.95/0.75` and the one-sided `0.01` invalid-value rule are not presented as universal realism constants unless an experiment later supplies stronger provenance.
 
 ## Current verification state
 
@@ -59,14 +81,23 @@ At the current overhaul head:
 - generated function/test documentation: current;
 - documented quickstart: green;
 - taxonomy-to-runtime handler invariant: green;
-- companion paper taxonomy validator: green for all 61 canonical leaves.
+- companion paper taxonomy validator: green for all 61 canonical leaves;
+- production metric implementations no longer dispatch through `tests/`;
+- the primary threshold/tolerance provenance audit is explicit in code and documentation.
+
+## Representative reruns
+
+The next scientific stage is to rerun representative datasets and compare them with the pre-overhaul exploratory outcomes. `scripts/compare_outcomes.py` and `docs/overhaul_rerun_comparison.md` provide a reproducible comparison workflow.
+
+The comparison deliberately ignores volatile execution metadata by default and highlights changes to statuses, applicability, ratios, scores, distances, divergences, deviations, decision rules and measurement-parameter provenance. This is intended to distinguish expected overhaul changes from accidental regressions.
 
 ## Remaining overhaul work
 
-The scientific definition/equation alignment pass is complete enough to proceed to implementation hardening, but the branch is not yet considered frozen for final experiments. Remaining work is:
+The definition/equation, implementation-location and primary threshold audits are now complete enough for representative reruns. The branch is not yet frozen for final experiments. Remaining work is:
 
-1. move production metric implementations that still live under `tests/` into `cbr_tests/metrics/`, leaving compatibility imports only where needed;
-2. audit PASS/WARN/FAIL thresholds separately from metric equations and label unsupported thresholds as heuristic/configuration-dependent;
-3. run representative bucket datasets again and compare changed outcomes against the pre-overhaul exploratory results;
-4. document any result changes caused by corrected denominators, non-runnable states, or renamed intrinsic diagnostics;
-5. freeze the audited contract only after the implementation-location and threshold audits are complete.
+1. run representative bucket datasets again using the overhaul branch;
+2. preserve the pre-overhaul and post-overhaul authoritative JSON and generate both Markdown and JSON comparison reports;
+3. review scientifically material changes caused by corrected denominators, applicability handling, renamed intrinsic diagnostics and decision-policy separation;
+4. decide which experiment-facing thresholds/tolerances will remain scenario/framework policy and which will be empirically calibrated;
+5. update the paper with any interpretation changes exposed by the reruns;
+6. freeze the audited contract before the final perturbation experiments and before claiming second-expert-review endorsement for post-review additions.
