@@ -34,7 +34,7 @@ Missing-value and duplicate-row metrics.
 | --- | --- | --- | --- |
 | `_select_fields(df: pd.DataFrame, metric: dict, key: str) -> list[str]` (L6) | function | Internal | Implementation helper for select fields. |
 | `compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict` (L13) | function | Public | Computes missing value ratio and returns a structured result. |
-| `compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict` (L49) | function | Public | Computes duplicate row ratio and returns a structured result. |
+| `compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict` (L50) | function | Public | Computes duplicate row ratio and returns a structured result. |
 
 ## `cbr_tests/metrics/intrinsic_diagnostics.py`
 
@@ -192,21 +192,21 @@ Timestamp, duration, timing-drift, hourly, and periodicity calculations.
 | `_inter_arrival_seconds(timestamps: pd.Series) -> list[float]` (L65) | function | Internal | Implementation helper for inter arrival seconds. |
 | `compute_timestamp_parse_success_ratio(df: pd.DataFrame, metric: dict) -> dict` (L73) | function | Public | Measure parser success among non-missing timestamp values actually attempted. |
 | `compute_start_end_timestamp_consistency_ratio(df: pd.DataFrame, metric: dict) -> dict` (L105) | function | Public | Computes start end timestamp consistency ratio and returns a structured result. |
-| `compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict` (L136) | function | Public | Computes non negative duration ratio and returns a structured result. |
-| `compute_inter_arrival_time_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L171) | function | Public | Measure within-dataset IAT drift between chronological halves. This is an intrinsic stability diagnostic, not a candidate-versus-reference realism comparison. A low value is not universally more realistic because genuine traffic can be non-stationary. |
-| `_burstiness(values: list[float]) -> float | None` (L204) | function | Internal | Implementation helper for burstiness. |
-| `compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict` (L214) | function | Public | Measure change in burstiness between chronological halves of one trace. |
-| `_hourly_counts(timestamps: list[pd.Timestamp]) -> list[int]` (L246) | function | Internal | Implementation helper for hourly counts. |
-| `_probabilities(counts: list[int]) -> list[float]` (L253) | function | Internal | Implementation helper for probabilities. |
-| `_daily_hour_vectors(timestamps: list[pd.Timestamp]) -> list[tuple[str, list[int]]]` (L258) | function | Internal | Return one 24-hour UTC activity vector per observed calendar day. |
-| `_mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]` (L271) | function | Internal | Implementation helper for mean pairwise total variation. |
-| `_cosine_similarity(left: list[int], right: list[int]) -> float | None` (L288) | function | Internal | Implementation helper for cosine similarity. |
-| `_mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]` (L297) | function | Internal | Implementation helper for mean pairwise cosine similarity. |
-| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L309) | function | Public | Measure pairwise day-to-day divergence in UTC hour-of-day activity. This is an intrinsic repeatability/stability diagnostic. Its value is contextual: real traffic can legitimately change from day to day. |
-| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L351) | function | Public | Measure pairwise day-to-day similarity of UTC hour-of-day activity shapes. |
-| `_continuous_hourly_counts(timestamps: list[pd.Timestamp]) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]` (L386) | function | Internal | Implementation helper for continuous hourly counts. |
-| `_lag_repeat_similarity(values: list[int], lag: int, minimum_pairs: int) -> tuple[float | None, int]` (L400) | function | Internal | Implementation helper for lag repeat similarity. |
-| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L420) | function | Public | Measure within-dataset repeat similarity at configured hourly lags. A configured lag such as 24 hours describes a structural hypothesis about the workload. High repeat similarity is favourable only when such periodicity is expected; otherwise the result is descriptive/contextual. |
+| `compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict` (L137) | function | Public | Computes non negative duration ratio and returns a structured result. |
+| `compute_inter_arrival_time_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L173) | function | Public | Measure within-dataset IAT drift between chronological halves. This is an intrinsic stability diagnostic, not a candidate-versus-reference realism comparison. A low value is not universally more realistic because genuine traffic can be non-stationary. |
+| `_burstiness(values: list[float]) -> float | None` (L206) | function | Internal | Implementation helper for burstiness. |
+| `compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict` (L216) | function | Public | Measure change in burstiness between chronological halves of one trace. |
+| `_hourly_counts(timestamps: list[pd.Timestamp]) -> list[int]` (L248) | function | Internal | Implementation helper for hourly counts. |
+| `_probabilities(counts: list[int]) -> list[float]` (L255) | function | Internal | Implementation helper for probabilities. |
+| `_daily_hour_vectors(timestamps: list[pd.Timestamp]) -> list[tuple[str, list[int]]]` (L260) | function | Internal | Return one 24-hour UTC activity vector per observed calendar day. |
+| `_mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]` (L273) | function | Internal | Implementation helper for mean pairwise total variation. |
+| `_cosine_similarity(left: list[int], right: list[int]) -> float | None` (L290) | function | Internal | Implementation helper for cosine similarity. |
+| `_mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]` (L299) | function | Internal | Implementation helper for mean pairwise cosine similarity. |
+| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L311) | function | Public | Measure pairwise day-to-day divergence in UTC hour-of-day activity. This is an intrinsic repeatability/stability diagnostic. Its value is contextual: real traffic can legitimately change from day to day. |
+| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L353) | function | Public | Measure pairwise day-to-day similarity of UTC hour-of-day activity shapes. |
+| `_continuous_hourly_counts(timestamps: list[pd.Timestamp]) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]` (L388) | function | Internal | Implementation helper for continuous hourly counts. |
+| `_lag_repeat_similarity(values: list[int], lag: int, minimum_pairs: int) -> tuple[float | None, int]` (L402) | function | Internal | Implementation helper for lag repeat similarity. |
+| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L422) | function | Public | Measure within-dataset repeat similarity at configured hourly lags. A configured lag such as 24 hours describes a structural hypothesis about the workload. High repeat similarity is favourable only when such periodicity is expected; otherwise the result is descriptive/contextual. |
 
 ## `cbr_tests/metrics/timestamp_coherence.py`
 

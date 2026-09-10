@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **243 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **245 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -174,6 +174,7 @@ Tests and local helpers in this module.
 | `test_compute_missing_value_ratio_uses_candidate_fields()` (L7) | Verifies that compute missing value ratio uses candidate fields. | `compute_missing_value_ratio` |
 | `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L27) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
 | `test_compute_spearman_profile_reports_rank_correlation()` (L42) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+| `test_data_quality_zero_denominators_are_not_numeric_scores()` (L60) | Verifies that data quality zero denominators are not numeric scores. | `compute_missing_value_ratio`, `compute_duplicate_row_ratio` |
 
 ## `tests/test_dataset_summary.py`
 
@@ -754,6 +755,7 @@ Tests and local helpers in this module.
 | `test_shifted_daily_activity_is_detected_as_diurnally_different()` (L88) | Verifies that shifted daily activity is detected as diurnally different. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
 | `test_single_day_capture_is_not_mislabelled_as_diurnally_divergent()` (L112) | Verifies that single day capture is not mislabelled as diurnally divergent. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
 | `test_periodicity_rejects_non_positive_lags()` (L139) | Verifies that periodicity rejects non positive lags. | `compute_periodicity_preservation_score`, `AssertionError` |
+| `test_temporal_consistency_zero_denominators_are_not_numeric_scores()` (L153) | Verifies that temporal consistency zero denominators are not numeric scores. | `compute_start_end_timestamp_consistency_ratio`, `compute_non_negative_duration_ratio` |
 
 ## `tests/test_tui.py`
 

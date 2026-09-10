@@ -27,7 +27,7 @@ def compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict:
                 "missing_count": field_missing_count,
                 "total_count": row_count,
                 "missing_value_ratio": (
-                    round(field_missing_count / row_count, 6) if row_count else 0.0
+                    round(field_missing_count / row_count, 6) if row_count else None
                 ),
             }
         )
@@ -40,8 +40,9 @@ def compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict:
             "total_cells": total_cells,
             "missing_cells": missing_cells,
             "missing_value_ratio": (
-                round(missing_cells / total_cells, 6) if total_cells else 0.0
+                round(missing_cells / total_cells, 6) if total_cells else None
             ),
+            "runnable": total_cells > 0,
         },
     }
 
@@ -69,7 +70,8 @@ def compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict:
             "duplicate_row_count": duplicate_row_count,
             "duplicate_group_count": duplicate_group_count,
             "duplicate_row_ratio": (
-                round(duplicate_row_count / row_count, 6) if row_count else 0.0
+                round(duplicate_row_count / row_count, 6) if row_count else None
             ),
+            "runnable": row_count > 0,
         }
     }

@@ -149,3 +149,27 @@ def test_periodicity_rejects_non_positive_lags():
         assert "positive integers" in str(exc)
     else:
         raise AssertionError("Expected invalid lag configuration to raise ValueError")
+
+def test_temporal_consistency_zero_denominators_are_not_numeric_scores():
+    df = pd.DataFrame({
+        "start": ["bad"],
+        "end": ["also-bad"],
+        "duration": ["not-a-duration"],
+    })
+
+    start_end = compute_start_end_timestamp_consistency_ratio(
+        df,
+        {"input_requirements": {"start_timestamp_field": "start", "end_timestamp_field": "end"}},
+    )["summary"]
+    duration = compute_non_negative_duration_ratio(
+        df,
+        {"input_requirements": {"duration_field": "duration"}},
+    )["summary"]
+
+    assert start_end["parseable_pair_count"] == 0
+    assert start_end["start_end_timestamp_consistency_ratio"] is None
+    assert start_end["runnable"] is False
+    assert duration["valid_duration_count"] == 0
+    assert duration["non_negative_duration_ratio"] is None
+    assert duration["runnable"] is False
+

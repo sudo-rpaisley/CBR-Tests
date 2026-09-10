@@ -56,3 +56,24 @@ def test_compute_spearman_profile_reports_rank_correlation():
     assert result["summary"]["pair_count"] == 1
     assert result["summary"]["mean_absolute_correlation"] == 1.0
     assert result["matrix"]["x"]["y"] == 1.0
+
+def test_data_quality_zero_denominators_are_not_numeric_scores():
+    df = pd.DataFrame({"a": pd.Series(dtype="float64"), "src": pd.Series(dtype="object")})
+
+    missing = compute_missing_value_ratio(
+        df,
+        {"input_requirements": {"candidate_fields": ["a"]}},
+    )
+    duplicate = compute_duplicate_row_ratio(
+        df,
+        {"input_requirements": {"subset_fields": ["src"]}},
+    )
+
+    assert missing["summary"]["total_cells"] == 0
+    assert missing["summary"]["missing_value_ratio"] is None
+    assert missing["summary"]["runnable"] is False
+    assert missing["fields"][0]["missing_value_ratio"] is None
+    assert duplicate["summary"]["row_count"] == 0
+    assert duplicate["summary"]["duplicate_row_ratio"] is None
+    assert duplicate["summary"]["runnable"] is False
+

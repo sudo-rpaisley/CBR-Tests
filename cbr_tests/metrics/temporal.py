@@ -126,8 +126,9 @@ def compute_start_end_timestamp_consistency_ratio(
             "start_end_timestamp_consistency_ratio": (
                 round(consistent_count / parseable_count, 6)
                 if parseable_count
-                else 0.0
+                else None
             ),
+            "runnable": parseable_count > 0,
             "denominator_policy": "parseable_start_end_pairs",
         }
     }
@@ -161,8 +162,9 @@ def compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict:
             "valid_duration_count": valid_count,
             "negative_duration_count": valid_count - non_negative_count,
             "non_negative_duration_ratio": (
-                round(non_negative_count / valid_count, 6) if valid_count else 0.0
+                round(non_negative_count / valid_count, 6) if valid_count else None
             ),
+            "runnable": valid_count > 0,
             "denominator_policy": "parseable_duration_values",
         }
     }
