@@ -2,7 +2,11 @@ from pathlib import Path
 import pandas as pd
 import math
 from runner.tabular import load_tabular_dataset
-from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
+from cbr_tests.metrics.decision_rules import (
+    classify_ratio,
+    describe_measurement_parameter,
+    resolve_ratio_decision_rule,
+)
 
 
 def run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
@@ -91,6 +95,20 @@ def run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tupl
         "variance_std_mismatch_count": int(varmis.sum()),
         "invalid_numeric_row_count": invalid_numeric_row_count,
         "packet_byte_consistency_ratio": ratio,
+        "measurement_parameters": {
+            "tolerance": describe_measurement_parameter(
+                p,
+                parameter_name="tolerance",
+                default=1e-6,
+                value=tol,
+            ),
+            "variance_tolerance": describe_measurement_parameter(
+                p,
+                parameter_name="variance_tolerance",
+                default=1e-3,
+                value=vtol,
+            ),
+        },
         "examples": examples,
         "decision_rule": decision_rule,
         "status": status
