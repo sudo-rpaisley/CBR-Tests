@@ -39,6 +39,18 @@ def current_git_commit(repo_root: Path) -> str | None:
     return value or None
 
 
+def outcome_dataset_sha256(outcome: dict) -> str | None:
+    """Read the dataset digest already recorded by normal run provenance."""
+    provenance = outcome.get("provenance")
+    if not isinstance(provenance, dict):
+        return None
+    dataset = provenance.get("dataset")
+    if not isinstance(dataset, dict):
+        return None
+    value = dataset.get("sha256")
+    return str(value).strip() if value else None
+
+
 def build_run_plan_command(
     *,
     repo_root: Path,
@@ -172,6 +184,14 @@ def run_and_compare(
     )
     comparison_markdown.write_text(render_markdown(comparison), encoding="utf-8")
 
+    # Normal run provenance already hashes the dataset. Reuse that digest so a
+    # multi-gigabyte PCAP is not read a second time solely for this wrapper.
+    dataset_sha256 = outcome_dataset_sha256(after)
+    dataset_hash_source = "post_overhaul_outcome.provenance.dataset.sha256"
+    if not dataset_sha256:
+        dataset_sha256 = file_sha256(dataset_path)
+        dataset_hash_source = "rerun_wrapper_fallback"
+
     manifest = {
         "schema_version": 1,
         "workflow": "metric-conformance-representative-rerun",
@@ -192,7 +212,8 @@ def run_and_compare(
             "plan": str(plan_path),
             "plan_sha256": file_sha256(plan_path),
             "dataset": str(dataset_path),
-            "dataset_sha256": file_sha256(dataset_path),
+            "dataset_sha256": dataset_sha256,
+            "dataset_sha256_source": dataset_hash_source,
         },
         "outputs": {
             "post_overhaul_outcome": str(rerun_output),
