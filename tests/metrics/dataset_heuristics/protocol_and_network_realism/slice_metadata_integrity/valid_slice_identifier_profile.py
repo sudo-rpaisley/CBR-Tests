@@ -18,7 +18,12 @@ def normalise_slice_id(value, case_sensitive: bool, aliases: dict):
 
 
 def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
-    """Slice metadata integrity tests are context-dependent. A valid slice identifier only shows that the slice value belongs to the expected vocabulary. Slice identifier consistency checks whether that value is plausible given other row metadata, such as source file, traffic group, or label. A consistency failure should be interpreted as a possible metadata, labelling, merge, or extraction issue, not automatically as proof that the dataset is unusable."""
+    """Check non-missing slice identifiers against a declared vocabulary.
+
+    Missing slice identifiers are completeness evidence and are excluded from the
+    canonical identifier-validity denominator by default. ``count_invalid`` is
+    retained as an explicit legacy/strict policy for reproducing older plans.
+    """
     input_req = metric.get("input_requirements", {})
     params = metric.get("calculation", {}).get("parameters", {})
     slice_field = input_req.get("slice_field")
@@ -35,7 +40,12 @@ def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple
     if not case_sensitive:
         aliases = {str(k).lower(): v for k, v in aliases.items()}
 
-    missing_policy = params.get("missing_policy", "count_invalid")
+    missing_policy = params.get("missing_policy", "exclude_missing")
+    if missing_policy not in {"exclude_missing", "count_invalid"}:
+        return False, {
+            "error": "missing_policy must be 'exclude_missing' or 'count_invalid'.",
+            "reason_code": "invalid_metric_configuration",
+        }
     max_examples = int(params.get("max_examples", 10))
 
     df = metric.get("_shared_df")
@@ -110,6 +120,8 @@ def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple
         "valid_slice_identifier_ratio": valid_ratio,
         "invalid_slice_identifier_ratio": invalid_ratio,
         "missing_slice_ratio": missing_ratio,
+        "missing_policy": missing_policy,
+        "denominator_policy": "non_missing_slice_identifiers" if missing_policy == "exclude_missing" else "all_rows_with_missing_counted_invalid",
         "allowed_slice_ids": sorted(allowed_norm),
         "observed_slice_ids": sorted(observed),
         "invalid_examples": examples,
