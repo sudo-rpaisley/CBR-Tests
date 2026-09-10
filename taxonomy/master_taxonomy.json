@@ -4,12 +4,12 @@
       "address_validity": {
         "valid_ip_address_ratio": {
           "_metrics": [
-            "protocol_validity_profile"
+            "valid_ip_address_ratio"
           ]
         },
         "reserved_address_misuse_ratio": {
           "_metrics": [
-            "reserved_ip_address_profile"
+            "reserved_address_misuse_ratio"
           ]
         }
       },
