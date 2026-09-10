@@ -2,9 +2,52 @@
 
 The metric-conformance overhaul deliberately changes some metric semantics, applicability handling, decision-policy metadata and implementation paths. Existing bucket outcomes are therefore useful as **exploratory baselines**, but they should not be treated as interchangeable with post-overhaul results.
 
-Use `scripts/compare_outcomes.py` after rerunning a dataset to make the differences explicit.
+For representative research reruns, prefer `scripts/rerun_and_compare.py`. It archives the authoritative baseline, invokes the normal `run_plan.py` execution path, stores the post-overhaul outcome, generates both comparison formats, and writes a manifest containing the exact CBR-Tests commit, plan/dataset digests and command used.
 
-## Basic comparison
+## One-command representative rerun
+
+```bash
+python scripts/rerun_and_compare.py \
+  --baseline /path/to/pre_overhaul_bucket2.json \
+  --plan /path/to/bucket-plan.json \
+  --dataset /home/rpaisley/CBR_Tests/datasets/Buckets/Bucket_2.pcapng \
+  --record-dir outcomes/overhaul-reruns/Bucket_2
+```
+
+The record directory contains:
+
+```text
+baseline_pre_overhaul.json
+baseline_summary.md              # when a companion summary exists
+outcome_post_overhaul.json
+outcome_post_overhaul_summary.md # written by the normal runner
+comparison.json
+comparison.md
+rerun_manifest.json
+```
+
+The original baseline is copied before the new run begins and is never modified. Existing generated record files are not overwritten unless `--force` is supplied.
+
+The wrapper reuses the dataset SHA-256 already recorded by the normal CBR-Tests provenance system, avoiding a second full read of a large PCAP. If the outcome does not contain a dataset digest, it falls back to hashing the dataset itself and records that fallback in the manifest.
+
+Useful normal-run options are exposed directly:
+
+```bash
+python scripts/rerun_and_compare.py \
+  --baseline /path/to/pre_overhaul_bucket2.json \
+  --plan /path/to/bucket-plan.json \
+  --dataset /home/rpaisley/CBR_Tests/datasets/Buckets/Bucket_2.pcapng \
+  --record-dir outcomes/overhaul-reruns/Bucket_2 \
+  --workers 2 \
+  --display compact \
+  --no-update-field-translation
+```
+
+`--yes-field-translation-sidecar`, `--no-dataset-summary` and `--refresh-dataset-summary` are also available when the rerun requires them.
+
+## Compare two outcomes without rerunning
+
+Use `scripts/compare_outcomes.py` when both authoritative JSON files already exist:
 
 ```bash
 python scripts/compare_outcomes.py \
@@ -75,12 +118,13 @@ A change caused by the overhaul is not automatically evidence that the new resul
 
 For each bucket or representative dataset, retain:
 
-1. the original pre-overhaul authoritative JSON;
-2. the post-overhaul authoritative JSON;
-3. the generated comparison Markdown;
-4. the generated comparison JSON;
-5. the exact CBR-Tests commit and plan used for the rerun;
-6. any threshold/tolerance overrides and their provenance;
-7. a short note explaining scientifically material changes.
+1. the original pre-overhaul authoritative JSON outside the generated record;
+2. the archived baseline copy inside the rerun record;
+3. the post-overhaul authoritative JSON and its normal human-readable summary;
+4. the generated comparison Markdown;
+5. the generated comparison JSON;
+6. the generated rerun manifest with exact CBR-Tests commit, plan/dataset hashes and command;
+7. any threshold/tolerance overrides and their provenance;
+8. a short note explaining scientifically material changes.
 
 Once representative reruns have been reviewed, the audited metric contract can be frozen for the final perturbation experiments.
