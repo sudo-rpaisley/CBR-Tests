@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **266 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **276 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -527,6 +527,25 @@ Tests and local helpers in this module.
 | `test_tabular_missing_fields_advise_mapping_without_fabrication(tmp_path)` (L262) | Verifies that tabular missing fields advise mapping without fabrication. | `build_plan`, `report['metrics'].values`, `details.get` |
 | `test_print_report_shows_grouped_unlock_guidance(tmp_path, capsys)` (L278) | Verifies that print report shows grouped unlock guidance. | `dataset.write_bytes`, `build_plan`, `_print_report`, `capsys.readouterr` |
 
+## `tests/test_plan_migration.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_migration_replaces_all_legacy_intrinsic_ids_and_preserves_parameters()` (L29) | Verifies that migration replaces all legacy intrinsic ids and preserves parameters. | `_plan`, `migrate_plan_to_canonical_ids`, `all`, `validate_plan_schema`, `legacy_intrinsic_metric_ids` |
+| `test_migration_updates_label_and_taxonomy_path_to_canonical_construct()` (L41) | Verifies that migration updates label and taxonomy path to canonical construct. | `_plan`, `migrate_plan_to_canonical_ids` |
+| `test_migration_leaves_nonlegacy_metrics_unchanged()` (L58) | Verifies that migration leaves nonlegacy metrics unchanged. | `_plan`, `migrate_plan_to_canonical_ids` |
+| `test_migrated_plan_round_trips_as_json_and_schema_validates()` (L66) | Verifies that migrated plan round trips as JSON and schema validates. | `_plan`, `migrate_plan_to_canonical_ids`, `validate_plan_schema` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_plan(*metric_ids)` (L11) | Implementation helper for plan. |
+
 ## `tests/test_protocol_validity_profile.py`
 
 Tests and local helpers in this module.
@@ -587,6 +606,19 @@ Tests and local helpers in this module.
 | --- | --- |
 | `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.fake_run(command, **kwargs)` (L65) | Implementation helper for fake run. |
 | `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.guarded_sha256(path)` (L91) | Implementation helper for guarded sha256. |
+
+## `tests/test_result_semantics.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_execution_success_can_still_be_scientifically_not_runnable()` (L4) | Verifies that execution success can still be scientifically not runnable. | `metric_result_semantics`, `scientific_status_fragments` |
+| `test_verdict_is_reported_separately_from_runnable_state()` (L25) | Verifies that verdict is reported separately from runnable state. | `scientific_status_fragments` |
+| `test_not_applicable_verdict_forces_non_runnable_semantics()` (L30) | Verifies that not applicable verdict forces non runnable semantics. | `metric_result_semantics` |
+| `test_metric_without_explicit_applicability_does_not_invent_it()` (L37) | Verifies that metric without explicit applicability does not invent it. | `metric_result_semantics`, `scientific_status_fragments` |
 
 ## `tests/test_run_plan_field_translation.py`
 
@@ -845,25 +877,27 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_build_default_tui_fields_discovers_case_and_plan_choices(tmp_path)` (L32) | Verifies that build default tui fields discovers case and plan choices. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases' / 'case_a.json').write_text`, `(tmp_path / 'plans' / 'plan_a.json').write_text`, `build_default_tui_fields`, `next`, `_args` |
-| `test_apply_tui_fields_converts_blank_optional_values_and_worker_count()` (L45) | Verifies that apply tui fields converts blank optional values and worker count. | `_args`, `build_default_tui_fields`, `apply_tui_fields` |
-| `test_validate_required_run_args_rejects_missing_case()` (L63) | Verifies that validate required run args rejects missing case. | `pytest.raises`, `validate_required_run_args`, `_args` |
-| `test_dataset_field_uses_file_browser()` (L68) | Verifies that dataset field uses file browser. | `build_default_tui_fields`, `next`, `_args` |
-| `test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path)` (L78) | Verifies that list file browser entries sorts directories first and skips internal dirs. | `(tmp_path / 'z_data.csv').write_text`, `(tmp_path / 'datasets').mkdir`, `(tmp_path / 'datasets' / 'sample.csv').write_text`, `(tmp_path / '.git').mkdir` |
-| `test_describe_tui_field_explains_selected_field_actions()` (L91) | Verifies that describe tui field explains selected field actions. | `build_default_tui_fields`, `next`, `describe_tui_field`, `any`, `_args` |
-| `test_worker_field_shows_detected_max_workers()` (L103) | Verifies that worker field shows detected max workers. | `build_default_tui_fields`, `next`, `describe_tui_field`, `_args`, `detected_max_workers` |
-| `test_post_dry_run_result_lines_offer_run_action()` (L114) | Verifies that post dry run result lines offer run action. | `_result_lines`, `_args` |
-| `test_post_dry_run_result_lines_show_attention_for_skips()` (L122) | Verifies that post dry run result lines show attention for skips. | `_result_lines`, `_args` |
-| `test_default_outcome_path_uses_plan_title_and_timestamp(tmp_path)` (L128) | Verifies that default outcome path uses plan title and timestamp. | `(tmp_path / 'plans').mkdir`, `plan.write_text`, `default_outcome_path`, `datetime` |
-| `test_default_outcome_path_uses_referenced_plan_title_for_case(tmp_path)` (L142) | Verifies that default outcome path uses referenced plan title for case. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `(tmp_path / 'cases' / 'case_example.json').write_text`, `default_outcome_path`, `datetime` |
-| `test_default_output_is_auto_managed_unless_explicit(tmp_path)` (L163) | Verifies that default output is auto managed unless explicit. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `build_default_tui_fields`, `next`, `automatic_output.value.startswith`, `_args` |
-| `test_report_fields_explain_each_report_format()` (L181) | Verifies that report fields explain each report format. | `build_default_tui_fields`, `next`, `_args` |
-| `test_result_sections_include_expandable_human_readable_metric_results(tmp_path)` (L192) | Verifies that result sections include expandable human readable metric results. | `output.write_text`, `build_result_sections`, `any` |
-| `test_field_mapping_choices_remove_already_selected_columns()` (L209) | Verifies that field mapping choices remove already selected columns. | `_field_mapping_choices` |
-| `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L218) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
+| `test_build_default_tui_fields_discovers_case_and_plan_choices(tmp_path)` (L33) | Verifies that build default tui fields discovers case and plan choices. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases' / 'case_a.json').write_text`, `(tmp_path / 'plans' / 'plan_a.json').write_text`, `build_default_tui_fields`, `next`, `_args` |
+| `test_apply_tui_fields_converts_blank_optional_values_and_worker_count()` (L46) | Verifies that apply tui fields converts blank optional values and worker count. | `_args`, `build_default_tui_fields`, `apply_tui_fields` |
+| `test_validate_required_run_args_rejects_missing_case()` (L64) | Verifies that validate required run args rejects missing case. | `pytest.raises`, `validate_required_run_args`, `_args` |
+| `test_dataset_field_uses_file_browser()` (L69) | Verifies that dataset field uses file browser. | `build_default_tui_fields`, `next`, `_args` |
+| `test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path)` (L79) | Verifies that list file browser entries sorts directories first and skips internal dirs. | `(tmp_path / 'z_data.csv').write_text`, `(tmp_path / 'datasets').mkdir`, `(tmp_path / 'datasets' / 'sample.csv').write_text`, `(tmp_path / '.git').mkdir` |
+| `test_describe_tui_field_explains_selected_field_actions()` (L92) | Verifies that describe tui field explains selected field actions. | `build_default_tui_fields`, `next`, `describe_tui_field`, `any`, `_args` |
+| `test_worker_field_shows_detected_max_workers()` (L104) | Verifies that worker field shows detected max workers. | `build_default_tui_fields`, `next`, `describe_tui_field`, `_args`, `detected_max_workers` |
+| `test_post_dry_run_result_lines_offer_run_action()` (L115) | Verifies that post dry run result lines offer run action. | `_result_lines`, `_args` |
+| `test_post_dry_run_result_lines_show_attention_for_skips()` (L123) | Verifies that post dry run result lines show attention for skips. | `_result_lines`, `_args` |
+| `test_default_outcome_path_uses_plan_title_and_timestamp(tmp_path)` (L129) | Verifies that default outcome path uses plan title and timestamp. | `(tmp_path / 'plans').mkdir`, `plan.write_text`, `default_outcome_path`, `datetime` |
+| `test_default_outcome_path_uses_referenced_plan_title_for_case(tmp_path)` (L143) | Verifies that default outcome path uses referenced plan title for case. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `(tmp_path / 'cases' / 'case_example.json').write_text`, `default_outcome_path`, `datetime` |
+| `test_default_output_is_auto_managed_unless_explicit(tmp_path)` (L164) | Verifies that default output is auto managed unless explicit. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `build_default_tui_fields`, `next`, `automatic_output.value.startswith`, `_args` |
+| `test_report_fields_explain_each_report_format()` (L182) | Verifies that report fields explain each report format. | `build_default_tui_fields`, `next`, `_args` |
+| `test_result_sections_include_expandable_human_readable_metric_results(tmp_path)` (L193) | Verifies that result sections include expandable human readable metric results. | `output.write_text`, `build_result_sections`, `any` |
+| `test_field_mapping_choices_remove_already_selected_columns()` (L210) | Verifies that field mapping choices remove already selected columns. | `_field_mapping_choices` |
+| `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L219) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
+| `test_result_sections_separate_execution_success_from_scientific_applicability(tmp_path)` (L228) | Verifies that result sections separate execution success from scientific applicability. | `output.write_text`, `build_result_sections`, `next`, `any`, `section.title.startswith` |
+| `test_result_sections_flag_legacy_intrinsic_ids(tmp_path)` (L252) | Verifies that result sections flag legacy intrinsic ids. | `output.write_text`, `build_result_sections`, `next`, `any` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_args(**overrides)` (L9) | Implementation helper for args. |
+| `_args(**overrides)` (L10) | Implementation helper for args. |

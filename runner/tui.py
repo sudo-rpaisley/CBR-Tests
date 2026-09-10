@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from runner.result_semantics import metric_result_semantics, scientific_status_fragments
+from cbr_tests.plan_migration import LEGACY_INTRINSIC_METRIC_MIGRATIONS
+
 
 DISPLAY_MODES = ("compact", "full", "quiet", "interactive")
 
@@ -497,56 +500,100 @@ def _test_result_for_metric(test_results: dict, metric_id: str) -> object:
 
 def _metric_result_line(metric: dict, test_results: dict) -> str:
     metric_id = metric.get("metric_id", "unknown_metric")
-    status = metric.get("status", "unknown")
+    execution = metric.get("status", "unknown")
     elapsed = metric.get("elapsed_seconds")
-    parts = [metric_id, f"status={status}"]
+    scientific_payload = _test_result_for_metric(test_results, metric_id)
+    parts = [metric_id, f"execution={execution}"]
+    parts.extend(scientific_status_fragments(scientific_payload))
+    if metric_id in LEGACY_INTRINSIC_METRIC_MIGRATIONS:
+        parts.append("id_contract=legacy_compatibility")
     if elapsed is not None:
         parts.append(f"elapsed={float(elapsed):.1f}s")
     reason = metric.get("reason") or metric.get("error") or metric.get("message")
     if reason:
         parts.append(f"detail={reason}")
-    summary_items = _scalar_summary_items(_test_result_for_metric(test_results, metric_id))
+    summary_items = _scalar_summary_items(scientific_payload)
     if summary_items:
         parts.append("; ".join(summary_items))
     return " | ".join(parts)
 
 
-def _outcome_result_sections(output_path: str | None) -> tuple[list[str], list[str], list[str], list[str]]:
+def _outcome_result_sections(output_path: str | None) -> dict[str, list[str]]:
     payload = _load_outcome_payload(output_path)
     metric_results = payload.get("metric_results", []) if isinstance(payload, dict) else []
     test_results = payload.get("test_results", {}) if isinstance(payload, dict) else {}
-    readable: list[str] = []
-    failed: list[str] = []
-    skipped: list[str] = []
-    success: list[str] = []
+    sections = {
+        "readable": [],
+        "execution_success": [],
+        "execution_failed": [],
+        "execution_skipped": [],
+        "not_runnable": [],
+        "verdict_pass": [],
+        "verdict_warn": [],
+        "verdict_fail": [],
+        "legacy": [],
+    }
     for metric in metric_results:
+        metric_id = metric.get("metric_id", "unknown_metric")
         line = _metric_result_line(metric, test_results)
-        readable.append(line)
-        status = metric.get("status", "unknown")
-        if status == "failed":
-            failed.append(line)
-        elif status == "skipped":
-            skipped.append(line)
-        elif status == "success":
-            success.append(line)
-    if not readable and isinstance(test_results, dict):
-        readable = [f"{key}: {', '.join(_scalar_summary_items(value)) or 'result available'}" for key, value in test_results.items()]
-    return readable, success, failed, skipped
+        sections["readable"].append(line)
+        execution = metric.get("status", "unknown")
+        if execution == "failed":
+            sections["execution_failed"].append(line)
+        elif execution == "skipped":
+            sections["execution_skipped"].append(line)
+        elif execution == "success":
+            sections["execution_success"].append(line)
+
+        semantics = metric_result_semantics(_test_result_for_metric(test_results, metric_id))
+        if semantics["runnable"] is False:
+            sections["not_runnable"].append(line)
+        verdict = semantics["verdict"]
+        if verdict in {"pass", "warn", "fail"}:
+            sections[f"verdict_{verdict}"].append(line)
+        if metric_id in LEGACY_INTRINSIC_METRIC_MIGRATIONS:
+            replacement = LEGACY_INTRINSIC_METRIC_MIGRATIONS[metric_id]["metric_id"]
+            sections["legacy"].append(f"{metric_id} -> {replacement}")
+
+    if not sections["readable"] and isinstance(test_results, dict):
+        sections["readable"] = [
+            f"{key}: {', '.join(_scalar_summary_items(value)) or 'result available'}"
+            for key, value in test_results.items()
+        ]
+    return sections
 
 
 def build_result_sections(result: dict | None) -> list[ResultSection]:
     result = result or {}
     summary = [line for line in _result_lines(result, None) if line and not line.endswith("program") and not line.startswith("Enter/") and not line.startswith("r:")]
-    readable, success, failed, skipped = _outcome_result_sections(result.get("output_path"))
+    result_groups = _outcome_result_sections(result.get("output_path"))
     sections = [ResultSection("Summary", summary, True)]
+    if result_groups["legacy"]:
+        legacy_lines = [
+            "This outcome used legacy compatibility metric IDs. Migrate the saved plan before treating a rerun as canonical:",
+            *result_groups["legacy"],
+            "Use: python scripts/migrate_plan_to_canonical_ids.py <plan.json>",
+        ]
+        sections.append(ResultSection(f"Legacy compatibility IDs ({len(result_groups['legacy'])})", legacy_lines, True))
+    readable = result_groups["readable"]
     if readable:
         sections.append(ResultSection(f"Human-readable metric results ({len(readable)})", readable, False))
-    if success:
-        sections.append(ResultSection(f"Successful metrics ({len(success)})", success, False))
+    execution_success = result_groups["execution_success"]
+    if execution_success:
+        sections.append(ResultSection(f"Execution succeeded ({len(execution_success)})", execution_success, False))
+    not_runnable = result_groups["not_runnable"]
+    if not_runnable:
+        sections.append(ResultSection(f"Scientifically not runnable / not applicable ({len(not_runnable)})", not_runnable, True))
+    for verdict, title in (("pass", "Verdict PASS"), ("warn", "Verdict WARN"), ("fail", "Verdict FAIL")):
+        lines = result_groups[f"verdict_{verdict}"]
+        if lines:
+            sections.append(ResultSection(f"{title} ({len(lines)})", lines, verdict != "pass"))
+    failed = result_groups["execution_failed"]
     if failed:
-        sections.append(ResultSection(f"Failed metrics ({len(failed)})", failed, False))
+        sections.append(ResultSection(f"Execution failed ({len(failed)})", failed, True))
+    skipped = result_groups["execution_skipped"]
     if skipped:
-        sections.append(ResultSection(f"Skipped metrics ({len(skipped)})", skipped, False))
+        sections.append(ResultSection(f"Execution skipped ({len(skipped)})", skipped, False))
     if result.get("dry_run"):
         dry_run_lines = [
             "This was a validation-only pass; metrics were not executed.",

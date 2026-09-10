@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -200,10 +201,10 @@ def test_result_sections_include_expandable_human_readable_metric_results(tmp_pa
 
     assert sections[0].title == "Summary"
     assert sections[1].title == "Human-readable metric results (2)"
-    assert "m1 | status=failed | elapsed=1.2s | detail=boom" in sections[1].lines
-    assert "m2 | status=success | elapsed=2.0s | ratio=0.95" in sections[1].lines
-    assert any(section.title == "Successful metrics (1)" for section in sections)
-    assert any(section.title == "Failed metrics (1)" for section in sections)
+    assert "m1 | execution=failed | elapsed=1.2s | detail=boom" in sections[1].lines
+    assert "m2 | execution=success | elapsed=2.0s | ratio=0.95" in sections[1].lines
+    assert any(section.title == "Execution succeeded (1)" for section in sections)
+    assert any(section.title == "Execution failed (1)" for section in sections)
 
 
 def test_field_mapping_choices_remove_already_selected_columns():
@@ -222,3 +223,41 @@ def test_save_field_mappings_updates_test_to_dataset_fields(tmp_path):
     payload = __import__("json").loads(path.read_text(encoding="utf-8"))
 
     assert payload["test_to_dataset_fields"] == {"Destination IP": "Dst IP", "Source IP": "Src IP"}
+
+
+def test_result_sections_separate_execution_success_from_scientific_applicability(tmp_path):
+    output = tmp_path / "outcome.json"
+    output.write_text(
+        json.dumps({
+            "metric_results": [
+                {"metric_id": "day_to_day_diurnal_similarity", "status": "success", "elapsed_seconds": 1.0},
+                {"metric_id": "valid_port_range_profile", "status": "success", "elapsed_seconds": 0.2},
+            ],
+            "test_results": {
+                "day_to_day_diurnal_similarity": {"summary": {"runnable": False, "observed_day_count": 1, "interpretation_direction": "contextual"}},
+                "valid_port_range_profile": {"summary": {"runnable": True, "status": "pass", "valid_port_range_ratio": 1.0}},
+            },
+        }),
+        encoding="utf-8",
+    )
+    sections = build_result_sections({"dry_run": False, "status": "success", "output_path": str(output), "metrics_total": 2, "skipped_count": 0})
+    titles = {section.title for section in sections}
+    assert "Execution succeeded (2)" in titles
+    assert "Scientifically not runnable / not applicable (1)" in titles
+    assert "Verdict PASS (1)" in titles
+    readable = next(section for section in sections if section.title.startswith("Human-readable metric results"))
+    assert any("execution=success | runnable=no | interpretation=contextual" in line for line in readable.lines)
+
+
+def test_result_sections_flag_legacy_intrinsic_ids(tmp_path):
+    output = tmp_path / "legacy.json"
+    output.write_text(
+        json.dumps({
+            "metric_results": [{"metric_id": "wasserstein_feature_distance", "status": "success"}],
+            "test_results": {"wasserstein_feature_distance": {"summary": {"mean_wasserstein_distance": 1.0}}},
+        }),
+        encoding="utf-8",
+    )
+    sections = build_result_sections({"dry_run": False, "status": "success", "output_path": str(output), "metrics_total": 1, "skipped_count": 0})
+    legacy = next(section for section in sections if section.title == "Legacy compatibility IDs (1)")
+    assert any("wasserstein_feature_distance -> feature_wasserstein_internal_drift" in line for line in legacy.lines)
