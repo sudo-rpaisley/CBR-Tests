@@ -58,6 +58,33 @@ Python symbols defined by `cbr_tests/metrics/intrinsic_diagnostics.py`.
 | `compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L148) | function | Public | Computes spearman dependency profile and returns a structured result. |
 | `compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L168) | function | Public | Computes distance correlation dependency profile and returns a structured result. |
 
+## `cbr_tests/metrics/label_fidelity.py`
+
+Python symbols defined by `cbr_tests/metrics/label_fidelity.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_normalise(value) -> str | None` (L6) | function | Internal | Implementation helper for normalise. |
+| `_label_field(metric: dict) -> str` (L13) | function | Internal | Implementation helper for label field. |
+| `_slice_field(metric: dict) -> str` (L17) | function | Internal | Implementation helper for slice field. |
+| `_timestamp_field(metric: dict) -> str` (L21) | function | Internal | Implementation helper for timestamp field. |
+| `_parse_timestamps(df: pd.DataFrame, field: str) -> pd.Series` (L25) | function | Internal | Implementation helper for parse timestamps. |
+| `_label_values(metric: dict, key: str) -> set[str]` (L31) | function | Internal | Implementation helper for label values. |
+| `_observed_labels(series: pd.Series) -> list[str]` (L42) | function | Internal | Implementation helper for observed labels. |
+| `_valid_slice_groups(df: pd.DataFrame, slice_field: str)` (L52) | function | Internal | Yield normalised, non-missing slice IDs with their row subsets. |
+| `compute_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L65) | function | Public | Return labelled rows / rows in the declared label-required population. |
+| `compute_per_slice_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L89) | function | Public | Return label completeness for each valid, non-missing slice population. |
+| `_entropy_score(labels: list[str], expected_classes: list[str]) -> tuple[float | None, list[str], str]` (L144) | function | Internal | Return normalised Shannon entropy, unexpected labels and class-universe source. |
+| `compute_per_slice_label_entropy_score(df: pd.DataFrame, metric: dict) -> dict` (L179) | function | Public | Return normalised Shannon entropy per valid slice; interpretation is contextual. |
+| `compute_class_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L234) | function | Public | Return max-minus-min class-proportion skew over an independently declared class universe. |
+| `_attack_windows(metric: dict) -> list[tuple[pd.Timestamp, pd.Timestamp]]` (L317) | function | Internal | Implementation helper for attack windows. |
+| `_in_any_window(timestamp: pd.Timestamp, windows: list[tuple[pd.Timestamp, pd.Timestamp]]) -> bool` (L327) | function | Internal | Implementation helper for in any window. |
+| `compute_attack_window_alignment_score(df: pd.DataFrame, metric: dict) -> dict` (L333) | function | Public | Compare observed attack labels with the binary attack state defined by ground-truth windows. |
+| `compute_pre_post_attack_label_bleed_ratio(df: pd.DataFrame, metric: dict) -> dict` (L404) | function | Public | Measure attack labels among label-observable rows in declared pre/post attack buffers. |
+| `_split_masks(df: pd.DataFrame, metric: dict) -> tuple[pd.Series, pd.Series, str]` (L464) | function | Internal | Implementation helper for split masks. |
+| `compute_train_test_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L485) | function | Public | Return the fraction of distinct test signatures that are already present in train. |
+| `compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: dict) -> dict` (L530) | function | Public | Measure test identifiers already seen in train when entity-disjoint evaluation is required. |
+
 ## `cbr_tests/metrics/pcap_handshake.py`
 
 Python symbols defined by `cbr_tests/metrics/pcap_handshake.py`.
@@ -127,6 +154,24 @@ Python symbols defined by `cbr_tests/metrics/reference_comparison.py`.
 | `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L657) | function | Public | Computes port use divergence from reference and returns a structured result. |
 | `_flow_definition_ids(metric: dict) -> tuple[str | None, str | None]` (L694) | function | Internal | Implementation helper for flow definition ids. |
 | `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L707) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
+
+## `cbr_tests/metrics/slice_representation.py`
+
+Python symbols defined by `cbr_tests/metrics/slice_representation.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_normalise(value) -> str | None` (L4) | function | Internal | Implementation helper for normalise. |
+| `_slice_field(metric: dict) -> str` (L11) | function | Internal | Implementation helper for slice field. |
+| `_normalised_slice_series(df: pd.DataFrame, slice_field: str) -> pd.Series` (L15) | function | Internal | Implementation helper for normalised slice series. |
+| `_observed_slices(df: pd.DataFrame, slice_field: str) -> list[str]` (L22) | function | Internal | Implementation helper for observed slices. |
+| `_unique_normalised(values) -> list[str]` (L27) | function | Internal | Implementation helper for unique normalised. |
+| `compute_per_slice_sample_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L38) | function | Public | Measure whether declared expected slices meet a minimum sample count. Coverage is undefined without an independently declared expected slice set. Observed sample counts/proportions are still returned as descriptive evidence. |
+| `compute_per_slice_feature_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L98) | function | Public | Compute row-level non-missing completeness for each feature within each slice. |
+| `compute_per_slice_class_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L156) | function | Public | Measure expected-class coverage in each observed slice. Expected classes must be declared independently; deriving them from the candidate dataset would make globally absent classes impossible to detect. |
+| `compute_slice_distribution_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L216) | function | Public | Report intrinsic slice-distribution skew as the max-minus-min proportion range. |
+| `compute_cross_slice_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L251) | function | Public | Measure the fraction of checked signatures that occur in multiple slices. |
+| `compute_cross_slice_identifier_leakage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L320) | function | Public | Measure cross-slice identifier overlap and label it leakage only under an explicit exclusivity policy. |
 
 ## `cbr_tests/metrics/spearman.py`
 
@@ -945,33 +990,6 @@ AST engine that generates the exhaustive function and test references.
 | `parse_args() -> argparse.Namespace` (L406) | function | Public | Parses args. |
 | `main() -> int` (L413) | function | Public | Implementation helper for main. |
 
-## `tests/label_fidelity_profile.py`
-
-Label-integrity metric implementations awaiting package migration.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_normalise(value) -> str | None` (L6) | function | Internal | Implementation helper for normalise. |
-| `_label_field(metric: dict) -> str` (L13) | function | Internal | Implementation helper for label field. |
-| `_slice_field(metric: dict) -> str` (L17) | function | Internal | Implementation helper for slice field. |
-| `_timestamp_field(metric: dict) -> str` (L21) | function | Internal | Implementation helper for timestamp field. |
-| `_parse_timestamps(df: pd.DataFrame, field: str) -> pd.Series` (L25) | function | Internal | Implementation helper for parse timestamps. |
-| `_label_values(metric: dict, key: str) -> set[str]` (L31) | function | Internal | Implementation helper for label values. |
-| `_observed_labels(series: pd.Series) -> list[str]` (L42) | function | Internal | Implementation helper for observed labels. |
-| `_valid_slice_groups(df: pd.DataFrame, slice_field: str)` (L52) | function | Internal | Yield normalised, non-missing slice IDs with their row subsets. |
-| `compute_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L65) | function | Public | Return labelled rows / rows in the declared label-required population. |
-| `compute_per_slice_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L89) | function | Public | Return label completeness for each valid, non-missing slice population. |
-| `_entropy_score(labels: list[str], expected_classes: list[str]) -> tuple[float | None, list[str], str]` (L144) | function | Internal | Return normalised Shannon entropy, unexpected labels and class-universe source. |
-| `compute_per_slice_label_entropy_score(df: pd.DataFrame, metric: dict) -> dict` (L179) | function | Public | Return normalised Shannon entropy per valid slice; interpretation is contextual. |
-| `compute_class_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L234) | function | Public | Return max-minus-min class-proportion skew over an independently declared class universe. |
-| `_attack_windows(metric: dict) -> list[tuple[pd.Timestamp, pd.Timestamp]]` (L317) | function | Internal | Implementation helper for attack windows. |
-| `_in_any_window(timestamp: pd.Timestamp, windows: list[tuple[pd.Timestamp, pd.Timestamp]]) -> bool` (L327) | function | Internal | Implementation helper for in any window. |
-| `compute_attack_window_alignment_score(df: pd.DataFrame, metric: dict) -> dict` (L333) | function | Public | Compare observed attack labels with the binary attack state defined by ground-truth windows. |
-| `compute_pre_post_attack_label_bleed_ratio(df: pd.DataFrame, metric: dict) -> dict` (L404) | function | Public | Measure attack labels among label-observable rows in declared pre/post attack buffers. |
-| `_split_masks(df: pd.DataFrame, metric: dict) -> tuple[pd.Series, pd.Series, str]` (L464) | function | Internal | Implementation helper for split masks. |
-| `compute_train_test_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L485) | function | Public | Return the fraction of distinct test signatures that are already present in train. |
-| `compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: dict) -> dict` (L530) | function | Public | Measure test identifiers already seen in train when entity-disjoint evaluation is required. |
-
 ## `tests/metrics/dataset_heuristics/protocol_and_network_realism/address_validity/reserved_ip_address_profile.py`
 
 Network/protocol realism implementation module awaiting migration from the test package.
@@ -1078,21 +1096,3 @@ Network/protocol realism implementation module awaiting migration from the test 
 | --- | --- | --- | --- |
 | `normalise_slice_id(value, case_sensitive: bool, aliases: dict)` (L6) | function | Public | Normalizes slice id. |
 | `run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L20) | function | Public | Check non-missing slice identifiers against a declared vocabulary. Missing slice identifiers are completeness evidence and are excluded from the canonical identifier-validity denominator by default. ``count_invalid`` is retained as an explicit legacy/strict policy for reproducing older plans. |
-
-## `tests/slice_representation_profile.py`
-
-Slice-representation metric implementations awaiting package migration.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_normalise(value) -> str | None` (L4) | function | Internal | Implementation helper for normalise. |
-| `_slice_field(metric: dict) -> str` (L11) | function | Internal | Implementation helper for slice field. |
-| `_normalised_slice_series(df: pd.DataFrame, slice_field: str) -> pd.Series` (L15) | function | Internal | Implementation helper for normalised slice series. |
-| `_observed_slices(df: pd.DataFrame, slice_field: str) -> list[str]` (L22) | function | Internal | Implementation helper for observed slices. |
-| `_unique_normalised(values) -> list[str]` (L27) | function | Internal | Implementation helper for unique normalised. |
-| `compute_per_slice_sample_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L38) | function | Public | Measure whether declared expected slices meet a minimum sample count. Coverage is undefined without an independently declared expected slice set. Observed sample counts/proportions are still returned as descriptive evidence. |
-| `compute_per_slice_feature_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L98) | function | Public | Compute row-level non-missing completeness for each feature within each slice. |
-| `compute_per_slice_class_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L156) | function | Public | Measure expected-class coverage in each observed slice. Expected classes must be declared independently; deriving them from the candidate dataset would make globally absent classes impossible to detect. |
-| `compute_slice_distribution_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L216) | function | Public | Report intrinsic slice-distribution skew as the max-minus-min proportion range. |
-| `compute_cross_slice_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L251) | function | Public | Measure the fraction of checked signatures that occur in multiple slices. |
-| `compute_cross_slice_identifier_leakage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L320) | function | Public | Measure cross-slice identifier overlap and label it leakage only under an explicit exclusivity policy. |

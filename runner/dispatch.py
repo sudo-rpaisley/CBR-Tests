@@ -59,7 +59,7 @@ from cbr_tests.metrics.timestamp_coherence import run_timestamp_coherence_metric
 from cbr_tests.metrics.pcap_handshake import run_pcap_handshake_plausibility_metric
 from runner.field_translation import translate_metric_fields
 from runner.pcap_adapter import is_packet_capture
-from tests.label_fidelity_profile import (
+from cbr_tests.metrics.label_fidelity import (
     compute_attack_window_alignment_score,
     compute_class_imbalance_score,
     compute_label_coverage_ratio,
@@ -102,7 +102,7 @@ from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadat
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadata_integrity.valid_slice_identifier_profile import (
     run_valid_slice_identifier_metric,
 )
-from tests.reference_model_comparison_profile import (
+from cbr_tests.metrics.reference_comparison import (
     compute_burstiness_deviation_from_reference,
     compute_distance_correlation_matrix_deviation_from_reference,
     compute_feature_set_mmd_score_from_reference,
@@ -120,7 +120,7 @@ from tests.reference_model_comparison_profile import (
     compute_slice_proportion_deviation_from_reference,
     compute_spearman_matrix_deviation_from_reference,
 )
-from tests.slice_representation_profile import (
+from cbr_tests.metrics.slice_representation import (
     compute_cross_slice_duplicate_overlap_ratio,
     compute_cross_slice_identifier_leakage_ratio,
     compute_per_slice_class_coverage_ratio,
