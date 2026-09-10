@@ -1,0 +1,351 @@
+name: Classify threshold provenance (overhaul)
+
+on:
+  push:
+    branches:
+      - overhaul/metric-conformance
+
+permissions:
+  contents: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: overhaul/metric-conformance
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Add provenance helpers and annotate remaining policies
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          decision = Path('cbr_tests/metrics/decision_rules.py')
+          text = decision.read_text()
+          addition = r'''
+
+
+def resolve_maximum_ratio_failure_rule(
+    parameters: dict | None,
+    *,
+    parameter_name: str,
+    default: float,
+) -> dict:
+    """Resolve a one-sided failure cutoff and record its provenance.
+
+    This is a decision rule applied after measurement. It is deliberately
+    separate from the metric equation and must not be presented as a universal
+    realism constant unless its provenance explicitly supports that claim.
+    """
+    parameters = parameters or {}
+    threshold = float(parameters.get(parameter_name, default))
+    if not 0 <= threshold <= 1:
+        raise ValueError(f"{parameter_name} must be between 0 and 1.")
+
+    configured = parameter_name in parameters
+    provenance_key = f"{parameter_name}_provenance"
+    provenance = str(
+        parameters.get(
+            provenance_key,
+            "scenario-configured" if configured else "framework-default",
+        )
+    ).strip() or ("scenario-configured" if configured else "framework-default")
+
+    return {
+        "parameter": parameter_name,
+        "failure_threshold": threshold,
+        "comparison": "observed_ratio > failure_threshold",
+        "provenance": provenance,
+        "source": "metric.calculation.parameters" if configured else "framework default",
+        "scientific_role": "decision_policy_not_metric_definition",
+    }
+
+
+def describe_measurement_parameter(
+    parameters: dict | None,
+    *,
+    parameter_name: str,
+    default,
+    value=None,
+) -> dict:
+    """Describe provenance for a parameter that changes the measured quantity.
+
+    Unlike PASS/WARN/FAIL cutoffs, tolerances can change which observations are
+    counted in a metric numerator. They are therefore part of the operational
+    implementation and must be reported with their provenance.
+    """
+    parameters = parameters or {}
+    configured = parameter_name in parameters
+    provenance_key = f"{parameter_name}_provenance"
+    provenance = str(
+        parameters.get(
+            provenance_key,
+            "scenario-configured" if configured else "framework-default",
+        )
+    ).strip() or ("scenario-configured" if configured else "framework-default")
+    resolved_value = parameters.get(parameter_name, default) if value is None else value
+    return {
+        "parameter": parameter_name,
+        "value": resolved_value,
+        "provenance": provenance,
+        "source": "metric.calculation.parameters" if configured else "framework default",
+        "scientific_role": "measurement_operationalisation_parameter",
+    }
+'''
+          if 'def resolve_maximum_ratio_failure_rule(' not in text:
+              decision.write_text(text.rstrip() + addition + '\n')
+
+          def replace_once(path, old, new, label):
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'{label}: target block not found')
+              path.write_text(text.replace(old, new, 1))
+
+          # Valid Port Range Ratio: 0..65535 is normative; the 1% failure
+          # cutoff is framework policy unless overridden/calibrated.
+          path = Path('cbr_tests/metrics/protocol_network/port_validity/valid_port_range_profile.py')
+          text = path.read_text()
+          import_line = 'from cbr_tests.metrics.decision_rules import resolve_maximum_ratio_failure_rule\n'
+          if import_line not in text:
+              marker = 'from runner.tabular import load_tabular_dataset\n'
+              if marker not in text:
+                  raise SystemExit('valid-port import marker not found')
+              text = text.replace(marker, marker + import_line, 1)
+          old = '''    invalid_ratio_fail_threshold = float(params.get("invalid_ratio_fail_threshold", 0.01))\n    if valid_min_port < 0 or valid_max_port > 65535 or valid_min_port > valid_max_port:\n'''
+          new = '''    try:\n        failure_rule = resolve_maximum_ratio_failure_rule(\n            params, parameter_name="invalid_ratio_fail_threshold", default=0.01\n        )\n    except ValueError as exc:\n        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}\n    invalid_ratio_fail_threshold = failure_rule["failure_threshold"]\n    if valid_min_port < 0 or valid_max_port > 65535 or valid_min_port > valid_max_port:\n'''
+          if old not in text:
+              raise SystemExit('valid-port threshold block not found')
+          text = text.replace(old, new, 1)
+          old = '''    if not 0 <= invalid_ratio_fail_threshold <= 1:\n        return False, {\n            "error": "invalid_ratio_fail_threshold must be between 0 and 1.",\n            "reason_code": "invalid_metric_configuration",\n        }\n\n'''
+          if old not in text:
+              raise SystemExit('valid-port old validation block not found')
+          text = text.replace(old, '', 1)
+          old = '''                "invalid_ratio_fail_threshold": invalid_ratio_fail_threshold,\n                "range_counts": range_counts,\n'''
+          new = '''                "invalid_ratio_fail_threshold": invalid_ratio_fail_threshold,\n                "decision_rule": {\n                    **failure_rule,\n                    "warning_policy": "warn_on_any_invalid_or_zero_port_below_failure_threshold",\n                },\n                "normative_domain": {\n                    "port_namespace_min": 0,\n                    "port_namespace_max": 65535,\n                    "scientific_role": "normative_value_domain",\n                },\n                "range_counts": range_counts,\n'''
+          if old not in text:
+              raise SystemExit('valid-port result metadata block not found')
+          path.write_text(text.replace(old, new, 1))
+
+          # Legacy reserved-address compatibility profile: retain behaviour but
+          # make its invalid-address cutoff explicit policy.
+          path = Path('cbr_tests/metrics/protocol_network/address_validity/reserved_ip_address_profile.py')
+          text = path.read_text()
+          import_line = 'from cbr_tests.metrics.decision_rules import resolve_maximum_ratio_failure_rule\n'
+          if import_line not in text:
+              marker = 'from runner.tabular import load_tabular_dataset\n'
+              if marker not in text:
+                  raise SystemExit('reserved-profile import marker not found')
+              text = text.replace(marker, marker + import_line, 1)
+          old = '''    invalid_ratio_fail_threshold = float(params.get("invalid_ratio_fail_threshold", 0.01))\n    if not 0 <= invalid_ratio_fail_threshold <= 1:\n        return False, {\n            "error": "invalid_ratio_fail_threshold must be between 0 and 1.",\n            "reason_code": "invalid_metric_configuration",\n        }\n'''
+          new = '''    try:\n        failure_rule = resolve_maximum_ratio_failure_rule(\n            params, parameter_name="invalid_ratio_fail_threshold", default=0.01\n        )\n    except ValueError as exc:\n        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}\n    invalid_ratio_fail_threshold = failure_rule["failure_threshold"]\n'''
+          if old not in text:
+              raise SystemExit('reserved-profile threshold block not found')
+          text = text.replace(old, new, 1)
+          old = '''                "invalid_ratio_fail_threshold": invalid_ratio_fail_threshold,\n                "ip_version_counts": ip_version_counts,\n'''
+          new = '''                "invalid_ratio_fail_threshold": invalid_ratio_fail_threshold,\n                "decision_rule": {\n                    **failure_rule,\n                    "warning_policy": "warn_on_any_invalid_or_policy-counted_special-use_address_below_failure_threshold",\n                    "compatibility_note": "legacy profile; canonical reserved-address misuse ratio is computed separately",\n                },\n                "ip_version_counts": ip_version_counts,\n'''
+          if old not in text:
+              raise SystemExit('reserved-profile result metadata block not found')
+          path.write_text(text.replace(old, new, 1))
+
+          # Measurement tolerances: these alter the numerator and therefore need
+          # operationalisation provenance, not just decision-rule provenance.
+          tolerance_specs = [
+              (
+                  Path('cbr_tests/metrics/protocol_network/flow_semantics/flow_duration_consistency_profile.py'),
+                  'parameters',
+                  [('tolerance', 'tol', '1e-6')],
+                  '        "flow_duration_consistency_ratio": ratio,\n',
+              ),
+              (
+                  Path('cbr_tests/metrics/protocol_network/flow_semantics/packet_byte_consistency_profile.py'),
+                  'p',
+                  [('tolerance', 'tol', '1e-6'), ('variance_tolerance', 'vtol', '1e-3')],
+                  '        "packet_byte_consistency_ratio": ratio,\n',
+              ),
+              (
+                  Path('cbr_tests/metrics/protocol_network/flow_semantics/derived_rate_consistency_profile.py'),
+                  'parameters',
+                  [('relative_tolerance', 'relative_tolerance', '0.02'), ('absolute_tolerance', 'absolute_tolerance', '1e-6')],
+                  '                "derived_rate_consistency_ratio": ratio,\n',
+              ),
+          ]
+
+          for path, params_name, specs, result_marker in tolerance_specs:
+              text = path.read_text()
+              import_name = 'describe_measurement_parameter'
+              if import_name not in text.split('\n', 10)[0:10]:
+                  old_import = 'from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n'
+                  new_import = 'from cbr_tests.metrics.decision_rules import (\n    classify_ratio,\n    describe_measurement_parameter,\n    resolve_ratio_decision_rule,\n)\n'
+                  if old_import not in text:
+                      raise SystemExit(f'{path.name}: decision-rule import not found')
+                  text = text.replace(old_import, new_import, 1)
+
+              entries = []
+              for parameter_name, variable_name, default_literal in specs:
+                  entries.append(
+                      f'            "{parameter_name}": describe_measurement_parameter(\n'
+                      f'                {params_name}, parameter_name="{parameter_name}", default={default_literal}, value={variable_name}\n'
+                      f'            ),'
+                  )
+              block = result_marker + '        "measurement_parameters": {\n' + '\n'.join(entries) + '\n        },\n'
+              if result_marker not in text:
+                  raise SystemExit(f'{path.name}: result marker not found')
+              text = text.replace(result_marker, block, 1)
+              path.write_text(text)
+          PY
+
+      - name: Extend provenance tests
+        run: |
+          cat >> tests/test_decision_rules.py <<'PY'
+
+
+def test_maximum_ratio_failure_rule_records_framework_default_and_override():
+    from cbr_tests.metrics.decision_rules import resolve_maximum_ratio_failure_rule
+
+    default_rule = resolve_maximum_ratio_failure_rule(
+        {}, parameter_name="invalid_ratio_fail_threshold", default=0.01
+    )
+    assert default_rule["failure_threshold"] == 0.01
+    assert default_rule["provenance"] == "framework-default"
+    assert default_rule["scientific_role"] == "decision_policy_not_metric_definition"
+
+    configured_rule = resolve_maximum_ratio_failure_rule(
+        {
+            "invalid_ratio_fail_threshold": 0.05,
+            "invalid_ratio_fail_threshold_provenance": "empirically-calibrated",
+        },
+        parameter_name="invalid_ratio_fail_threshold",
+        default=0.01,
+    )
+    assert configured_rule["failure_threshold"] == 0.05
+    assert configured_rule["provenance"] == "empirically-calibrated"
+
+
+def test_measurement_parameter_provenance_distinguishes_default_from_configured():
+    from cbr_tests.metrics.decision_rules import describe_measurement_parameter
+
+    default = describe_measurement_parameter(
+        {}, parameter_name="tolerance", default=1e-6, value=1e-6
+    )
+    assert default["provenance"] == "framework-default"
+    assert default["scientific_role"] == "measurement_operationalisation_parameter"
+
+    configured = describe_measurement_parameter(
+        {
+            "tolerance": 0.01,
+            "tolerance_provenance": "empirically-calibrated",
+        },
+        parameter_name="tolerance",
+        default=1e-6,
+        value=0.01,
+    )
+    assert configured["provenance"] == "empirically-calibrated"
+    assert configured["source"] == "metric.calculation.parameters"
+PY
+
+      - name: Replace raw threshold scan with reviewed audit
+        run: |
+          cat > docs/threshold_audit.md <<'MD'
+# Threshold and decision-rule audit
+
+This audit separates the **metric definition** from the **decision policy** used to turn a measured value into PASS/WARN/FAIL. A cited statistic, RFC or realism paper does not automatically justify a universal numerical cutoff.
+
+## Provenance classes
+
+- `normative` — fixed by a protocol/standard or mathematical value domain.
+- `literature-derived` — the cited source explicitly defines/recommends the cutoff for the same construct.
+- `empirically-calibrated` — selected from a declared calibration/reference procedure.
+- `scenario-configured` — supplied by the experiment, service, slice or capture context.
+- `framework-default` — a convenience default retained for reproducibility; no universal scientific claim is made.
+- `eligibility` — minimum data required to run/interpret a statistic; not a realism threshold.
+
+## Reviewed decision policies
+
+| Area | Measured quantity | Default decision policy | Current provenance | Effect on metric equation? | Audit status |
+|---|---|---|---|---|---|
+| Flow-duration consistency | consistent checked rows / checked rows | PASS >= 0.99; WARN >= 0.95 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata |
+| Packet-byte consistency | consistent checked rows / checked rows | PASS >= 0.99; WARN >= 0.95 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata |
+| TCP-flag consistency | consistent checked rows / checked rows | PASS >= 0.99; WARN >= 0.95 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata |
+| Tabular handshake plausibility | plausible checked TCP rows / checked TCP rows | PASS >= 0.95; WARN >= 0.80 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata |
+| Legacy PCAP protocol-validity profile | structurally valid checked packets / checked IP packets | PASS >= 0.99; WARN >= 0.95 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata; compatibility profile |
+| Derived-rate consistency | consistent checked rows / checked rows | PASS >= 0.99; WARN >= 0.95 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata; post-review metric |
+| Service-port consistency | matching applicable rows / checked applicable rows | PASS >= 0.95; WARN >= 0.75 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata; scenario context required |
+| Valid slice identifier | valid checked identifiers / checked identifiers | PASS >= 0.99; WARN >= 0.95 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata; vocabulary is scenario-configured |
+| Slice identifier consistency | context-consistent applicable rows / checked applicable rows | PASS >= 0.99; WARN >= 0.95 | `framework-default` unless overridden | No | Explicit `decision_rule` metadata; rules are scenario-configured |
+| Valid port range | valid checked ports / checked ports | FAIL when invalid ratio > 0.01; WARN on any remaining invalid or zero port | `framework-default` unless overridden | No | One-sided decision rule now records provenance |
+| Legacy reserved-IP profile | legacy invalid/special-use profile | FAIL when invalid ratio > 0.01; otherwise contextual WARN | `framework-default` unless overridden | No | Explicit compatibility-only decision metadata |
+
+The numerical defaults above are retained to preserve historical behaviour. **They are not presented as literature-derived realism constants.** A study may override them and supply `threshold_provenance`, or use an empirical calibration procedure before final experiments.
+
+## Normative/domain constraints
+
+| Constraint | Classification | Rationale |
+|---|---|---|
+| Port integer range 0..65535 | `normative` | Protocol field value domain; this defines validity, not a realism score cutoff. |
+| Non-negative duration/rate/count quantities where semantically required | `normative/domain constraint` | A negative value is structurally impossible for the represented quantity. |
+| TCP state/directional contradictions observed within captured evidence | `normative/protocol interpretation` | The PCAP handshake evaluator uses observed state-order consistency rather than an arbitrary numeric score threshold. |
+| Declared slice/service vocabularies and mapping rules | `scenario-configured` | Their validity depends on the experiment/network design, not a universal public vocabulary. |
+
+## Measurement operationalisation parameters
+
+These values are **not merely verdict thresholds**. They can change which rows are counted as consistent and therefore affect the measured ratio itself.
+
+| Metric | Parameter | Default | Current provenance | Scientific treatment |
+|---|---|---:|---|---|
+| Flow-duration consistency | `tolerance` | 1e-6 | `framework-default` unless overridden | Report with result; calibrate/justify relative to units and exporter precision before final experiments. |
+| Packet-byte consistency | `tolerance` | 1e-6 | `framework-default` unless overridden | Report with result; numerical comparison tolerance. |
+| Packet-byte consistency | `variance_tolerance` | 1e-3 | `framework-default` unless overridden | Report with result; affects variance-vs-standard-deviation consistency classification. |
+| Derived-rate consistency | `relative_tolerance` | 0.02 | `framework-default` unless overridden | Report with result; should be tied to exporter rounding/precision or calibration. |
+| Derived-rate consistency | `absolute_tolerance` | 1e-6 | `framework-default` unless overridden | Report with result; protects comparisons near zero. |
+
+Every listed tolerance is now emitted in `measurement_parameters` with its value, provenance, source and the marker `measurement_operationalisation_parameter`.
+
+## Eligibility rules
+
+Minimum sample sizes, minimum runnable fields, minimum day counts and lag-pair requirements are treated as **eligibility/reliability conditions**, not as realism thresholds. They determine whether evidence is sufficient to calculate or interpret a metric; they should not be described as PASS/WARN/FAIL realism boundaries.
+
+## Canonical metrics without universal verdict cutoffs
+
+Most statistical, temporal, slice, label and reference-comparison leaves report a value or distance and deliberately do not embed a universal realism threshold. This is scientifically preferable where the literature establishes a statistic or real-traffic property but does not establish a transferable cutoff. Interpretation should use reference distributions, perturbation calibration, scenario requirements or a separately justified decision model.
+
+## Before final experiments
+
+1. Preserve the current defaults only as reproducibility baselines.
+2. Decide which experiment-facing cutoffs will be empirically calibrated and document the calibration population/procedure.
+3. Declare units/exporter precision for measurement tolerances and override defaults where required.
+4. Record every threshold/tolerance and its provenance in the run output.
+5. Do not cite a mathematical/statistical source as justification for a cutoff unless it actually specifies that cutoff for the same construct.
+MD
+
+      - name: Regenerate and verify
+        run: |
+          python scripts/build_reference_documentation.py
+          python -m compileall -q cbr_tests runner tests
+          python -m pytest -q
+
+      - name: Commit threshold provenance audit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cbr_tests/metrics/decision_rules.py cbr_tests/metrics/protocol_network tests/test_decision_rules.py docs/threshold_audit.md docs/function_reference.md docs/test_reference.md
+          if git diff --cached --quiet; then
+            echo 'Nothing to commit.'
+            exit 0
+          fi
+          git commit -m "Classify threshold and tolerance provenance"
+          git push origin HEAD:overhaul/metric-conformance
