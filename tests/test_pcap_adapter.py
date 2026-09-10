@@ -5,6 +5,7 @@ from scapy.layers.inet import IP, TCP, UDP
 from scapy.packet import Raw
 from scapy.utils import wrpcap
 
+from runner.dispatch import build_metric_handlers
 from runner.pcap_adapter import (
     PCAP_FLOW_COLUMNS,
     PCAP_PACKET_COLUMNS,
@@ -13,12 +14,6 @@ from runner.pcap_adapter import (
     build_pcap_flow_dataframe,
     build_pcap_packet_dataframe,
     pcap_metric_template,
-)
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.reserved_ip_address_profile import (
-    run_reserved_ip_address_metric,
-)
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.valid_port_range_profile import (
-    run_valid_port_range_metric,
 )
 
 
@@ -80,24 +75,24 @@ def test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path):
     _write_capture(capture)
     dataframe = build_pcap_packet_dataframe(capture)
 
-    runners = {
-        "reserved_ip_address_profile": run_reserved_ip_address_metric,
-        "valid_port_range_profile": run_valid_port_range_metric,
-    }
+    metric_ids = {"valid_ip_address_ratio", "valid_port_range_profile"}
+    assert metric_ids.issubset(PCAP_PACKET_METRICS)
 
-    assert set(runners).issubset(PCAP_PACKET_METRICS)
-    for metric_id, runner in runners.items():
+    def forbidden_loader(_path):
+        raise AssertionError("packet-view metric attempted to reload PCAP as tabular data")
+
+    handlers = build_metric_handlers(dataframe, forbidden_loader, {})
+    for metric_id in sorted(metric_ids):
         metric = pcap_metric_template(metric_id)
         assert metric is not None
-        metric["_shared_df"] = dataframe
-        ok, payload = runner(capture, metric)
+        ok, payload = handlers[metric_id](capture, metric)
         assert ok is True, (metric_id, payload)
         assert metric_id in payload["test_results"]
-        if metric_id == "reserved_ip_address_profile":
-            result = payload["test_results"][metric_id]
-            assert result["reserved_category_counts"]["private"] > 0
-            assert result["reserved_address_count"] == 0
-            assert result["status"] == "pass"
+
+    address_summary = payload = handlers["valid_ip_address_ratio"](
+        capture, pcap_metric_template("valid_ip_address_ratio")
+    )[1]["test_results"]["valid_ip_address_ratio"]["summary"]
+    assert address_summary["valid_ip_address_ratio"] == 1.0
 
 
 def test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates():
