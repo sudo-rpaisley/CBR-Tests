@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **251 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **255 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -787,6 +787,19 @@ Tests and local helpers in this module.
 | `test_single_day_capture_is_not_mislabelled_as_diurnally_divergent()` (L112) | Verifies that single day capture is not mislabelled as diurnally divergent. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
 | `test_periodicity_rejects_non_positive_lags()` (L139) | Verifies that periodicity rejects non positive lags. | `compute_periodicity_preservation_score`, `AssertionError` |
 | `test_temporal_consistency_zero_denominators_are_not_numeric_scores()` (L153) | Verifies that temporal consistency zero denominators are not numeric scores. | `compute_start_end_timestamp_consistency_ratio`, `compute_non_negative_duration_ratio` |
+
+## `tests/test_threshold_provenance.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_maximum_ratio_failure_rule_records_framework_default()` (L7) | Verifies that maximum ratio failure rule records framework default. | `resolve_maximum_ratio_failure_rule` |
+| `test_maximum_ratio_failure_rule_records_explicit_provenance()` (L16) | Verifies that maximum ratio failure rule records explicit provenance. | `resolve_maximum_ratio_failure_rule` |
+| `test_measurement_parameter_records_framework_default()` (L30) | Verifies that measurement parameter records framework default. | `describe_measurement_parameter` |
+| `test_measurement_parameter_records_configured_provenance()` (L39) | Verifies that measurement parameter records configured provenance. | `describe_measurement_parameter` |
 
 ## `tests/test_tui.py`
 

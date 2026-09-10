@@ -44,6 +44,8 @@ Python symbols defined by `cbr_tests/metrics/decision_rules.py`.
 | --- | --- | --- | --- |
 | `resolve_ratio_decision_rule(parameters: dict | None, *, default_pass: float, default_warn: float) -> dict` (L6) | function | Public | Resolve PASS/WARN cutoffs and record their provenance. The thresholds classify a measured ratio; they do not define the ratio itself. Defaults are framework policy unless an experiment explicitly overrides them. |
 | `classify_ratio(value: float | None, decision_rule: dict) -> str` (L42) | function | Public | Apply a resolved decision policy to a ratio without redefining the metric. |
+| `resolve_maximum_ratio_failure_rule(parameters: dict | None, *, parameter_name: str, default: float) -> dict` (L53) | function | Public | Resolve a one-sided failure cutoff and record its provenance. This is a decision rule applied after measurement. It is deliberately separate from the metric equation and must not be presented as a universal realism constant unless its provenance explicitly supports that claim. |
+| `describe_measurement_parameter(parameters: dict | None, *, parameter_name: str, default, value = None) -> dict` (L89) | function | Public | Record provenance for a parameter that changes the measured quantity. Unlike PASS/WARN/FAIL cutoffs, measurement tolerances can alter which observations enter a metric numerator. They are therefore part of the operationalisation and must be reported explicitly. |
 
 ## `cbr_tests/metrics/intrinsic_diagnostics.py`
 
@@ -121,10 +123,10 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/address_validity/r
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `get_reserved_categories(addr) -> list[str]` (L35) | function | Public | Implementation helper for get reserved categories. |
-| `_enabled_categories(categories: list[str], params: dict) -> list[str]` (L65) | function | Internal | Implementation helper for enabled categories. |
-| `_diagnostic(status: str, *, invalid_count: int, invalid_ratio: float, reserved_count: int, checked_count: int, threshold: float, category_counts: dict, invalid_examples: list, reserved_examples: list) -> dict` (L73) | function | Internal | Implementation helper for diagnostic. |
-| `run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L116) | function | Public | Runs reserved IP address metric. |
+| `get_reserved_categories(addr) -> list[str]` (L36) | function | Public | Implementation helper for get reserved categories. |
+| `_enabled_categories(categories: list[str], params: dict) -> list[str]` (L66) | function | Internal | Implementation helper for enabled categories. |
+| `_diagnostic(status: str, *, invalid_count: int, invalid_ratio: float, reserved_count: int, checked_count: int, threshold: float, category_counts: dict, invalid_examples: list, reserved_examples: list) -> dict` (L74) | function | Internal | Implementation helper for diagnostic. |
+| `run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L117) | function | Public | Runs reserved IP address metric. |
 
 ## `cbr_tests/metrics/protocol_network/address_validity/valid_ip_address_profile.py`
 
@@ -144,8 +146,8 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/der
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_within_tolerance(reported: pd.Series, expected: pd.Series, relative_tolerance: float, absolute_tolerance: float) -> pd.Series` (L19) | function | Internal | Implementation helper for within tolerance. |
-| `run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L29) | function | Public | Check whether reported packet/byte rates agree with counts, bytes, and duration. The duration unit must be declared in ``calculation.parameters.duration_unit``. At least one of ``flow_packets_per_second`` and ``flow_bytes_per_second`` must be mapped. This prevents the metric from silently assuming a dataset-specific duration unit or rate convention. |
+| `_within_tolerance(reported: pd.Series, expected: pd.Series, relative_tolerance: float, absolute_tolerance: float) -> pd.Series` (L23) | function | Internal | Implementation helper for within tolerance. |
+| `run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L33) | function | Public | Check whether reported packet/byte rates agree with counts, bytes, and duration. The duration unit must be declared in ``calculation.parameters.duration_unit``. At least one of ``flow_packets_per_second`` and ``flow_bytes_per_second`` must be mapped. This prevents the metric from silently assuming a dataset-specific duration unit or rate convention. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/flow_duration_consistency_profile.py`
 
@@ -153,7 +155,7 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/flo
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Runs flow duration consistency metric. |
+| `run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L12) | function | Public | Runs flow duration consistency metric. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/handshake_plausibility_profile.py`
 
@@ -170,7 +172,7 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/pac
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Runs packet byte consistency metric. |
+| `run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L12) | function | Public | Runs packet byte consistency metric. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/tcp_flag_consistency_profile.py`
 
@@ -198,10 +200,10 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/port_validity/vali
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `parse_port(value, valid_min_port: int = 0, valid_max_port: int = 65535)` (L6) | function | Public | Parses port. |
-| `classify_port_range(port: int) -> str` (L28) | function | Public | Classifies port range. |
-| `_diagnostic(status: str, *, checked: int, invalid: int, non_integer: int, out_of_range: int, zero_count: int, invalid_ratio: float | None, threshold: float, valid_min_port: int, valid_max_port: int, examples: list) -> dict` (L38) | function | Internal | Implementation helper for diagnostic. |
-| `run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L87) | function | Public | Runs valid port range metric. |
+| `parse_port(value, valid_min_port: int = 0, valid_max_port: int = 65535)` (L7) | function | Public | Parses port. |
+| `classify_port_range(port: int) -> str` (L29) | function | Public | Classifies port range. |
+| `_diagnostic(status: str, *, checked: int, invalid: int, non_integer: int, out_of_range: int, zero_count: int, invalid_ratio: float | None, threshold: float, valid_min_port: int, valid_max_port: int, examples: list) -> dict` (L39) | function | Internal | Implementation helper for diagnostic. |
+| `run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L88) | function | Public | Runs valid port range metric. |
 
 ## `cbr_tests/metrics/protocol_network/slice_metadata_integrity/slice_identifier_consistency_profile.py`
 
