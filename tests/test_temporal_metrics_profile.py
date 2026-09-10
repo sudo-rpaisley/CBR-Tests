@@ -25,6 +25,25 @@ def test_temporal_consistency_metrics():
     assert compute_non_negative_duration_ratio(df, {"input_requirements": {"duration_field": "duration"}})["summary"]["non_negative_duration_ratio"] == 0.5
 
 
+def test_timestamp_parse_success_excludes_missing_values_from_the_denominator():
+    df = pd.DataFrame({
+        "timestamp": ["2024-01-01T00:00:00Z", None, "", "not-a-time"],
+    })
+
+    result = compute_timestamp_parse_success_ratio(
+        df,
+        {"input_requirements": {"timestamp_field": "timestamp"}},
+    )["summary"]
+
+    assert result["row_count"] == 4
+    assert result["checked_timestamp_count"] == 2
+    assert result["parsed_count"] == 1
+    assert result["failed_parse_count"] == 1
+    assert result["missing_timestamp_count"] == 2
+    assert result["timestamp_parse_success_ratio"] == 0.5
+    assert result["denominator_policy"] == "non_missing_timestamp_values"
+
+
 def test_inter_arrival_and_burstiness_still_measure_internal_half_drift():
     timestamps = pd.date_range("2024-01-01T00:00:00Z", periods=8, freq="h")
     df = pd.DataFrame({"timestamp": timestamps})
@@ -130,3 +149,27 @@ def test_periodicity_rejects_non_positive_lags():
         assert "positive integers" in str(exc)
     else:
         raise AssertionError("Expected invalid lag configuration to raise ValueError")
+
+def test_temporal_consistency_zero_denominators_are_not_numeric_scores():
+    df = pd.DataFrame({
+        "start": ["bad"],
+        "end": ["also-bad"],
+        "duration": ["not-a-duration"],
+    })
+
+    start_end = compute_start_end_timestamp_consistency_ratio(
+        df,
+        {"input_requirements": {"start_timestamp_field": "start", "end_timestamp_field": "end"}},
+    )["summary"]
+    duration = compute_non_negative_duration_ratio(
+        df,
+        {"input_requirements": {"duration_field": "duration"}},
+    )["summary"]
+
+    assert start_end["parseable_pair_count"] == 0
+    assert start_end["start_end_timestamp_consistency_ratio"] is None
+    assert start_end["runnable"] is False
+    assert duration["valid_duration_count"] == 0
+    assert duration["non_negative_duration_ratio"] is None
+    assert duration["runnable"] is False
+

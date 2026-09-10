@@ -1,0 +1,134 @@
+from pathlib import Path
+import pandas as pd
+from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
+
+
+def normalise_slice_id(value, case_sensitive: bool, aliases: dict):
+    if pd.isna(value):
+        return None
+    text = str(value).strip()
+    if text == "":
+        return None
+    key = text if case_sensitive else text.lower()
+    alias_map = aliases or {}
+    if key in alias_map:
+        mapped = str(alias_map[key]).strip()
+        return mapped if case_sensitive else mapped.lower()
+    return key
+
+
+def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
+    """Check non-missing slice identifiers against a declared vocabulary.
+
+    Missing slice identifiers are completeness evidence and are excluded from the
+    canonical identifier-validity denominator by default. ``count_invalid`` is
+    retained as an explicit legacy/strict policy for reproducing older plans.
+    """
+    input_req = metric.get("input_requirements", {})
+    params = metric.get("calculation", {}).get("parameters", {})
+    slice_field = input_req.get("slice_field")
+    if not slice_field:
+        return False, {"error": "slice_field is required."}
+
+    allowed = params.get("allowed_slice_ids", [])
+    if not allowed:
+        return False, {"error": "allowed_slice_ids is required and must be non-empty."}
+
+    case_sensitive = bool(params.get("case_sensitive", False))
+    allow_numeric_equivalents = bool(params.get("allow_numeric_equivalents", True))
+    aliases = params.get("slice_aliases", {}) or {}
+    if not case_sensitive:
+        aliases = {str(k).lower(): v for k, v in aliases.items()}
+
+    missing_policy = params.get("missing_policy", "exclude_missing")
+    if missing_policy not in {"exclude_missing", "count_invalid"}:
+        return False, {
+            "error": "missing_policy must be 'exclude_missing' or 'count_invalid'.",
+            "reason_code": "invalid_metric_configuration",
+        }
+    max_examples = int(params.get("max_examples", 10))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            params, default_pass=0.99, default_warn=0.95
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
+
+    df = metric.get("_shared_df")
+    if df is None:
+        try:
+            df = load_tabular_dataset(dataset_path)
+        except Exception as exc:
+            return False, {"error": f"Failed to load dataset: {exc}"}
+
+    if slice_field not in df.columns:
+        return False, {"error": "Slice field does not exist in dataset.", "missing_field": slice_field}
+
+    allowed_norm = set()
+    for val in allowed:
+        n = normalise_slice_id(val, case_sensitive, aliases)
+        if n is not None:
+            allowed_norm.add(n)
+            if allow_numeric_equivalents:
+                try:
+                    allowed_norm.add(str(int(float(val))) if case_sensitive else str(int(float(val))).lower())
+                except Exception:
+                    pass
+
+    row_count = int(len(df))
+    checked = valid = invalid = missing = 0
+    observed = set()
+    examples = []
+
+    for idx, value in df[slice_field].items():
+        norm = normalise_slice_id(value, case_sensitive, aliases)
+        if norm is None:
+            missing += 1
+            if missing_policy == "count_invalid":
+                checked += 1
+                invalid += 1
+                if len(examples) < max_examples:
+                    examples.append({"row_index": int(idx) if isinstance(idx, int) else str(idx), "value": None, "reason": "missing_slice_id"})
+            continue
+
+        observed.add(norm)
+        checked += 1
+
+        candidates = {norm}
+        if allow_numeric_equivalents:
+            try:
+                candidates.add(str(int(float(norm))) if case_sensitive else str(int(float(norm))).lower())
+            except Exception:
+                pass
+
+        if any(c in allowed_norm for c in candidates):
+            valid += 1
+        else:
+            invalid += 1
+            if len(examples) < max_examples:
+                examples.append({"row_index": int(idx) if isinstance(idx, int) else str(idx), "value": str(value), "reason": "slice_id_not_allowed"})
+
+    valid_ratio = round(valid / checked, 6) if checked else None
+    invalid_ratio = round(invalid / checked, 6) if checked else None
+    missing_ratio = round(missing / row_count, 6) if row_count else None
+    status = classify_ratio(valid_ratio, decision_rule)
+
+    return True, {"test_results": {"valid_slice_identifier_profile": {
+        "slice_field": slice_field,
+        "row_count": row_count,
+        "checked_slice_count": checked,
+        "valid_slice_count": valid,
+        "invalid_slice_count": invalid,
+        "missing_slice_count": missing,
+        "valid_slice_identifier_ratio": valid_ratio,
+        "invalid_slice_identifier_ratio": invalid_ratio,
+        "missing_slice_ratio": missing_ratio,
+        "missing_policy": missing_policy,
+        "denominator_policy": "non_missing_slice_identifiers" if missing_policy == "exclude_missing" else "all_rows_with_missing_counted_invalid",
+        "allowed_slice_ids": sorted(allowed_norm),
+        "observed_slice_ids": sorted(observed),
+        "invalid_examples": examples,
+        "decision_rule": decision_rule,
+        "status": status,
+    }}}

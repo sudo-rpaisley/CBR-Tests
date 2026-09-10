@@ -31,6 +31,13 @@ def _parse_timestamp_series(
     return pd.to_datetime(df[field], errors="coerce", utc=True)
 
 
+def _timestamp_missing_mask(df: pd.DataFrame, field: str) -> pd.Series:
+    if field not in df.columns:
+        return pd.Series([True] * len(df), index=df.index)
+    values = df[field]
+    return values.isna() | values.astype(str).str.strip().eq("")
+
+
 def _ks_statistic(left: list[float], right: list[float]) -> float:
     left_sorted = sorted(left)
     right_sorted = sorted(right)
@@ -64,19 +71,33 @@ def _inter_arrival_seconds(timestamps: pd.Series) -> list[float]:
 
 
 def compute_timestamp_parse_success_ratio(df: pd.DataFrame, metric: dict) -> dict:
+    """Measure parser success among non-missing timestamp values actually attempted."""
+
     field = _timestamp_field(metric)
-    timestamps = _parse_timestamp_series(df, field, _timestamp_unit(metric))
     row_count = int(len(df))
-    parsed_count = int(timestamps.notna().sum())
+    missing_mask = _timestamp_missing_mask(df, field)
+    checked_mask = ~missing_mask
+    timestamps = _parse_timestamp_series(df, field, _timestamp_unit(metric))
+    parsed_mask = checked_mask & timestamps.notna()
+    failed_mask = checked_mask & timestamps.isna()
+
+    checked_count = int(checked_mask.sum())
+    parsed_count = int(parsed_mask.sum())
+    failed_count = int(failed_mask.sum())
+    missing_count = int(missing_mask.sum())
+    ratio = round(parsed_count / checked_count, 6) if checked_count else None
+
     return {
         "summary": {
             "timestamp_field": field,
             "row_count": row_count,
+            "checked_timestamp_count": checked_count,
             "parsed_count": parsed_count,
-            "failed_parse_count": row_count - parsed_count,
-            "timestamp_parse_success_ratio": (
-                round(parsed_count / row_count, 6) if row_count else 0.0
-            ),
+            "failed_parse_count": failed_count,
+            "missing_timestamp_count": missing_count,
+            "timestamp_parse_success_ratio": ratio,
+            "runnable": checked_count > 0,
+            "denominator_policy": "non_missing_timestamp_values",
         }
     }
 
@@ -105,8 +126,10 @@ def compute_start_end_timestamp_consistency_ratio(
             "start_end_timestamp_consistency_ratio": (
                 round(consistent_count / parseable_count, 6)
                 if parseable_count
-                else 0.0
+                else None
             ),
+            "runnable": parseable_count > 0,
+            "denominator_policy": "parseable_start_end_pairs",
         }
     }
 
@@ -139,8 +162,10 @@ def compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict:
             "valid_duration_count": valid_count,
             "negative_duration_count": valid_count - non_negative_count,
             "non_negative_duration_ratio": (
-                round(non_negative_count / valid_count, 6) if valid_count else 0.0
+                round(non_negative_count / valid_count, 6) if valid_count else None
             ),
+            "runnable": valid_count > 0,
+            "denominator_policy": "parseable_duration_values",
         }
     }
 
@@ -149,6 +174,13 @@ def compute_inter_arrival_time_distribution_divergence(
     df: pd.DataFrame,
     metric: dict,
 ) -> dict:
+    """Measure within-dataset IAT drift between chronological halves.
+
+    This is an intrinsic stability diagnostic, not a candidate-versus-reference
+    realism comparison. A low value is not universally more realistic because
+    genuine traffic can be non-stationary.
+    """
+
     timestamps = _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
     gaps = _inter_arrival_seconds(timestamps)
     left, right = _split_list(gaps)
@@ -162,6 +194,9 @@ def compute_inter_arrival_time_distribution_divergence(
             "gap_count": len(gaps),
             "sample_a_count": len(left),
             "sample_b_count": len(right),
+            "partition_method": "chronological_halves_of_iat_sequence",
+            "comparison_scope": "within_dataset_internal_stability",
+            "interpretation_direction": "contextual",
             "runnable": runnable,
             "inter_arrival_time_distribution_divergence": divergence,
         }
@@ -179,6 +214,8 @@ def _burstiness(values: list[float]) -> float | None:
 
 
 def compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict:
+    """Measure change in burstiness between chronological halves of one trace."""
+
     timestamps = _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
     gaps = _inter_arrival_seconds(timestamps)
     left, right = _split_list(gaps)
@@ -198,6 +235,9 @@ def compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> 
             "sample_b_burstiness": (
                 round(right_burstiness, 6) if right_burstiness is not None else None
             ),
+            "partition_method": "chronological_halves_of_iat_sequence",
+            "comparison_scope": "within_dataset_internal_stability",
+            "interpretation_direction": "contextual",
             "burstiness_coefficient_deviation": (
                 round(deviation, 6) if deviation is not None else None
             ),
@@ -272,13 +312,10 @@ def compute_hourly_activity_distribution_divergence(
     df: pd.DataFrame,
     metric: dict,
 ) -> dict:
-    """Measure day-to-day divergence in UTC hour-of-day activity distributions.
+    """Measure pairwise day-to-day divergence in UTC hour-of-day activity.
 
-    Comparing chronological packet halves confounds the result with capture time:
-    an eight-hour regular capture, for example, puts different hours in each half
-    and appears maximally divergent.  This implementation instead compares one
-    24-hour profile per observed calendar day and therefore requires at least two
-    observed days before producing a value.
+    This is an intrinsic repeatability/stability diagnostic. Its value is
+    contextual: real traffic can legitimately change from day to day.
     """
 
     timestamps = (
@@ -303,6 +340,8 @@ def compute_hourly_activity_distribution_divergence(
             "day_pair_count": pair_count,
             "first_observed_date": day_vectors[0][0] if day_vectors else None,
             "last_observed_date": day_vectors[-1][0] if day_vectors else None,
+            "comparison_scope": "within_dataset_daily_profile_stability",
+            "interpretation_direction": "contextual",
             "runnable": runnable,
             "hourly_activity_distribution_divergence": (
                 round(divergence, 6) if runnable and divergence is not None else None
@@ -312,7 +351,7 @@ def compute_hourly_activity_distribution_divergence(
 
 
 def compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict:
-    """Measure day-to-day similarity of UTC hour-of-day activity shapes."""
+    """Measure pairwise day-to-day similarity of UTC hour-of-day activity shapes."""
 
     timestamps = (
         _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
@@ -336,6 +375,8 @@ def compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> 
             "day_pair_count": pair_count,
             "first_observed_date": day_vectors[0][0] if day_vectors else None,
             "last_observed_date": day_vectors[-1][0] if day_vectors else None,
+            "comparison_scope": "within_dataset_daily_profile_stability",
+            "interpretation_direction": "contextual",
             "runnable": runnable,
             "diurnal_pattern_similarity_score": (
                 round(score, 6) if runnable and score is not None else None
@@ -379,12 +420,11 @@ def _lag_repeat_similarity(
 
 
 def compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict:
-    """Measure how closely hourly activity repeats at configured temporal lags.
+    """Measure within-dataset repeat similarity at configured hourly lags.
 
-    The previous implementation autocorrelated two 24-element hour-of-day
-    histograms, so a lag of 24 could never be evaluated.  Here the lag is applied
-    to the actual continuous hourly activity series: lag 24 therefore compares
-    each observed hour with the corresponding hour one day later.
+    A configured lag such as 24 hours describes a structural hypothesis about
+    the workload. High repeat similarity is favourable only when such periodicity
+    is expected; otherwise the result is descriptive/contextual.
     """
 
     timestamps = (
@@ -443,6 +483,8 @@ def compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> di
             "last_hour": last_hour.isoformat() if last_hour is not None else None,
             "configured_lags_hours": lags,
             "minimum_lag_pairs": minimum_lag_pairs,
+            "comparison_scope": "within_dataset_lag_repeatability",
+            "interpretation_direction": "contextual",
             "runnable": runnable,
             "periodicity_preservation_score": (
                 round(score, 6) if score is not None else None

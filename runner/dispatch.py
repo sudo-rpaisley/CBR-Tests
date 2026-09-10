@@ -4,10 +4,28 @@ from pathlib import Path
 
 import pandas as pd
 
+from cbr_tests.metrics.address_validity import (
+    compute_reserved_address_misuse_ratio,
+    compute_valid_ip_address_ratio,
+)
 from cbr_tests.metrics.column_quality import compute_column_quality_profile
 from cbr_tests.metrics.data_quality import (
     compute_duplicate_row_ratio,
     compute_missing_value_ratio,
+)
+from cbr_tests.metrics.intrinsic_diagnostics import (
+    compute_burstiness_internal_drift,
+    compute_day_to_day_diurnal_similarity,
+    compute_day_to_day_hourly_activity_divergence,
+    compute_distance_correlation_dependency_profile,
+    compute_feature_energy_internal_drift,
+    compute_feature_ks_internal_drift,
+    compute_feature_mmd2_internal_drift,
+    compute_feature_wasserstein_internal_drift,
+    compute_inter_arrival_internal_drift_ks,
+    compute_lagged_periodicity_similarity,
+    compute_pearson_dependency_profile,
+    compute_spearman_dependency_profile,
 )
 from cbr_tests.metrics.pearson import compute_pearson_profile, validate_candidate_fields
 from cbr_tests.metrics.spearman import (
@@ -41,7 +59,7 @@ from cbr_tests.metrics.timestamp_coherence import run_timestamp_coherence_metric
 from cbr_tests.metrics.pcap_handshake import run_pcap_handshake_plausibility_metric
 from runner.field_translation import translate_metric_fields
 from runner.pcap_adapter import is_packet_capture
-from tests.label_fidelity_profile import (
+from cbr_tests.metrics.label_fidelity import (
     compute_attack_window_alignment_score,
     compute_class_imbalance_score,
     compute_label_coverage_ratio,
@@ -51,40 +69,40 @@ from tests.label_fidelity_profile import (
     compute_train_test_duplicate_overlap_ratio,
     compute_train_test_identifier_contamination_ratio,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.reserved_ip_address_profile import (
+from cbr_tests.metrics.protocol_network.address_validity.reserved_ip_address_profile import (
     run_reserved_ip_address_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.valid_ip_address_profile import (
+from cbr_tests.metrics.protocol_network.address_validity.valid_ip_address_profile import (
     run_protocol_validity_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.flow_duration_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.flow_duration_consistency_profile import (
     run_flow_duration_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.derived_rate_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.derived_rate_consistency_profile import (
     run_derived_rate_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.handshake_plausibility_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.handshake_plausibility_profile import (
     run_handshake_plausibility_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.packet_byte_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.packet_byte_consistency_profile import (
     run_packet_byte_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.tcp_flag_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.tcp_flag_consistency_profile import (
     run_tcp_flag_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.service_port_consistency_profile import (
+from cbr_tests.metrics.protocol_network.port_validity.service_port_consistency_profile import (
     run_service_port_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.valid_port_range_profile import (
+from cbr_tests.metrics.protocol_network.port_validity.valid_port_range_profile import (
     run_valid_port_range_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadata_integrity.slice_identifier_consistency_profile import (
+from cbr_tests.metrics.protocol_network.slice_metadata_integrity.slice_identifier_consistency_profile import (
     run_slice_identifier_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadata_integrity.valid_slice_identifier_profile import (
+from cbr_tests.metrics.protocol_network.slice_metadata_integrity.valid_slice_identifier_profile import (
     run_valid_slice_identifier_metric,
 )
-from tests.reference_model_comparison_profile import (
+from cbr_tests.metrics.reference_comparison import (
     compute_burstiness_deviation_from_reference,
     compute_distance_correlation_matrix_deviation_from_reference,
     compute_feature_set_mmd_score_from_reference,
@@ -102,7 +120,7 @@ from tests.reference_model_comparison_profile import (
     compute_slice_proportion_deviation_from_reference,
     compute_spearman_matrix_deviation_from_reference,
 )
-from tests.slice_representation_profile import (
+from cbr_tests.metrics.slice_representation import (
     compute_cross_slice_duplicate_overlap_ratio,
     compute_cross_slice_identifier_leakage_ratio,
     compute_per_slice_class_coverage_ratio,
@@ -333,6 +351,23 @@ def _slice_consistency_metric(dataset_path: Path, metric: dict):
 
 
 TABULAR_COMPUTE_METRICS = {
+    "valid_ip_address_ratio": compute_valid_ip_address_ratio,
+    "reserved_address_misuse_ratio": compute_reserved_address_misuse_ratio,
+    # Canonical intrinsic temporal diagnostics.
+    "inter_arrival_internal_drift_ks": compute_inter_arrival_internal_drift_ks,
+    "burstiness_internal_drift": compute_burstiness_internal_drift,
+    "day_to_day_hourly_activity_divergence": compute_day_to_day_hourly_activity_divergence,
+    "day_to_day_diurnal_similarity": compute_day_to_day_diurnal_similarity,
+    "lagged_periodicity_similarity": compute_lagged_periodicity_similarity,
+    # Canonical intrinsic statistical diagnostics.
+    "feature_ks_internal_drift": compute_feature_ks_internal_drift,
+    "feature_wasserstein_internal_drift": compute_feature_wasserstein_internal_drift,
+    "feature_energy_internal_drift": compute_feature_energy_internal_drift,
+    "feature_mmd2_internal_drift": compute_feature_mmd2_internal_drift,
+    "pearson_dependency_profile": compute_pearson_dependency_profile,
+    "spearman_dependency_profile": compute_spearman_dependency_profile,
+    "distance_correlation_dependency_profile": compute_distance_correlation_dependency_profile,
+    # Legacy intrinsic IDs retained for historical plans/outcomes.
     "kolmogorov_smirnov_feature_divergence": compute_ks_feature_divergence,
     "wasserstein_feature_distance": compute_wasserstein_feature_distance,
     "energy_distance": compute_energy_distance,

@@ -27,7 +27,7 @@ def compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict:
                 "missing_count": field_missing_count,
                 "total_count": row_count,
                 "missing_value_ratio": (
-                    round(field_missing_count / row_count, 6) if row_count else 0.0
+                    round(field_missing_count / row_count, 6) if row_count else None
                 ),
             }
         )
@@ -40,8 +40,9 @@ def compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict:
             "total_cells": total_cells,
             "missing_cells": missing_cells,
             "missing_value_ratio": (
-                round(missing_cells / total_cells, 6) if total_cells else 0.0
+                round(missing_cells / total_cells, 6) if total_cells else None
             ),
+            "runnable": total_cells > 0,
         },
     }
 
@@ -49,6 +50,14 @@ def compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict:
 def compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict:
     subset_fields = _select_fields(df, metric, "subset_fields")
     row_count = int(len(df))
+    all_fields = list(df.columns)
+    duplicate_definition = (
+        "full_row"
+        if subset_fields and set(subset_fields) == set(all_fields)
+        else "configured_signature"
+        if subset_fields
+        else "no_runnable_signature"
+    )
 
     if not subset_fields:
         duplicate_mask = pd.Series([False] * row_count, index=df.index)
@@ -62,14 +71,19 @@ def compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict:
         )
 
     duplicate_row_count = int(duplicate_mask.sum())
+    runnable = row_count > 0 and bool(subset_fields)
     return {
         "summary": {
             "row_count": row_count,
+            "duplicate_definition": duplicate_definition,
+            "subset_field_count": len(subset_fields),
+            "subset_field_names": ", ".join(subset_fields),
             "subset_fields": subset_fields,
             "duplicate_row_count": duplicate_row_count,
             "duplicate_group_count": duplicate_group_count,
             "duplicate_row_ratio": (
-                round(duplicate_row_count / row_count, 6) if row_count else 0.0
+                round(duplicate_row_count / row_count, 6) if runnable else None
             ),
+            "runnable": runnable,
         }
     }
