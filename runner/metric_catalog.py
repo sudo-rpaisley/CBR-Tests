@@ -24,6 +24,8 @@ MANUAL_CONFIGURATION_REASONS = {
     "per_slice_sample_coverage_ratio": "expected_slice_ids_required",
     "per_slice_class_coverage_ratio": "expected_classes_required",
     "cross_slice_identifier_leakage_ratio": "slice_exclusivity_policy_required",
+    "per_slice_label_entropy_score": "expected_classes_required",
+    "class_imbalance_score": "expected_classes_required",
     "attack_window_alignment_score": "attack_window_configuration_required",
     "pre_post_attack_label_bleed_ratio": "attack_window_configuration_required",
     "train_test_duplicate_overlap_ratio": "split_configuration_required",
@@ -171,16 +173,23 @@ def sanitize_manual_template(metric: dict, reason: str) -> dict:
             inputs["identifier_fields"] = []
         if isinstance(params, dict):
             params["expect_slice_exclusive"] = False
-    elif reason == "attack_window_configuration_required" and isinstance(params, dict):
-        for key in list(params):
-            if "attack" in key or "window" in key:
-                value = params[key]
-                params[key] = [] if isinstance(value, list) else None
+    elif reason == "attack_window_configuration_required":
+        if isinstance(inputs, dict):
+            for key in list(inputs):
+                if "attack" in key.lower() or "window" in key.lower():
+                    value = inputs[key]
+                    inputs[key] = [] if isinstance(value, list) else None
+        if isinstance(params, dict):
+            for key in list(params):
+                if "attack" in key.lower() or "window" in key.lower():
+                    value = params[key]
+                    params[key] = [] if isinstance(value, list) else None
     elif reason == "split_configuration_required" and isinstance(inputs, dict):
         for key in list(inputs):
-            if "train" in key or "test" in key or "split" in key:
+            if "train" in key.lower() or "test" in key.lower() or "split" in key.lower():
                 value = inputs[key]
                 inputs[key] = [] if isinstance(value, list) else ""
+        inputs["entity_disjoint_expected"] = False
 
     return metric
 
