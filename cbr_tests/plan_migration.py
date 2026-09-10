@@ -136,6 +136,20 @@ LEGACY_INTRINSIC_METRIC_MIGRATIONS = {
     },
 }
 
+# Compatibility handlers that are intentionally still executable, but whose
+# scientific constructs changed enough that a representative plan must be
+# regenerated rather than renamed in place.
+COMPATIBILITY_ONLY_METRIC_PROFILES = {
+    "protocol_validity_profile": (
+        "The canonical Valid IP Address Ratio is now a dedicated metric; the old "
+        "protocol profile mixes several packet-validity concepts."
+    ),
+    "reserved_ip_address_profile": (
+        "Reserved-address misuse now requires an explicit address-use policy and "
+        "cannot be inferred from the legacy profile."
+    ),
+}
+
 
 def legacy_intrinsic_metric_ids(plan: dict) -> list[str]:
     """Return legacy intrinsic metric IDs present in a plan, in plan order."""
@@ -147,12 +161,23 @@ def legacy_intrinsic_metric_ids(plan: dict) -> list[str]:
     ]
 
 
+def compatibility_only_metric_ids(plan: dict) -> list[str]:
+    """Return profile IDs that require plan regeneration for final experiments."""
+    return [
+        str(metric.get("metric_id"))
+        for metric in plan.get("metrics", [])
+        if isinstance(metric, dict)
+        and metric.get("metric_id") in COMPATIBILITY_ONLY_METRIC_PROFILES
+    ]
+
+
 def migrate_plan_to_canonical_ids(plan: dict) -> tuple[dict, list[dict]]:
     """Return a schema-valid copy of a plan with legacy intrinsic IDs migrated.
 
     Scientific inputs and calculation parameters are preserved. Only the metric
     identity, human label and taxonomy path are refreshed to the canonical
-    overhaul contract.
+    overhaul contract. Compatibility-only profiles are intentionally left alone
+    because they require plan regeneration rather than a one-to-one rename.
     """
     validate_plan_schema(plan)
     migrated = deepcopy(plan)
