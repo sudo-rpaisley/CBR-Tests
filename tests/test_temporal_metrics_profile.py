@@ -25,6 +25,25 @@ def test_temporal_consistency_metrics():
     assert compute_non_negative_duration_ratio(df, {"input_requirements": {"duration_field": "duration"}})["summary"]["non_negative_duration_ratio"] == 0.5
 
 
+def test_timestamp_parse_success_excludes_missing_values_from_the_denominator():
+    df = pd.DataFrame({
+        "timestamp": ["2024-01-01T00:00:00Z", None, "", "not-a-time"],
+    })
+
+    result = compute_timestamp_parse_success_ratio(
+        df,
+        {"input_requirements": {"timestamp_field": "timestamp"}},
+    )["summary"]
+
+    assert result["row_count"] == 4
+    assert result["checked_timestamp_count"] == 2
+    assert result["parsed_count"] == 1
+    assert result["failed_parse_count"] == 1
+    assert result["missing_timestamp_count"] == 2
+    assert result["timestamp_parse_success_ratio"] == 0.5
+    assert result["denominator_policy"] == "non_missing_timestamp_values"
+
+
 def test_inter_arrival_and_burstiness_still_measure_internal_half_drift():
     timestamps = pd.date_range("2024-01-01T00:00:00Z", periods=8, freq="h")
     df = pd.DataFrame({"timestamp": timestamps})
