@@ -50,6 +50,14 @@ def compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict:
 def compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict:
     subset_fields = _select_fields(df, metric, "subset_fields")
     row_count = int(len(df))
+    all_fields = list(df.columns)
+    duplicate_definition = (
+        "full_row"
+        if subset_fields and set(subset_fields) == set(all_fields)
+        else "configured_signature"
+        if subset_fields
+        else "no_runnable_signature"
+    )
 
     if not subset_fields:
         duplicate_mask = pd.Series([False] * row_count, index=df.index)
@@ -66,12 +74,15 @@ def compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict:
     return {
         "summary": {
             "row_count": row_count,
+            "duplicate_definition": duplicate_definition,
+            "subset_field_count": len(subset_fields),
+            "subset_field_names": ", ".join(subset_fields),
             "subset_fields": subset_fields,
             "duplicate_row_count": duplicate_row_count,
             "duplicate_group_count": duplicate_group_count,
             "duplicate_row_ratio": (
                 round(duplicate_row_count / row_count, 6) if row_count else None
             ),
-            "runnable": row_count > 0,
+            "runnable": row_count > 0 and bool(subset_fields),
         }
     }
