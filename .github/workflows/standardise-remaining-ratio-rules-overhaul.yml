@@ -1,0 +1,193 @@
+name: Standardise remaining ratio rules (overhaul)
+
+on:
+  push:
+    branches:
+      - overhaul/metric-conformance
+
+permissions:
+  contents: write
+
+jobs:
+  standardise:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: overhaul/metric-conformance
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Apply explicit decision rules
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'{label}: target block not found')
+              return text.replace(old, new, 1)
+
+          # Legacy protocol-validity compatibility profile.
+          path = Path('cbr_tests/metrics/protocol_network/address_validity/valid_ip_address_profile.py')
+          text = path.read_text()
+          marker = 'from pathlib import Path\n'
+          if 'from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n' not in text:
+              text = replace_once(
+                  text,
+                  marker,
+                  marker + 'from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n',
+                  'protocol-validity import',
+              )
+          old = '''    pass_threshold = float(params.get("pass_threshold", 0.99))\n    warn_threshold = float(params.get("warn_threshold", 0.95))\n    suspicious_flags_affect_status = bool(\n        params.get("suspicious_tcp_flags_affect_status", False)\n    )\n    if not 0 <= warn_threshold <= pass_threshold <= 1:\n        return False, {\n            "error": "Protocol validity thresholds must satisfy 0 <= warn_threshold <= pass_threshold <= 1.",\n            "reason_code": "invalid_metric_configuration",\n        }\n'''
+          new = '''    try:\n        decision_rule = resolve_ratio_decision_rule(\n            params, default_pass=0.99, default_warn=0.95\n        )\n    except ValueError as exc:\n        return False, {\n            "error": str(exc),\n            "reason_code": "invalid_metric_configuration",\n        }\n    pass_threshold = decision_rule["pass_threshold"]\n    warn_threshold = decision_rule["warn_threshold"]\n    suspicious_flags_affect_status = bool(\n        params.get("suspicious_tcp_flags_affect_status", False)\n    )\n'''
+          text = replace_once(text, old, new, 'protocol-validity decision rule')
+          old = '''    if protocol_validity_ratio is None:\n        status = "not_applicable"\n    elif protocol_validity_ratio >= pass_threshold:\n        status = "pass"\n    elif protocol_validity_ratio >= warn_threshold:\n        status = "warn"\n    else:\n        status = "fail"\n'''
+          text = replace_once(
+              text,
+              old,
+              '    status = classify_ratio(protocol_validity_ratio, decision_rule)\n',
+              'protocol-validity classification',
+          )
+          text = replace_once(
+              text,
+              '                "warn_threshold": warn_threshold,\n                "issue_examples": issue_examples,\n',
+              '                "warn_threshold": warn_threshold,\n                "decision_rule": decision_rule,\n                "issue_examples": issue_examples,\n',
+              'protocol-validity result metadata',
+          )
+          path.write_text(text)
+
+          # Derived-rate consistency.
+          path = Path('cbr_tests/metrics/protocol_network/flow_semantics/derived_rate_consistency_profile.py')
+          text = path.read_text()
+          if 'from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n' not in text:
+              text = replace_once(
+                  text,
+                  'from runner.tabular import load_tabular_dataset\n',
+                  'from runner.tabular import load_tabular_dataset\nfrom cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n',
+                  'derived-rate import',
+              )
+          old = '''    pass_threshold = float(parameters.get("pass_threshold", 0.99))\n    warn_threshold = float(parameters.get("warn_threshold", 0.95))\n\n    if relative_tolerance < 0 or absolute_tolerance < 0:\n        return False, {"error": "Rate tolerances must be non-negative."}\n    if not 0 <= warn_threshold <= pass_threshold <= 1:\n        return False, {\n            "error": "Require 0 <= warn_threshold <= pass_threshold <= 1."\n        }\n'''
+          new = '''    if relative_tolerance < 0 or absolute_tolerance < 0:\n        return False, {"error": "Rate tolerances must be non-negative."}\n    try:\n        decision_rule = resolve_ratio_decision_rule(\n            parameters, default_pass=0.99, default_warn=0.95\n        )\n    except ValueError as exc:\n        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}\n'''
+          text = replace_once(text, old, new, 'derived-rate decision rule')
+          text = replace_once(
+              text,
+              '    ratio = round(consistent_row_count / checked_row_count, 6) if checked_row_count else 0.0\n    status = "pass" if ratio >= pass_threshold else "warn" if ratio >= warn_threshold else "fail"\n',
+              '    ratio = round(consistent_row_count / checked_row_count, 6) if checked_row_count else None\n    status = classify_ratio(ratio, decision_rule)\n',
+              'derived-rate classification',
+          )
+          text = replace_once(
+              text,
+              '                "absolute_tolerance": absolute_tolerance,\n                "examples": examples,\n',
+              '                "absolute_tolerance": absolute_tolerance,\n                "decision_rule": decision_rule,\n                "examples": examples,\n',
+              'derived-rate metadata',
+          )
+          path.write_text(text)
+
+          # Service-port consistency.
+          path = Path('cbr_tests/metrics/protocol_network/port_validity/service_port_consistency_profile.py')
+          text = path.read_text()
+          if 'from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n' not in text:
+              text = replace_once(
+                  text,
+                  'from pathlib import Path\n',
+                  'from pathlib import Path\nfrom cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n',
+                  'service-port import',
+              )
+          old = '''    pass_threshold = float(params.get("pass_threshold", 0.95))\n    warn_threshold = float(params.get("warn_threshold", 0.75))\n    max_examples = int(params.get("max_examples", 10))\n    population_mode = str(params.get("population_mode", "auto")).lower()\n'''
+          new = '''    try:\n        decision_rule = resolve_ratio_decision_rule(\n            params, default_pass=0.95, default_warn=0.75\n        )\n    except ValueError as exc:\n        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}\n    pass_threshold = decision_rule["pass_threshold"]\n    warn_threshold = decision_rule["warn_threshold"]\n    max_examples = int(params.get("max_examples", 10))\n    population_mode = str(params.get("population_mode", "auto")).lower()\n'''
+          text = replace_once(text, old, new, 'service-port decision rule')
+          old = '''    if not 0 <= warn_threshold <= pass_threshold <= 1:\n        return False, {\n            "error": "Thresholds must satisfy 0 <= warn_threshold <= pass_threshold <= 1.",\n            "reason_code": "invalid_metric_configuration",\n        }\n'''
+          text = replace_once(text, old, '', 'service-port legacy validation')
+          old = '''        if service_port_match_ratio >= pass_threshold:\n            status = "pass"\n        elif service_port_match_ratio >= warn_threshold:\n            status = "warn"\n        else:\n            status = "fail"\n        if invalid_port_row_count > 0 and status == "pass":\n            status = "warn"\n'''
+          new = '''        status = classify_ratio(service_port_match_ratio, decision_rule)\n        if invalid_port_row_count > 0 and status == "pass":\n            status = "warn"\n'''
+          text = replace_once(text, old, new, 'service-port classification')
+          text = replace_once(
+              text,
+              '                "warn_threshold": warn_threshold,\n                "mismatch_examples": mismatch_examples,\n',
+              '                "warn_threshold": warn_threshold,\n                "decision_rule": decision_rule,\n                "mismatch_examples": mismatch_examples,\n',
+              'service-port metadata',
+          )
+          path.write_text(text)
+
+          # Valid slice identifiers.
+          path = Path('cbr_tests/metrics/protocol_network/slice_metadata_integrity/valid_slice_identifier_profile.py')
+          text = path.read_text()
+          if 'from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n' not in text:
+              text = replace_once(
+                  text,
+                  'from runner.tabular import load_tabular_dataset\n',
+                  'from runner.tabular import load_tabular_dataset\nfrom cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n',
+                  'valid-slice import',
+              )
+          old = '''    max_examples = int(params.get("max_examples", 10))\n\n    df = metric.get("_shared_df")\n'''
+          new = '''    max_examples = int(params.get("max_examples", 10))\n    try:\n        decision_rule = resolve_ratio_decision_rule(\n            params, default_pass=0.99, default_warn=0.95\n        )\n    except ValueError as exc:\n        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}\n\n    df = metric.get("_shared_df")\n'''
+          text = replace_once(text, old, new, 'valid-slice rule resolution')
+          old = '''    if checked == 0:\n        return False, {"error": "No slice identifiers were available to check."}\n\n    valid_ratio = round(valid / checked, 6)\n    invalid_ratio = round(invalid / checked, 6)\n    missing_ratio = round(missing / row_count, 6) if row_count else 0.0\n    status = "pass" if valid_ratio >= 0.99 else "warn" if valid_ratio >= 0.95 else "fail"\n'''
+          new = '''    valid_ratio = round(valid / checked, 6) if checked else None\n    invalid_ratio = round(invalid / checked, 6) if checked else None\n    missing_ratio = round(missing / row_count, 6) if row_count else None\n    status = classify_ratio(valid_ratio, decision_rule)\n'''
+          text = replace_once(text, old, new, 'valid-slice classification')
+          text = replace_once(
+              text,
+              '        "invalid_examples": examples,\n        "status": status,\n',
+              '        "invalid_examples": examples,\n        "decision_rule": decision_rule,\n        "status": status,\n',
+              'valid-slice metadata',
+          )
+          path.write_text(text)
+
+          # Slice identifier consistency.
+          path = Path('cbr_tests/metrics/protocol_network/slice_metadata_integrity/slice_identifier_consistency_profile.py')
+          text = path.read_text()
+          if 'from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n' not in text:
+              text = replace_once(
+                  text,
+                  'from runner.tabular import load_tabular_dataset\n',
+                  'from runner.tabular import load_tabular_dataset\nfrom cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule\n',
+                  'slice-consistency import',
+              )
+          old = '''    max_examples = int(params.get("max_examples", 10))\n\n    df = metric.get("_shared_df")\n'''
+          new = '''    max_examples = int(params.get("max_examples", 10))\n    try:\n        decision_rule = resolve_ratio_decision_rule(\n            params, default_pass=0.99, default_warn=0.95\n        )\n    except ValueError as exc:\n        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}\n\n    df = metric.get("_shared_df")\n'''
+          text = replace_once(text, old, new, 'slice-consistency rule resolution')
+          text = replace_once(
+              text,
+              '    status = "not_applicable" if checked == 0 else ("pass" if ratio >= 0.99 else "warn" if ratio >= 0.95 else "fail")\n',
+              '    status = classify_ratio(ratio, decision_rule)\n',
+              'slice-consistency classification',
+          )
+          text = replace_once(
+              text,
+              '        "examples": examples,\n        "status": status,\n',
+              '        "examples": examples,\n        "decision_rule": decision_rule,\n        "status": status,\n',
+              'slice-consistency metadata',
+          )
+          path.write_text(text)
+          PY
+
+      - name: Regenerate and verify
+        run: |
+          python scripts/build_reference_documentation.py
+          python -m compileall -q cbr_tests runner tests
+          python -m pytest -q
+
+      - name: Commit standardisation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cbr_tests/metrics/protocol_network tests docs/function_reference.md docs/test_reference.md
+          if git diff --cached --quiet; then
+            echo 'Nothing to commit.'
+            exit 0
+          fi
+          git commit -m "Make remaining ratio verdict thresholds explicit policy"
+          git push origin HEAD:overhaul/metric-conformance
