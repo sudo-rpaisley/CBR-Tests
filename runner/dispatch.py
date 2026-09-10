@@ -69,37 +69,37 @@ from cbr_tests.metrics.label_fidelity import (
     compute_train_test_duplicate_overlap_ratio,
     compute_train_test_identifier_contamination_ratio,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.reserved_ip_address_profile import (
+from cbr_tests.metrics.protocol_network.address_validity.reserved_ip_address_profile import (
     run_reserved_ip_address_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.address_validity.valid_ip_address_profile import (
+from cbr_tests.metrics.protocol_network.address_validity.valid_ip_address_profile import (
     run_protocol_validity_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.flow_duration_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.flow_duration_consistency_profile import (
     run_flow_duration_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.derived_rate_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.derived_rate_consistency_profile import (
     run_derived_rate_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.handshake_plausibility_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.handshake_plausibility_profile import (
     run_handshake_plausibility_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.packet_byte_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.packet_byte_consistency_profile import (
     run_packet_byte_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.flow_semantics.tcp_flag_consistency_profile import (
+from cbr_tests.metrics.protocol_network.flow_semantics.tcp_flag_consistency_profile import (
     run_tcp_flag_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.service_port_consistency_profile import (
+from cbr_tests.metrics.protocol_network.port_validity.service_port_consistency_profile import (
     run_service_port_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.port_validity.valid_port_range_profile import (
+from cbr_tests.metrics.protocol_network.port_validity.valid_port_range_profile import (
     run_valid_port_range_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadata_integrity.slice_identifier_consistency_profile import (
+from cbr_tests.metrics.protocol_network.slice_metadata_integrity.slice_identifier_consistency_profile import (
     run_slice_identifier_consistency_metric,
 )
-from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadata_integrity.valid_slice_identifier_profile import (
+from cbr_tests.metrics.protocol_network.slice_metadata_integrity.valid_slice_identifier_profile import (
     run_valid_slice_identifier_metric,
 )
 from cbr_tests.metrics.reference_comparison import (
