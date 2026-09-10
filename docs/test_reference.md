@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **207 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **243 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -8,6 +8,18 @@ python -m pytest -q
 ```
 
 Run one test with `python -m pytest -q path/to/test.py::test_name`.
+
+## `tests/test_address_validity_canonical.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_valid_ip_address_ratio_uses_non_missing_checked_values_as_denominator()` (L9) | Verifies that valid IP address ratio uses non missing checked values as denominator. | `compute_valid_ip_address_ratio` |
+| `test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations()` (L33) | Verifies that reserved address misuse ratio counts only explicit policy violations. | `compute_reserved_address_misuse_ratio` |
+| `test_reserved_address_profile_without_policy_does_not_claim_zero_misuse()` (L67) | Verifies that reserved address profile without policy does not claim zero misuse. | `compute_reserved_address_misuse_ratio` |
 
 ## `tests/test_batch_plan.py`
 
@@ -306,6 +318,26 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_example_outcome() -> dict` (L8) | Implementation helper for example outcome. |
 
+## `tests/test_intrinsic_diagnostic_restructure.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles()` (L28) | Verifies that canonical distribution diagnostics preserve hand calculated oracles. | `_feature_metric`, `compute_feature_ks_internal_drift`, `compute_feature_wasserstein_internal_drift`, `compute_feature_energy_internal_drift`, `compute_feature_mmd2_internal_drift` |
+| `test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison()` (L39) | Verifies that canonical temporal diagnostic names do not claim reference comparison. | `all`, `compute_inter_arrival_internal_drift_ks`, `compute_burstiness_internal_drift`, `compute_day_to_day_hourly_activity_divergence`, `compute_day_to_day_diurnal_similarity`, `compute_lagged_periodicity_similarity` |
+| `test_dependency_profiles_are_profiles_not_deviations()` (L60) | Verifies that dependency profiles are profiles not deviations. | `compute_pearson_dependency_profile`, `compute_spearman_dependency_profile`, `compute_distance_correlation_dependency_profile` |
+| `test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics()` (L78) | Verifies that new taxonomy uses canonical ids and nests dataset heuristics. | `load_taxonomy_paths` |
+| `test_legacy_intrinsic_ids_remain_runtime_compatible_but_not_canonical_catalogue()` (L97) | Verifies that legacy intrinsic ids remain runtime compatible but not canonical catalogue. | `build_metric_handlers`, `LEGACY_METRIC_ID_ALIASES.items`, `available_metric_ids` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_feature_metric()` (L21) | Implementation helper for feature metric. |
+
 ## `tests/test_label_fidelity_profile.py`
 
 Tests and local helpers in this module.
@@ -315,8 +347,14 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_label_completeness_and_distribution_metrics()` (L15) | Verifies that label completeness and distribution metrics. | `compute_label_coverage_ratio`, `compute_per_slice_label_coverage_ratio`, `compute_per_slice_label_entropy_score`, `compute_class_imbalance_score` |
-| `test_temporal_label_correctness_metrics()` (L28) | Verifies that temporal label correctness metrics. | `compute_attack_window_alignment_score`, `compute_pre_post_attack_label_bleed_ratio` |
-| `test_split_integrity_metrics()` (L52) | Verifies that split integrity metrics. | `compute_train_test_duplicate_overlap_ratio`, `compute_train_test_identifier_contamination_ratio` |
+| `test_per_slice_label_metrics_exclude_missing_slice_ids()` (L34) | Verifies that per slice label metrics exclude missing slice ids. | `compute_per_slice_label_coverage_ratio`, `compute_per_slice_label_entropy_score` |
+| `test_entropy_is_undefined_for_labels_outside_declared_class_universe()` (L57) | Verifies that entropy is undefined for labels outside declared class universe. | `compute_per_slice_label_entropy_score` |
+| `test_class_imbalance_requires_independent_expected_class_universe()` (L76) | Verifies that class imbalance requires independent expected class universe. | `compute_class_imbalance_score` |
+| `test_temporal_label_correctness_metrics()` (L97) | Verifies that temporal label correctness metrics. | `compute_attack_window_alignment_score`, `compute_pre_post_attack_label_bleed_ratio` |
+| `test_attack_metrics_refuse_unconfigured_ground_truth()` (L129) | Verifies that attack metrics refuse unconfigured ground truth. | `compute_attack_window_alignment_score`, `compute_pre_post_attack_label_bleed_ratio` |
+| `test_bleed_excludes_missing_labels_from_eligible_buffer_denominator()` (L144) | Verifies that bleed excludes missing labels from eligible buffer denominator. | `compute_pre_post_attack_label_bleed_ratio` |
+| `test_split_integrity_metrics_use_test_population_denominators()` (L177) | Verifies that split integrity metrics use test population denominators. | `compute_train_test_duplicate_overlap_ratio`, `compute_train_test_identifier_contamination_ratio` |
+| `test_identifier_overlap_is_not_called_contamination_without_entity_disjoint_policy()` (L207) | Verifies that identifier overlap is not called contamination without entity disjoint policy. | `compute_train_test_identifier_contamination_ratio` |
 
 ## `tests/test_metric_failure_diagnostics.py`
 
@@ -382,16 +420,17 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path)` (L37) | Verifies that build PCAP packet dataframe copies raw packet fields. | `_write_capture`, `build_pcap_packet_dataframe` |
-| `test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path)` (L52) | Verifies that build PCAP flow dataframe reconstructs bidirectional view. | `_write_capture`, `build_pcap_flow_dataframe`, `pytest.approx` |
-| `test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path)` (L78) | Verifies that packet adapted metrics run on raw packet view. | `_write_capture`, `build_pcap_packet_dataframe`, `runners.items`, `pcap_metric_template`, `runner` |
-| `test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates()` (L103) | Verifies that self derived flow invariants are not exposed as PCAP templates. | `pcap_metric_template` |
+| `test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path)` (L32) | Verifies that build PCAP packet dataframe copies raw packet fields. | `_write_capture`, `build_pcap_packet_dataframe` |
+| `test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path)` (L47) | Verifies that build PCAP flow dataframe reconstructs bidirectional view. | `_write_capture`, `build_pcap_flow_dataframe`, `pytest.approx` |
+| `test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path)` (L73) | Verifies that packet adapted metrics run on raw packet view. | `_write_capture`, `build_pcap_packet_dataframe`, `metric_ids.issubset`, `build_metric_handlers`, `AssertionError`, `pcap_metric_template`, `handlers[metric_id]`, `handlers['valid_ip_address_ratio']` |
+| `test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates()` (L98) | Verifies that self derived flow invariants are not exposed as PCAP templates. | `pcap_metric_template` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_write_capture(path: Path) -> None` (L25) | Implementation helper for write capture. |
+| `_write_capture(path: Path) -> None` (L20) | Implementation helper for write capture. |
+| `test_packet_adapted_metrics_run_on_raw_packet_view.forbidden_loader(_path)` (L81) | Implementation helper for forbidden loader. |
 
 ## `tests/test_pcap_all_runnable_metrics.py`
 
@@ -402,17 +441,17 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_pcap_supported_set_contains_every_current_automatic_packet_metric()` (L43) | Verifies that PCAP supported set contains every current automatic packet metric. | Assertions and fixtures in the module |
-| `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L50) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['timestamp_parse_success_ratio']`, `AssertionError`, `handlers[metric_id]` |
-| `test_automatic_pcap_plan_contains_all_twenty_one_currently_runnable_metrics(tmp_path)` (L77) | Verifies that automatic PCAP plan contains all twenty one currently runnable metrics. | `_write_capture`, `build_plan` |
-| `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L93) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
-| `test_context_configuration_reasons_are_not_silent_exclusions()` (L111) | Verifies that context configuration reasons are not silent exclusions. | Assertions and fixtures in the module |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L53) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['timestamp_parse_success_ratio']`, `AssertionError`, `handlers[metric_id]` |
+| `test_automatic_pcap_plan_contains_all_twenty_currently_runnable_metrics(tmp_path)` (L80) | Verifies that automatic PCAP plan contains all twenty currently runnable metrics. | `_write_capture`, `build_plan` |
+| `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L99) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
+| `test_context_configuration_reasons_are_explicit()` (L117) | Verifies that context configuration reasons are explicit. | Assertions and fixtures in the module |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
 | `_write_capture(path: Path, packet_count: int = 64) -> None` (L21) | Implementation helper for write capture. |
-| `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L59) | Implementation helper for forbidden loader. |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L62) | Implementation helper for forbidden loader. |
 
 ## `tests/test_pcap_handshake.py`
 
@@ -487,9 +526,16 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_reference_distribution_dependency_and_temporal_metrics(tmp_path)` (L19) | Verifies that reference distribution dependency and temporal metrics. | `reference.to_csv`, `compute_feature_wise_ks_statistic_from_reference`, `compute_pearson_matrix_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
-| `test_reference_slice_and_protocol_metrics(tmp_path)` (L39) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
-| `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L65) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP`, `TCP` |
+| `test_reference_distribution_dependency_and_temporal_metrics(tmp_path)` (L28) | Verifies that reference distribution dependency and temporal metrics. | `reference.to_csv`, `compute_feature_wise_ks_statistic_from_reference`, `compute_pearson_matrix_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
+| `test_reference_distributional_metric_oracles(tmp_path)` (L48) | Verifies that reference distributional metric oracles. | `compute_feature_wise_wasserstein_distance_from_reference`, `compute_feature_wise_ks_statistic_from_reference`, `compute_feature_wise_energy_distance_from_reference`, `compute_feature_set_mmd_score_from_reference` |
+| `test_reference_correlation_matrix_deviation_oracles(tmp_path)` (L76) | Verifies that reference correlation matrix deviation oracles. | `compute_pearson_matrix_deviation_from_reference`, `compute_spearman_matrix_deviation_from_reference` |
+| `test_reference_distance_correlation_matrix_deviation_oracle(tmp_path)` (L102) | Verifies that reference distance correlation matrix deviation oracle. | `compute_distance_correlation_matrix_deviation_from_reference` |
+| `test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone()` (L125) | Verifies that reference temporal oracles use declared timestamp units and timezone. | `compute_inter_arrival_distribution_divergence_from_reference`, `compute_burstiness_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
+| `test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals()` (L156) | Verifies that reference slice metrics exclude missing and do not score unshared conditionals. | `compute_per_slice_class_divergence_from_reference`, `compute_per_slice_feature_distribution_deviation_from_reference`, `compute_slice_proportion_deviation_from_reference` |
+| `test_reference_protocol_and_port_metrics_exclude_missing_categories()` (L193) | Verifies that reference protocol and port metrics exclude missing categories. | `compute_port_use_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference` |
+| `test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation()` (L223) | Verifies that flow statistic reference distance requires matching flow definition for interpretation. | `compute_flow_statistic_deviation_from_reference` |
+| `test_reference_slice_and_protocol_metrics(tmp_path)` (L252) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
+| `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L277) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_hourly_activity_divergence_from_reference`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP` |
 
 ## `tests/test_run_plan_field_translation.py`
 
@@ -603,6 +649,28 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_parse_port_categories()` (L4) | Verifies that parse port categories. | `parse_port` |
 
+## `tests/test_slice_context_configuration.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_slice_realism_context_is_not_inherited_from_saved_plan_templates()` (L4) | Verifies that slice realism context is not inherited from saved plan templates. | `build_metric_catalog` |
+
+## `tests/test_slice_identifier_denominator_policy.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_valid_slice_identifier_excludes_missing_by_default()` (L11) | Verifies that valid slice identifier excludes missing by default. | `run_valid_slice_identifier_metric` |
+| `test_valid_slice_identifier_can_reproduce_legacy_count_invalid_policy()` (L31) | Verifies that valid slice identifier can reproduce legacy count invalid policy. | `run_valid_slice_identifier_metric` |
+| `test_slice_consistency_excludes_unmatched_and_missing_rows_by_default()` (L52) | Verifies that slice consistency excludes unmatched and missing rows by default. | `run_slice_identifier_consistency_metric` |
+
 ## `tests/test_slice_representation_profile.py`
 
 Tests and local helpers in this module.
@@ -612,7 +680,12 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_slice_coverage_and_balance_metrics()` (L13) | Verifies that slice coverage and balance metrics. | `compute_per_slice_sample_coverage_ratio`, `compute_per_slice_feature_coverage_ratio`, `compute_per_slice_class_coverage_ratio`, `compute_slice_distribution_imbalance_score` |
-| `test_cross_slice_isolation_metrics()` (L27) | Verifies that cross slice isolation metrics. | `compute_cross_slice_duplicate_overlap_ratio`, `compute_cross_slice_identifier_leakage_ratio` |
+| `test_sample_coverage_requires_expected_slices_and_supports_minimum_counts()` (L48) | Verifies that sample coverage requires expected slices and supports minimum counts. | `compute_per_slice_sample_coverage_ratio` |
+| `test_feature_coverage_is_row_level_not_any_value_presence()` (L74) | Verifies that feature coverage is row level not any value presence. | `compute_per_slice_feature_coverage_ratio` |
+| `test_class_coverage_requires_independently_declared_expected_classes()` (L91) | Verifies that class coverage requires independently declared expected classes. | `compute_per_slice_class_coverage_ratio` |
+| `test_slice_imbalance_excludes_missing_slice_ids_from_distribution()` (L106) | Verifies that slice imbalance excludes missing slice ids from distribution. | `compute_slice_distribution_imbalance_score` |
+| `test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators()` (L118) | Verifies that cross slice isolation metrics use signature and identifier denominators. | `compute_cross_slice_duplicate_overlap_ratio`, `compute_cross_slice_identifier_leakage_ratio` |
+| `test_identifier_overlap_is_not_called_leakage_without_exclusivity_policy()` (L151) | Verifies that identifier overlap is not called leakage without exclusivity policy. | `compute_cross_slice_identifier_leakage_ratio` |
 
 ## `tests/test_statistical_fidelity_profile.py`
 
@@ -623,8 +696,8 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_distributional_metrics_report_zero_for_matching_halves()` (L19) | Verifies that distributional metrics report zero for matching halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distributional_metrics_detect_shifted_halves()` (L29) | Verifies that distributional metrics detect shifted halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distance_correlation_profile_reports_nonlinear_dependency()` (L39) | Verifies that distance correlation profile reports nonlinear dependency. | `compute_distance_correlation_profile` |
+| `test_distributional_metrics_match_hand_calculated_shifted_half_oracles()` (L29) | Verifies that distributional metrics match hand calculated shifted half oracles. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
+| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L51) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
 
 ### Test helpers
 
@@ -641,7 +714,12 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_benchmark_model_metrics_from_predictions()` (L11) | Verifies that benchmark model metrics from predictions. | `compute_benchmark_model_accuracy`, `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
-| `test_benchmark_model_metrics_ignore_missing_labels_or_predictions()` (L24) | Verifies that benchmark model metrics ignore missing labels or predictions. | `compute_benchmark_model_accuracy` |
+| `test_benchmark_model_accuracy_is_multiclass_exact_match_and_reports_coverage()` (L30) | Verifies that benchmark model accuracy is multiclass exact match and reports coverage. | `compute_benchmark_model_accuracy` |
+| `test_benchmark_model_metrics_ignore_missing_labels_or_predictions()` (L47) | Verifies that benchmark model metrics ignore missing labels or predictions. | `compute_benchmark_model_accuracy` |
+| `test_precision_recall_and_f1_never_infer_the_positive_class()` (L63) | Verifies that precision recall and f1 never infer the positive class. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+| `test_binary_task_metrics_are_explicit_positive_label_one_vs_rest()` (L85) | Verifies that binary task metrics are explicit positive label one vs rest. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+| `test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined()` (L106) | Verifies that f1 is zero when precision and recall are both zero but defined. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+| `test_positive_class_metrics_are_undefined_when_positive_support_is_absent()` (L123) | Verifies that positive class metrics are undefined when positive support is absent. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
 
 ## `tests/test_telemetry.py`
 
@@ -670,11 +748,12 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_temporal_consistency_metrics()` (L15) | Verifies that temporal consistency metrics. | `compute_timestamp_parse_success_ratio`, `compute_start_end_timestamp_consistency_ratio`, `compute_non_negative_duration_ratio` |
-| `test_inter_arrival_and_burstiness_still_measure_internal_half_drift()` (L28) | Verifies that inter arrival and burstiness still measure internal half drift. | `compute_inter_arrival_time_distribution_divergence`, `compute_burstiness_coefficient_deviation` |
-| `test_regular_multiday_activity_has_identical_diurnal_profiles_and_periodicity()` (L40) | Verifies that regular multiday activity has identical diurnal profiles and periodicity. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
-| `test_shifted_daily_activity_is_detected_as_diurnally_different()` (L69) | Verifies that shifted daily activity is detected as diurnally different. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
-| `test_single_day_capture_is_not_mislabelled_as_diurnally_divergent()` (L93) | Verifies that single day capture is not mislabelled as diurnally divergent. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
-| `test_periodicity_rejects_non_positive_lags()` (L120) | Verifies that periodicity rejects non positive lags. | `compute_periodicity_preservation_score`, `AssertionError` |
+| `test_timestamp_parse_success_excludes_missing_values_from_the_denominator()` (L28) | Verifies that timestamp parse success excludes missing values from the denominator. | `compute_timestamp_parse_success_ratio` |
+| `test_inter_arrival_and_burstiness_still_measure_internal_half_drift()` (L47) | Verifies that inter arrival and burstiness still measure internal half drift. | `compute_inter_arrival_time_distribution_divergence`, `compute_burstiness_coefficient_deviation` |
+| `test_regular_multiday_activity_has_identical_diurnal_profiles_and_periodicity()` (L59) | Verifies that regular multiday activity has identical diurnal profiles and periodicity. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_shifted_daily_activity_is_detected_as_diurnally_different()` (L88) | Verifies that shifted daily activity is detected as diurnally different. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_single_day_capture_is_not_mislabelled_as_diurnally_divergent()` (L112) | Verifies that single day capture is not mislabelled as diurnally divergent. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_periodicity_rejects_non_positive_lags()` (L139) | Verifies that periodicity rejects non positive lags. | `compute_periodicity_preservation_score`, `AssertionError` |
 
 ## `tests/test_tui.py`
 
