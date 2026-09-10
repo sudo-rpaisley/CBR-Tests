@@ -4,7 +4,13 @@ from copy import deepcopy
 
 import pandas as pd
 
+from cbr_tests.metrics.pearson import compute_pearson_profile, validate_candidate_fields
+from cbr_tests.metrics.spearman import (
+    compute_spearman_profile,
+    validate_spearman_candidate_fields,
+)
 from cbr_tests.metrics.statistical import (
+    compute_distance_correlation_profile,
     compute_energy_distance,
     compute_ks_feature_divergence,
     compute_maximum_mean_discrepancy,
@@ -111,3 +117,66 @@ def compute_feature_mmd2_internal_drift(df: pd.DataFrame, metric: dict) -> dict:
         compute_maximum_mean_discrepancy(df, metric),
         estimator="biased_empirical_squared_rbf_mmd_per_feature",
     )
+
+
+def _dependency_requirements(metric: dict) -> tuple[list[str], int]:
+    requirements = metric.get("input_requirements", {})
+    return (
+        list(requirements.get("candidate_fields", [])),
+        int(requirements.get("minimum_runnable_fields", 2)),
+    )
+
+
+def compute_pearson_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
+    fields, minimum = _dependency_requirements(metric)
+    validation, runnable_fields, numeric_df = validate_candidate_fields(df.copy(), fields)
+    runnable = len(runnable_fields) >= minimum
+    profile = compute_pearson_profile(numeric_df, runnable_fields) if runnable else None
+    return {
+        "column_validation": validation,
+        "profile": profile,
+        "summary": {
+            "runnable": runnable,
+            "runnable_field_count": len(runnable_fields),
+            "minimum_runnable_fields": minimum,
+            "comparison_scope": "within_dataset_dependency_profile",
+            "interpretation_direction": "contextual",
+        },
+    }
+
+
+def compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
+    fields, minimum = _dependency_requirements(metric)
+    validation, runnable_fields, numeric_df = validate_spearman_candidate_fields(
+        df.copy(), fields
+    )
+    runnable = len(runnable_fields) >= minimum
+    profile = compute_spearman_profile(numeric_df, runnable_fields) if runnable else None
+    return {
+        "column_validation": validation,
+        "profile": profile,
+        "summary": {
+            "runnable": runnable,
+            "runnable_field_count": len(runnable_fields),
+            "minimum_runnable_fields": minimum,
+            "comparison_scope": "within_dataset_dependency_profile",
+            "interpretation_direction": "contextual",
+        },
+    }
+
+
+def compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
+    fields, minimum = _dependency_requirements(metric)
+    result = compute_distance_correlation_profile(df.copy(), fields)
+    runnable_fields = result.get("profile", {}).get("fields", [])
+    runnable = len(runnable_fields) >= minimum
+    return {
+        **result,
+        "summary": {
+            "runnable": runnable,
+            "runnable_field_count": len(runnable_fields),
+            "minimum_runnable_fields": minimum,
+            "comparison_scope": "within_dataset_dependency_profile",
+            "interpretation_direction": "contextual",
+        },
+    }
