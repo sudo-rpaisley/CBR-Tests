@@ -1,4 +1,5 @@
 from pathlib import Path
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 from ipaddress import ip_address
 
 
@@ -65,16 +66,20 @@ def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool
     from scapy.utils import PcapReader
 
     params = metric.get("calculation", {}).get("parameters", {})
-    pass_threshold = float(params.get("pass_threshold", 0.99))
-    warn_threshold = float(params.get("warn_threshold", 0.95))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            params, default_pass=0.99, default_warn=0.95
+        )
+    except ValueError as exc:
+        return False, {
+            "error": str(exc),
+            "reason_code": "invalid_metric_configuration",
+        }
+    pass_threshold = decision_rule["pass_threshold"]
+    warn_threshold = decision_rule["warn_threshold"]
     suspicious_flags_affect_status = bool(
         params.get("suspicious_tcp_flags_affect_status", False)
     )
-    if not 0 <= warn_threshold <= pass_threshold <= 1:
-        return False, {
-            "error": "Protocol validity thresholds must satisfy 0 <= warn_threshold <= pass_threshold <= 1.",
-            "reason_code": "invalid_metric_configuration",
-        }
 
     packet_count = 0
     checked_packet_count = 0
@@ -330,14 +335,7 @@ def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool
         round(invalid_row_count / checked_row_count, 6) if checked_row_count else None
     )
 
-    if protocol_validity_ratio is None:
-        status = "not_applicable"
-    elif protocol_validity_ratio >= pass_threshold:
-        status = "pass"
-    elif protocol_validity_ratio >= warn_threshold:
-        status = "warn"
-    else:
-        status = "fail"
+    status = classify_ratio(protocol_validity_ratio, decision_rule)
 
     return True, {
         "test_results": {
@@ -369,6 +367,7 @@ def run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool
                 "transport_counts": transport_counts,
                 "pass_threshold": pass_threshold,
                 "warn_threshold": warn_threshold,
+                "decision_rule": decision_rule,
                 "issue_examples": issue_examples,
                 "status": status,
             }

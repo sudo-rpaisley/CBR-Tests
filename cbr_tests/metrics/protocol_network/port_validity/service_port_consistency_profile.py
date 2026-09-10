@@ -1,4 +1,5 @@
 from pathlib import Path
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 
 from runner.tabular import load_tabular_dataset
 
@@ -175,8 +176,14 @@ def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tup
     service_name = params.get("service_name")
     expected_ports = params.get("expected_ports", [])
     match_mode = params.get("match_mode", "any_port")
-    pass_threshold = float(params.get("pass_threshold", 0.95))
-    warn_threshold = float(params.get("warn_threshold", 0.75))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            params, default_pass=0.95, default_warn=0.75
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
+    pass_threshold = decision_rule["pass_threshold"]
+    warn_threshold = decision_rule["warn_threshold"]
     max_examples = int(params.get("max_examples", 10))
     population_mode = str(params.get("population_mode", "auto")).lower()
 
@@ -194,11 +201,6 @@ def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tup
         return False, {"error": f"Unsupported match_mode: {match_mode}", "reason_code": "invalid_metric_configuration"}
     if population_mode not in {"auto", "service_field", "all_rows"}:
         return False, {"error": f"Unsupported population_mode: {population_mode}", "reason_code": "invalid_metric_configuration"}
-    if not 0 <= warn_threshold <= pass_threshold <= 1:
-        return False, {
-            "error": "Thresholds must satisfy 0 <= warn_threshold <= pass_threshold <= 1.",
-            "reason_code": "invalid_metric_configuration",
-        }
 
     df = metric.get("_shared_df")
     if df is None:
@@ -385,12 +387,7 @@ def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tup
     else:
         service_port_match_ratio = round(matching_row_count / checked_row_count, 6)
         service_port_mismatch_ratio = round(mismatching_row_count / checked_row_count, 6)
-        if service_port_match_ratio >= pass_threshold:
-            status = "pass"
-        elif service_port_match_ratio >= warn_threshold:
-            status = "warn"
-        else:
-            status = "fail"
+        status = classify_ratio(service_port_match_ratio, decision_rule)
         if invalid_port_row_count > 0 and status == "pass":
             status = "warn"
         diagnostic = _diagnostic(
@@ -439,6 +436,7 @@ def run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tup
                 "invalid_port_row_ratio": invalid_port_row_ratio,
                 "pass_threshold": pass_threshold,
                 "warn_threshold": warn_threshold,
+                "decision_rule": decision_rule,
                 "mismatch_examples": mismatch_examples,
                 "invalid_port_examples": invalid_port_examples,
                 "status": status,

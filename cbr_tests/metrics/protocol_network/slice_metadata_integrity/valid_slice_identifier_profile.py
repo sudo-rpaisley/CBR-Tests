@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 
 
 def normalise_slice_id(value, case_sensitive: bool, aliases: dict):
@@ -47,6 +48,12 @@ def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple
             "reason_code": "invalid_metric_configuration",
         }
     max_examples = int(params.get("max_examples", 10))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            params, default_pass=0.99, default_warn=0.95
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
 
     df = metric.get("_shared_df")
     if df is None:
@@ -102,13 +109,10 @@ def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple
             if len(examples) < max_examples:
                 examples.append({"row_index": int(idx) if isinstance(idx, int) else str(idx), "value": str(value), "reason": "slice_id_not_allowed"})
 
-    if checked == 0:
-        return False, {"error": "No slice identifiers were available to check."}
-
-    valid_ratio = round(valid / checked, 6)
-    invalid_ratio = round(invalid / checked, 6)
-    missing_ratio = round(missing / row_count, 6) if row_count else 0.0
-    status = "pass" if valid_ratio >= 0.99 else "warn" if valid_ratio >= 0.95 else "fail"
+    valid_ratio = round(valid / checked, 6) if checked else None
+    invalid_ratio = round(invalid / checked, 6) if checked else None
+    missing_ratio = round(missing / row_count, 6) if row_count else None
+    status = classify_ratio(valid_ratio, decision_rule)
 
     return True, {"test_results": {"valid_slice_identifier_profile": {
         "slice_field": slice_field,
@@ -125,5 +129,6 @@ def run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple
         "allowed_slice_ids": sorted(allowed_norm),
         "observed_slice_ids": sorted(observed),
         "invalid_examples": examples,
+        "decision_rule": decision_rule,
         "status": status,
     }}}

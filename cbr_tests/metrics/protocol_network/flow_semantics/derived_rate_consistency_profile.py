@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 
 
 _DURATION_TO_SECONDS = {
@@ -78,15 +79,14 @@ def run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tup
     relative_tolerance = float(parameters.get("relative_tolerance", 0.02))
     absolute_tolerance = float(parameters.get("absolute_tolerance", 1e-6))
     max_examples = int(parameters.get("max_examples", 10))
-    pass_threshold = float(parameters.get("pass_threshold", 0.99))
-    warn_threshold = float(parameters.get("warn_threshold", 0.95))
-
     if relative_tolerance < 0 or absolute_tolerance < 0:
         return False, {"error": "Rate tolerances must be non-negative."}
-    if not 0 <= warn_threshold <= pass_threshold <= 1:
-        return False, {
-            "error": "Require 0 <= warn_threshold <= pass_threshold <= 1."
-        }
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            parameters, default_pass=0.99, default_warn=0.95
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
 
     dataframe = metric.get("_shared_df")
     if dataframe is None:
@@ -168,8 +168,8 @@ def run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tup
     checked_row_count = int(checked_mask.sum())
     inconsistent_row_count = int(inconsistent_mask.sum())
     consistent_row_count = checked_row_count - inconsistent_row_count
-    ratio = round(consistent_row_count / checked_row_count, 6) if checked_row_count else 0.0
-    status = "pass" if ratio >= pass_threshold else "warn" if ratio >= warn_threshold else "fail"
+    ratio = round(consistent_row_count / checked_row_count, 6) if checked_row_count else None
+    status = classify_ratio(ratio, decision_rule)
 
     examples = []
     if max_examples > 0:
@@ -203,6 +203,7 @@ def run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tup
                 "duration_unit": duration_unit,
                 "relative_tolerance": relative_tolerance,
                 "absolute_tolerance": absolute_tolerance,
+                "decision_rule": decision_rule,
                 "examples": examples,
                 "status": status,
             }

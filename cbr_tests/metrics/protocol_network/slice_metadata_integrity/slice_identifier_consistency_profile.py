@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 
 
 def _norm(v, case_sensitive: bool):
@@ -58,6 +59,12 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
             "reason_code": "invalid_metric_configuration",
         }
     max_examples = int(params.get("max_examples", 10))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            params, default_pass=0.99, default_warn=0.95
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
 
     df = metric.get("_shared_df")
     if df is None:
@@ -137,7 +144,7 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
     inconsistency_ratio = round(inconsistent / checked, 6) if checked else None
     missing_ratio = round(missing / row_count, 6) if row_count else 0.0
 
-    status = "not_applicable" if checked == 0 else ("pass" if ratio >= 0.99 else "warn" if ratio >= 0.95 else "fail")
+    status = classify_ratio(ratio, decision_rule)
 
     return True, {"test_results": {"slice_identifier_consistency_profile": {
         "slice_field": slice_field,
@@ -156,5 +163,6 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
         "denominator_policy": "applicable_rows_with_non_missing_slice" if missing_policy == "exclude_missing" else "applicable_rows_with_missing_counted_invalid",
         "rules_applied_summary": summary,
         "examples": examples,
+        "decision_rule": decision_rule,
         "status": status,
     }}}

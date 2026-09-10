@@ -132,11 +132,11 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/address_validity/v
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `classify_ip_value(ip_value) -> str` (L5) | function | Public | Classify an IP field value as missing, IPv4, IPv6, or invalid. |
-| `_port_is_valid(value) -> bool` (L23) | function | Internal | Implementation helper for port is valid. |
-| `_suspicious_tcp_flags(flags: int) -> list[str]` (L31) | function | Internal | Return unusual flag combinations without declaring them structurally invalid. SYN+FIN and SYN+RST are useful indicators of scans, crafted packets, malformed generators, or adversarial traffic. Security datasets can legitimately contain them, so they are descriptive evidence unless a plan explicitly opts them into the structural validity decision. |
-| `run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L51) | function | Public | Check deterministic packet structure and report non-deterministic anomalies. The validity ratio covers decoded IPv4/IPv6 packets only. Non-IP frames are reported separately rather than being silently counted as valid IP packets. A packet becomes structurally invalid only for deterministic problems such as address-family mismatch, impossible decoded ports, an unfragmented IPv4 TCP/ UDP protocol declaration with no matching transport layer, or an impossibly short network-layer packet. Suspicious TCP flag combinations are descriptive by default because attack/security traffic may contain them legitimately. |
-| `run_protocol_validity_metric.record_issue(packet_index: int, reason: str, **evidence) -> None` (L108) | nested function | Internal | Implementation helper for record issue. |
+| `classify_ip_value(ip_value) -> str` (L6) | function | Public | Classify an IP field value as missing, IPv4, IPv6, or invalid. |
+| `_port_is_valid(value) -> bool` (L24) | function | Internal | Implementation helper for port is valid. |
+| `_suspicious_tcp_flags(flags: int) -> list[str]` (L32) | function | Internal | Return unusual flag combinations without declaring them structurally invalid. SYN+FIN and SYN+RST are useful indicators of scans, crafted packets, malformed generators, or adversarial traffic. Security datasets can legitimately contain them, so they are descriptive evidence unless a plan explicitly opts them into the structural validity decision. |
+| `run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L52) | function | Public | Check deterministic packet structure and report non-deterministic anomalies. The validity ratio covers decoded IPv4/IPv6 packets only. Non-IP frames are reported separately rather than being silently counted as valid IP packets. A packet becomes structurally invalid only for deterministic problems such as address-family mismatch, impossible decoded ports, an unfragmented IPv4 TCP/ UDP protocol declaration with no matching transport layer, or an impossibly short network-layer packet. Suspicious TCP flag combinations are descriptive by default because attack/security traffic may contain them legitimately. |
+| `run_protocol_validity_metric.record_issue(packet_index: int, reason: str, **evidence) -> None` (L113) | nested function | Internal | Implementation helper for record issue. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/derived_rate_consistency_profile.py`
 
@@ -144,8 +144,8 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/der
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_within_tolerance(reported: pd.Series, expected: pd.Series, relative_tolerance: float, absolute_tolerance: float) -> pd.Series` (L18) | function | Internal | Implementation helper for within tolerance. |
-| `run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L28) | function | Public | Check whether reported packet/byte rates agree with counts, bytes, and duration. The duration unit must be declared in ``calculation.parameters.duration_unit``. At least one of ``flow_packets_per_second`` and ``flow_bytes_per_second`` must be mapped. This prevents the metric from silently assuming a dataset-specific duration unit or rate convention. |
+| `_within_tolerance(reported: pd.Series, expected: pd.Series, relative_tolerance: float, absolute_tolerance: float) -> pd.Series` (L19) | function | Internal | Implementation helper for within tolerance. |
+| `run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L29) | function | Public | Check whether reported packet/byte rates agree with counts, bytes, and duration. The duration unit must be declared in ``calculation.parameters.duration_unit``. At least one of ``flow_packets_per_second`` and ``flow_bytes_per_second`` must be mapped. This prevents the metric from silently assuming a dataset-specific duration unit or rate convention. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/flow_duration_consistency_profile.py`
 
@@ -186,11 +186,11 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/port_validity/serv
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `normalize_port_series(series)` (L18) | function | Public | Normalizes port series. |
-| `parse_port(value)` (L36) | function | Public | Parses port. |
-| `_not_applicable_result(*, service_name: str, expected_ports: list[int], match_mode: str, existing_fields: list[str], missing_fields: list[str], row_count: int, population_basis: str, reason_code: str, summary: str, suggestion: str, service_field: str | None = None, service_values: list[str] | None = None) -> tuple[bool, dict]` (L54) | function | Internal | Implementation helper for not applicable result. |
-| `_diagnostic(status: str, *, service_name: str, checked: int, matching: int, mismatching: int, match_ratio: float, pass_threshold: float, warn_threshold: float, invalid_rows: int, population_rows: int, population_basis: str, expected_ports: list[int], mismatch_examples: list, invalid_examples: list) -> dict` (L97) | function | Internal | Implementation helper for diagnostic. |
-| `run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L154) | function | Public | Heuristically check expected ports only within an independently selected service population. A mixed flow dataset must not be treated as though every row belongs to the configured service. In ``auto`` mode the metric therefore requires a usable service/application field, unless ``assume_dataset_service`` is explicitly enabled. A plan can also use ``population_mode=all_rows`` when the dataset is known to contain only the named service. |
+| `normalize_port_series(series)` (L19) | function | Public | Normalizes port series. |
+| `parse_port(value)` (L37) | function | Public | Parses port. |
+| `_not_applicable_result(*, service_name: str, expected_ports: list[int], match_mode: str, existing_fields: list[str], missing_fields: list[str], row_count: int, population_basis: str, reason_code: str, summary: str, suggestion: str, service_field: str | None = None, service_values: list[str] | None = None) -> tuple[bool, dict]` (L55) | function | Internal | Implementation helper for not applicable result. |
+| `_diagnostic(status: str, *, service_name: str, checked: int, matching: int, mismatching: int, match_ratio: float, pass_threshold: float, warn_threshold: float, invalid_rows: int, population_rows: int, population_basis: str, expected_ports: list[int], mismatch_examples: list, invalid_examples: list) -> dict` (L98) | function | Internal | Implementation helper for diagnostic. |
+| `run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L155) | function | Public | Heuristically check expected ports only within an independently selected service population. A mixed flow dataset must not be treated as though every row belongs to the configured service. In ``auto`` mode the metric therefore requires a usable service/application field, unless ``assume_dataset_service`` is explicitly enabled. A plan can also use ``population_mode=all_rows`` when the dataset is known to contain only the named service. |
 
 ## `cbr_tests/metrics/protocol_network/port_validity/valid_port_range_profile.py`
 
@@ -209,9 +209,9 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/slice_metadata_int
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_norm(v, case_sensitive: bool)` (L6) | function | Internal | Implementation helper for norm. |
-| `_rule_match(field_value, operator, target, case_sensitive)` (L15) | function | Internal | Implementation helper for rule match. |
-| `run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L37) | function | Public | Check slice assignment against scenario rules on applicable rows. Rows with no applicable rule are outside the metric denominator. Missing slice values are completeness evidence and are excluded from the canonical consistency denominator by default; ``count_invalid`` remains available as a legacy/strict policy. |
+| `_norm(v, case_sensitive: bool)` (L7) | function | Internal | Implementation helper for norm. |
+| `_rule_match(field_value, operator, target, case_sensitive)` (L16) | function | Internal | Implementation helper for rule match. |
+| `run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L38) | function | Public | Check slice assignment against scenario rules on applicable rows. Rows with no applicable rule are outside the metric denominator. Missing slice values are completeness evidence and are excluded from the canonical consistency denominator by default; ``count_invalid`` remains available as a legacy/strict policy. |
 
 ## `cbr_tests/metrics/protocol_network/slice_metadata_integrity/valid_slice_identifier_profile.py`
 
@@ -219,8 +219,8 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/slice_metadata_int
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `normalise_slice_id(value, case_sensitive: bool, aliases: dict)` (L6) | function | Public | Normalizes slice id. |
-| `run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L20) | function | Public | Check non-missing slice identifiers against a declared vocabulary. Missing slice identifiers are completeness evidence and are excluded from the canonical identifier-validity denominator by default. ``count_invalid`` is retained as an explicit legacy/strict policy for reproducing older plans. |
+| `normalise_slice_id(value, case_sensitive: bool, aliases: dict)` (L7) | function | Public | Normalizes slice id. |
+| `run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L21) | function | Public | Check non-missing slice identifiers against a declared vocabulary. Missing slice identifiers are completeness evidence and are excluded from the canonical identifier-validity denominator by default. ``count_invalid`` is retained as an explicit legacy/strict policy for reproducing older plans. |
 
 ## `cbr_tests/metrics/reference_comparison.py`
 
