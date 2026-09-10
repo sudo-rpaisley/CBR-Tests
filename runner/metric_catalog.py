@@ -16,6 +16,23 @@ DEFAULT_PLANS_DIR = REPOSITORY_ROOT / "plans"
 
 PCAP_ONLY_METRICS = PCAP_DIRECT_METRICS
 
+# Historical metric IDs remain executable for reproducibility, but new plans and
+# the canonical taxonomy use the scientifically corrected diagnostic names.
+LEGACY_METRIC_ID_ALIASES = {
+    "inter_arrival_time_distribution_divergence": "inter_arrival_internal_drift_ks",
+    "burstiness_coefficient_deviation": "burstiness_internal_drift",
+    "hourly_activity_distribution_divergence": "day_to_day_hourly_activity_divergence",
+    "diurnal_pattern_similarity_score": "day_to_day_diurnal_similarity",
+    "periodicity_preservation_score": "lagged_periodicity_similarity",
+    "kolmogorov_smirnov_feature_divergence": "feature_ks_internal_drift",
+    "wasserstein_feature_distance": "feature_wasserstein_internal_drift",
+    "energy_distance": "feature_energy_internal_drift",
+    "maximum_mean_discrepancy": "feature_mmd2_internal_drift",
+    "pearson_correlation_profile": "pearson_dependency_profile",
+    "spearman_correlation_matrix_deviation": "spearman_dependency_profile",
+    "distance_correlation_matrix_deviation": "distance_correlation_dependency_profile",
+}
+
 MANUAL_CONFIGURATION_REASONS = {
     "reserved_address_misuse_ratio": "address_policy_required",
     "service_port_consistency_profile": "service_definition_required",
@@ -38,15 +55,19 @@ MANUAL_CONFIGURATION_REASONS = {
 
 
 def available_metric_ids() -> list[str]:
-    """Return metric IDs accepted by the runtime dispatcher.
+    """Return canonical metric IDs exposed by automatic plan creation.
 
-    The plan builder deliberately asks the dispatcher for its handlers instead of
-    keeping a second metric-ID list. Adding a runnable metric therefore makes it
-    discoverable by plan creation automatically.
+    Legacy IDs are deliberately omitted here even though the runtime dispatcher
+    still accepts them, preventing old construct names from re-entering newly
+    generated plans.
     """
 
     handlers = build_metric_handlers(None, lambda _path: None, {})
-    return sorted(handlers)
+    return sorted(
+        metric_id
+        for metric_id in handlers
+        if metric_id not in LEGACY_METRIC_ID_ALIASES
+    )
 
 
 def _walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None:
@@ -77,7 +98,12 @@ def load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[st
 
 
 def load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]:
-    """Collect existing plan metric definitions as configuration templates."""
+    """Collect plan templates and migrate legacy intrinsic IDs in memory.
+
+    Saved plans are not rewritten. Their configuration is copied to the
+    canonical replacement ID for new plan generation so historical artefacts
+    remain reproducible while the new taxonomy stays clean.
+    """
 
     templates: dict[str, list[dict]] = {}
     if not plans_dir.exists():
@@ -92,8 +118,15 @@ def load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list
             if not isinstance(metric, dict):
                 continue
             metric_id = metric.get("metric_id")
-            if isinstance(metric_id, str) and metric_id:
-                templates.setdefault(metric_id, []).append(deepcopy(metric))
+            if not isinstance(metric_id, str) or not metric_id:
+                continue
+            templates.setdefault(metric_id, []).append(deepcopy(metric))
+            canonical_id = LEGACY_METRIC_ID_ALIASES.get(metric_id)
+            if canonical_id:
+                migrated = deepcopy(metric)
+                migrated["metric_id"] = canonical_id
+                migrated["label"] = humanize_metric_id(canonical_id)
+                templates.setdefault(canonical_id, []).append(migrated)
     return templates
 
 
@@ -201,7 +234,7 @@ def build_metric_catalog(
     plans_dir: Path = DEFAULT_PLANS_DIR,
     available_fields: set[str] | None = None,
 ) -> list[dict]:
-    """Build catalogue entries for every runnable metric."""
+    """Build catalogue entries for every runnable canonical metric."""
 
     ids = sorted(set(metric_ids if metric_ids is not None else available_metric_ids()))
     taxonomy_paths = load_taxonomy_paths(taxonomy_path)
