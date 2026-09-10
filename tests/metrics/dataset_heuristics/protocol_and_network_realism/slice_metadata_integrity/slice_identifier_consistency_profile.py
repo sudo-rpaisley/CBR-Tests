@@ -17,7 +17,7 @@ def _rule_match(field_value, operator, target, case_sensitive):
     if fv is None:
         return False
     t = _norm(target, case_sensitive)
-    if t is None:
+    if t is None and operator != "in":
         return False
     if operator == "equals":
         return fv == t
@@ -35,7 +35,13 @@ def _rule_match(field_value, operator, target, case_sensitive):
 
 
 def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
-    """Slice metadata integrity tests are context-dependent. A valid slice identifier only shows that the slice value belongs to the expected vocabulary. Slice identifier consistency checks whether that value is plausible given other row metadata, such as source file, traffic group, or label. A consistency failure should be interpreted as a possible metadata, labelling, merge, or extraction issue, not automatically as proof that the dataset is unusable."""
+    """Check slice assignment against scenario rules on applicable rows.
+
+    Rows with no applicable rule are outside the metric denominator. Missing slice
+    values are completeness evidence and are excluded from the canonical
+    consistency denominator by default; ``count_invalid`` remains available as a
+    legacy/strict policy.
+    """
     input_req = metric.get("input_requirements", {})
     params = metric.get("calculation", {}).get("parameters", {})
     slice_field = input_req.get("slice_field")
@@ -45,7 +51,12 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
     if not rules:
         return False, {"error": "rules is required and must be non-empty."}
     case_sensitive = bool(params.get("case_sensitive", False))
-    missing_policy = params.get("missing_policy", "count_invalid")
+    missing_policy = params.get("missing_policy", "exclude_missing")
+    if missing_policy not in {"exclude_missing", "count_invalid"}:
+        return False, {
+            "error": "missing_policy must be 'exclude_missing' or 'count_invalid'.",
+            "reason_code": "invalid_metric_configuration",
+        }
     max_examples = int(params.get("max_examples", 10))
 
     df = metric.get("_shared_df")
@@ -122,14 +133,11 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
             continue
         summary.append({"rule_index": pr["rule_index"], "when_field": pr["when_field"], "operator": pr["operator"], "value": pr["value"], "application_count": pr["application_count"], "consistent_count": pr["consistent_count"], "inconsistent_count": pr["inconsistent_count"]})
 
-    ratio = round(consistent / checked, 6) if checked else 0.0
-    inconsistency_ratio = round(inconsistent / checked, 6) if checked else 0.0
+    ratio = round(consistent / checked, 6) if checked else None
+    inconsistency_ratio = round(inconsistent / checked, 6) if checked else None
     missing_ratio = round(missing / row_count, 6) if row_count else 0.0
 
-    if checked == 0:
-        status = "not_applicable"
-    else:
-        status = "pass" if ratio >= 0.99 else "warn" if ratio >= 0.95 else "fail"
+    status = "not_applicable" if checked == 0 else ("pass" if ratio >= 0.99 else "warn" if ratio >= 0.95 else "fail")
 
     return True, {"test_results": {"slice_identifier_consistency_profile": {
         "slice_field": slice_field,
@@ -144,6 +152,8 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
         "slice_identifier_consistency_ratio": ratio,
         "inconsistency_ratio": inconsistency_ratio,
         "missing_slice_ratio": missing_ratio,
+        "missing_policy": missing_policy,
+        "denominator_policy": "applicable_rows_with_non_missing_slice" if missing_policy == "exclude_missing" else "applicable_rows_with_missing_counted_invalid",
         "rules_applied_summary": summary,
         "examples": examples,
         "status": status,
