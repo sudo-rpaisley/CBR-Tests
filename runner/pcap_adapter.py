@@ -34,26 +34,29 @@ PCAP_PACKET_DATA_QUALITY_METRICS = {
     "duplicate_row_ratio",
 }
 
+# The intrinsic diagnostic IDs below are the canonical names used by new plans.
+# Historical IDs remain available through pcap_metric_template and the runtime
+# dispatcher, but they are deliberately not advertised by PCAP_SUPPORTED_METRICS.
 PCAP_PACKET_DEPENDENCY_METRICS = {
-    "pearson_correlation_profile",
-    "spearman_correlation_matrix_deviation",
-    "distance_correlation_matrix_deviation",
+    "pearson_dependency_profile",
+    "spearman_dependency_profile",
+    "distance_correlation_dependency_profile",
 }
 
 PCAP_PACKET_DISTRIBUTION_METRICS = {
-    "kolmogorov_smirnov_feature_divergence",
-    "wasserstein_feature_distance",
-    "energy_distance",
-    "maximum_mean_discrepancy",
+    "feature_ks_internal_drift",
+    "feature_wasserstein_internal_drift",
+    "feature_energy_internal_drift",
+    "feature_mmd2_internal_drift",
 }
 
 PCAP_PACKET_TEMPORAL_METRICS = {
     "timestamp_parse_success_ratio",
-    "inter_arrival_time_distribution_divergence",
-    "burstiness_coefficient_deviation",
-    "hourly_activity_distribution_divergence",
-    "diurnal_pattern_similarity_score",
-    "periodicity_preservation_score",
+    "inter_arrival_internal_drift_ks",
+    "burstiness_internal_drift",
+    "day_to_day_hourly_activity_divergence",
+    "day_to_day_diurnal_similarity",
+    "lagged_periodicity_similarity",
 }
 
 PCAP_PACKET_METRICS = (
@@ -63,6 +66,39 @@ PCAP_PACKET_METRICS = (
     | PCAP_PACKET_DISTRIBUTION_METRICS
     | PCAP_PACKET_TEMPORAL_METRICS
 )
+
+# Canonical IDs reuse the established packet-view configurations. Keeping this
+# mapping inside the PCAP adapter makes backwards compatibility local and keeps
+# old construct names out of newly generated plans.
+PCAP_CANONICAL_TEMPLATE_SOURCE = {
+    "pearson_dependency_profile": "pearson_correlation_profile",
+    "spearman_dependency_profile": "spearman_correlation_matrix_deviation",
+    "distance_correlation_dependency_profile": "distance_correlation_matrix_deviation",
+    "feature_ks_internal_drift": "kolmogorov_smirnov_feature_divergence",
+    "feature_wasserstein_internal_drift": "wasserstein_feature_distance",
+    "feature_energy_internal_drift": "energy_distance",
+    "feature_mmd2_internal_drift": "maximum_mean_discrepancy",
+    "inter_arrival_internal_drift_ks": "inter_arrival_time_distribution_divergence",
+    "burstiness_internal_drift": "burstiness_coefficient_deviation",
+    "day_to_day_hourly_activity_divergence": "hourly_activity_distribution_divergence",
+    "day_to_day_diurnal_similarity": "diurnal_pattern_similarity_score",
+    "lagged_periodicity_similarity": "periodicity_preservation_score",
+}
+
+PCAP_CANONICAL_LABELS = {
+    "pearson_dependency_profile": "Packet Length/IAT Pearson Dependency Profile",
+    "spearman_dependency_profile": "Packet Length/IAT Spearman Dependency Profile",
+    "distance_correlation_dependency_profile": "Packet Length/IAT Distance-Correlation Dependency Profile",
+    "feature_ks_internal_drift": "Packet Feature KS Internal Drift",
+    "feature_wasserstein_internal_drift": "Packet Feature Wasserstein Internal Drift",
+    "feature_energy_internal_drift": "Packet Feature Energy Internal Drift",
+    "feature_mmd2_internal_drift": "Packet Feature MMD² Internal Drift",
+    "inter_arrival_internal_drift_ks": "Packet Inter-Arrival Internal Drift (KS)",
+    "burstiness_internal_drift": "Packet Burstiness Internal Drift",
+    "day_to_day_hourly_activity_divergence": "Packet Day-to-Day Hourly Activity Divergence",
+    "day_to_day_diurnal_similarity": "Packet Day-to-Day Diurnal Similarity",
+    "lagged_periodicity_similarity": "Packet Lagged Periodicity Similarity",
+}
 
 PCAP_REFERENCE_METRICS = {
     "feature_wise_wasserstein_distance_from_reference",
@@ -484,7 +520,11 @@ def build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame:
 
 
 def pcap_metric_template(metric_id: str) -> dict | None:
-    """Return a deterministic template for a metric safe on decoded packet evidence."""
+    """Return a deterministic template for a metric safe on decoded packet evidence.
+
+    Canonical intrinsic diagnostic IDs reuse the established packet-view
+    configuration. Historical IDs continue to resolve for replaying old plans.
+    """
 
     numeric_analysis_fields = ["Packet Length", "Inter Arrival Time"]
     templates = {
@@ -726,8 +766,15 @@ def pcap_metric_template(metric_id: str) -> dict | None:
             },
         },
     }
-    template = templates.get(metric_id)
-    return None if template is None else deepcopy(template)
+    source_id = PCAP_CANONICAL_TEMPLATE_SOURCE.get(metric_id, metric_id)
+    template = templates.get(source_id)
+    if template is None:
+        return None
+    template = deepcopy(template)
+    if source_id != metric_id:
+        template["metric_id"] = metric_id
+        template["label"] = PCAP_CANONICAL_LABELS[metric_id]
+    return template
 
 
 def pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict:
