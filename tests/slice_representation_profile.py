@@ -15,7 +15,8 @@ def _slice_field(metric: dict) -> str:
 def _normalised_slice_series(df: pd.DataFrame, slice_field: str) -> pd.Series:
     if slice_field not in df.columns:
         return pd.Series([None] * len(df), index=df.index, dtype="object")
-    return df[slice_field].map(_normalise)
+    series = df[slice_field].map(_normalise).astype("object")
+    return series.where(series.notna(), None)
 
 
 def _observed_slices(df: pd.DataFrame, slice_field: str) -> list[str]:
@@ -270,8 +271,9 @@ def compute_cross_slice_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) 
         }
 
     slice_series = _normalised_slice_series(df, slice_field)
-    eligible = df.loc[slice_series.notna(), subset_fields].copy()
-    eligible["__slice_norm"] = slice_series.loc[slice_series.notna()].values
+    eligible_mask = slice_series.notna()
+    eligible = df.loc[eligible_mask, subset_fields].copy()
+    eligible["__slice_norm"] = slice_series.loc[eligible_mask].values
     if eligible.empty:
         return {
             "summary": {
@@ -342,7 +344,8 @@ def compute_cross_slice_identifier_leakage_ratio(df: pd.DataFrame, metric: dict)
             )
             continue
 
-        identifier_series = df[field].map(_normalise)
+        identifier_series = df[field].map(_normalise).astype("object")
+        identifier_series = identifier_series.where(identifier_series.notna(), None)
         eligible_mask = identifier_series.notna() & slice_series.notna()
         eligible = pd.DataFrame(
             {
