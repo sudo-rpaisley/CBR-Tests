@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import resolve_maximum_ratio_failure_rule
 
 
 def parse_port(value, valid_min_port: int = 0, valid_max_port: int = 65535):
@@ -95,15 +96,17 @@ def run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool,
     params = metric.get("calculation", {}).get("parameters", {})
     valid_min_port = int(params.get("valid_min_port", 0))
     valid_max_port = int(params.get("valid_max_port", 65535))
-    invalid_ratio_fail_threshold = float(params.get("invalid_ratio_fail_threshold", 0.01))
+    try:
+        failure_rule = resolve_maximum_ratio_failure_rule(
+            params, parameter_name="invalid_ratio_fail_threshold", default=0.01
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
+    invalid_ratio_fail_threshold = failure_rule["failure_threshold"]
+
     if valid_min_port < 0 or valid_max_port > 65535 or valid_min_port > valid_max_port:
         return False, {
             "error": "Configured port bounds must satisfy 0 <= valid_min_port <= valid_max_port <= 65535.",
-            "reason_code": "invalid_metric_configuration",
-        }
-    if not 0 <= invalid_ratio_fail_threshold <= 1:
-        return False, {
-            "error": "invalid_ratio_fail_threshold must be between 0 and 1.",
             "reason_code": "invalid_metric_configuration",
         }
 
@@ -258,6 +261,15 @@ def run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool,
                 "valid_min_port": valid_min_port,
                 "valid_max_port": valid_max_port,
                 "invalid_ratio_fail_threshold": invalid_ratio_fail_threshold,
+                "decision_rule": {
+                    **failure_rule,
+                    "warning_policy": "warn_on_any_invalid_or_zero_port_below_failure_threshold",
+                },
+                "normative_domain": {
+                    "port_namespace_min": 0,
+                    "port_namespace_max": 65535,
+                    "scientific_role": "normative_value_domain",
+                },
                 "range_counts": range_counts,
                 "field_summaries": field_summaries,
                 "invalid_examples": invalid_examples,
