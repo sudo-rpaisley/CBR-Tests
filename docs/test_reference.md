@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **276 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **285 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -175,6 +175,18 @@ Tests and local helpers in this module.
 | `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L28) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
 | `test_compute_spearman_profile_reports_rank_correlation()` (L44) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
 | `test_data_quality_zero_denominators_are_not_numeric_scores()` (L63) | Verifies that data quality zero denominators are not numeric scores. | `compute_missing_value_ratio`, `compute_duplicate_row_ratio` |
+
+## `tests/test_data_quality_semantics.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_duplicate_ratio_reports_full_row_basis_when_all_columns_define_identity()` (L6) | Verifies that duplicate ratio reports full row basis when all columns define identity. | `compute_duplicate_row_ratio` |
+| `test_duplicate_ratio_labels_configured_subset_as_signature_not_full_row()` (L17) | Verifies that duplicate ratio labels configured subset as signature not full row. | `compute_duplicate_row_ratio` |
+| `test_duplicate_ratio_is_not_runnable_without_any_available_identity_fields()` (L29) | Verifies that duplicate ratio is not runnable without any available identity fields. | `compute_duplicate_row_ratio` |
 
 ## `tests/test_dataset_summary.py`
 
@@ -587,6 +599,26 @@ Tests and local helpers in this module.
 | `test_reference_slice_and_protocol_metrics(tmp_path)` (L252) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
 | `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L277) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_hourly_activity_divergence_from_reference`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP` |
 
+## `tests/test_representative_rerun_guard.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_representative_rerun_rejects_legacy_intrinsic_plan(tmp_path)` (L21) | Verifies that representative rerun rejects legacy intrinsic plan. | `plan.write_text`, `pytest.raises`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_representative_rerun_rejects_compatibility_only_protocol_profile(tmp_path)` (L30) | Verifies that representative rerun rejects compatibility only protocol profile. | `plan.write_text`, `pytest.raises`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_representative_rerun_rejects_legacy_reserved_address_profile(tmp_path)` (L42) | Verifies that representative rerun rejects legacy reserved address profile. | `plan.write_text`, `pytest.raises`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_representative_rerun_accepts_canonical_plan(tmp_path)` (L51) | Verifies that representative rerun accepts canonical plan. | `plan.write_text`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_case_guard_resolves_referenced_plan(tmp_path)` (L57) | Verifies that case guard resolves referenced plan. | `plans.mkdir`, `cases.mkdir`, `plan.write_text`, `case.write_text`, `_resolved_plan_payload`, `plan.resolve`, `pytest.raises`, `_reject_legacy_representative_plan` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_plan(metric_id: str) -> dict` (L8) | Implementation helper for plan. |
+
 ## `tests/test_rerun_workflow.py`
 
 Tests and local helpers in this module.
@@ -895,6 +927,7 @@ Tests and local helpers in this module.
 | `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L219) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
 | `test_result_sections_separate_execution_success_from_scientific_applicability(tmp_path)` (L228) | Verifies that result sections separate execution success from scientific applicability. | `output.write_text`, `build_result_sections`, `next`, `any`, `section.title.startswith` |
 | `test_result_sections_flag_legacy_intrinsic_ids(tmp_path)` (L252) | Verifies that result sections flag legacy intrinsic ids. | `output.write_text`, `build_result_sections`, `next`, `any` |
+| `test_result_sections_flag_compatibility_only_profile(tmp_path)` (L266) | Verifies that result sections flag compatibility only profile. | `output.write_text`, `build_result_sections`, `next`, `any`, `section.title.startswith` |
 
 ### Test helpers
 

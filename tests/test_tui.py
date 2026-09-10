@@ -261,3 +261,19 @@ def test_result_sections_flag_legacy_intrinsic_ids(tmp_path):
     sections = build_result_sections({"dry_run": False, "status": "success", "output_path": str(output), "metrics_total": 1, "skipped_count": 0})
     legacy = next(section for section in sections if section.title == "Legacy compatibility IDs (1)")
     assert any("wasserstein_feature_distance -> feature_wasserstein_internal_drift" in line for line in legacy.lines)
+
+
+def test_result_sections_flag_compatibility_only_profile(tmp_path):
+    output = tmp_path / "compatibility.json"
+    output.write_text(
+        json.dumps({
+            "metric_results": [{"metric_id": "protocol_validity_profile", "status": "success"}],
+            "test_results": {"protocol_validity_profile": {"summary": {"status": "pass"}}},
+        }),
+        encoding="utf-8",
+    )
+    sections = build_result_sections({"dry_run": False, "status": "success", "output_path": str(output), "metrics_total": 1, "skipped_count": 0})
+    legacy = next(section for section in sections if section.title == "Legacy compatibility IDs (1)")
+    assert any("protocol_validity_profile -> regenerate plan" in line for line in legacy.lines)
+    readable = next(section for section in sections if section.title.startswith("Human-readable metric results"))
+    assert any("id_contract=compatibility_profile" in line for line in readable.lines)
