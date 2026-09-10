@@ -172,9 +172,9 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_compute_missing_value_ratio_uses_candidate_fields()` (L7) | Verifies that compute missing value ratio uses candidate fields. | `compute_missing_value_ratio` |
-| `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L27) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
-| `test_compute_spearman_profile_reports_rank_correlation()` (L42) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
-| `test_data_quality_zero_denominators_are_not_numeric_scores()` (L60) | Verifies that data quality zero denominators are not numeric scores. | `compute_missing_value_ratio`, `compute_duplicate_row_ratio` |
+| `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L28) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
+| `test_compute_spearman_profile_reports_rank_correlation()` (L44) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+| `test_data_quality_zero_denominators_are_not_numeric_scores()` (L63) | Verifies that data quality zero denominators are not numeric scores. | `compute_missing_value_ratio`, `compute_duplicate_row_ratio` |
 
 ## `tests/test_dataset_summary.py`
 
