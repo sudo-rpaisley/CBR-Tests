@@ -4,6 +4,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from cbr_tests.metrics.address_validity import (
+    compute_reserved_address_misuse_ratio,
+    compute_valid_ip_address_ratio,
+)
 from cbr_tests.metrics.column_quality import compute_column_quality_profile
 from cbr_tests.metrics.data_quality import (
     compute_duplicate_row_ratio,
@@ -333,6 +337,8 @@ def _slice_consistency_metric(dataset_path: Path, metric: dict):
 
 
 TABULAR_COMPUTE_METRICS = {
+    "valid_ip_address_ratio": compute_valid_ip_address_ratio,
+    "reserved_address_misuse_ratio": compute_reserved_address_misuse_ratio,
     "kolmogorov_smirnov_feature_divergence": compute_ks_feature_divergence,
     "wasserstein_feature_distance": compute_wasserstein_feature_distance,
     "energy_distance": compute_energy_distance,
