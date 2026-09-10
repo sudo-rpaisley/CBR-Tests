@@ -396,6 +396,19 @@ Python symbols defined by `cbr_tests/outcome_comparison.py`.
 | `_display_value(value: Any, *, limit: int = 100) -> str` (L255) | function | Internal | Implementation helper for display value. |
 | `render_markdown(report: dict) -> str` (L264) | function | Public | Render a comparison report suitable for experiment records and review. |
 
+## `cbr_tests/rerun_workflow.py`
+
+Python symbols defined by `cbr_tests/rerun_workflow.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `file_sha256(path: Path) -> str` (L17) | function | Public | Return the SHA-256 digest of one file. |
+| `current_git_commit(repo_root: Path) -> str | None` (L26) | function | Public | Return HEAD when the working copy is a Git repository. |
+| `outcome_dataset_sha256(outcome: dict) -> str | None` (L42) | function | Public | Read the dataset digest already recorded by normal run provenance. |
+| `build_run_plan_command(*, repo_root: Path, plan_path: Path, dataset_path: Path, output_path: Path, case_id: str, display: str = 'compact', workers: int | None = None, extra_args: Sequence[str] = ()) -> list[str]` (L54) | function | Public | Build the canonical ``run_plan.py`` invocation for one rerun. |
+| `_copy_baseline_companion(baseline_path: Path, record_dir: Path) -> Path | None` (L86) | function | Internal | Implementation helper for copy baseline companion. |
+| `run_and_compare(*, repo_root: Path, baseline_path: Path, plan_path: Path, dataset_path: Path, record_dir: Path, case_id: str = 'ad_hoc_case', display: str = 'compact', workers: int | None = None, extra_args: Sequence[str] = (), force: bool = False) -> dict` (L100) | function | Public | Archive a baseline, rerun a plan, compare outcomes, and write a manifest. The authoritative baseline is copied before execution. The original baseline is never modified. The post-overhaul outcome is produced by the normal ``run_plan.py`` path rather than by a special test harness. |
+
 ## `create_plan.py`
 
 Python symbols defined by `create_plan.py`.
@@ -1133,3 +1146,12 @@ AST engine that generates the exhaustive function and test references.
 | `write_or_check(path: Path, content: str, check: bool) -> bool` (L398) | function | Public | Writes or check. |
 | `parse_args() -> argparse.Namespace` (L406) | function | Public | Parses args. |
 | `main() -> int` (L413) | function | Public | Implementation helper for main. |
+
+## `scripts/rerun_and_compare.py`
+
+Python symbols defined by `scripts/rerun_and_compare.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `build_parser() -> argparse.ArgumentParser` (L13) | function | Public | Builds parser. |
+| `main() -> int` (L62) | function | Public | Implementation helper for main. |

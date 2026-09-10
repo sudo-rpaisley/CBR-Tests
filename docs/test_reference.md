@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **262 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **266 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -567,6 +567,26 @@ Tests and local helpers in this module.
 | `test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation()` (L223) | Verifies that flow statistic reference distance requires matching flow definition for interpretation. | `compute_flow_statistic_deviation_from_reference` |
 | `test_reference_slice_and_protocol_metrics(tmp_path)` (L252) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
 | `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L277) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_hourly_activity_divergence_from_reference`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP` |
+
+## `tests/test_rerun_workflow.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_build_run_plan_command_uses_normal_runner_and_passes_options(tmp_path)` (L15) | Verifies that build run plan command uses normal runner and passes options. | `build_run_plan_command`, `command[command.index('--case') + 1].endswith`, `command[command.index('--dataset') + 1].endswith`, `command.index` |
+| `test_outcome_dataset_sha256_reads_normal_run_provenance()` (L36) | Verifies that outcome dataset sha256 reads normal run provenance. | `outcome_dataset_sha256` |
+| `test_run_and_compare_archives_baseline_and_reuses_dataset_digest(tmp_path, monkeypatch)` (L43) | Verifies that run and compare archives baseline and reuses dataset digest. | `repo.mkdir`, `(repo / 'run_plan.py').write_text`, `baseline.write_text`, `baseline.with_name('baseline_summary.md').write_text`, `plan.write_text`, `dataset.write_bytes`, `monkeypatch.setattr`, `run_and_compare` |
+| `test_run_and_compare_refuses_to_replace_existing_record_without_force(tmp_path)` (L127) | Verifies that run and compare refuses to replace existing record without force. | `repo.mkdir`, `(repo / 'run_plan.py').write_text`, `baseline.write_text`, `plan.write_text`, `dataset.write_text`, `record_dir.mkdir`, `(record_dir / 'comparison.json').write_text`, `pytest.raises` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.fake_run(command, **kwargs)` (L65) | Implementation helper for fake run. |
+| `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.guarded_sha256(path)` (L91) | Implementation helper for guarded sha256. |
 
 ## `tests/test_run_plan_field_translation.py`
 
