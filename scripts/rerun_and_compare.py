@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
+from cbr_tests.plan_migration import legacy_intrinsic_metric_ids
 from cbr_tests.rerun_workflow import run_and_compare
 
 
@@ -37,6 +38,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--workers", type=int, help="Optional worker-count override")
     parser.add_argument("--force", action="store_true", help="Replace generated files already present in the record directory")
     parser.add_argument(
+        "--allow-legacy-metric-ids",
+        action="store_true",
+        help=(
+            "Allow a representative rerun to use pre-overhaul intrinsic metric IDs. "
+            "This is intended only for deliberate compatibility experiments."
+        ),
+    )
+    parser.add_argument(
         "--no-update-field-translation",
         action="store_true",
         help="Pass --no-update-field-translation to run_plan.py",
@@ -59,8 +68,46 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolved_plan_payload(run_definition: Path) -> tuple[Path, dict]:
+    """Resolve either a direct plan or a case's referenced plan."""
+    source = run_definition.expanduser().resolve()
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and isinstance(payload.get("metrics"), list):
+        return source, payload
+
+    test_plan = payload.get("test_plan") if isinstance(payload, dict) else None
+    if isinstance(test_plan, dict) and test_plan.get("path"):
+        plan_path = Path(str(test_plan["path"])).expanduser()
+        if not plan_path.is_absolute():
+            plan_path = source.parent / plan_path
+        plan_path = plan_path.resolve()
+        plan_payload = json.loads(plan_path.read_text(encoding="utf-8"))
+        return plan_path, plan_payload
+
+    return source, payload
+
+
+def _reject_legacy_representative_plan(run_definition: Path) -> None:
+    plan_path, plan = _resolved_plan_payload(run_definition)
+    legacy = legacy_intrinsic_metric_ids(plan)
+    if not legacy:
+        return
+    joined = "\n  - ".join(legacy)
+    raise SystemExit(
+        "Representative reruns require canonical metric IDs. "
+        f"The selected plan contains {len(legacy)} legacy intrinsic ID(s):\n"
+        f"  - {joined}\n"
+        "Migrate it first with:\n"
+        f"  python scripts/migrate_plan_to_canonical_ids.py {plan_path}\n"
+        "Use --allow-legacy-metric-ids only for a deliberate compatibility run."
+    )
+
+
 def main() -> int:
     args = build_parser().parse_args()
+    if not args.allow_legacy_metric_ids:
+        _reject_legacy_representative_plan(args.plan)
+
     extra_args: list[str] = []
     if args.no_update_field_translation:
         extra_args.append("--no-update-field-translation")
