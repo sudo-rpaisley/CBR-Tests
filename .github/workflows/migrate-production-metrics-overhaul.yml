@@ -1,0 +1,109 @@
+name: Migrate production metrics out of tests (overhaul)
+
+on:
+  push:
+    branches:
+      - overhaul/metric-conformance
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: overhaul/metric-conformance
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Move audited implementations into production package
+        run: |
+          cp tests/label_fidelity_profile.py cbr_tests/metrics/label_fidelity.py
+          cp tests/slice_representation_profile.py cbr_tests/metrics/slice_representation.py
+
+          cat > tests/label_fidelity_profile.py <<'PY'
+          """Compatibility imports for the former label-fidelity metric location."""
+
+          from cbr_tests.metrics import label_fidelity as _impl
+
+          globals().update(
+              {
+                  name: getattr(_impl, name)
+                  for name in dir(_impl)
+                  if not name.startswith("__")
+              }
+          )
+
+          __all__ = [name for name in globals() if not name.startswith("__")]
+          PY
+
+          cat > tests/slice_representation_profile.py <<'PY'
+          """Compatibility imports for the former slice-representation metric location."""
+
+          from cbr_tests.metrics import slice_representation as _impl
+
+          globals().update(
+              {
+                  name: getattr(_impl, name)
+                  for name in dir(_impl)
+                  if not name.startswith("__")
+              }
+          )
+
+          __all__ = [name for name in globals() if not name.startswith("__")]
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('runner/dispatch.py')
+          text = path.read_text()
+          replacements = {
+              'from tests.label_fidelity_profile import (': 'from cbr_tests.metrics.label_fidelity import (',
+              'from tests.reference_model_comparison_profile import (': 'from cbr_tests.metrics.reference_comparison import (',
+              'from tests.slice_representation_profile import (': 'from cbr_tests.metrics.slice_representation import (',
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'missing dispatch import: {old}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+
+      - name: Regenerate generated documentation
+        run: python scripts/build_reference_documentation.py
+
+      - name: Verify migration
+        run: |
+          python -m compileall -q cbr_tests runner tests
+          python -m pytest -q
+          if grep -qE '^from tests\.(label_fidelity_profile|reference_model_comparison_profile|slice_representation_profile) import' runner/dispatch.py; then
+            echo 'runner/dispatch.py still imports production handlers through tests/' >&2
+            exit 1
+          fi
+
+      - name: Commit migration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cbr_tests/metrics/label_fidelity.py cbr_tests/metrics/slice_representation.py tests/label_fidelity_profile.py tests/slice_representation_profile.py runner/dispatch.py docs/function_reference.md docs/test_reference.md
+          if git diff --cached --quiet; then
+            echo 'Nothing to commit.'
+            exit 0
+          fi
+          git commit -m "Move label and slice metrics into production package"
+          git push origin HEAD:overhaul/metric-conformance
