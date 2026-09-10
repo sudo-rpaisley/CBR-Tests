@@ -59,6 +59,9 @@ def test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations():
     assert summary["misuse_address_count"] == 3
     assert summary["reserved_address_misuse_ratio"] == 0.6
     assert summary["denominator_policy"] == "valid_candidate_ip_values_only"
+    assert result["special_use_category_counts"]["private"] >= 1
+    assert result["special_use_category_counts"]["documentation"] >= 1
+    assert result["special_use_category_counts"]["benchmarking"] >= 1
 
 
 def test_reserved_address_profile_without_policy_does_not_claim_zero_misuse():
@@ -80,4 +83,4 @@ def test_reserved_address_profile_without_policy_does_not_claim_zero_misuse():
     assert summary["policy_configured"] is False
     assert summary["runnable"] is False
     assert summary["reserved_address_misuse_ratio"] is None
-    assert summary["special_use_category_counts"] if False else True
+    assert result["special_use_category_counts"]["private"] >= 1
