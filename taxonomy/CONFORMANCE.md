@@ -1,33 +1,42 @@
 # Taxonomy conformance notes
 
-The executable taxonomy and the paper taxonomy are not currently structurally identical.
+The executable taxonomy has been reconciled with the strengthened paper taxonomy on `overhaul/metric-conformance`.
 
-## Current structural drift
+## Current structure
 
-The paper's canonical filesystem tree places the following under `Dataset Heuristics`:
+`taxonomy/master_taxonomy.json` now places the dataset-intrinsic branches beneath `dataset_heuristics`:
 
 1. Protocol and Network Realism
 2. Temporal Metrics
-3. Statistical Fidelity / Data Quality
+3. Statistical Structure Diagnostics
 4. Slice Representation
 5. Label Fidelity
+6. Data Quality and Provenance
 
-In the current `master_taxonomy.json`, only Protocol and Network Realism is nested under `dataset_heuristics`; Temporal Metrics, Statistical Fidelity, Slice Representation and Label Fidelity are top-level siblings. This must be reconciled before the taxonomy is frozen.
+`reference_model_comparison` and `task_based_validation` remain separate top-level branches because they require a reference population/model or downstream task rather than describing intrinsic dataset evidence alone.
 
-## Post-review additions already present in code
+## Original 61 leaves versus post-review additions
 
-The executable taxonomy also contains leaves or profiles beyond the original 61-leaf paper catalogue, including:
+The executable taxonomy contains a small number of supporting or post-expert-review additions beyond the original 61-leaf catalogue. They are explicitly labelled rather than silently folded into the expert-reviewed set:
 
-- `derived_rate_consistency_ratio`
-- `timestamp_coherence_profile`
-- `column_quality_profile`
+- `derived_rate_consistency_ratio` — post-expert-review addition pending second expert review;
+- `timestamp_coherence_profile` — supporting diagnostic, not one of the original 61 leaves;
+- `column_quality_profile` — supporting diagnostic, not one of the original 61 leaves.
 
-These should not be silently folded into the original expert-reviewed 61. Each must be marked as one of:
+The companion paper repository remains responsible for the canonical 61 leaf contracts and their review/evidence metadata.
 
-- post-review addition pending validation;
-- supporting diagnostic/profile rather than taxonomy leaf; or
-- accepted new leaf after the second expert review.
+## Runtime alignment guard
 
-## Target state
+CBR-Tests CI now collects every metric ID advertised anywhere in `master_taxonomy.json` and compares it with the actual handler set returned by `runner.dispatch.build_metric_handlers()`. This prevents taxonomy entries from existing without an executable dispatch path.
 
-The paper taxonomy and executable taxonomy should be generated from, or validated against, one shared metric contract so that path, identifier, equation, implementation status and review status cannot drift independently.
+The companion `paper-draft` validator separately checks that each canonical paper leaf declares a runtime ID that exists in this executable taxonomy. Together these checks provide a machine-checked path:
+
+`paper leaf -> runtime metric ID -> executable taxonomy -> runtime handler`.
+
+## Freeze condition
+
+The structural taxonomy drift identified at the start of the overhaul is resolved. Before freezing the taxonomy for final experiments, the remaining work is to:
+
+- finish moving production metric code out of the `tests/` package;
+- complete a separate threshold/decision-rule audit;
+- rerun representative datasets and record the effect of corrected metric semantics.
