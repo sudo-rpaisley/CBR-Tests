@@ -31,5 +31,5 @@ def test_duplicate_ratio_is_not_runnable_without_any_available_identity_fields()
     result = compute_duplicate_row_ratio(df, {})["summary"]
 
     assert result["duplicate_definition"] == "no_runnable_signature"
-    assert result["duplicate_row_ratio"] == 0.0
+    assert result["duplicate_row_ratio"] is None
     assert result["runnable"] is False
