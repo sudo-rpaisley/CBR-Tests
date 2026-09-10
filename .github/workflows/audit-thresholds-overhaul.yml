@@ -1,0 +1,110 @@
+name: Audit metric thresholds (overhaul)
+
+on:
+  push:
+    branches:
+      - overhaul/metric-conformance
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: overhaul/metric-conformance
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate threshold inventory
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          root = Path('cbr_tests/metrics')
+          rows = []
+          keywords = re.compile(
+              r'(?i)(threshold|tolerance|minimum_|maximum_|min_|max_|status\s*=|verdict|warn|fail|pass|>=\s*0\.|<=\s*0\.|>\s*0\.|<\s*0\.)'
+          )
+          skip = re.compile(r'(?i)(max_examples|max_sample_size|cache|max_workers)')
+
+          for path in sorted(root.rglob('*.py')):
+              for lineno, raw in enumerate(path.read_text().splitlines(), 1):
+                  line = raw.strip()
+                  if not line or line.startswith('#') or skip.search(line):
+                      continue
+                  if not keywords.search(line):
+                      continue
+                  if line.startswith(('def ', 'class ', '"""', "'''")):
+                      continue
+
+                  lower = line.lower()
+                  if 'status' in lower or 'verdict' in lower or any(token in lower for token in ['"pass"', "'pass'", '"warn"', "'warn'", '"fail"', "'fail'"]):
+                      kind = 'verdict-rule'
+                  elif 'threshold' in lower or 'tolerance' in lower:
+                      kind = 'threshold-or-tolerance'
+                  elif 'minimum_' in lower or 'maximum_' in lower or re.search(r'\bmin_|\bmax_', lower):
+                      kind = 'eligibility-or-sample-rule'
+                  else:
+                      kind = 'numeric-cutoff'
+
+                  snippet = line.replace('|', '\\|').replace('`', '\\`')
+                  rows.append((path.as_posix(), lineno, kind, snippet))
+
+          out = [
+              '# Threshold and decision-rule audit',
+              '',
+              'This file is a mechanically generated first-pass inventory of production metric code that may contain decision thresholds, tolerances, minimum-population requirements or verdict rules.',
+              '',
+              '## Scientific rule',
+              '',
+              'A metric equation and a PASS/WARN/FAIL decision rule are different claims. A mathematical/statistical reference may justify the metric without justifying any universal cutoff. Until a cutoff has explicit provenance, it must be treated as framework policy, scenario configuration, or an empirical calibration target rather than a literature-derived realism constant.',
+              '',
+              'Threshold provenance classes used by the overhaul:',
+              '',
+              '- `normative`: directly fixed by a protocol/standard or mathematical domain constraint;',
+              '- `literature-derived`: the cited source explicitly recommends/defines the cutoff for the same construct;',
+              '- `empirically-calibrated`: selected from declared calibration/reference data and accompanied by the calibration procedure;',
+              '- `scenario-configured`: supplied by the experiment/service/slice context;',
+              '- `framework-default`: convenience default with no claim of universal scientific validity;',
+              '- `eligibility`: minimum data required to compute a statistic reliably; not itself a realism threshold.',
+              '',
+              f'## Candidate inventory ({len(rows)} source lines)',
+              '',
+              '| File | Line | Candidate type | Source |',
+              '|---|---:|---|---|',
+          ]
+          out.extend(f'| `{p}` | {n} | {k} | `{s}` |' for p, n, k, s in rows)
+          out.extend([
+              '',
+              '## Review priorities',
+              '',
+              '1. Hard-coded PASS/WARN/FAIL cutoffs in canonical or compatibility metric handlers.',
+              '2. Default threshold values read from metric parameters without an explicit provenance field.',
+              '3. Tolerances that are part of a physical/mathematical consistency check and therefore may be justified by units/rounding rather than realism literature.',
+              '4. Minimum sample/population requirements, which should be labelled as eligibility/reliability rules rather than realism verdict thresholds.',
+              '',
+              'This inventory is deliberately broader than the final threshold table; false positives are expected and must be classified during the manual audit.',
+              '',
+          ])
+          Path('docs/threshold_audit.md').write_text('\n'.join(out))
+          print(f'Wrote {len(rows)} threshold/verdict candidates.')
+          PY
+
+      - name: Commit inventory
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/threshold_audit.md
+          if git diff --cached --quiet; then
+            echo 'No threshold inventory changes.'
+            exit 0
+          fi
+          git commit -m "Inventory metric thresholds and decision rules"
+          git push origin HEAD:overhaul/metric-conformance
