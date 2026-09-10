@@ -2,7 +2,11 @@ from pathlib import Path
 import pandas as pd
 import math
 from runner.tabular import load_tabular_dataset
-from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
+from cbr_tests.metrics.decision_rules import (
+    classify_ratio,
+    describe_measurement_parameter,
+    resolve_ratio_decision_rule,
+)
 
 
 def run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
@@ -78,6 +82,14 @@ def run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tu
         "direction_iat_exceeds_duration_count": int(dir_exceeds.sum()),
         "invalid_numeric_row_count": invalid_numeric_row_count,
         "flow_duration_consistency_ratio": ratio,
+        "measurement_parameters": {
+            "tolerance": describe_measurement_parameter(
+                parameters,
+                parameter_name="tolerance",
+                default=1e-6,
+                value=tol,
+            ),
+        },
         "examples": examples,
         "decision_rule": decision_rule,
         "status": status
