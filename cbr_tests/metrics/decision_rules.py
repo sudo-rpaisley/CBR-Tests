@@ -48,3 +48,72 @@ def classify_ratio(value: float | None, decision_rule: dict) -> str:
     if value >= decision_rule["warn_threshold"]:
         return "warn"
     return "fail"
+
+
+def resolve_maximum_ratio_failure_rule(
+    parameters: dict | None,
+    *,
+    parameter_name: str,
+    default: float,
+) -> dict:
+    """Resolve a one-sided failure cutoff and record its provenance.
+
+    This is a decision rule applied after measurement. It is deliberately
+    separate from the metric equation and must not be presented as a universal
+    realism constant unless its provenance explicitly supports that claim.
+    """
+    parameters = parameters or {}
+    threshold = float(parameters.get(parameter_name, default))
+    if not 0 <= threshold <= 1:
+        raise ValueError(f"{parameter_name} must be between 0 and 1.")
+
+    configured = parameter_name in parameters
+    provenance_key = f"{parameter_name}_provenance"
+    provenance = str(
+        parameters.get(
+            provenance_key,
+            "scenario-configured" if configured else "framework-default",
+        )
+    ).strip() or ("scenario-configured" if configured else "framework-default")
+
+    return {
+        "parameter": parameter_name,
+        "failure_threshold": threshold,
+        "comparison": "observed_ratio > failure_threshold",
+        "provenance": provenance,
+        "source": "metric.calculation.parameters" if configured else "framework default",
+        "scientific_role": "decision_policy_not_metric_definition",
+    }
+
+
+def describe_measurement_parameter(
+    parameters: dict | None,
+    *,
+    parameter_name: str,
+    default,
+    value=None,
+) -> dict:
+    """Record provenance for a parameter that changes the measured quantity.
+
+    Unlike PASS/WARN/FAIL cutoffs, measurement tolerances can alter which
+    observations enter a metric numerator. They are therefore part of the
+    operationalisation and must be reported explicitly.
+    """
+    parameters = parameters or {}
+    configured = parameter_name in parameters
+    provenance_key = f"{parameter_name}_provenance"
+    provenance = str(
+        parameters.get(
+            provenance_key,
+            "scenario-configured" if configured else "framework-default",
+        )
+    ).strip() or ("scenario-configured" if configured else "framework-default")
+    resolved_value = parameters.get(parameter_name, default) if value is None else value
+
+    return {
+        "parameter": parameter_name,
+        "value": resolved_value,
+        "provenance": provenance,
+        "source": "metric.calculation.parameters" if configured else "framework default",
+        "scientific_role": "measurement_operationalisation_parameter",
+    }
