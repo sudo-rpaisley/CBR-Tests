@@ -13,6 +13,20 @@ from cbr_tests.metrics.data_quality import (
     compute_duplicate_row_ratio,
     compute_missing_value_ratio,
 )
+from cbr_tests.metrics.intrinsic_diagnostics import (
+    compute_burstiness_internal_drift,
+    compute_day_to_day_diurnal_similarity,
+    compute_day_to_day_hourly_activity_divergence,
+    compute_distance_correlation_dependency_profile,
+    compute_feature_energy_internal_drift,
+    compute_feature_ks_internal_drift,
+    compute_feature_mmd2_internal_drift,
+    compute_feature_wasserstein_internal_drift,
+    compute_inter_arrival_internal_drift_ks,
+    compute_lagged_periodicity_similarity,
+    compute_pearson_dependency_profile,
+    compute_spearman_dependency_profile,
+)
 from cbr_tests.metrics.pearson import compute_pearson_profile, validate_candidate_fields
 from cbr_tests.metrics.spearman import (
     compute_spearman_profile,
@@ -339,6 +353,21 @@ def _slice_consistency_metric(dataset_path: Path, metric: dict):
 TABULAR_COMPUTE_METRICS = {
     "valid_ip_address_ratio": compute_valid_ip_address_ratio,
     "reserved_address_misuse_ratio": compute_reserved_address_misuse_ratio,
+    # Canonical intrinsic temporal diagnostics.
+    "inter_arrival_internal_drift_ks": compute_inter_arrival_internal_drift_ks,
+    "burstiness_internal_drift": compute_burstiness_internal_drift,
+    "day_to_day_hourly_activity_divergence": compute_day_to_day_hourly_activity_divergence,
+    "day_to_day_diurnal_similarity": compute_day_to_day_diurnal_similarity,
+    "lagged_periodicity_similarity": compute_lagged_periodicity_similarity,
+    # Canonical intrinsic statistical diagnostics.
+    "feature_ks_internal_drift": compute_feature_ks_internal_drift,
+    "feature_wasserstein_internal_drift": compute_feature_wasserstein_internal_drift,
+    "feature_energy_internal_drift": compute_feature_energy_internal_drift,
+    "feature_mmd2_internal_drift": compute_feature_mmd2_internal_drift,
+    "pearson_dependency_profile": compute_pearson_dependency_profile,
+    "spearman_dependency_profile": compute_spearman_dependency_profile,
+    "distance_correlation_dependency_profile": compute_distance_correlation_dependency_profile,
+    # Legacy intrinsic IDs retained for historical plans/outcomes.
     "kolmogorov_smirnov_feature_divergence": compute_ks_feature_divergence,
     "wasserstein_feature_distance": compute_wasserstein_feature_distance,
     "energy_distance": compute_energy_distance,
