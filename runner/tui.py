@@ -512,6 +512,8 @@ def _metric_result_line(metric: dict, test_results: dict) -> str:
         parts.append("id_contract=legacy_compatibility")
     elif metric_id in COMPATIBILITY_ONLY_METRIC_PROFILES:
         parts.append("id_contract=compatibility_profile")
+    elif metric_id in COMPATIBILITY_ONLY_METRIC_PROFILES:
+        parts.append("id_contract=compatibility_profile")
     if elapsed is not None:
         parts.append(f"elapsed={float(elapsed):.1f}s")
     reason = metric.get("reason") or metric.get("error") or metric.get("message")
@@ -559,6 +561,10 @@ def _outcome_result_sections(output_path: str | None) -> dict[str, list[str]]:
         if metric_id in LEGACY_INTRINSIC_METRIC_MIGRATIONS:
             replacement = LEGACY_INTRINSIC_METRIC_MIGRATIONS[metric_id]["metric_id"]
             sections["legacy"].append(f"{metric_id} -> {replacement}")
+        elif metric_id in COMPATIBILITY_ONLY_METRIC_PROFILES:
+            sections["legacy"].append(
+                f"{metric_id} -> regenerate plan: {COMPATIBILITY_ONLY_METRIC_PROFILES[metric_id]}"
+            )
         elif metric_id in COMPATIBILITY_ONLY_METRIC_PROFILES:
             sections["legacy"].append(
                 f"{metric_id} -> regenerate plan: {COMPATIBILITY_ONLY_METRIC_PROFILES[metric_id]}"

@@ -1075,11 +1075,11 @@ Python symbols defined by `runner/tui.py`.
 | `_scalar_summary_items(payload: object, limit: int = 4) -> list[str]` (L482) | function | Internal | Implementation helper for scalar summary items. |
 | `_test_result_for_metric(test_results: dict, metric_id: str) -> object` (L495) | function | Internal | Implementation helper for test result for metric. |
 | `_metric_result_line(metric: dict, test_results: dict) -> str` (L504) | function | Internal | Implementation helper for metric result line. |
-| `_outcome_result_sections(output_path: str | None) -> dict[str, list[str]]` (L526) | function | Internal | Implementation helper for outcome result sections. |
-| `build_result_sections(result: dict | None) -> list[ResultSection]` (L575) | function | Public | Builds result sections. |
-| `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L617) | function | Internal | Implementation helper for visible result rows. |
-| `_post_run_curses(stdscr, result: dict | None, args) -> str` (L627) | function | Internal | Implementation helper for post run curses. |
-| `show_post_run_menu(result: dict | None, args) -> str` (L668) | function | Public | Implementation helper for show post run menu. |
+| `_outcome_result_sections(output_path: str | None) -> dict[str, list[str]]` (L528) | function | Internal | Implementation helper for outcome result sections. |
+| `build_result_sections(result: dict | None) -> list[ResultSection]` (L581) | function | Public | Builds result sections. |
+| `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L623) | function | Internal | Implementation helper for visible result rows. |
+| `_post_run_curses(stdscr, result: dict | None, args) -> str` (L633) | function | Internal | Implementation helper for post run curses. |
+| `show_post_run_menu(result: dict | None, args) -> str` (L674) | function | Public | Implementation helper for show post run menu. |
 
 ## `runner/tui_batch.py`
 
