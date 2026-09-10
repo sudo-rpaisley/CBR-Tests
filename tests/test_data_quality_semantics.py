@@ -10,7 +10,7 @@ def test_duplicate_ratio_reports_full_row_basis_when_all_columns_define_identity
     assert result["duplicate_definition"] == "full_row"
     assert result["subset_field_names"] == "a, b"
     assert result["duplicate_row_count"] == 1
-    assert result["duplicate_row_ratio"] == 1 / 3
+    assert result["duplicate_row_ratio"] == 0.333333
     assert result["runnable"] is True
 
 
@@ -23,7 +23,7 @@ def test_duplicate_ratio_labels_configured_subset_as_signature_not_full_row():
     assert result["subset_field_count"] == 1
     assert result["subset_field_names"] == "a"
     assert result["duplicate_row_count"] == 1
-    assert result["duplicate_row_ratio"] == 1 / 3
+    assert result["duplicate_row_ratio"] == 0.333333
 
 
 def test_duplicate_ratio_is_not_runnable_without_any_available_identity_fields():
