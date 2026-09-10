@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **255 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **262 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -426,6 +426,22 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write_flow_csv(path: Path, *, offset: float = 0.0) -> None` (L14) | Implementation helper for write flow csv. |
+
+## `tests/test_outcome_comparison.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_comparison_ignores_volatile_run_metadata_by_default()` (L4) | Verifies that comparison ignores volatile run metadata by default. | `compare_outcomes` |
+| `test_comparison_can_include_volatile_metadata_when_requested()` (L24) | Verifies that comparison can include volatile metadata when requested. | `compare_outcomes` |
+| `test_numeric_tolerance_suppresses_insignificant_float_noise()` (L34) | Verifies that numeric tolerance suppresses insignificant float noise. | `compare_outcomes` |
+| `test_status_and_ratio_changes_are_high_impact_and_keep_numeric_delta()` (L43) | Verifies that status and ratio changes are high impact and keep numeric delta. | `compare_outcomes` |
+| `test_metric_result_reordering_does_not_create_false_changes()` (L64) | Verifies that metric result reordering does not create false changes. | `compare_outcomes` |
+| `test_new_decision_policy_metadata_is_visible_as_high_impact()` (L83) | Verifies that new decision policy metadata is visible as high impact. | `compare_outcomes`, `all` |
+| `test_render_markdown_includes_summary_and_difference_table()` (L114) | Verifies that render markdown includes summary and difference table. | `compare_outcomes`, `render_markdown` |
 
 ## `tests/test_pcap_adapter.py`
 

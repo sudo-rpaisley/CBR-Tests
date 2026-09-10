@@ -379,6 +379,23 @@ Raw packet timestamp coherence scanning.
 | --- | --- | --- | --- |
 | `run_timestamp_coherence_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Scan a PCAP and assess whether packet timestamps are coherent. |
 
+## `cbr_tests/outcome_comparison.py`
+
+Python symbols defined by `cbr_tests/outcome_comparison.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `load_outcome(path: str | Path) -> dict` (L53) | function | Public | Load one JSON outcome object from disk. |
+| `_identity_key(items: list[Any]) -> str | None` (L61) | function | Internal | Implementation helper for identity key. |
+| `flatten_outcome(value: Any, *, include_volatile: bool = False, path: str = '$') -> tuple[dict[str, Any], list[str]]` (L79) | function | Public | Flatten JSON into stable paths while tracking ignored run metadata. Lists of dictionaries are keyed by a stable identifier such as ``metric_id`` or ``field`` when possible. This avoids false changes when result ordering changes between executions. |
+| `flatten_outcome.visit(node: Any, node_path: str) -> None` (L94) | nested function | Internal | Implementation helper for visit. |
+| `_numbers_equal(before: Any, after: Any, *, abs_tol: float, rel_tol: float) -> bool` (L126) | function | Internal | Implementation helper for numbers equal. |
+| `_impact(path: str) -> str` (L138) | function | Internal | Implementation helper for impact. |
+| `_numeric_delta(before: Any, after: Any) -> float | None` (L143) | function | Internal | Implementation helper for numeric delta. |
+| `compare_outcomes(before: dict, after: dict, *, abs_tol: float = 1e-12, rel_tol: float = 1e-09, include_volatile: bool = False) -> dict` (L151) | function | Public | Return a machine-readable comparison between two outcome objects. |
+| `_display_value(value: Any, *, limit: int = 100) -> str` (L255) | function | Internal | Implementation helper for display value. |
+| `render_markdown(report: dict) -> str` (L264) | function | Public | Render a comparison report suitable for experiment records and review. |
+
 ## `create_plan.py`
 
 Python symbols defined by `create_plan.py`.
@@ -1083,6 +1100,15 @@ Repository inventory generator used for documentation audits.
 | `render_markdown(inventory: dict[str, Any]) -> str` (L201) | function | Public | Renders markdown for terminal output. |
 | `parse_args() -> argparse.Namespace` (L249) | function | Public | Parses args. |
 | `main() -> int` (L257) | function | Public | Implementation helper for main. |
+
+## `scripts/compare_outcomes.py`
+
+Python symbols defined by `scripts/compare_outcomes.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `build_parser() -> argparse.ArgumentParser` (L13) | function | Public | Builds parser. |
+| `main() -> int` (L58) | function | Public | Implementation helper for main. |
 
 ## `scripts/reference_documentation.py`
 
