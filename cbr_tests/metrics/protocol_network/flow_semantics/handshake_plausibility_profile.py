@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 import math
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 
 
 def _to_float(v):
@@ -28,6 +29,12 @@ def run_handshake_plausibility_metric(dataset_path: Path, metric: dict) -> tuple
     p=metric.get("calculation",{}).get("parameters",{})
     tcp_vals={str(v).lower() for v in p.get("tcp_protocol_values",[6,"6","TCP","tcp"]) }
     allow_syn_only=bool(p.get("allow_syn_only",False)); allow_rst=bool(p.get("allow_rst_flows",True)); max_examples=int(p.get("max_examples",10))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            p, default_pass=0.95, default_warn=0.8
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
     row_count=len(df); tcp_rows=checked=plaus=susp=uncertain=syn_only=synack=ack_wo=rst_count=0; examples=[]
     for idx,row in df.iterrows():
         if str(row[field_map['protocol']]).strip().lower() not in tcp_vals: continue
@@ -47,7 +54,7 @@ def run_handshake_plausibility_metric(dataset_path: Path, metric: dict) -> tuple
         if total>1 and syn==0 and ack==0: susp+=1; examples.append({"row_index":int(idx),"reason":"no_syn_no_ack_multi_packet"}) if len(examples)<max_examples else None
         else: uncertain+=1
     if tcp_rows==0:
-        return True,{"test_results":{"handshake_plausibility_profile":{"row_count":row_count,"tcp_row_count":0,"checked_tcp_row_count":0,"plausible_tcp_row_count":0,"suspicious_tcp_row_count":0,"uncertain_tcp_row_count":0,"syn_only_count":0,"syn_ack_like_count":0,"ack_without_syn_count":0,"rst_flow_count":0,"handshake_plausibility_ratio":0.0,"examples":[],"status":"not_applicable"}}}
-    ratio=round(plaus/checked,6) if checked else 0.0
-    status="pass" if ratio>=0.95 else "warn" if ratio>=0.80 else "fail"
-    return True,{"test_results":{"handshake_plausibility_profile":{"row_count":row_count,"tcp_row_count":tcp_rows,"checked_tcp_row_count":checked,"plausible_tcp_row_count":plaus,"suspicious_tcp_row_count":susp,"uncertain_tcp_row_count":uncertain,"syn_only_count":syn_only,"syn_ack_like_count":synack,"ack_without_syn_count":ack_wo,"rst_flow_count":rst_count,"handshake_plausibility_ratio":ratio,"examples":examples[:max_examples],"status":status}}}
+        return True,{"test_results":{"handshake_plausibility_profile":{"row_count":row_count,"tcp_row_count":0,"checked_tcp_row_count":0,"plausible_tcp_row_count":0,"suspicious_tcp_row_count":0,"uncertain_tcp_row_count":0,"syn_only_count":0,"syn_ack_like_count":0,"ack_without_syn_count":0,"rst_flow_count":0,"handshake_plausibility_ratio":None,"examples":[],"decision_rule":decision_rule,"status":"not_applicable"}}}
+    ratio=round(plaus/checked,6) if checked else None
+    status=classify_ratio(ratio, decision_rule)
+    return True,{"test_results":{"handshake_plausibility_profile":{"row_count":row_count,"tcp_row_count":tcp_rows,"checked_tcp_row_count":checked,"plausible_tcp_row_count":plaus,"suspicious_tcp_row_count":susp,"uncertain_tcp_row_count":uncertain,"syn_only_count":syn_only,"syn_ack_like_count":synack,"ack_without_syn_count":ack_wo,"rst_flow_count":rst_count,"handshake_plausibility_ratio":ratio,"examples":examples[:max_examples],"decision_rule":decision_rule,"status":status}}}

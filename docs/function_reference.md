@@ -36,6 +36,15 @@ Missing-value and duplicate-row metrics.
 | `compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict` (L13) | function | Public | Computes missing value ratio and returns a structured result. |
 | `compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict` (L50) | function | Public | Computes duplicate row ratio and returns a structured result. |
 
+## `cbr_tests/metrics/decision_rules.py`
+
+Python symbols defined by `cbr_tests/metrics/decision_rules.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `resolve_ratio_decision_rule(parameters: dict | None, *, default_pass: float, default_warn: float) -> dict` (L6) | function | Public | Resolve PASS/WARN cutoffs and record their provenance. The thresholds classify a measured ratio; they do not define the ratio itself. Defaults are framework policy unless an experiment explicitly overrides them. |
+| `classify_ratio(value: float | None, decision_rule: dict) -> str` (L42) | function | Public | Apply a resolved decision policy to a ratio without redefining the metric. |
+
 ## `cbr_tests/metrics/intrinsic_diagnostics.py`
 
 Python symbols defined by `cbr_tests/metrics/intrinsic_diagnostics.py`.
@@ -144,7 +153,7 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/flo
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L7) | function | Public | Runs flow duration consistency metric. |
+| `run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Runs flow duration consistency metric. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/handshake_plausibility_profile.py`
 
@@ -152,8 +161,8 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/han
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_to_float(v)` (L7) | function | Internal | Implementation helper for to float. |
-| `run_handshake_plausibility_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L20) | function | Public | Runs handshake plausibility metric. |
+| `_to_float(v)` (L8) | function | Internal | Implementation helper for to float. |
+| `run_handshake_plausibility_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L21) | function | Public | Runs handshake plausibility metric. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/packet_byte_consistency_profile.py`
 
@@ -161,7 +170,7 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/pac
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L7) | function | Public | Runs packet byte consistency metric. |
+| `run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Runs packet byte consistency metric. |
 
 ## `cbr_tests/metrics/protocol_network/flow_semantics/tcp_flag_consistency_profile.py`
 
@@ -169,7 +178,7 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/tcp
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L7) | function | Public | Runs TCP flag consistency metric. |
+| `run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Runs TCP flag consistency metric. |
 
 ## `cbr_tests/metrics/protocol_network/port_validity/service_port_consistency_profile.py`
 

@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 import math
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 
 
 def run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
@@ -26,6 +27,12 @@ def run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[b
     tcp_vals = {str(v).lower() for v in params.get("tcp_protocol_values", [6, "6", "TCP", "tcp"])}
     non_tcp_zero = bool(params.get("non_tcp_flags_must_be_zero", True))
     max_examples = int(params.get("max_examples", 10))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            params, default_pass=0.99, default_warn=0.95
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
 
     flag_keys = ["fin_flag_count", "syn_flag_count", "rst_flag_count", "ack_flag_count", "psh_flag_count", "urg_flag_count", "cwe_flag_count", "ece_flag_count"]
     present = [k for k in flag_keys if k in field_map and field_map[k] in df.columns]
@@ -48,9 +55,6 @@ def run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[b
     inconsistent_mask = (bad_flags & checked_mask) | non_tcp_with_flags
 
     checked_row_count = int(checked_mask.sum())
-    if checked_row_count == 0:
-        return False, {"error": "No rows could be checked for tcp_flag_consistency_profile."}
-
     inconsistent_row_count = int(inconsistent_mask.sum())
     consistent_row_count = checked_row_count - inconsistent_row_count
 
@@ -60,8 +64,8 @@ def run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[b
             reason = "non_tcp_with_tcp_flags" if bool(non_tcp_with_flags.loc[idx]) else "invalid_or_out_of_bounds_flags"
             examples.append({"row_index": int(idx), "reason": reason})
 
-    ratio = round(consistent_row_count / checked_row_count, 6)
-    status = "pass" if ratio >= 0.99 else "warn" if ratio >= 0.95 else "fail"
+    ratio = round(consistent_row_count / checked_row_count, 6) if checked_row_count else None
+    status = classify_ratio(ratio, decision_rule)
 
     return True, {"test_results": {"tcp_flag_consistency_profile": {
         "row_count": len(df),
@@ -76,5 +80,6 @@ def run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[b
         "non_tcp_with_tcp_flags_count": int(non_tcp_with_flags.sum()),
         "invalid_numeric_row_count": int(invalid_numeric.sum()),
         "examples": examples,
+        "decision_rule": decision_rule,
         "status": status
     }}}

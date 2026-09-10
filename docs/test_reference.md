@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **246 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **251 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -207,6 +207,20 @@ Tests and local helpers in this module.
 | `test_dataset_summary_cli_defaults_enabled(monkeypatch)` (L10) | Verifies that dataset summary CLI defaults enabled. | `monkeypatch.setattr`, `parse_run_plan_args` |
 | `test_dataset_summary_cli_can_disable_and_force_refresh(monkeypatch)` (L17) | Verifies that dataset summary CLI can disable and force refresh. | `monkeypatch.setattr`, `parse_run_plan_args` |
 | `test_tui_exposes_dataset_summary_controls(monkeypatch)` (L34) | Verifies that tui exposes dataset summary controls. | `monkeypatch.setattr`, `parse_run_plan_args`, `build_default_tui_fields` |
+
+## `tests/test_decision_rules.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_ratio_decision_rule_marks_unoverridden_cutoffs_as_framework_defaults()` (L6) | Verifies that ratio decision rule marks unoverridden cutoffs as framework defaults. | `resolve_ratio_decision_rule` |
+| `test_ratio_decision_rule_marks_threshold_overrides_as_scenario_configured()` (L14) | Verifies that ratio decision rule marks threshold overrides as scenario configured. | `resolve_ratio_decision_rule`, `classify_ratio` |
+| `test_ratio_decision_rule_allows_explicit_provenance_label()` (L26) | Verifies that ratio decision rule allows explicit provenance label. | `resolve_ratio_decision_rule` |
+| `test_ratio_decision_rule_rejects_invalid_ordering()` (L39) | Verifies that ratio decision rule rejects invalid ordering. | `pytest.raises`, `resolve_ratio_decision_rule` |
+| `test_none_ratio_is_not_applicable_not_failure()` (L48) | Verifies that none ratio is not applicable not failure. | `resolve_ratio_decision_rule`, `classify_ratio` |
 
 ## `tests/test_derived_rate_consistency_profile.py`
 

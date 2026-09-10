@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 import math
 from runner.tabular import load_tabular_dataset
+from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decision_rule
 
 
 def run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
@@ -21,8 +22,15 @@ def run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tu
     if miss:
         return False, {"error": "Missing required fields for flow_duration_consistency_profile.", "missing_fields": miss}
 
-    tol = float(metric.get("calculation", {}).get("parameters", {}).get("tolerance", 1e-6))
-    max_examples = int(metric.get("calculation", {}).get("parameters", {}).get("max_examples", 10))
+    parameters = metric.get("calculation", {}).get("parameters", {})
+    tol = float(parameters.get("tolerance", 1e-6))
+    max_examples = int(parameters.get("max_examples", 10))
+    try:
+        decision_rule = resolve_ratio_decision_rule(
+            parameters, default_pass=0.99, default_warn=0.95
+        )
+    except ValueError as exc:
+        return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
 
     cols = req + [k for k in ["flow_iat_std", "fwd_iat_total", "bwd_iat_total"] if k in fm and fm[k] in df.columns]
     data = pd.DataFrame({k: pd.to_numeric(df[fm[k]], errors="coerce") for k in cols})
@@ -55,8 +63,8 @@ def run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tu
         for idx in df.index[inconsistent_mask][:max_examples]:
             examples.append({"row_index": int(idx), "reason": "duration_iat_violation"})
 
-    ratio = round(consistent_row_count / checked_row_count, 6) if checked_row_count else 0.0
-    status = "pass" if ratio >= 0.99 else "warn" if ratio >= 0.95 else "fail"
+    ratio = round(consistent_row_count / checked_row_count, 6) if checked_row_count else None
+    status = classify_ratio(ratio, decision_rule)
 
     return True, {"test_results": {"flow_duration_consistency_profile": {
         "row_count": row_count,
@@ -71,5 +79,6 @@ def run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tu
         "invalid_numeric_row_count": invalid_numeric_row_count,
         "flow_duration_consistency_ratio": ratio,
         "examples": examples,
+        "decision_rule": decision_rule,
         "status": status
     }}}
