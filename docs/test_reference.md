@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **245 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **246 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -721,6 +721,23 @@ Tests and local helpers in this module.
 | `test_binary_task_metrics_are_explicit_positive_label_one_vs_rest()` (L85) | Verifies that binary task metrics are explicit positive label one vs rest. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
 | `test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined()` (L106) | Verifies that f1 is zero when precision and recall are both zero but defined. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
 | `test_positive_class_metrics_are_undefined_when_positive_support_is_absent()` (L123) | Verifies that positive class metrics are undefined when positive support is absent. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+
+## `tests/test_taxonomy_registry_conformance.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_every_metric_advertised_by_master_taxonomy_has_a_runtime_handler()` (L34) | Verifies that every metric advertised by master taxonomy has a runtime handler. | `_collect_metric_ids`, `build_metric_handlers`, `TAXONOMY_PATH.read_text` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_collect_metric_ids(node)` (L10) | Implementation helper for collect metric ids. |
+| `_unused_loader(_path)` (L30) | Implementation helper for unused loader. |
 
 ## `tests/test_telemetry.py`
 
