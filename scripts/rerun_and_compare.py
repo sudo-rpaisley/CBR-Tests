@@ -7,24 +7,12 @@ import argparse
 import json
 from pathlib import Path
 
-from cbr_tests.plan_migration import legacy_intrinsic_metric_ids
+from cbr_tests.plan_migration import (
+    COMPATIBILITY_ONLY_METRIC_PROFILES,
+    compatibility_only_metric_ids,
+    legacy_intrinsic_metric_ids,
+)
 from cbr_tests.rerun_workflow import run_and_compare
-
-
-# These older raw-PCAP profiles remain executable for historical compatibility,
-# but they no longer represent canonical leaves one-to-one. A representative
-# post-overhaul plan should be regenerated rather than silently carrying them
-# forward.
-COMPATIBILITY_ONLY_REPRESENTATIVE_METRICS = {
-    "protocol_validity_profile": (
-        "The canonical Valid IP Address Ratio is now a dedicated metric; the old "
-        "protocol profile mixes several packet-validity concepts."
-    ),
-    "reserved_ip_address_profile": (
-        "Reserved-address misuse now requires an explicit address-use policy and "
-        "cannot be inferred from the legacy profile."
-    ),
-}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -103,19 +91,10 @@ def _resolved_plan_payload(run_definition: Path) -> tuple[Path, dict]:
     return source, payload
 
 
-def _compatibility_only_metric_ids(plan: dict) -> list[str]:
-    return [
-        str(metric.get("metric_id"))
-        for metric in plan.get("metrics", [])
-        if isinstance(metric, dict)
-        and metric.get("metric_id") in COMPATIBILITY_ONLY_REPRESENTATIVE_METRICS
-    ]
-
-
 def _reject_legacy_representative_plan(run_definition: Path) -> None:
     plan_path, plan = _resolved_plan_payload(run_definition)
     legacy_intrinsic = legacy_intrinsic_metric_ids(plan)
-    compatibility_only = _compatibility_only_metric_ids(plan)
+    compatibility_only = compatibility_only_metric_ids(plan)
     if not legacy_intrinsic and not compatibility_only:
         return
 
@@ -135,7 +114,7 @@ def _reject_legacy_representative_plan(run_definition: Path) -> None:
         lines.append(f"Compatibility-only profile IDs ({len(compatibility_only)}):")
         for metric_id in compatibility_only:
             lines.append(
-                f"  - {metric_id}: {COMPATIBILITY_ONLY_REPRESENTATIVE_METRICS[metric_id]}"
+                f"  - {metric_id}: {COMPATIBILITY_ONLY_METRIC_PROFILES[metric_id]}"
             )
         lines.extend(
             [
