@@ -1,0 +1,32 @@
+name: Generate audit reference docs
+
+on:
+  pull_request:
+    branches:
+      - overhaul/metric-conformance
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+      - name: Generate references
+        run: python scripts/build_reference_documentation.py
+      - name: Upload generated references
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-generated-reference-docs
+          path: |
+            docs/function_reference.md
+            docs/test_reference.md
+          retention-days: 1
