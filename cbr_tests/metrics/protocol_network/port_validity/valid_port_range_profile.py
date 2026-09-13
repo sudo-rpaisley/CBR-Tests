@@ -96,6 +96,17 @@ def run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool,
     params = metric.get("calculation", {}).get("parameters", {})
     valid_min_port = int(params.get("valid_min_port", 0))
     valid_max_port = int(params.get("valid_max_port", 65535))
+    if (valid_min_port, valid_max_port) != (0, 65535):
+        return False, {
+            "error": (
+                "The canonical Valid Port Range Ratio is defined over the normative "
+                "16-bit transport port domain 0-65535. Configure service/scenario port "
+                "expectations in service_port_consistency_profile instead of changing "
+                "the canonical validity domain."
+            ),
+            "reason_code": "noncanonical_metric_configuration",
+        }
+
     try:
         failure_rule = resolve_maximum_ratio_failure_rule(
             params, parameter_name="invalid_ratio_fail_threshold", default=0.01
@@ -103,12 +114,6 @@ def run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool,
     except ValueError as exc:
         return False, {"error": str(exc), "reason_code": "invalid_metric_configuration"}
     invalid_ratio_fail_threshold = failure_rule["failure_threshold"]
-
-    if valid_min_port < 0 or valid_max_port > 65535 or valid_min_port > valid_max_port:
-        return False, {
-            "error": "Configured port bounds must satisfy 0 <= valid_min_port <= valid_max_port <= 65535.",
-            "reason_code": "invalid_metric_configuration",
-        }
 
     df = metric.get("_shared_df")
     if df is None:
