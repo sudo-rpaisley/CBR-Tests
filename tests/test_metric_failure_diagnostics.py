@@ -45,16 +45,16 @@ def test_reserved_ip_profile_respects_disabled_private_category():
     assert result["diagnostic"]["reason_code"] == "ip_profile_within_policy"
 
 
-def test_valid_port_range_uses_configured_bounds_and_explains_failure():
+def test_valid_port_range_explains_normative_range_failure():
     metric = _base_metric("valid_port_range_profile")
     metric["input_requirements"] = {"candidate_fields": ["Source Port", "Destination Port"]}
     metric["calculation"]["parameters"] = {
         "valid_min_port": 0,
-        "valid_max_port": 1023,
+        "valid_max_port": 65535,
         "invalid_ratio_fail_threshold": 0.10,
     }
     metric["_shared_df"] = pd.DataFrame({
-        "Source Port": [80, 9000],
+        "Source Port": [80, 70000],
         "Destination Port": [443, 53],
     })
 
@@ -66,7 +66,7 @@ def test_valid_port_range_uses_configured_bounds_and_explains_failure():
     assert result["invalid_port_ratio"] == 0.25
     assert result["status"] == "fail"
     assert result["diagnostic"]["reason_code"] == "invalid_port_ratio_exceeded"
-    assert "9000" in str(result["diagnostic"]["evidence"]["examples"])
+    assert "70000" in str(result["diagnostic"]["evidence"]["examples"])
 
 
 def test_valid_port_range_is_not_applicable_when_all_ports_are_missing():
