@@ -528,13 +528,18 @@ def compute_train_test_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -
 
 
 def compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: dict) -> dict:
-    """Measure test identifiers already seen in train when entity-disjoint evaluation is required."""
+    """Measure field-qualified test identifiers already seen in train.
+
+    The canonical identifier universe is ``(field, value)`` so equal textual
+    values in different namespaces cannot create false contamination.
+    """
     requirements = metric.get("input_requirements", {})
     identifier_fields = requirements.get("identifier_fields", [])
     entity_disjoint_expected = bool(requirements.get("entity_disjoint_expected", False))
     train_mask, test_mask, split_field = _split_masks(df, metric)
 
-    contaminated = total_test = total_union = 0
+    qualified_train_ids: set[tuple[str, str]] = set()
+    qualified_test_ids: set[tuple[str, str]] = set()
     fields = []
     for field in identifier_fields:
         if field not in df.columns:
@@ -561,9 +566,8 @@ def compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: 
         }
         overlap = train_ids & test_ids
         union = train_ids | test_ids
-        total_test += len(test_ids)
-        total_union += len(union)
-        contaminated += len(overlap)
+        qualified_train_ids.update((field, value) for value in train_ids)
+        qualified_test_ids.update((field, value) for value in test_ids)
         overlap_ratio = len(overlap) / len(test_ids) if test_ids else None
         fields.append(
             {
@@ -582,6 +586,11 @@ def compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: 
             }
         )
 
+    qualified_overlap = qualified_train_ids & qualified_test_ids
+    qualified_union = qualified_train_ids | qualified_test_ids
+    total_test = len(qualified_test_ids)
+    total_union = len(qualified_union)
+    contaminated = len(qualified_overlap)
     overlap_ratio = contaminated / total_test if total_test else None
     return {
         "fields": fields,
@@ -589,6 +598,7 @@ def compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: 
             "split_field": split_field,
             "identifier_field_count": len(identifier_fields),
             "entity_disjoint_expected": entity_disjoint_expected,
+            "identifier_universe": "field_qualified_(field,value)",
             "test_identifier_count": total_test,
             "unique_identifier_count": total_union,
             "overlap_identifier_count": contaminated,

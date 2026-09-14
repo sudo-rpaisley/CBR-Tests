@@ -9,10 +9,13 @@ from tests.statistical_fidelity_profile import (
 )
 
 
-def _metric(*fields):
+def _metric(*fields, max_sample_size=None):
+    parameters = {"minimum_sample_size": 2}
+    if max_sample_size is not None:
+        parameters["max_sample_size"] = max_sample_size
     return {
         "input_requirements": {"candidate_fields": list(fields)},
-        "calculation": {"parameters": {"minimum_sample_size": 2}},
+        "calculation": {"parameters": parameters},
     }
 
 
@@ -46,6 +49,24 @@ def test_distributional_metrics_match_hand_calculated_shifted_half_oracles():
         compute_maximum_mean_discrepancy(df, metric)["fields"][0]["maximum_mean_discrepancy"]
         == 0.85085
     )
+
+
+def test_distributional_sampling_covers_both_complete_ordered_halves():
+    # The old implementation truncated the first 2*max_sample_size usable values
+    # before splitting, so this late change was invisible.  The canonical metric
+    # instead defines two halves over the complete ordered usable sequence and
+    # applies any computational sample independently within each half.
+    df = pd.DataFrame({"feature": ([0.0] * 2000) + ([100.0] * 2000)})
+    metric = _metric("feature", max_sample_size=100)
+
+    result = compute_ks_feature_divergence(df, metric)["fields"][0]
+
+    assert result["population_a_count"] == 2000
+    assert result["population_b_count"] == 2000
+    assert result["sample_a_count"] == 100
+    assert result["sample_b_count"] == 100
+    assert result["sampling_method"] == "deterministic_evenly_spaced_within_each_ordered_half"
+    assert result["ks_statistic"] == 1.0
 
 
 def test_distance_correlation_profile_matches_nonlinear_dependency_oracle():

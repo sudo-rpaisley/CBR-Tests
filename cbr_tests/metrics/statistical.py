@@ -19,6 +19,28 @@ def _split_values(values: list[float]) -> tuple[list[float], list[float]]:
     return values[:midpoint], values[midpoint:]
 
 
+def _evenly_spaced_sample(values: list[float], max_sample_size: int | None) -> list[float]:
+    """Deterministically sample across the full ordered population.
+
+    Intrinsic drift metrics are defined over the first and second halves of the
+    complete usable sequence.  Computational caps must therefore be applied
+    *after* that split; taking only a leading window before splitting can miss
+    drift that occurs later in a large capture.
+    """
+
+    if max_sample_size is None or len(values) <= max_sample_size:
+        return list(values)
+    max_sample_size = int(max_sample_size)
+    if max_sample_size <= 0:
+        raise ValueError("max_sample_size must be positive when provided")
+    if max_sample_size == 1:
+        return [values[0]]
+
+    step = (len(values) - 1) / (max_sample_size - 1)
+    positions = [round(index * step) for index in range(max_sample_size)]
+    return [values[position] for position in positions]
+
+
 def _mean_pairwise_abs_distance(left: list[float], right: list[float]) -> float:
     if not left or not right:
         return 0.0
@@ -107,8 +129,17 @@ def _build_distributional_metric(
 ) -> dict:
     candidate_fields = metric["input_requirements"]["candidate_fields"]
     parameters = metric.get("calculation", {}).get("parameters", {})
-    minimum_sample_size = parameters.get("minimum_sample_size", 2)
-    max_sample_size = parameters.get("max_sample_size", 1000)
+    minimum_sample_size = int(parameters.get("minimum_sample_size", 2))
+    configured_max_sample_size = parameters.get("max_sample_size", 1000)
+    max_sample_size = (
+        None
+        if configured_max_sample_size is None
+        else int(configured_max_sample_size)
+    )
+    if minimum_sample_size < 1:
+        raise ValueError("minimum_sample_size must be at least 1")
+    if max_sample_size is not None and max_sample_size < 1:
+        raise ValueError("max_sample_size must be positive when provided")
 
     field_results = []
     runnable_count = 0
@@ -116,8 +147,13 @@ def _build_distributional_metric(
         result = {
             "field": field,
             "exists": field in df.columns,
+            "usable_numeric_count": 0,
+            "population_a_count": 0,
+            "population_b_count": 0,
             "sample_a_count": 0,
             "sample_b_count": 0,
+            "sampling_method": "not_run",
+            "max_sample_size_per_half": max_sample_size,
             "runnable": False,
             output_key: None,
             "reason": None,
@@ -127,10 +163,21 @@ def _build_distributional_metric(
             field_results.append(result)
             continue
 
-        values = _clean_numeric_values(df, field)[: max_sample_size * 2]
-        left, right = _split_values(values)
+        values = _clean_numeric_values(df, field)
+        population_left, population_right = _split_values(values)
+        left = _evenly_spaced_sample(population_left, max_sample_size)
+        right = _evenly_spaced_sample(population_right, max_sample_size)
+
+        result["usable_numeric_count"] = len(values)
+        result["population_a_count"] = len(population_left)
+        result["population_b_count"] = len(population_right)
         result["sample_a_count"] = len(left)
         result["sample_b_count"] = len(right)
+        result["sampling_method"] = (
+            "deterministic_evenly_spaced_within_each_ordered_half"
+            if len(left) < len(population_left) or len(right) < len(population_right)
+            else "full_ordered_halves"
+        )
         if len(left) < minimum_sample_size or len(right) < minimum_sample_size:
             result["reason"] = "insufficient_numeric_values"
             field_results.append(result)
