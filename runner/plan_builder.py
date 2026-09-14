@@ -8,6 +8,7 @@ from pathlib import Path
 import tempfile
 from typing import Iterable
 
+from runner.evidence_classification import pcap_evidence_class
 from runner.field_translation import (
     available_translated_fields,
     default_field_translation_path,
@@ -500,7 +501,10 @@ def build_plan(
 
         if not included:
             continue
-        metrics.append(_metric_from_spec(spec))
+        planned_metric = _metric_from_spec(spec)
+        if dataset["format"] in {"pcap", "pcapng"}:
+            planned_metric["evidence_class"] = pcap_evidence_class(metric_id)
+        metrics.append(planned_metric)
 
     if not metrics:
         raise ValueError(

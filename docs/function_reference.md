@@ -612,6 +612,14 @@ Metric registry, wrappers, field translation, and handler construction.
 | `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L461) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
 | `build_metric_handlers._translate(metric: dict)` (L471) | nested function | Internal | Implementation helper for translate. |
 
+## `runner/evidence_classification.py`
+
+Python symbols defined by `runner/evidence_classification.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `pcap_evidence_class(metric_id: str) -> str` (L25) | function | Public | Return the frozen evidential role for a runnable PCAP metric. This classifies how a result may be interpreted in the experiment manifest; it is separate from execution success, applicability and any metric verdict. |
+
 ## `runner/execution.py`
 
 Live status rendering and bounded parallel metric execution.
@@ -874,16 +882,16 @@ Python symbols defined by `runner/plan_builder.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `dataset_format(dataset_path: Path | None) -> str | None` (L44) | function | Public | Implementation helper for dataset format. |
-| `_canonical_fields(columns: list[str], translation: dict[str, str]) -> set[str]` (L51) | function | Internal | Implementation helper for canonical fields. |
-| `_sample_numeric_fields(dataset_path: Path, columns: list[str], translation: dict[str, str], *, sample_rows: int = 250) -> set[str]` (L55) | function | Internal | Identify numeric-compatible canonical fields from a small deterministic prefix sample. |
-| `_reference_field_map(candidate: dict, reference: dict, fields: list[str]) -> dict[str, str]` (L96) | function | Internal | Implementation helper for reference field map. |
-| `tabular_reference_metric_template(metric_id: str, label: str, candidate: dict, reference: dict) -> dict | None` (L108) | function | Public | Build a reference-comparison template from fields shared by two tabular datasets. |
-| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L207) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
-| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L284) | function | Internal | Implementation helper for configuration state. |
-| `_metric_from_spec(metric_spec: dict) -> dict` (L387) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
-| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L408) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
-| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L592) | function | Public | Validate and atomically write a generated plan. |
+| `dataset_format(dataset_path: Path | None) -> str | None` (L45) | function | Public | Implementation helper for dataset format. |
+| `_canonical_fields(columns: list[str], translation: dict[str, str]) -> set[str]` (L52) | function | Internal | Implementation helper for canonical fields. |
+| `_sample_numeric_fields(dataset_path: Path, columns: list[str], translation: dict[str, str], *, sample_rows: int = 250) -> set[str]` (L56) | function | Internal | Identify numeric-compatible canonical fields from a small deterministic prefix sample. |
+| `_reference_field_map(candidate: dict, reference: dict, fields: list[str]) -> dict[str, str]` (L97) | function | Internal | Implementation helper for reference field map. |
+| `tabular_reference_metric_template(metric_id: str, label: str, candidate: dict, reference: dict) -> dict | None` (L109) | function | Public | Build a reference-comparison template from fields shared by two tabular datasets. |
+| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L208) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
+| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L285) | function | Internal | Implementation helper for configuration state. |
+| `_metric_from_spec(metric_spec: dict) -> dict` (L388) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
+| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L409) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
+| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L596) | function | Public | Validate and atomically write a generated plan. |
 
 ## `runner/preflight_advice.py`
 

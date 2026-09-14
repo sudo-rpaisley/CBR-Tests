@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **294 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **296 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -495,6 +495,17 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_write_capture(path: Path, packet_count: int = 64) -> None` (L22) | Implementation helper for write capture. |
 | `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L63) | Implementation helper for forbidden loader. |
+
+## `tests/test_pcap_evidence_classification.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_pcap_evidence_classes_separate_observations_from_diagnostics()` (L7) | Verifies that PCAP evidence classes separate observations from diagnostics. | `pcap_evidence_class` |
+| `test_automatic_pcap_plan_records_evidence_class(tmp_path: Path)` (L18) | Verifies that automatic PCAP plan records evidence class. | `capture.write_bytes`, `build_plan` |
 
 ## `tests/test_pcap_handshake.py`
 
