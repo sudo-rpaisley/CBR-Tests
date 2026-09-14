@@ -7,6 +7,7 @@ from scapy.utils import wrpcap
 
 from runner.dispatch import build_metric_handlers
 from runner.pcap_adapter import (
+    PCAP_AUTOMATIC_EXCLUSIONS,
     PCAP_FLOW_COLUMNS,
     PCAP_PACKET_COLUMNS,
     PCAP_PACKET_METRICS,
@@ -70,29 +71,30 @@ def test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path):
     assert tcp_flow["Bwd IAT Total"] == pytest.approx(0.0)
 
 
-def test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path):
+def test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence(tmp_path):
     capture = tmp_path / "sample.pcap"
     _write_capture(capture)
     dataframe = build_pcap_packet_dataframe(capture)
 
-    metric_ids = {"valid_ip_address_ratio", "valid_port_range_profile"}
-    assert metric_ids.issubset(PCAP_PACKET_METRICS)
+    decoder_derived = {
+        "valid_ip_address_ratio",
+        "valid_port_range_profile",
+        "timestamp_parse_success_ratio",
+        "missing_value_ratio",
+    }
+    assert decoder_derived == set(PCAP_AUTOMATIC_EXCLUSIONS)
+    assert decoder_derived.isdisjoint(PCAP_PACKET_METRICS)
 
     def forbidden_loader(_path):
-        raise AssertionError("packet-view metric attempted to reload PCAP as tabular data")
+        raise AssertionError("packet-view diagnostic attempted to reload PCAP as tabular data")
 
     handlers = build_metric_handlers(dataframe, forbidden_loader, {})
-    for metric_id in sorted(metric_ids):
+    for metric_id in sorted(decoder_derived):
         metric = pcap_metric_template(metric_id)
         assert metric is not None
         ok, payload = handlers[metric_id](capture, metric)
         assert ok is True, (metric_id, payload)
         assert metric_id in payload["test_results"]
-
-    address_summary = payload = handlers["valid_ip_address_ratio"](
-        capture, pcap_metric_template("valid_ip_address_ratio")
-    )[1]["test_results"]["valid_ip_address_ratio"]["summary"]
-    assert address_summary["valid_ip_address_ratio"] == 1.0
 
 
 def test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates():

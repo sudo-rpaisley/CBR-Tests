@@ -94,7 +94,7 @@ Python symbols defined by `cbr_tests/metrics/label_fidelity.py`.
 | `compute_pre_post_attack_label_bleed_ratio(df: pd.DataFrame, metric: dict) -> dict` (L404) | function | Public | Measure attack labels among label-observable rows in declared pre/post attack buffers. |
 | `_split_masks(df: pd.DataFrame, metric: dict) -> tuple[pd.Series, pd.Series, str]` (L464) | function | Internal | Implementation helper for split masks. |
 | `compute_train_test_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L485) | function | Public | Return the fraction of distinct test signatures that are already present in train. |
-| `compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: dict) -> dict` (L530) | function | Public | Measure test identifiers already seen in train when entity-disjoint evaluation is required. |
+| `compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: dict) -> dict` (L530) | function | Public | Measure field-qualified test identifiers already seen in train. The canonical identifier universe is ``(field, value)`` so equal textual values in different namespaces cannot create false contamination. |
 
 ## `cbr_tests/metrics/pcap_handshake.py`
 
@@ -180,7 +180,7 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/tcp
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Runs TCP flag consistency metric. |
+| `run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Check deterministic aggregate TCP flag-count invariants on flow rows. This metric is not a packet-sequence TCP state-machine validator. Unusual packet-level flag combinations can be legitimate security/attack evidence and require a separate sequence-aware metric. |
 
 ## `cbr_tests/metrics/protocol_network/port_validity/service_port_consistency_profile.py`
 
@@ -213,7 +213,7 @@ Python symbols defined by `cbr_tests/metrics/protocol_network/slice_metadata_int
 | --- | --- | --- | --- |
 | `_norm(v, case_sensitive: bool)` (L7) | function | Internal | Implementation helper for norm. |
 | `_rule_match(field_value, operator, target, case_sensitive)` (L16) | function | Internal | Implementation helper for rule match. |
-| `run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L38) | function | Public | Check slice assignment against scenario rules on applicable rows. Rows with no applicable rule are outside the metric denominator. Missing slice values are completeness evidence and are excluded from the canonical consistency denominator by default; ``count_invalid`` remains available as a legacy/strict policy. |
+| `run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L38) | function | Public | Check slice assignment against scenario rules on applicable rows. Rows with no applicable rule are outside the metric denominator. Missing slice values are completeness evidence and are excluded from the canonical consistency denominator by default; ``count_invalid`` remains available as a legacy/strict policy. If multiple rules match the same row, they must declare identical expected slice sets; conflicting overlaps are rejected as an invalid experiment configuration rather than unioned into a more permissive rule. |
 
 ## `cbr_tests/metrics/protocol_network/slice_metadata_integrity/valid_slice_identifier_profile.py`
 
@@ -847,26 +847,26 @@ Python symbols defined by `runner/pcap_adapter.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `is_packet_capture(path: Path) -> bool` (L201) | function | Public | Implementation helper for is packet capture. |
-| `_packet_fields(packet) -> dict[str, Any] | None` (L205) | function | Internal | Implementation helper for packet fields. |
-| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L252) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. |
-| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L281) | function | Internal | Implementation helper for endpoint key. |
-| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L285) | function | Internal | Implementation helper for flow key. |
-| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L298) | function | Internal | Implementation helper for safe std variance. |
-| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L306) | function | Internal | Implementation helper for series stats. |
-| `_DirectionStats` (L317) | class | Internal | Data model for DirectionStats. |
-| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L326) | method | Public | Implementation helper for add. |
-| `_DirectionStats.min_length(self) -> float` (L336) | method | Public | Implementation helper for min length. |
-| `_DirectionStats.max_length(self) -> float` (L339) | method | Public | Implementation helper for max length. |
-| `_DirectionStats.mean_length(self) -> float` (L342) | method | Public | Implementation helper for mean length. |
-| `_FlowState` (L347) | class | Internal | Data model for FlowState. |
-| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L375) | method | Public | Implementation helper for is forward. |
-| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L389) | method | Public | Implementation helper for add packet. |
-| `_FlowState.as_row(self) -> dict[str, Any]` (L427) | method | Public | Implementation helper for as row. |
-| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L472) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. |
-| `pcap_metric_template(metric_id: str) -> dict | None` (L522) | function | Public | Return a deterministic template for a metric safe on decoded packet evidence. Canonical intrinsic diagnostic IDs reuse the established packet-view configuration. Historical IDs continue to resolve for replaying old plans. |
-| `pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict` (L780) | function | Public | Build a service-port metric only for an explicitly single-service capture. |
-| `pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None` (L810) | function | Public | Return a same-representation packet-level reference metric template. |
+| `is_packet_capture(path: Path) -> bool` (L210) | function | Public | Implementation helper for is packet capture. |
+| `_packet_fields(packet) -> dict[str, Any] | None` (L214) | function | Internal | Implementation helper for packet fields. |
+| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L261) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. |
+| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L290) | function | Internal | Implementation helper for endpoint key. |
+| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L294) | function | Internal | Implementation helper for flow key. |
+| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L307) | function | Internal | Implementation helper for safe std variance. |
+| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L315) | function | Internal | Implementation helper for series stats. |
+| `_DirectionStats` (L326) | class | Internal | Data model for DirectionStats. |
+| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L335) | method | Public | Implementation helper for add. |
+| `_DirectionStats.min_length(self) -> float` (L345) | method | Public | Implementation helper for min length. |
+| `_DirectionStats.max_length(self) -> float` (L348) | method | Public | Implementation helper for max length. |
+| `_DirectionStats.mean_length(self) -> float` (L351) | method | Public | Implementation helper for mean length. |
+| `_FlowState` (L356) | class | Internal | Data model for FlowState. |
+| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L384) | method | Public | Implementation helper for is forward. |
+| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L398) | method | Public | Implementation helper for add packet. |
+| `_FlowState.as_row(self) -> dict[str, Any]` (L436) | method | Public | Implementation helper for as row. |
+| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L481) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. |
+| `pcap_metric_template(metric_id: str) -> dict | None` (L531) | function | Public | Return a deterministic template for a metric safe on decoded packet evidence. Canonical intrinsic diagnostic IDs reuse the established packet-view configuration. Historical IDs continue to resolve for replaying old plans. |
+| `pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict` (L789) | function | Public | Build a service-port metric only for an explicitly single-service capture. |
+| `pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None` (L819) | function | Public | Return a same-representation packet-level reference metric template. |
 
 ## `runner/plan_builder.py`
 
@@ -874,16 +874,16 @@ Python symbols defined by `runner/plan_builder.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `dataset_format(dataset_path: Path | None) -> str | None` (L43) | function | Public | Implementation helper for dataset format. |
-| `_canonical_fields(columns: list[str], translation: dict[str, str]) -> set[str]` (L50) | function | Internal | Implementation helper for canonical fields. |
-| `_sample_numeric_fields(dataset_path: Path, columns: list[str], translation: dict[str, str], *, sample_rows: int = 250) -> set[str]` (L54) | function | Internal | Identify numeric-compatible canonical fields from a small deterministic prefix sample. |
-| `_reference_field_map(candidate: dict, reference: dict, fields: list[str]) -> dict[str, str]` (L95) | function | Internal | Implementation helper for reference field map. |
-| `tabular_reference_metric_template(metric_id: str, label: str, candidate: dict, reference: dict) -> dict | None` (L107) | function | Public | Build a reference-comparison template from fields shared by two tabular datasets. |
-| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L206) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
-| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L283) | function | Internal | Implementation helper for configuration state. |
-| `_metric_from_spec(metric_spec: dict) -> dict` (L383) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
-| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L404) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
-| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L588) | function | Public | Validate and atomically write a generated plan. |
+| `dataset_format(dataset_path: Path | None) -> str | None` (L44) | function | Public | Implementation helper for dataset format. |
+| `_canonical_fields(columns: list[str], translation: dict[str, str]) -> set[str]` (L51) | function | Internal | Implementation helper for canonical fields. |
+| `_sample_numeric_fields(dataset_path: Path, columns: list[str], translation: dict[str, str], *, sample_rows: int = 250) -> set[str]` (L55) | function | Internal | Identify numeric-compatible canonical fields from a small deterministic prefix sample. |
+| `_reference_field_map(candidate: dict, reference: dict, fields: list[str]) -> dict[str, str]` (L96) | function | Internal | Implementation helper for reference field map. |
+| `tabular_reference_metric_template(metric_id: str, label: str, candidate: dict, reference: dict) -> dict | None` (L108) | function | Public | Build a reference-comparison template from fields shared by two tabular datasets. |
+| `inspect_dataset(dataset_path: Path | None, *, field_translation_path: Path | None = None) -> dict` (L207) | function | Public | Inspect a dataset enough to decide which metrics are structurally runnable. |
+| `_configuration_state(metric_spec: dict, dataset: dict, reference_dataset: dict | None = None) -> tuple[str, str | None, list[str]]` (L284) | function | Internal | Implementation helper for configuration state. |
+| `_metric_from_spec(metric_spec: dict) -> dict` (L387) | function | Internal | Create a plan metric from a spec already proven ready by preflight. |
+| `build_plan(*, plan_id: str, name: str, description: str = 'Automatically generated CBR-Tests plan.', dataset_path: Path, field_translation_path: Path | None = None, include_metric_ids: Iterable[str] | None = None, exclude_metric_ids: Iterable[str] | None = None, reference_dataset_path: Path | None = None, service_port_configuration: dict | None = None) -> tuple[dict, dict]` (L408) | function | Public | Build a plan containing only metrics that can run on the supplied dataset. Every discoverable metric is considered unless include/exclude filters narrow the candidate set. Metrics that need missing fields, dataset-specific configuration, a reference dataset, or a different input format are reported but are never written into the generated plan. |
+| `write_plan(path: Path, plan: dict, *, overwrite: bool = False) -> Path` (L592) | function | Public | Validate and atomically write a generated plan. |
 
 ## `runner/preflight_advice.py`
 

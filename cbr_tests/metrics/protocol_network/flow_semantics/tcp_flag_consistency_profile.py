@@ -6,6 +6,12 @@ from cbr_tests.metrics.decision_rules import classify_ratio, resolve_ratio_decis
 
 
 def run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
+    """Check deterministic aggregate TCP flag-count invariants on flow rows.
+
+    This metric is not a packet-sequence TCP state-machine validator. Unusual
+    packet-level flag combinations can be legitimate security/attack evidence
+    and require a separate sequence-aware metric.
+    """
     field_map = metric.get("input_requirements", {}).get("field_map", {})
     required = ["protocol", "total_fwd_packets", "total_bwd_packets", "syn_flag_count", "ack_flag_count", "fin_flag_count", "rst_flag_count"]
     missing_keys = [k for k in required if k not in field_map]
@@ -75,6 +81,7 @@ def run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[b
         "tcp_row_count": int(is_tcp.sum()),
         "non_tcp_row_count": int((~is_tcp).sum()),
         "tcp_flag_consistency_ratio": ratio,
+        "scope": "aggregate_tcp_flag_count_invariants",
         "negative_flag_count": int(negative.sum()),
         "flag_exceeds_packet_count": int(exceeds.sum()),
         "non_tcp_with_tcp_flags_count": int(non_tcp_with_flags.sum()),

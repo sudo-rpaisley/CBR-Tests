@@ -41,7 +41,9 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
     Rows with no applicable rule are outside the metric denominator. Missing slice
     values are completeness evidence and are excluded from the canonical
     consistency denominator by default; ``count_invalid`` remains available as a
-    legacy/strict policy.
+    legacy/strict policy. If multiple rules match the same row, they must declare
+    identical expected slice sets; conflicting overlaps are rejected as an invalid
+    experiment configuration rather than unioned into a more permissive rule.
     """
     input_req = metric.get("input_requirements", {})
     params = metric.get("calculation", {}).get("parameters", {})
@@ -97,19 +99,34 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
 
     for idx, row in df.iterrows():
         matched = []
-        expected = set()
+        matched_expected_sets = []
         for pr in prepared_rules:
             if pr is None:
                 continue
             if _rule_match(row[pr["when_field"]], pr["operator"], pr["value"], case_sensitive):
                 pr["application_count"] += 1
                 matched.append(pr["rule_index"])
-                expected.update(pr["expected"])
+                matched_expected_sets.append(set(pr["expected"]))
                 rule_app += 1
 
         if not matched:
             unmatched += 1
             continue
+
+        if len(matched_expected_sets) > 1 and any(
+            expected_set != matched_expected_sets[0]
+            for expected_set in matched_expected_sets[1:]
+        ):
+            return False, {
+                "error": "Conflicting slice-consistency rules match the same row.",
+                "reason_code": "conflicting_overlapping_slice_rules",
+                "row_index": int(idx) if isinstance(idx, int) else str(idx),
+                "matched_rules": matched,
+                "expected_slice_sets": [sorted(values) for values in matched_expected_sets],
+                "overlap_policy": "identical_expected_sets_only",
+            }
+
+        expected = matched_expected_sets[0] if matched_expected_sets else set()
 
         observed = _norm(row[slice_field], case_sensitive)
         if observed is None:
@@ -161,6 +178,7 @@ def run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) ->
         "missing_slice_ratio": missing_ratio,
         "missing_policy": missing_policy,
         "denominator_policy": "applicable_rows_with_non_missing_slice" if missing_policy == "exclude_missing" else "applicable_rows_with_missing_counted_invalid",
+        "overlap_policy": "identical_expected_sets_only",
         "rules_applied_summary": summary,
         "examples": examples,
         "decision_rule": decision_rule,

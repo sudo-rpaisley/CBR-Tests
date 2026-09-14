@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **289 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **294 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -463,17 +463,17 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path)` (L32) | Verifies that build PCAP packet dataframe copies raw packet fields. | `_write_capture`, `build_pcap_packet_dataframe` |
-| `test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path)` (L47) | Verifies that build PCAP flow dataframe reconstructs bidirectional view. | `_write_capture`, `build_pcap_flow_dataframe`, `pytest.approx` |
-| `test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path)` (L73) | Verifies that packet adapted metrics run on raw packet view. | `_write_capture`, `build_pcap_packet_dataframe`, `metric_ids.issubset`, `build_metric_handlers`, `AssertionError`, `pcap_metric_template`, `handlers[metric_id]`, `handlers['valid_ip_address_ratio']` |
-| `test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates()` (L98) | Verifies that self derived flow invariants are not exposed as PCAP templates. | `pcap_metric_template` |
+| `test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path)` (L33) | Verifies that build PCAP packet dataframe copies raw packet fields. | `_write_capture`, `build_pcap_packet_dataframe` |
+| `test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path)` (L48) | Verifies that build PCAP flow dataframe reconstructs bidirectional view. | `_write_capture`, `build_pcap_flow_dataframe`, `pytest.approx` |
+| `test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence(tmp_path)` (L74) | Verifies that decoder derived metrics remain diagnostic but are not automatic PCAP evidence. | `_write_capture`, `build_pcap_packet_dataframe`, `decoder_derived.isdisjoint`, `build_metric_handlers`, `AssertionError`, `pcap_metric_template`, `handlers[metric_id]` |
+| `test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates()` (L100) | Verifies that self derived flow invariants are not exposed as PCAP templates. | `pcap_metric_template` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_write_capture(path: Path) -> None` (L20) | Implementation helper for write capture. |
-| `test_packet_adapted_metrics_run_on_raw_packet_view.forbidden_loader(_path)` (L81) | Implementation helper for forbidden loader. |
+| `_write_capture(path: Path) -> None` (L21) | Implementation helper for write capture. |
+| `test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence.forbidden_loader(_path)` (L88) | Implementation helper for forbidden loader. |
 
 ## `tests/test_pcap_all_runnable_metrics.py`
 
@@ -483,18 +483,18 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_pcap_supported_set_contains_every_current_automatic_packet_metric()` (L43) | Verifies that PCAP supported set contains every current automatic packet metric. | Assertions and fixtures in the module |
-| `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L53) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['timestamp_parse_success_ratio']`, `AssertionError`, `handlers[metric_id]` |
-| `test_automatic_pcap_plan_contains_all_twenty_currently_runnable_metrics(tmp_path)` (L80) | Verifies that automatic PCAP plan contains all twenty currently runnable metrics. | `_write_capture`, `build_plan` |
-| `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L99) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
-| `test_context_configuration_reasons_are_explicit()` (L117) | Verifies that context configuration reasons are explicit. | Assertions and fixtures in the module |
+| `test_pcap_supported_set_contains_every_current_automatic_packet_metric()` (L44) | Verifies that PCAP supported set contains every current automatic packet metric. | Assertions and fixtures in the module |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L54) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `AssertionError`, `pcap_metric_template`, `handlers[metric_id]` |
+| `test_automatic_pcap_plan_contains_only_independent_currently_runnable_metrics(tmp_path)` (L76) | Verifies that automatic PCAP plan contains only independent currently runnable metrics. | `_write_capture`, `build_plan`, `PCAP_AUTOMATIC_EXCLUSIONS.items` |
+| `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L98) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
+| `test_context_configuration_reasons_are_explicit()` (L116) | Verifies that context configuration reasons are explicit. | Assertions and fixtures in the module |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_write_capture(path: Path, packet_count: int = 64) -> None` (L21) | Implementation helper for write capture. |
-| `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L62) | Implementation helper for forbidden loader. |
+| `_write_capture(path: Path, packet_count: int = 64) -> None` (L22) | Implementation helper for write capture. |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L63) | Implementation helper for forbidden loader. |
 
 ## `tests/test_pcap_handshake.py`
 
@@ -522,22 +522,22 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_metric_catalog_covers_runtime_dispatcher()` (L19) | Verifies that metric catalog covers runtime dispatcher. | `available_metric_ids`, `_slug`, `build_metric_catalog` |
-| `test_automatic_plan_requires_dataset()` (L28) | Verifies that automatic plan requires dataset. | `pytest.raises`, `build_plan` |
-| `test_generated_plan_contains_only_ready_enabled_metrics(tmp_path)` (L33) | Verifies that generated plan contains only ready enabled metrics. | `build_plan`, `all`, `validate_plan_schema` |
-| `test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule(tmp_path)` (L60) | Verifies that dataset preflight includes ready port range and excludes service rule. | `build_plan` |
-| `test_reference_metrics_are_reported_but_never_written_without_reference_configuration(tmp_path)` (L78) | Verifies that reference metrics are reported but never written without reference configuration. | `build_plan`, `metric_id.endswith` |
-| `test_existing_field_translation_sidecar_can_make_metric_runnable(tmp_path)` (L100) | Verifies that existing field translation sidecar can make metric runnable. | `sidecar.write_text`, `build_plan`, `sidecar.resolve` |
-| `test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_path)` (L129) | Verifies that PCAP plan includes direct and independent packet adapter metrics. | `dataset.write_bytes`, `build_plan`, `all` |
-| `test_include_exclude_rejects_unknown_metric_ids(tmp_path)` (L145) | Verifies that include exclude rejects unknown metric ids. | `pytest.raises`, `build_plan` |
-| `test_write_plan_is_valid_and_requires_force_for_overwrite(tmp_path)` (L158) | Verifies that write plan is valid and requires force for overwrite. | `build_plan`, `write_plan`, `validate_plan_schema`, `pytest.raises` |
-| `test_pcap_handshake_is_automatically_runnable_without_boundary_policy(tmp_path)` (L176) | Verifies that PCAP handshake is automatically runnable without boundary policy. | `dataset.write_bytes`, `build_plan` |
-| `test_pcap_service_port_requires_explicit_single_service_assertion(tmp_path)` (L184) | Verifies that PCAP service port requires explicit single service assertion. | `dataset.write_bytes`, `build_plan` |
-| `test_pcap_reference_metrics_unlock_only_with_independent_reference_pcap(tmp_path)` (L205) | Verifies that PCAP reference metrics unlock only with independent reference PCAP. | `candidate.write_bytes`, `reference.write_bytes`, `build_plan`, `PCAP_REFERENCE_METRICS.issubset`, `reference.resolve` |
-| `test_pcap_reference_rejects_self_comparison_and_representation_mismatch(tmp_path)` (L221) | Verifies that PCAP reference rejects self comparison and representation mismatch. | `candidate.write_bytes`, `build_plan`, `pytest.raises` |
-| `test_pcap_preflight_exclusions_include_unlock_advice(tmp_path)` (L238) | Verifies that PCAP preflight exclusions include unlock advice. | `dataset.write_bytes`, `build_plan`, `next`, `iter` |
-| `test_tabular_missing_fields_advise_mapping_without_fabrication(tmp_path)` (L262) | Verifies that tabular missing fields advise mapping without fabrication. | `build_plan`, `report['metrics'].values`, `details.get` |
-| `test_print_report_shows_grouped_unlock_guidance(tmp_path, capsys)` (L278) | Verifies that print report shows grouped unlock guidance. | `dataset.write_bytes`, `build_plan`, `_print_report`, `capsys.readouterr` |
+| `test_metric_catalog_covers_runtime_dispatcher()` (L20) | Verifies that metric catalog covers runtime dispatcher. | `available_metric_ids`, `_slug`, `build_metric_catalog` |
+| `test_automatic_plan_requires_dataset()` (L29) | Verifies that automatic plan requires dataset. | `pytest.raises`, `build_plan` |
+| `test_generated_plan_contains_only_ready_enabled_metrics(tmp_path)` (L34) | Verifies that generated plan contains only ready enabled metrics. | `build_plan`, `all`, `validate_plan_schema` |
+| `test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule(tmp_path)` (L61) | Verifies that dataset preflight includes ready port range and excludes service rule. | `build_plan` |
+| `test_reference_metrics_are_reported_but_never_written_without_reference_configuration(tmp_path)` (L79) | Verifies that reference metrics are reported but never written without reference configuration. | `build_plan`, `metric_id.endswith` |
+| `test_existing_field_translation_sidecar_can_make_metric_runnable(tmp_path)` (L101) | Verifies that existing field translation sidecar can make metric runnable. | `sidecar.write_text`, `build_plan`, `sidecar.resolve` |
+| `test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_path)` (L130) | Verifies that PCAP plan includes direct and independent packet adapter metrics. | `dataset.write_bytes`, `build_plan`, `all`, `PCAP_AUTOMATIC_EXCLUSIONS.items` |
+| `test_include_exclude_rejects_unknown_metric_ids(tmp_path)` (L149) | Verifies that include exclude rejects unknown metric ids. | `pytest.raises`, `build_plan` |
+| `test_write_plan_is_valid_and_requires_force_for_overwrite(tmp_path)` (L162) | Verifies that write plan is valid and requires force for overwrite. | `build_plan`, `write_plan`, `validate_plan_schema`, `pytest.raises` |
+| `test_pcap_handshake_is_automatically_runnable_without_boundary_policy(tmp_path)` (L180) | Verifies that PCAP handshake is automatically runnable without boundary policy. | `dataset.write_bytes`, `build_plan` |
+| `test_pcap_service_port_requires_explicit_single_service_assertion(tmp_path)` (L188) | Verifies that PCAP service port requires explicit single service assertion. | `dataset.write_bytes`, `build_plan` |
+| `test_pcap_reference_metrics_unlock_only_with_independent_reference_pcap(tmp_path)` (L209) | Verifies that PCAP reference metrics unlock only with independent reference PCAP. | `candidate.write_bytes`, `reference.write_bytes`, `build_plan`, `PCAP_REFERENCE_METRICS.issubset`, `reference.resolve` |
+| `test_pcap_reference_rejects_self_comparison_and_representation_mismatch(tmp_path)` (L225) | Verifies that PCAP reference rejects self comparison and representation mismatch. | `candidate.write_bytes`, `build_plan`, `pytest.raises` |
+| `test_pcap_preflight_exclusions_include_unlock_advice(tmp_path)` (L242) | Verifies that PCAP preflight exclusions include unlock advice. | `dataset.write_bytes`, `build_plan`, `next`, `iter` |
+| `test_tabular_missing_fields_advise_mapping_without_fabrication(tmp_path)` (L266) | Verifies that tabular missing fields advise mapping without fabrication. | `build_plan`, `report['metrics'].values`, `details.get` |
+| `test_print_report_shows_grouped_unlock_guidance(tmp_path, capsys)` (L282) | Verifies that print report shows grouped unlock guidance. | `dataset.write_bytes`, `build_plan`, `_print_report`, `capsys.readouterr` |
 
 ## `tests/test_plan_migration.py`
 
@@ -557,6 +557,20 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_plan(*metric_ids)` (L11) | Implementation helper for plan. |
+
+## `tests/test_preexperiment_metric_contract.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_automatic_pcap_plan_excludes_nonindependent_decoder_evidence(tmp_path: Path)` (L12) | Verifies that automatic PCAP plan excludes nonindependent decoder evidence. | `capture.write_bytes`, `build_plan`, `PCAP_AUTOMATIC_EXCLUSIONS.items` |
+| `test_identifier_contamination_uses_field_qualified_namespaces()` (L24) | Verifies that identifier contamination uses field qualified namespaces. | `compute_train_test_identifier_contamination_ratio` |
+| `test_conflicting_overlapping_slice_rules_are_rejected()` (L41) | Verifies that conflicting overlapping slice rules are rejected. | `run_slice_identifier_consistency_metric` |
+| `test_identical_overlapping_slice_rules_are_allowed()` (L57) | Verifies that identical overlapping slice rules are allowed. | `run_slice_identifier_consistency_metric` |
+| `test_tcp_flag_metric_declares_aggregate_not_state_machine_scope()` (L74) | Verifies that TCP flag metric declares aggregate not state machine scope. | `run_tcp_flag_consistency_metric` |
 
 ## `tests/test_protocol_validity_profile.py`
 

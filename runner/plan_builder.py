@@ -19,6 +19,7 @@ from runner.field_translation import (
 )
 from runner.metric_catalog import build_metric_catalog, required_fields
 from runner.pcap_adapter import (
+    PCAP_AUTOMATIC_EXCLUSIONS,
     PCAP_CONTEXT_CONFIGURATION_REASONS,
     PCAP_DIRECT_METRICS,
     PCAP_PACKET_COLUMNS,
@@ -358,6 +359,9 @@ def _configuration_state(
             return "needs_configuration", context_reason, []
         if metric_id in PCAP_SELF_DERIVED_METRICS:
             return "not_applicable", "self_derived_pcap_invariant_not_independent", []
+        automatic_exclusion = PCAP_AUTOMATIC_EXCLUSIONS.get(metric_id)
+        if automatic_exclusion:
+            return "not_applicable", automatic_exclusion, []
         if metric_id in PCAP_PACKET_METRICS:
             if template is None:
                 return "needs_configuration", "pcap_adapter_template_missing", []

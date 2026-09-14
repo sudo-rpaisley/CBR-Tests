@@ -21,17 +21,24 @@ PCAP_DIRECT_METRICS = {
     "handshake_plausibility_profile",
 }
 
-# Metrics that can consume the canonical decoded-packet view without requiring
-# dataset-specific research assumptions.
-PCAP_PACKET_NETWORK_METRICS = {
-    "valid_ip_address_ratio",
-    "valid_port_range_profile",
-}
+# Metrics that can consume the canonical decoded-packet view and provide
+# independent evidence without merely re-validating adapter-produced values.
+PCAP_PACKET_NETWORK_METRICS: set[str] = set()
 
 PCAP_PACKET_DATA_QUALITY_METRICS = {
     "column_quality_profile",
-    "missing_value_ratio",
     "duplicate_row_ratio",
+}
+
+# These handlers remain runnable for historical/manual diagnostics, but the
+# canonical packet adapter has already parsed/normalised their inputs (or has
+# protocol-dependent structural absence). They must therefore not be added to
+# automatically generated PCAP realism plans.
+PCAP_AUTOMATIC_EXCLUSIONS = {
+    "valid_ip_address_ratio": "decoder_derived_ip_validity_not_independent",
+    "valid_port_range_profile": "decoder_derived_port_validity_not_independent",
+    "timestamp_parse_success_ratio": "adapter_converted_timestamp_parse_not_independent",
+    "missing_value_ratio": "pcap_missingness_requires_applicability_aware_denominator",
 }
 
 # The intrinsic diagnostic IDs below are the canonical names used by new plans.
@@ -51,7 +58,6 @@ PCAP_PACKET_DISTRIBUTION_METRICS = {
 }
 
 PCAP_PACKET_TEMPORAL_METRICS = {
-    "timestamp_parse_success_ratio",
     "inter_arrival_internal_drift_ks",
     "burstiness_internal_drift",
     "day_to_day_hourly_activity_divergence",
@@ -129,7 +135,10 @@ PCAP_EXPLICIT_PACKET_METRICS = {
     "reserved_address_misuse_ratio",
 }
 PCAP_PACKET_BACKED_METRICS = (
-    PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
+    PCAP_PACKET_METRICS
+    | set(PCAP_AUTOMATIC_EXCLUSIONS)
+    | PCAP_REFERENCE_METRICS
+    | PCAP_EXPLICIT_PACKET_METRICS
 )
 PCAP_SUPPORTED_METRICS = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
 

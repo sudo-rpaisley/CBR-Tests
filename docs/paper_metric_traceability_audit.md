@@ -26,11 +26,11 @@ The overhaul is therefore suitable as the basis for the final research implement
 | High | Intrinsic statistical drift sampled only an early leading window on large datasets | **Fixed on audit branch** |
 | High | Canonical Valid Port Range Ratio could redefine the normative port domain | **Fixed on audit branch** |
 | High | New slice plans could inherit a legacy missing-as-invalid denominator | **Fixed on audit branch** |
-| High | Several automatically adapted PCAP metrics are decoder/self-derived and therefore non-independent | **Open — experiment blocker** |
-| Medium/High | Generic Missing Value Ratio on the canonical PCAP view can treat structurally absent fields as data-quality defects | **Open — experiment blocker for generic PCAP use** |
-| Medium | Multi-field train/test identifier contamination needs an explicit field-qualified identifier universe in the paper | **Open — paper clarification** |
-| Medium | TCP Flag Consistency wording can be read as a full TCP state-machine check, while implementation checks aggregate flag-count invariants | **Open — paper clarification** |
-| Medium | Overlapping slice-consistency rules use union semantics, which can make conflicting rules more permissive | **Open — freeze decision required** |
+| High | Several automatically adapted PCAP metrics are decoder/self-derived and therefore non-independent | **Resolved — excluded from automatic PCAP evidence** |
+| Medium/High | Generic Missing Value Ratio on the canonical PCAP view can treat structurally absent fields as data-quality defects | **Resolved — excluded pending an applicability-aware denominator** |
+| Medium | Multi-field train/test identifier contamination needs an explicit field-qualified identifier universe in the paper | **Code contract frozen — field-qualified `(field, value)` universe; paper sync pending** |
+| Medium | TCP Flag Consistency wording can be read as a full TCP state-machine check, while implementation checks aggregate flag-count invariants | **Code contract frozen — aggregate flag-count invariant; paper sync pending** |
+| Medium | Overlapping slice-consistency rules use union semantics, which can make conflicting rules more permissive | **Resolved — conflicting overlaps rejected; identical overlaps allowed** |
 
 ## What is already conformant
 
@@ -240,15 +240,19 @@ Before the paper is frozen for experiments:
 5. document the PCAP independence/applicability policy, including decoder-derived and structurally missing fields; and
 6. make clear that supporting diagnostics do not automatically count as canonical realism evidence.
 
+## Resolution update — 14 September 2026
+
+The code-side experiment blockers identified as F4–F8 are now resolved/frozen on this audit branch. Automatic PCAP planning excludes adapter/decoder-derived validity evidence and generic packet-view missingness; historical/manual handlers remain available for diagnostic replay. Identifier contamination uses field-qualified namespaces, TCP flag consistency declares aggregate-flow scope, and conflicting overlapping slice rules fail configuration rather than being unioned. The companion paper must now be synchronised to these frozen contracts before the final code/paper tag is created.
+
 ## Pre-experiment freeze checklist
 
 The final experiments should not begin until all of the following are true:
 
-- [ ] F4 PCAP decoder-derived metrics are excluded from independent evidence or given a defensible raw-field implementation.
-- [ ] F5 PCAP missingness receives an applicability-aware denominator or is excluded from canonical PCAP evidence.
-- [ ] F6 identifier-contamination notation is made unambiguous in the paper.
-- [ ] F7 TCP flag metric scope is stated precisely in the paper.
-- [ ] F8 slice-rule overlap semantics are frozen and tested.
+- [x] F4 PCAP decoder-derived metrics are excluded from automatic independent evidence; manual diagnostic handlers remain available.
+- [x] F5 Generic PCAP missingness is excluded from automatic evidence pending an applicability-aware denominator.
+- [x] F6 Code contract uses field-qualified `(field, value)` identifiers; companion paper wording must be synchronised before freeze.
+- [x] F7 Code/result contract explicitly states aggregate TCP flag-count invariants; companion paper wording must be synchronised before freeze.
+- [x] F8 Slice-rule overlap semantics are frozen and tested: conflicting expected sets are rejected.
 - [ ] The paper metric catalogue and runtime taxonomy have a one-to-one canonical binding for every final leaf.
 - [ ] Every canonical metric has at least one independent hand-calculated or trusted-library oracle, plus boundary/undefined-denominator tests where applicable.
 - [ ] Every reference metric records reference identity/hash and field mapping/comparability information.
