@@ -17,7 +17,7 @@ Decision thresholds are treated separately from mathematical definitions. Histor
 
 The `overhaul/metric-conformance` branch is a substantial improvement over `main` and resolves the major construct mismatches previously present in the codebase. In particular, intrinsic diagnostics are now separated from candidate-versus-reference comparisons, dependency-only profiles are no longer described as reference deviations, zero-denominator cases generally return unavailable evidence rather than artificial perfect scores, and contextual policies are exposed explicitly.
 
-The overhaul is therefore suitable as the basis for the final research implementation, but it should **not yet be frozen for the final experiments**. This audit identified several remaining contract issues. Three have been corrected on the audit branch; four require either an implementation/applicability decision or a paper clarification before the experiment configuration is frozen.
+The overhaul is therefore suitable as the basis for the final research implementation. The implementation-level contract findings F1--F8 have now been corrected or explicitly frozen on the audit branch, and the companion paper has been reconciled to those contracts in `sudo-rpaisley/paper-draft` PR #5 at `06e0a5c455c13b59d92d5f630c9573a97df456c1`. Remaining work before the final experiments is experiment-freeze work rather than an unresolved metric-definition defect: complete oracle coverage, reference/threshold provenance in final manifests, representation applicability review, and immutable code/paper tagging.
 
 ### Current disposition
 
@@ -28,8 +28,8 @@ The overhaul is therefore suitable as the basis for the final research implement
 | High | New slice plans could inherit a legacy missing-as-invalid denominator | **Fixed on audit branch** |
 | High | Several automatically adapted PCAP metrics are decoder/self-derived and therefore non-independent | **Resolved — excluded from automatic PCAP evidence** |
 | Medium/High | Generic Missing Value Ratio on the canonical PCAP view can treat structurally absent fields as data-quality defects | **Resolved — excluded pending an applicability-aware denominator** |
-| Medium | Multi-field train/test identifier contamination needs an explicit field-qualified identifier universe in the paper | **Code contract frozen — field-qualified `(field, value)` universe; paper sync pending** |
-| Medium | TCP Flag Consistency wording can be read as a full TCP state-machine check, while implementation checks aggregate flag-count invariants | **Code contract frozen — aggregate flag-count invariant; paper sync pending** |
+| Medium | Multi-field train/test identifier contamination needs an explicit field-qualified identifier universe in the paper | **Resolved — code and paper use field-qualified `(field, value)` identifiers** |
+| Medium | TCP Flag Consistency wording can be read as a full TCP state-machine check, while implementation checks aggregate flag-count invariants | **Resolved — code and paper define aggregate flag-count invariants only** |
 | Medium | Overlapping slice-consistency rules use union semantics, which can make conflicting rules more permissive | **Resolved — conflicting overlaps rejected; identical overlaps allowed** |
 
 ## What is already conformant
@@ -45,7 +45,7 @@ The following groups were checked against their equations, implementation contra
 | Dependency profiles | Conformant | Pearson, Spearman, and distance-correlation outputs are candidate-only profiles rather than falsely labelled reference deviations. |
 | Data quality | Conformant for tabular data | Missingness and duplication equations match the tabular implementation; PCAP applicability is a separate issue. |
 | Slice representation | Conformant/contextual | Expected slices/classes and exclusivity assumptions are explicit. |
-| Label fidelity | Largely conformant | Split-overlap, label coverage and temporal-label metrics match their stated populations; multi-field identifier notation needs clarification. |
+| Label fidelity | Conformant | Split-overlap, label coverage and temporal-label metrics match their stated populations; multi-field identifier contamination uses a field-qualified identifier universe. |
 | Reference model comparison | Conformant | Candidate and reference populations are distinct; shared/evaluable fields and pair counts are retained; oracle tests include hand-calculated expected values. |
 | Task-based validation | Conformant | Accuracy, precision, recall and F1 use standard formulae; binary class-dependent metrics require an explicit positive label and preserve undefined denominators as unavailable. |
 | Result semantics | Conformant | Execution status, applicability, metric value, context and decision/verdict are separated. |
@@ -240,9 +240,17 @@ Before the paper is frozen for experiments:
 5. document the PCAP independence/applicability policy, including decoder-derived and structurally missing fields; and
 6. make clear that supporting diagnostics do not automatically count as canonical realism evidence.
 
+## Paired pre-experiment revisions
+
+- Audited CBR-Tests implementation contract: `7000ba6d385109a1f763bbd5eb935cc95ef8e964` (PR #39; later audit-status-only commits do not change metric semantics).
+- Reconciled paper contract: `06e0a5c455c13b59d92d5f630c9573a97df456c1` (paper PR #5).
+- Paper taxonomy validation: 61/61 current leaves passed against `audit/paper-metric-traceability`.
+- Code verification: full pytest suite passed after the contract fixes and again after PCAP evidence-class propagation; generated reference documentation is current.
+- Paper verification: generated metric catalogue rebuilt and full `pdflatex -> bibtex -> pdflatex -> pdflatex` compilation passed.
+
 ## Resolution update — 14 September 2026
 
-The code-side experiment blockers identified as F4–F8 are now resolved/frozen on this audit branch. Automatic PCAP planning excludes adapter/decoder-derived validity evidence and generic packet-view missingness; historical/manual handlers remain available for diagnostic replay. Identifier contamination uses field-qualified namespaces, TCP flag consistency declares aggregate-flow scope, and conflicting overlapping slice rules fail configuration rather than being unioned. The companion paper must now be synchronised to these frozen contracts before the final code/paper tag is created.
+The code-side experiment blockers identified as F4–F8 are resolved/frozen on this audit branch. Automatic PCAP planning excludes adapter/decoder-derived validity evidence and generic packet-view missingness; historical/manual handlers remain available for diagnostic replay. Runnable PCAP metrics also carry an explicit evidence class (`independent_observation`, `contextual_diagnostic`, `derived_diagnostic`, `reference_dependent`, or `context_required`) so supporting diagnostics cannot silently become independent realism evidence. Identifier contamination uses field-qualified namespaces, TCP flag consistency declares aggregate-flow scope, and conflicting overlapping slice rules fail configuration rather than being unioned. The companion paper is synchronised in PR #5 at `06e0a5c455c13b59d92d5f630c9573a97df456c1`; its 61 leaf contracts validate against this audited implementation and the complete manuscript compiles successfully.
 
 ## Pre-experiment freeze checklist
 
@@ -250,10 +258,10 @@ The final experiments should not begin until all of the following are true:
 
 - [x] F4 PCAP decoder-derived metrics are excluded from automatic independent evidence; manual diagnostic handlers remain available.
 - [x] F5 Generic PCAP missingness is excluded from automatic evidence pending an applicability-aware denominator.
-- [x] F6 Code contract uses field-qualified `(field, value)` identifiers; companion paper wording must be synchronised before freeze.
-- [x] F7 Code/result contract explicitly states aggregate TCP flag-count invariants; companion paper wording must be synchronised before freeze.
+- [x] F6 Code and paper use field-qualified `(field, value)` identifiers.
+- [x] F7 Code/result and paper contracts explicitly state aggregate TCP flag-count invariants.
 - [x] F8 Slice-rule overlap semantics are frozen and tested: conflicting expected sets are rejected.
-- [ ] The paper metric catalogue and runtime taxonomy have a one-to-one canonical binding for every final leaf.
+- [x] The paper metric catalogue and runtime taxonomy have a one-to-one canonical binding for all 61 current leaves; `metrics/validate_metrics.py` passed against this audited code branch.
 - [ ] Every canonical metric has at least one independent hand-calculated or trusted-library oracle, plus boundary/undefined-denominator tests where applicable.
 - [ ] Every reference metric records reference identity/hash and field mapping/comparability information.
 - [ ] Every threshold/tolerance used for a verdict has provenance recorded before experiment execution.
@@ -263,6 +271,4 @@ The final experiments should not begin until all of the following are true:
 
 ## Audit conclusion
 
-The metric-conformance overhaul has corrected the largest scientific-contract problems in the original implementation. The remaining defects are narrower and, importantly, identifiable: population sampling, canonical parameter domains, legacy denominator leakage, and representation-dependent PCAP evidence. The first three are corrected on this audit branch. The PCAP independence/missingness issues and the three paper/contract clarifications should be closed before the implementation is tagged for the final perturbation experiments.
-
-Once those items are resolved and CI/oracle tests pass on the resulting commit, the codebase will be in a substantially stronger position for a defensible pre-registered-style experimental freeze.
+The metric-conformance overhaul and this audit have corrected or frozen the identified paper-to-code scientific-contract defects. F1--F8 are now resolved on the paired code/paper branches, automatic PCAP evidence distinguishes independent observations from supporting diagnostics, and the 61 current paper leaves validate against the runtime taxonomy. The remaining pre-experiment tasks are to prove oracle/boundary coverage for every canonical leaf, freeze final reference and threshold provenance, review representation applicability per leaf, generate the final canonical experiment plans, and tag the exact paired code/paper revisions before the first final run.
