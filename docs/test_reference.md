@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **285 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **289 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -392,7 +392,7 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_reserved_ip_profile_respects_disabled_private_category()` (L30) | Verifies that reserved IP profile respects disabled private category. | `_base_metric`, `run_reserved_ip_address_metric` |
-| `test_valid_port_range_uses_configured_bounds_and_explains_failure()` (L48) | Verifies that valid port range uses configured bounds and explains failure. | `_base_metric`, `run_valid_port_range_metric` |
+| `test_valid_port_range_explains_normative_range_failure()` (L48) | Verifies that valid port range explains normative range failure. | `_base_metric`, `run_valid_port_range_metric` |
 | `test_valid_port_range_is_not_applicable_when_all_ports_are_missing()` (L72) | Verifies that valid port range is not applicable when all ports are missing. | `_base_metric`, `run_valid_port_range_metric` |
 | `test_service_port_consistency_does_not_treat_every_mixed_row_as_dns()` (L101) | Verifies that service port consistency does not treat every mixed row as dns. | `_service_metric`, `run_service_port_consistency_metric` |
 | `test_service_port_consistency_filters_to_service_population()` (L117) | Verifies that service port consistency filters to service population. | `_service_metric`, `run_service_port_consistency_metric` |
@@ -782,9 +782,10 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_valid_slice_identifier_excludes_missing_by_default()` (L11) | Verifies that valid slice identifier excludes missing by default. | `run_valid_slice_identifier_metric` |
-| `test_valid_slice_identifier_can_reproduce_legacy_count_invalid_policy()` (L31) | Verifies that valid slice identifier can reproduce legacy count invalid policy. | `run_valid_slice_identifier_metric` |
-| `test_slice_consistency_excludes_unmatched_and_missing_rows_by_default()` (L52) | Verifies that slice consistency excludes unmatched and missing rows by default. | `run_slice_identifier_consistency_metric` |
+| `test_valid_slice_identifier_excludes_missing_by_default()` (L12) | Verifies that valid slice identifier excludes missing by default. | `run_valid_slice_identifier_metric` |
+| `test_valid_slice_identifier_can_reproduce_legacy_count_invalid_policy()` (L32) | Verifies that valid slice identifier can reproduce legacy count invalid policy. | `run_valid_slice_identifier_metric` |
+| `test_slice_consistency_excludes_unmatched_and_missing_rows_by_default()` (L53) | Verifies that slice consistency excludes unmatched and missing rows by default. | `run_slice_identifier_consistency_metric` |
+| `test_new_plan_templates_do_not_inherit_legacy_slice_denominators()` (L90) | Verifies that new plan templates do not inherit legacy slice denominators. | `build_metric_catalog` |
 
 ## `tests/test_slice_representation_profile.py`
 
@@ -810,15 +811,16 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_distributional_metrics_report_zero_for_matching_halves()` (L19) | Verifies that distributional metrics report zero for matching halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distributional_metrics_match_hand_calculated_shifted_half_oracles()` (L29) | Verifies that distributional metrics match hand calculated shifted half oracles. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L51) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
+| `test_distributional_metrics_report_zero_for_matching_halves()` (L22) | Verifies that distributional metrics report zero for matching halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
+| `test_distributional_metrics_match_hand_calculated_shifted_half_oracles()` (L32) | Verifies that distributional metrics match hand calculated shifted half oracles. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
+| `test_distributional_sampling_covers_both_complete_ordered_halves()` (L54) | Verifies that distributional sampling covers both complete ordered halves. | `_metric`, `compute_ks_feature_divergence` |
+| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L72) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_metric(*fields)` (L12) | Implementation helper for metric. |
+| `_metric(*fields, max_sample_size = None)` (L12) | Implementation helper for metric. |
 
 ## `tests/test_task_based_validation_profile.py`
 
@@ -934,3 +936,20 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_args(**overrides)` (L10) | Implementation helper for args. |
+
+## `tests/test_valid_port_range_conformance.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_canonical_port_ratio_uses_full_normative_16_bit_domain()` (L16) | Verifies that canonical port ratio uses full normative 16 bit domain. | `run_valid_port_range_metric`, `_metric` |
+| `test_canonical_port_ratio_rejects_scenario_specific_subranges()` (L32) | Verifies that canonical port ratio rejects scenario specific subranges. | `run_valid_port_range_metric`, `_metric` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_metric(parameters = None)` (L8) | Implementation helper for metric. |

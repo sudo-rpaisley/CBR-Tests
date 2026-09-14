@@ -308,22 +308,23 @@ Internal distribution drift and distance-correlation calculations.
 | --- | --- | --- | --- |
 | `_clean_numeric_values(df: pd.DataFrame, field: str) -> list[float]` (L12) | function | Internal | Implementation helper for clean numeric values. |
 | `_split_values(values: list[float]) -> tuple[list[float], list[float]]` (L17) | function | Internal | Implementation helper for split values. |
-| `_mean_pairwise_abs_distance(left: list[float], right: list[float]) -> float` (L22) | function | Internal | Implementation helper for mean pairwise abs distance. |
-| `_ks_statistic(left: list[float], right: list[float]) -> float` (L29) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
-| `_wasserstein_distance(left: list[float], right: list[float]) -> float` (L47) | function | Internal | Computes one-dimensional Wasserstein distance from empirical CDFs. |
-| `_energy_distance(left: list[float], right: list[float]) -> float` (L70) | function | Internal | Computes the sample energy-distance expression from cross- and within-sample distances. |
-| `_rbf_mmd(left: list[float], right: list[float], gamma: float | None = None) -> float` (L77) | function | Internal | Computes squared RBF-kernel MMD with a median-distance bandwidth when gamma is omitted. |
-| `_rbf_mmd.kernel_mean(a_values: list[float], b_values: list[float]) -> float` (L88) | nested function | Internal | Implementation helper for kernel mean. |
-| `_build_distributional_metric(df: pd.DataFrame, metric: dict, calculator, output_key: str) -> dict` (L102) | function | Internal | Implementation helper for build distributional metric. |
-| `compute_ks_feature_divergence(df: pd.DataFrame, metric: dict) -> dict` (L159) | function | Public | Computes KS feature divergence and returns a structured result. |
-| `compute_wasserstein_feature_distance(df: pd.DataFrame, metric: dict) -> dict` (L163) | function | Public | Computes wasserstein feature distance and returns a structured result. |
-| `compute_energy_distance(df: pd.DataFrame, metric: dict) -> dict` (L169) | function | Public | Computes energy distance and returns a structured result. |
-| `compute_maximum_mean_discrepancy(df: pd.DataFrame, metric: dict) -> dict` (L173) | function | Public | Computes maximum mean discrepancy and returns a structured result. |
-| `_distance_matrix(values: list[float]) -> list[list[float]]` (L179) | function | Internal | Implementation helper for distance matrix. |
-| `_double_center(matrix: list[list[float]]) -> list[list[float]]` (L183) | function | Internal | Implementation helper for double center. |
-| `_mean_product(left: list[list[float]], right: list[list[float]]) -> float` (L203) | function | Internal | Implementation helper for mean product. |
-| `_distance_correlation(left: list[float], right: list[float]) -> float` (L213) | function | Internal | Computes distance correlation from double-centered pairwise distance matrices. |
-| `compute_distance_correlation_profile(df: pd.DataFrame, candidate_fields: list[str]) -> dict` (L227) | function | Public | Computes distance correlation profile and returns a structured result. |
+| `_evenly_spaced_sample(values: list[float], max_sample_size: int | None) -> list[float]` (L22) | function | Internal | Deterministically sample across the full ordered population. Intrinsic drift metrics are defined over the first and second halves of the complete usable sequence. Computational caps must therefore be applied *after* that split; taking only a leading window before splitting can miss drift that occurs later in a large capture. |
+| `_mean_pairwise_abs_distance(left: list[float], right: list[float]) -> float` (L44) | function | Internal | Implementation helper for mean pairwise abs distance. |
+| `_ks_statistic(left: list[float], right: list[float]) -> float` (L51) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
+| `_wasserstein_distance(left: list[float], right: list[float]) -> float` (L69) | function | Internal | Computes one-dimensional Wasserstein distance from empirical CDFs. |
+| `_energy_distance(left: list[float], right: list[float]) -> float` (L92) | function | Internal | Computes the sample energy-distance expression from cross- and within-sample distances. |
+| `_rbf_mmd(left: list[float], right: list[float], gamma: float | None = None) -> float` (L99) | function | Internal | Computes squared RBF-kernel MMD with a median-distance bandwidth when gamma is omitted. |
+| `_rbf_mmd.kernel_mean(a_values: list[float], b_values: list[float]) -> float` (L110) | nested function | Internal | Implementation helper for kernel mean. |
+| `_build_distributional_metric(df: pd.DataFrame, metric: dict, calculator, output_key: str) -> dict` (L124) | function | Internal | Implementation helper for build distributional metric. |
+| `compute_ks_feature_divergence(df: pd.DataFrame, metric: dict) -> dict` (L206) | function | Public | Computes KS feature divergence and returns a structured result. |
+| `compute_wasserstein_feature_distance(df: pd.DataFrame, metric: dict) -> dict` (L210) | function | Public | Computes wasserstein feature distance and returns a structured result. |
+| `compute_energy_distance(df: pd.DataFrame, metric: dict) -> dict` (L216) | function | Public | Computes energy distance and returns a structured result. |
+| `compute_maximum_mean_discrepancy(df: pd.DataFrame, metric: dict) -> dict` (L220) | function | Public | Computes maximum mean discrepancy and returns a structured result. |
+| `_distance_matrix(values: list[float]) -> list[list[float]]` (L226) | function | Internal | Implementation helper for distance matrix. |
+| `_double_center(matrix: list[list[float]]) -> list[list[float]]` (L230) | function | Internal | Implementation helper for double center. |
+| `_mean_product(left: list[list[float]], right: list[list[float]]) -> float` (L250) | function | Internal | Implementation helper for mean product. |
+| `_distance_correlation(left: list[float], right: list[float]) -> float` (L260) | function | Internal | Computes distance correlation from double-centered pairwise distance matrices. |
+| `compute_distance_correlation_profile(df: pd.DataFrame, candidate_fields: list[str]) -> dict` (L274) | function | Public | Computes distance correlation profile and returns a structured result. |
 
 ## `cbr_tests/metrics/task_validation.py`
 
@@ -786,18 +787,18 @@ Python symbols defined by `runner/metric_catalog.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `available_metric_ids() -> list[str]` (L57) | function | Public | Return canonical metric IDs exposed by automatic plan creation. Legacy IDs are deliberately omitted here even though the runtime dispatcher still accepts them, preventing old construct names from re-entering newly generated plans. |
-| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L73) | function | Internal | Implementation helper for walk taxonomy. |
-| `load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[str]]` (L90) | function | Public | Loads taxonomy paths. |
-| `load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]` (L100) | function | Public | Collect plan templates and migrate legacy intrinsic IDs in memory. Saved plans are not rewritten. Their configuration is copied to the canonical replacement ID for new plan generation so historical artefacts remain reproducible while the new taxonomy stays clean. |
-| `required_fields(metric: dict) -> list[str]` (L133) | function | Public | Implementation helper for required fields. |
-| `choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None` (L142) | function | Public | Implementation helper for choose metric template. |
-| `choose_metric_template.score(metric: dict) -> tuple[int, int, int, str]` (L147) | nested function | Internal | Implementation helper for score. |
-| `metric_manual_configuration_reason(metric_id: str) -> str | None` (L160) | function | Public | Implementation helper for metric manual configuration reason. |
-| `humanize_metric_id(metric_id: str) -> str` (L166) | function | Public | Implementation helper for humanize metric id. |
-| `_blank_reference_paths(value)` (L170) | function | Internal | Implementation helper for blank reference paths. |
-| `sanitize_manual_template(metric: dict, reason: str) -> dict` (L182) | function | Public | Remove dataset-specific values that would be unsafe as universal defaults. |
-| `build_metric_catalog(*, metric_ids: Iterable[str] | None = None, taxonomy_path: Path = DEFAULT_TAXONOMY_PATH, plans_dir: Path = DEFAULT_PLANS_DIR, available_fields: set[str] | None = None) -> list[dict]` (L230) | function | Public | Build catalogue entries for every runnable canonical metric. |
+| `available_metric_ids() -> list[str]` (L57) | function | Public | Return non-legacy runtime metric IDs exposed to plan creation. Legacy IDs are deliberately omitted here even though the runtime dispatcher still accepts them, preventing old construct names from re-entering newly generated plans. Taxonomy registration is checked separately when the catalogue is assembled because supporting diagnostics are also executable. |
+| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L74) | function | Internal | Implementation helper for walk taxonomy. |
+| `load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[str]]` (L91) | function | Public | Loads taxonomy paths. |
+| `load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]` (L101) | function | Public | Collect plan templates and migrate legacy intrinsic IDs in memory. Saved plans are not rewritten. Their configuration is copied to the canonical replacement ID for new plan generation so historical artefacts remain reproducible while the new taxonomy stays clean. |
+| `required_fields(metric: dict) -> list[str]` (L134) | function | Public | Implementation helper for required fields. |
+| `choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None` (L143) | function | Public | Implementation helper for choose metric template. |
+| `choose_metric_template.score(metric: dict) -> tuple[int, int, int, str]` (L148) | nested function | Internal | Implementation helper for score. |
+| `metric_manual_configuration_reason(metric_id: str) -> str | None` (L161) | function | Public | Implementation helper for metric manual configuration reason. |
+| `humanize_metric_id(metric_id: str) -> str` (L167) | function | Public | Implementation helper for humanize metric id. |
+| `_blank_reference_paths(value)` (L171) | function | Internal | Implementation helper for blank reference paths. |
+| `sanitize_manual_template(metric: dict, reason: str) -> dict` (L183) | function | Public | Remove dataset-specific or non-canonical values from reusable templates. |
+| `build_metric_catalog(*, metric_ids: Iterable[str] | None = None, taxonomy_path: Path = DEFAULT_TAXONOMY_PATH, plans_dir: Path = DEFAULT_PLANS_DIR, available_fields: set[str] | None = None) -> list[dict]` (L237) | function | Public | Build catalogue entries for every runnable canonical metric. |
 
 ## `runner/metric_diagnostics.py`
 
