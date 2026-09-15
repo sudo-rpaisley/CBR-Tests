@@ -7,7 +7,12 @@ from scapy.layers.inet import IP, TCP, UDP
 from scapy.packet import Raw
 from scapy.utils import wrpcap
 
-from runner.pcap_adapter import build_pcap_packet_dataframe
+from runner.dispatch import build_metric_handlers
+from runner.pcap_adapter import (
+    PCAP_PACKET_METRICS,
+    build_pcap_packet_dataframe,
+    pcap_metric_template,
+)
 from runner.pcap_compact import build_compact_pcap_packet_dataframe
 from runner.resource_policy import choose_worker_policy, dataframe_memory_bytes
 from runner.tabular import load_tabular_dataset
@@ -52,6 +57,27 @@ def test_compact_pcap_view_preserves_canonical_values_and_reduces_memory(tmp_pat
                 check_names=True,
             )
     assert dataframe_memory_bytes(compact) < dataframe_memory_bytes(canonical)
+
+
+def test_compact_pcap_view_preserves_all_packet_metric_results(tmp_path: Path):
+    capture = tmp_path / "metrics.pcap"
+    _write_repetitive_capture(capture, packet_count=128)
+    canonical = build_pcap_packet_dataframe(capture)
+    compact = build_compact_pcap_packet_dataframe(capture)
+
+    def forbidden_loader(_path):
+        raise AssertionError("PCAP packet-view metric attempted a tabular reload")
+
+    canonical_handlers = build_metric_handlers(canonical, forbidden_loader, {})
+    compact_handlers = build_metric_handlers(compact, forbidden_loader, {})
+
+    for metric_id in sorted(PCAP_PACKET_METRICS):
+        metric = pcap_metric_template(metric_id)
+        assert metric is not None
+        canonical_ok, canonical_payload = canonical_handlers[metric_id](capture, metric)
+        compact_ok, compact_payload = compact_handlers[metric_id](capture, metric)
+        assert compact_ok == canonical_ok, metric_id
+        assert compact_payload == canonical_payload, metric_id
 
 
 def test_memory_policy_caps_workers_relative_to_loaded_dataframe():
