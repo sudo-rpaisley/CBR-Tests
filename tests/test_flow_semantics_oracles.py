@@ -51,8 +51,10 @@ def test_flow_duration_consistency_profile_hand_calculated_oracle():
     assert result["inconsistent_row_count"] == 4
     assert result["negative_duration_count"] == 1
     assert result["iat_order_violation_count"] == 1
-    assert result["iat_exceeds_duration_count"] == 1
-    assert result["direction_iat_exceeds_duration_count"] == 1
+    # The deliberately negative-duration row necessarily also has its non-negative
+    # IAT maxima/totals above that duration, so these violation classes overlap.
+    assert result["iat_exceeds_duration_count"] == 2
+    assert result["direction_iat_exceeds_duration_count"] == 2
     assert result["flow_duration_consistency_ratio"] == 0.2
 
 
