@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **306 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **318 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -116,6 +116,27 @@ Tests and local helpers in this module.
 | --- | --- |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L87) | Implementation helper for fake create batch. |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L105) | Implementation helper for fake run. |
+
+## `tests/test_canonical_oracle_review.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_data_quality_metrics_reviewed_hand_calculated_oracle()` (L26) | Reviewed oracle binding: missing_value_ratio, duplicate_row_ratio. | `test` |
+| `test_label_fidelity_metrics_reviewed_hand_calculated_oracle()` (L37) | Reviewed oracle binding: label_coverage_ratio, per_slice_label_coverage_ratio, class_imbalance_score, per_slice_label_entropy_score, train_test_duplicate_overlap_ratio, train_test_identifier_contamination_ratio, attack_window_alignment_score, pre_post_attack_label_bleed_ratio. | `test` |
+| `test_address_validity_metrics_reviewed_hand_calculated_oracle()` (L53) | Reviewed oracle binding: valid_ip_address_ratio, reserved_address_misuse_ratio. | `test` |
+| `test_handshake_plausibility_profile_reviewed_hand_calculated_oracle(tmp_path)` (L64) | Reviewed oracle binding: handshake_plausibility_profile. | `handshake.test_pcap_handshake_ignores_boundary_and_incomplete_attempts` |
+| `test_port_metrics_reviewed_hand_calculated_oracle()` (L70) | Reviewed oracle binding: service_port_consistency_profile, valid_port_range_profile. | `test` |
+| `test_slice_identifier_metrics_reviewed_hand_calculated_oracle()` (L81) | Reviewed oracle binding: valid_slice_identifier_profile, slice_identifier_consistency_profile. | `test` |
+| `test_slice_representation_metrics_reviewed_hand_calculated_oracle()` (L92) | Reviewed oracle binding: slice_distribution_imbalance_score, per_slice_class_coverage_ratio, per_slice_feature_coverage_ratio, per_slice_sample_coverage_ratio, cross_slice_duplicate_overlap_ratio, cross_slice_identifier_leakage_ratio. | `test` |
+| `test_dependency_profiles_reviewed_hand_calculated_oracle()` (L107) | Reviewed oracle binding: pearson_dependency_profile, spearman_dependency_profile, distance_correlation_dependency_profile. | Assertions and fixtures in the module |
+| `test_temporal_consistency_metrics_reviewed_hand_calculated_oracle()` (L115) | Reviewed oracle binding: timestamp_parse_success_ratio, start_end_timestamp_consistency_ratio, non_negative_duration_ratio. | `temporal.test_temporal_consistency_metrics` |
+| `test_temporal_structure_metrics_reviewed_hand_calculated_oracle()` (L123) | Reviewed oracle binding: inter_arrival_internal_drift_ks, burstiness_internal_drift, day_to_day_hourly_activity_divergence, day_to_day_diurnal_similarity, lagged_periodicity_similarity. | Assertions and fixtures in the module |
+| `test_remaining_reference_metrics_reviewed_hand_calculated_oracle()` (L132) | Reviewed oracle binding: flow_statistic_deviation_from_reference, port_use_divergence_from_reference, protocol_mix_divergence_from_reference, per_slice_class_divergence_from_reference, per_slice_feature_distribution_deviation_from_reference, slice_proportion_deviation_from_reference. | `test` |
+| `test_task_validation_metrics_reviewed_hand_calculated_oracle()` (L149) | Reviewed oracle binding: benchmark_model_accuracy, benchmark_model_precision, benchmark_model_recall, benchmark_model_f1_score. | `task.test_benchmark_model_metrics_from_predictions` |
 
 ## `tests/test_correctness_reproducibility.py`
 
