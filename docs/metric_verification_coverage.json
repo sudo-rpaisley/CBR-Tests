@@ -291,12 +291,18 @@
         "_flow_duration_metric",
         "run_flow_duration_consistency_metric"
       ],
-      "test_count": 0,
-      "tests": [],
-      "explicit_oracle_tests": [],
-      "numerical_oracle_candidates": [],
+      "test_count": 1,
+      "tests": [
+        "tests/test_flow_semantics_oracles.py::test_flow_duration_consistency_profile_hand_calculated_oracle"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_flow_semantics_oracles.py::test_flow_duration_consistency_profile_hand_calculated_oracle"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_flow_semantics_oracles.py::test_flow_duration_consistency_profile_hand_calculated_oracle"
+      ],
       "boundary_candidates": [],
-      "oracle_status": "no_pytest_reference_detected"
+      "oracle_status": "explicit_oracle_test"
     },
     {
       "metric_id": "handshake_plausibility_profile",
@@ -336,12 +342,20 @@
         "_packet_byte_metric",
         "run_packet_byte_consistency_metric"
       ],
-      "test_count": 0,
-      "tests": [],
-      "explicit_oracle_tests": [],
-      "numerical_oracle_candidates": [],
-      "boundary_candidates": [],
-      "oracle_status": "no_pytest_reference_detected"
+      "test_count": 1,
+      "tests": [
+        "tests/test_flow_semantics_oracles.py::test_packet_byte_consistency_profile_hand_calculated_oracle"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_flow_semantics_oracles.py::test_packet_byte_consistency_profile_hand_calculated_oracle"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_flow_semantics_oracles.py::test_packet_byte_consistency_profile_hand_calculated_oracle"
+      ],
+      "boundary_candidates": [
+        "tests/test_flow_semantics_oracles.py::test_packet_byte_consistency_profile_hand_calculated_oracle"
+      ],
+      "oracle_status": "explicit_oracle_test"
     },
     {
       "metric_id": "tcp_flag_consistency_profile",
@@ -350,14 +364,19 @@
         "_tcp_flag_metric",
         "run_tcp_flag_consistency_metric"
       ],
-      "test_count": 1,
+      "test_count": 2,
       "tests": [
+        "tests/test_flow_semantics_oracles.py::test_tcp_flag_consistency_profile_hand_calculated_oracle",
         "tests/test_preexperiment_metric_contract.py::test_tcp_flag_metric_declares_aggregate_not_state_machine_scope"
       ],
-      "explicit_oracle_tests": [],
-      "numerical_oracle_candidates": [],
+      "explicit_oracle_tests": [
+        "tests/test_flow_semantics_oracles.py::test_tcp_flag_consistency_profile_hand_calculated_oracle"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_flow_semantics_oracles.py::test_tcp_flag_consistency_profile_hand_calculated_oracle"
+      ],
       "boundary_candidates": [],
-      "oracle_status": "exact_assertion_needs_manual_oracle_review"
+      "oracle_status": "explicit_oracle_test"
     },
     {
       "metric_id": "service_port_consistency_profile",
