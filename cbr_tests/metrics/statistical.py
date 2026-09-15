@@ -193,6 +193,8 @@ def _build_distributional_metric(
         result = {
             "field": field,
             "exists": field in df.columns,
+            "population_a_count": 0,
+            "population_b_count": 0,
             "sample_a_count": 0,
             "sample_b_count": 0,
             "runnable": False,
@@ -204,8 +206,22 @@ def _build_distributional_metric(
             field_results.append(result)
             continue
 
-        values = _clean_numeric_values(df, field)[: effective_max_sample_size * 2]
-        left, right = _split_values(values)
+        # Split the complete usable sequence first, then sample each real half.
+        # This preserves the meaning of ordered-half drift on large datasets;
+        # truncating before the split would compare only two windows near the
+        # beginning of the capture and could miss later distribution changes.
+        values = _clean_numeric_values(df, field)
+        left_population, right_population = _split_values(values)
+        result["population_a_count"] = len(left_population)
+        result["population_b_count"] = len(right_population)
+        left = [
+            left_population[position]
+            for position in _even_positions(len(left_population), effective_max_sample_size)
+        ]
+        right = [
+            right_population[position]
+            for position in _even_positions(len(right_population), effective_max_sample_size)
+        ]
         result["sample_a_count"] = len(left)
         result["sample_b_count"] = len(right)
         if len(left) < minimum_sample_size or len(right) < minimum_sample_size:
@@ -225,6 +241,7 @@ def _build_distributional_metric(
         "summary": {
             "field_count": len(field_results),
             "runnable_field_count": runnable_count,
+            "sampling_policy": "split_full_usable_sequence_then_evenly_sample_each_half",
             "requested_max_sample_size_per_half": requested_max_sample_size,
             "max_sample_size_per_half": effective_max_sample_size,
             "pairwise_hard_max_sample_size_per_half": (

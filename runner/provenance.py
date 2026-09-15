@@ -14,7 +14,7 @@ from typing import Any
 from runner.contract import collect_reference_paths
 
 
-RUNTIME_DISTRIBUTIONS = ("pandas", "scapy", "openpyxl")
+RUNTIME_DISTRIBUTIONS = ("numpy", "pandas", "scapy", "openpyxl")
 
 
 def _canonical_json_bytes(value: Any) -> bytes:

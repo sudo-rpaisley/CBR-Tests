@@ -129,7 +129,9 @@ def _dependency_requirements(metric: dict) -> tuple[list[str], int]:
 
 def compute_pearson_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
     fields, minimum = _dependency_requirements(metric)
-    validation, runnable_fields, numeric_df = validate_candidate_fields(df.copy(), fields)
+    present_fields = [field for field in fields if field in df.columns]
+    working_df = df[present_fields].copy()
+    validation, runnable_fields, numeric_df = validate_candidate_fields(working_df, fields)
     runnable = len(runnable_fields) >= minimum
     profile = compute_pearson_profile(numeric_df, runnable_fields) if runnable else None
     return {
@@ -147,8 +149,10 @@ def compute_pearson_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
 
 def compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
     fields, minimum = _dependency_requirements(metric)
+    present_fields = [field for field in fields if field in df.columns]
+    working_df = df[present_fields].copy()
     validation, runnable_fields, numeric_df = validate_spearman_candidate_fields(
-        df.copy(), fields
+        working_df, fields
     )
     runnable = len(runnable_fields) >= minimum
     profile = compute_spearman_profile(numeric_df, runnable_fields) if runnable else None
@@ -167,9 +171,10 @@ def compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
 
 def compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
     fields, minimum = _dependency_requirements(metric)
+    present_fields = [field for field in fields if field in df.columns]
     parameters = metric.get("calculation", {}).get("parameters", {})
     result = compute_distance_correlation_profile(
-        df.copy(),
+        df[present_fields],
         fields,
         max_sample_size=parameters.get("max_sample_size"),
     )
