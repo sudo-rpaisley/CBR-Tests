@@ -1179,14 +1179,15 @@
       "implementation_symbols": [
         "compute_feature_wise_ks_statistic_from_reference"
       ],
-      "test_count": 6,
+      "test_count": 7,
       "tests": [
         "tests/test_multi_reference_workflow.py::test_tabular_reference_plan_unlocks_reference_metrics",
         "tests/test_multi_reference_workflow.py::test_reference_sidecar_maps_different_raw_column_names",
         "tests/test_multi_reference_workflow.py::test_batch_builds_candidate_reference_cross_product",
         "tests/test_pcap_evidence_classification.py::test_pcap_evidence_classes_separate_observations_from_diagnostics",
         "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
-        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles",
+        "tests/test_reference_provenance_contract.py::test_reference_dataset_identity_hash_and_mapping_are_frozen_in_provenance"
       ],
       "explicit_oracle_tests": [
         "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
@@ -1195,7 +1196,8 @@
         "tests/test_multi_reference_workflow.py::test_reference_sidecar_maps_different_raw_column_names",
         "tests/test_multi_reference_workflow.py::test_batch_builds_candidate_reference_cross_product",
         "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
-        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles",
+        "tests/test_reference_provenance_contract.py::test_reference_dataset_identity_hash_and_mapping_are_frozen_in_provenance"
       ],
       "boundary_candidates": [
         "tests/test_multi_reference_workflow.py::test_batch_builds_candidate_reference_cross_product"

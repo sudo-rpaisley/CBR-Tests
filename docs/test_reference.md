@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **318 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **319 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -684,6 +684,16 @@ Tests and local helpers in this module.
 | `test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation()` (L223) | Verifies that flow statistic reference distance requires matching flow definition for interpretation. | `compute_flow_statistic_deviation_from_reference` |
 | `test_reference_slice_and_protocol_metrics(tmp_path)` (L252) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
 | `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L277) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_hourly_activity_divergence_from_reference`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP` |
+
+## `tests/test_reference_provenance_contract.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_reference_dataset_identity_hash_and_mapping_are_frozen_in_provenance(tmp_path: Path)` (L10) | Final-experiment outcomes must identify the exact comparator and mapping used. | `candidate.write_bytes`, `reference.write_bytes`, `plan_file.write_text`, `build_provenance_manifest`, `hashlib.sha256(candidate.read_bytes()).hexdigest`, `sha256_json`, `hashlib.sha256(reference.read_bytes()).hexdigest`, `candidate.resolve` |
 
 ## `tests/test_representative_rerun_guard.py`
 
