@@ -496,16 +496,17 @@ Python symbols defined by `run_campaign.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_read_batch_status(output_dir: Path) -> str` (L26) | function | Internal | Implementation helper for read batch status. |
-| `_matrix_needs_attention(result: dict[str, Any]) -> bool` (L37) | function | Internal | Implementation helper for matrix needs attention. |
-| `_result_map(state: dict[str, Any]) -> dict[str, dict[str, Any]]` (L41) | function | Internal | Implementation helper for result map. |
-| `_replace_result(state: dict[str, Any], result: dict[str, Any]) -> None` (L49) | function | Internal | Implementation helper for replace result. |
-| `_matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path` (L66) | function | Internal | Implementation helper for matrix output dir. |
-| `_build_batch_command(*, repo_root: Path, batch_path: Path, output_dir: Path, args: argparse.Namespace, resume: bool, retry_failed: bool) -> list[str]` (L70) | function | Internal | Implementation helper for build batch command. |
-| `_initial_state(*, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> dict[str, Any]` (L110) | function | Internal | Implementation helper for initial state. |
-| `_validate_resume_state(state: dict[str, Any], *, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> None` (L133) | function | Internal | Implementation helper for validate resume state. |
-| `parse_args() -> argparse.Namespace` (L148) | function | Public | Parses args. |
-| `main() -> int` (L176) | function | Public | Implementation helper for main. |
+| `_read_batch_status(output_dir: Path) -> str` (L28) | function | Internal | Implementation helper for read batch status. |
+| `_matrix_needs_attention(result: dict[str, Any]) -> bool` (L39) | function | Internal | Implementation helper for matrix needs attention. |
+| `_result_map(state: dict[str, Any]) -> dict[str, dict[str, Any]]` (L43) | function | Internal | Implementation helper for result map. |
+| `_replace_result(state: dict[str, Any], result: dict[str, Any]) -> None` (L51) | function | Internal | Implementation helper for replace result. |
+| `_matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path` (L68) | function | Internal | Implementation helper for matrix output dir. |
+| `_preflight_campaign(repo_root: Path, matrices: list[dict[str, Any]], *, experiment_mode: bool) -> tuple[int, int]` (L72) | function | Internal | Validate every queued matrix before any campaign output or experiment work starts. |
+| `_build_batch_command(*, repo_root: Path, batch_path: Path, output_dir: Path, args: argparse.Namespace, resume: bool, retry_failed: bool) -> list[str]` (L98) | function | Internal | Implementation helper for build batch command. |
+| `_initial_state(*, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> dict[str, Any]` (L138) | function | Internal | Implementation helper for initial state. |
+| `_validate_resume_state(state: dict[str, Any], *, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> None` (L161) | function | Internal | Implementation helper for validate resume state. |
+| `parse_args() -> argparse.Namespace` (L176) | function | Public | Parses args. |
+| `main() -> int` (L204) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
