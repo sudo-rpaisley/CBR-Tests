@@ -458,8 +458,10 @@ Flattens selected outcome fields into CSV tables for graphing.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `load_json(path: Path) -> dict` (L11) | function | Public | Loads JSON. |
-| `main()` (L16) | function | Public | Implementation helper for main. |
+| `load_json(path: Path) -> dict` (L14) | function | Public | Loads JSON. |
+| `export_outcomes(outcomes_dir: Path, output_dir: Path) -> dict[str, Path]` (L19) | function | Public | Flatten saved outcome JSON files into analysis-friendly CSV tables. |
+| `build_parser() -> argparse.ArgumentParser` (L173) | function | Public | Builds parser. |
+| `main() -> int` (L190) | function | Public | Implementation helper for main. |
 
 ## `run_batch.py`
 
@@ -1106,6 +1108,34 @@ Run, metric, and event state models.
 | `RunState.recent_completed(self, limit: int = 5) -> list[MetricState]` (L213) | method | Public | Implementation helper for recent completed. |
 | `RunState.attention_metrics(self) -> list[MetricState]` (L224) | method | Public | Implementation helper for attention metrics. |
 
+## `runner/toolbox_tui.py`
+
+Python symbols defined by `runner/toolbox_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `ToolboxItem` (L30) | class | Public | Data model for ToolboxItem. |
+| `toolbox_items() -> tuple[ToolboxItem, ...]` (L65) | function | Public | Implementation helper for toolbox items. |
+| `_json_browser(stdscr, root: Path, *, title: str, initial_dir: str) -> str | None` (L69) | function | Internal | Implementation helper for JSON browser. |
+| `_metric_multiselect(stdscr, title: str, initial: list[str]) -> list[str] | None` (L146) | function | Internal | Implementation helper for metric multiselect. |
+| `initial_plan_builder_state() -> dict[str, Any]` (L189) | function | Public | Implementation helper for initial plan builder state. |
+| `plan_builder_visible_fields(show_advanced: bool) -> tuple[str, ...]` (L207) | function | Public | Implementation helper for plan builder visible fields. |
+| `_plan_id(name: str) -> str` (L211) | function | Internal | Implementation helper for plan id. |
+| `_automatic_plan_output(state: dict[str, Any]) -> str` (L217) | function | Internal | Implementation helper for automatic plan output. |
+| `_refresh_plan_output(state: dict[str, Any]) -> None` (L229) | function | Internal | Implementation helper for refresh plan output. |
+| `_resolve(root: Path, value: str) -> Path` (L234) | function | Internal | Implementation helper for resolve. |
+| `plan_builder_issues(state: dict[str, Any], root: Path) -> list[str]` (L241) | function | Public | Implementation helper for plan builder issues. |
+| `plan_builder_review_lines(state: dict[str, Any]) -> list[str]` (L298) | function | Public | Implementation helper for plan builder review lines. |
+| `_plan_field_label(name: str) -> str` (L318) | function | Internal | Implementation helper for plan field label. |
+| `_plan_field_help(name: str) -> str` (L335) | function | Internal | Implementation helper for plan field help. |
+| `_plan_field_value(state: dict[str, Any], name: str) -> str` (L352) | function | Internal | Implementation helper for plan field value. |
+| `_review_plan_builder(stdscr, state: dict[str, Any]) -> bool` (L367) | function | Internal | Implementation helper for review plan builder. |
+| `_plan_builder_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L383) | function | Internal | Implementation helper for plan builder curses. |
+| `create_plan_from_state(state: dict[str, Any], repo_root: Path | None = None) -> dict[str, Any]` (L488) | function | Public | Implementation helper for create plan from state. |
+| `launch_plan_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L565) | function | Public | Implementation helper for launch plan builder. |
+| `_collect_rerun_compare(stdscr, root: Path) -> list[str] | None` (L573) | function | Internal | Implementation helper for collect rerun compare. |
+| `run_tool_action(action: str, repo_root: Path | None = None) -> int` (L591) | function | Public | Runs tool action. |
+
 ## `runner/tui.py`
 
 Python symbols defined by `runner/tui.py`.
@@ -1178,9 +1208,11 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L17) | function | Internal | Implementation helper for safe addstr. |
-| `_choose_mode_curses(stdscr) -> str | None` (L30) | function | Internal | Implementation helper for choose mode curses. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L67) | function | Public | Launch the guided single-run or batch/comparison terminal UI. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L18) | function | Internal | Implementation helper for safe addstr. |
+| `_tool_rows() -> list[tuple[int | None, str, str]]` (L31) | function | Internal | Implementation helper for tool rows. |
+| `_choose_mode_curses(stdscr) -> str | None` (L42) | function | Internal | Implementation helper for choose mode curses. |
+| `_pause_after_tool() -> None` (L87) | function | Internal | Implementation helper for pause after tool. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L94) | function | Public | Launch the CBR-Tests toolbox and return only when a run mode is selected. |
 
 ## `scripts/build_documentation_inventory.py`
 

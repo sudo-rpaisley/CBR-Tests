@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **318 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **325 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -1019,6 +1019,22 @@ Tests and local helpers in this module.
 | `test_maximum_ratio_failure_rule_records_explicit_provenance()` (L16) | Verifies that maximum ratio failure rule records explicit provenance. | `resolve_maximum_ratio_failure_rule` |
 | `test_measurement_parameter_records_framework_default()` (L30) | Verifies that measurement parameter records framework default. | `describe_measurement_parameter` |
 | `test_measurement_parameter_records_configured_provenance()` (L39) | Verifies that measurement parameter records configured provenance. | `describe_measurement_parameter` |
+
+## `tests/test_toolbox_tui.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_toolbox_exposes_experiment_preparation_and_result_tools()` (L15) | Verifies that toolbox exposes experiment preparation and result tools. | `toolbox_items` |
+| `test_plan_builder_defaults_to_essential_fields_only()` (L24) | Verifies that plan builder defaults to essential fields only. | `plan_builder_visible_fields` |
+| `test_plan_builder_automatic_output_uses_plan_or_batch_suffix()` (L38) | Verifies that plan builder automatic output uses plan or batch suffix. | `initial_plan_builder_state`, `state['datasets'].append`, `_automatic_plan_output` |
+| `test_plan_builder_requires_name_dataset_and_output(tmp_path)` (L48) | Verifies that plan builder requires name dataset and output. | `initial_plan_builder_state`, `plan_builder_issues` |
+| `test_plan_builder_accepts_valid_single_dataset_setup(tmp_path)` (L56) | Verifies that plan builder accepts valid single dataset setup. | `dataset.write_text`, `initial_plan_builder_state`, `state.update`, `plan_builder_review_lines`, `plan_builder_issues` |
+| `test_plan_builder_rejects_mixed_raw_and_tabular_candidates(tmp_path)` (L75) | Verifies that plan builder rejects mixed raw and tabular candidates. | `csv_path.write_text`, `pcap_path.write_bytes`, `initial_plan_builder_state`, `state.update`, `plan_builder_issues` |
+| `test_plan_builder_requires_service_name_and_ports_together(tmp_path)` (L93) | Verifies that plan builder requires service name and ports together. | `dataset.write_bytes`, `initial_plan_builder_state`, `state.update`, `plan_builder_issues` |
 
 ## `tests/test_tui.py`
 
