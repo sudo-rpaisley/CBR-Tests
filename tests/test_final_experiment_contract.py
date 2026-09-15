@@ -59,11 +59,13 @@ def test_final_experiment_contract_rejects_compatibility_only_profiles():
         validate_final_experiment_plan(plan)
 
 
-def test_final_experiment_contract_rejects_non_full_sample_mode():
+def test_final_experiment_contract_rejects_non_full_sample_mode_at_schema_boundary():
     plan = _canonical_plan()
     plan["execution_policy"]["sample_mode"] = "head"
 
-    with pytest.raises(ExperimentContractError, match="sample_mode='full'"):
+    # The base plan schema currently supports only full-population execution, so
+    # this invalid mode is rejected before the stricter experiment checks run.
+    with pytest.raises(ValueError, match="sample_mode 'head' is not implemented"):
         validate_final_experiment_plan(plan)
 
 
