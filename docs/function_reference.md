@@ -232,46 +232,46 @@ Python symbols defined by `cbr_tests/metrics/reference_comparison.py`.
 | --- | --- | --- | --- |
 | `_reference_path(metric: dict) -> str | None` (L28) | function | Internal | Implementation helper for reference path. |
 | `_apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.DataFrame` (L38) | function | Internal | Implementation helper for apply reference field map. |
-| `_load_reference_df(metric: dict) -> pd.DataFrame` (L60) | function | Internal | Implementation helper for load reference dataframe. |
-| `_candidate_fields(metric: dict) -> list[str]` (L98) | function | Internal | Implementation helper for candidate fields. |
-| `_even_positions(length: int, maximum: int) -> list[int]` (L102) | function | Internal | Implementation helper for even positions. |
-| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L111) | function | Internal | Implementation helper for numeric values. |
-| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L121) | function | Internal | Implementation helper for sample dataframe. |
-| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L127) | function | Internal | Implementation helper for numeric matrix. |
-| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L138) | function | Internal | Implementation helper for multivariate rbf MMD. |
-| `_multivariate_rbf_mmd.squared_distances(left, right)` (L151) | nested function | Internal | Implementation helper for squared distances. |
-| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L171) | function | Internal | Implementation helper for feature metric. |
-| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L207) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
-| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L213) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
-| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L219) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
-| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L225) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
-| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L258) | function | Internal | Implementation helper for matrix deviation. |
-| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L285) | function | Internal | Implementation helper for correlation profile. |
-| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L297) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
-| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L314) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
-| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L331) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
-| `_timestamp_field(metric: dict) -> str` (L356) | function | Internal | Implementation helper for timestamp field. |
-| `_parsed_reference_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L360) | function | Internal | Implementation helper for parsed reference timestamps. |
-| `_timestamp_span(series: pd.Series) -> dict[str, str | None]` (L364) | function | Internal | Implementation helper for timestamp span. |
-| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L371) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
-| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L397) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
-| `_activity_timezone(metric: dict) -> str` (L420) | function | Internal | Implementation helper for activity timezone. |
-| `_activity_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L425) | function | Internal | Implementation helper for activity timestamps. |
-| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L434) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
-| `_slice_field(metric: dict) -> str` (L464) | function | Internal | Implementation helper for slice field. |
-| `_label_field(metric: dict) -> str` (L468) | function | Internal | Implementation helper for label field. |
-| `_normalise_category(value) -> str | None` (L472) | function | Internal | Implementation helper for normalise category. |
-| `_category_values(df: pd.DataFrame, field: str) -> list[str]` (L486) | function | Internal | Implementation helper for category values. |
-| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L496) | function | Internal | Implementation helper for categorical distribution. |
-| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float | None` (L505) | function | Internal | Implementation helper for tv distance. |
-| `_valid_categories(df: pd.DataFrame, field: str) -> set[str]` (L514) | function | Internal | Implementation helper for valid categories. |
-| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L518) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
-| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L539) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
-| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L581) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
-| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L638) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
-| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L659) | function | Public | Computes port use divergence from reference and returns a structured result. |
-| `_flow_definition_ids(metric: dict) -> tuple[str | None, str | None]` (L696) | function | Internal | Implementation helper for flow definition ids. |
-| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L709) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
+| `_load_reference_df(metric: dict) -> pd.DataFrame` (L62) | function | Internal | Implementation helper for load reference dataframe. |
+| `_candidate_fields(metric: dict) -> list[str]` (L100) | function | Internal | Implementation helper for candidate fields. |
+| `_even_positions(length: int, maximum: int) -> list[int]` (L104) | function | Internal | Implementation helper for even positions. |
+| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L113) | function | Internal | Implementation helper for numeric values. |
+| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L123) | function | Internal | Implementation helper for sample dataframe. |
+| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L129) | function | Internal | Implementation helper for numeric matrix. |
+| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L140) | function | Internal | Implementation helper for multivariate rbf MMD. |
+| `_multivariate_rbf_mmd.squared_distances(left, right)` (L153) | nested function | Internal | Implementation helper for squared distances. |
+| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L173) | function | Internal | Implementation helper for feature metric. |
+| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L209) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
+| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L215) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
+| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L221) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
+| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L227) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
+| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L260) | function | Internal | Implementation helper for matrix deviation. |
+| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L287) | function | Internal | Implementation helper for correlation profile. |
+| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L299) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
+| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L316) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
+| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L333) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
+| `_timestamp_field(metric: dict) -> str` (L358) | function | Internal | Implementation helper for timestamp field. |
+| `_parsed_reference_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L362) | function | Internal | Implementation helper for parsed reference timestamps. |
+| `_timestamp_span(series: pd.Series) -> dict[str, str | None]` (L366) | function | Internal | Implementation helper for timestamp span. |
+| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L373) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
+| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L399) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
+| `_activity_timezone(metric: dict) -> str` (L422) | function | Internal | Implementation helper for activity timezone. |
+| `_activity_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L427) | function | Internal | Implementation helper for activity timestamps. |
+| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L436) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
+| `_slice_field(metric: dict) -> str` (L466) | function | Internal | Implementation helper for slice field. |
+| `_label_field(metric: dict) -> str` (L470) | function | Internal | Implementation helper for label field. |
+| `_normalise_category(value) -> str | None` (L474) | function | Internal | Implementation helper for normalise category. |
+| `_category_values(df: pd.DataFrame, field: str) -> list[str]` (L488) | function | Internal | Implementation helper for category values. |
+| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L498) | function | Internal | Implementation helper for categorical distribution. |
+| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float | None` (L507) | function | Internal | Implementation helper for tv distance. |
+| `_valid_categories(df: pd.DataFrame, field: str) -> set[str]` (L516) | function | Internal | Implementation helper for valid categories. |
+| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L520) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
+| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L541) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
+| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L583) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
+| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L640) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
+| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L661) | function | Public | Computes port use divergence from reference and returns a structured result. |
+| `_flow_definition_ids(metric: dict) -> tuple[str | None, str | None]` (L698) | function | Internal | Implementation helper for flow definition ids. |
+| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L711) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
 
 ## `cbr_tests/metrics/slice_representation.py`
 

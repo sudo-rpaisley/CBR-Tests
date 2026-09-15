@@ -369,9 +369,9 @@ Tests and local helpers in this module.
 | `test_final_experiment_contract_accepts_canonical_full_plan_without_skips()` (L26) | Verifies that final experiment contract accepts canonical full plan without skips. | `validate_final_experiment_plan`, `_canonical_plan` |
 | `test_final_experiment_contract_rejects_legacy_metric_ids()` (L37) | Verifies that final experiment contract rejects legacy metric ids. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
 | `test_final_experiment_contract_rejects_compatibility_only_profiles()` (L45) | Verifies that final experiment contract rejects compatibility only profiles. | `_canonical_plan`, `deepcopy`, `plan['metrics'].append`, `pytest.raises`, `validate_final_experiment_plan` |
-| `test_final_experiment_contract_rejects_non_full_sample_mode()` (L62) | Verifies that final experiment contract rejects non full sample mode. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
-| `test_final_experiment_contract_rejects_skippable_metrics()` (L70) | Verifies that final experiment contract rejects skippable metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
-| `test_final_experiment_contract_rejects_plan_with_no_enabled_metrics()` (L78) | Verifies that final experiment contract rejects plan with no enabled metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_non_full_sample_mode_at_schema_boundary()` (L62) | Verifies that final experiment contract rejects non full sample mode at schema boundary. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_skippable_metrics()` (L72) | Verifies that final experiment contract rejects skippable metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_plan_with_no_enabled_metrics()` (L80) | Verifies that final experiment contract rejects plan with no enabled metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
 
 ### Test helpers
 
