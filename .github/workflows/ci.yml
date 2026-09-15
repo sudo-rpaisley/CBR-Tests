@@ -50,6 +50,12 @@ jobs:
         if: matrix.python-version == '3.11'
         run: python scripts/build_reference_documentation.py --check
 
+      - name: Show generated documentation diff
+        if: failure() && matrix.python-version == '3.11'
+        run: |
+          python scripts/build_reference_documentation.py
+          git diff --no-ext-diff -- docs/function_reference.md docs/test_reference.md
+
       - name: Check local documentation links
         if: matrix.python-version == '3.11'
         run: |
