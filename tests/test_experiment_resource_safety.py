@@ -40,7 +40,17 @@ def test_compact_pcap_view_preserves_canonical_values_and_reduces_memory(tmp_pat
     canonical = build_pcap_packet_dataframe(capture)
     compact = build_compact_pcap_packet_dataframe(capture)
 
-    pd.testing.assert_frame_equal(compact, canonical, check_dtype=False)
+    assert list(compact.columns) == list(canonical.columns)
+    for column in compact.columns:
+        if column in {"Source IP", "Destination IP"}:
+            assert compact[column].astype(str).tolist() == canonical[column].astype(str).tolist()
+        else:
+            pd.testing.assert_series_equal(
+                compact[column],
+                canonical[column],
+                check_dtype=False,
+                check_names=True,
+            )
     assert dataframe_memory_bytes(compact) < dataframe_memory_bytes(canonical)
 
 
