@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from run_campaign import _build_batch_command
+from run_campaign import _build_batch_command, _preflight_campaign
 from runner.campaign import build_campaign, load_campaign, write_campaign
 from runner.unified_tui import _menu_items
 
@@ -76,6 +76,22 @@ def test_campaign_manifest_round_trip_and_duplicate_queue_guard(tmp_path):
     manifest.write_text(json.dumps(loaded), encoding="utf-8")
     with pytest.raises(ValueError, match="Duplicate campaign queue_id"):
         load_campaign(manifest)
+
+
+def test_campaign_preflight_checks_every_matrix_before_outputs_start(tmp_path):
+    first = _write_batch(tmp_path / "first_batch.json", "first", 1)
+    second = _write_batch(tmp_path / "second_batch.json", "second", 1)
+    campaign = build_campaign(
+        name="Preflight",
+        batch_paths=[first, second],
+        repo_root=tmp_path,
+    )
+
+    assert _preflight_campaign(tmp_path, campaign["matrices"], experiment_mode=False) == (2, 0)
+
+    second.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="Not a supported CBR-Tests batch manifest"):
+        _preflight_campaign(tmp_path, campaign["matrices"], experiment_mode=False)
 
 
 def test_campaign_batch_command_passes_resume_retry_and_experiment_controls(tmp_path):
