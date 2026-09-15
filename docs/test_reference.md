@@ -334,8 +334,8 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_flow_duration_consistency_profile_hand_calculated_oracle()` (L16) | Hand-calculated oracle: one of five fully numeric rows is consistent. | `run_flow_duration_consistency_metric` |
-| `test_packet_byte_consistency_profile_hand_calculated_oracle()` (L59) | Hand-calculated oracle: one of five fully numeric rows is consistent. | `run_packet_byte_consistency_metric` |
-| `test_tcp_flag_consistency_profile_hand_calculated_oracle()` (L108) | Hand-calculated oracle for aggregate TCP flag-count invariants. | `run_tcp_flag_consistency_metric` |
+| `test_packet_byte_consistency_profile_hand_calculated_oracle()` (L61) | Hand-calculated oracle: one of five fully numeric rows is consistent. | `run_packet_byte_consistency_metric` |
+| `test_tcp_flag_consistency_profile_hand_calculated_oracle()` (L110) | Hand-calculated oracle for aggregate TCP flag-count invariants. | `run_tcp_flag_consistency_metric` |
 
 ## `tests/test_human_summary.py`
 
