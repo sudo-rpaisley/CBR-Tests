@@ -167,7 +167,12 @@ def compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
 
 def compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: dict) -> dict:
     fields, minimum = _dependency_requirements(metric)
-    result = compute_distance_correlation_profile(df.copy(), fields)
+    parameters = metric.get("calculation", {}).get("parameters", {})
+    result = compute_distance_correlation_profile(
+        df.copy(),
+        fields,
+        max_sample_size=parameters.get("max_sample_size"),
+    )
     runnable_fields = result.get("profile", {}).get("fields", [])
     runnable = len(runnable_fields) >= minimum
     return {
@@ -178,5 +183,6 @@ def compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: di
             "minimum_runnable_fields": minimum,
             "comparison_scope": "within_dataset_dependency_profile",
             "interpretation_direction": "contextual",
+            "sampling": result.get("sampling"),
         },
     }

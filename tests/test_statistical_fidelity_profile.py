@@ -1,5 +1,7 @@
 import pandas as pd
+import pytest
 
+import cbr_tests.metrics.statistical as statistical_metrics
 from tests.statistical_fidelity_profile import (
     compute_distance_correlation_profile,
     compute_energy_distance,
@@ -63,3 +65,21 @@ def test_distance_correlation_profile_matches_nonlinear_dependency_oracle():
     assert profile["matrix"]["x"]["x_squared"] == 0.515923
     assert result["column_validation"][2]["reason"] == "constant_column"
     assert result["column_validation"][3]["reason"] == "missing_column"
+
+
+@pytest.mark.parametrize(
+    "calculator",
+    [
+        statistical_metrics._energy_distance,
+        statistical_metrics._rbf_mmd,
+        statistical_metrics._distance_correlation,
+    ],
+)
+def test_pairwise_calculators_reject_oversized_direct_samples(calculator):
+    values = [
+        float(value)
+        for value in range(statistical_metrics.PAIRWISE_SAMPLE_HARD_LIMIT + 1)
+    ]
+
+    with pytest.raises(ValueError, match="safety limit"):
+        calculator(values, values)

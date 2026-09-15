@@ -306,24 +306,28 @@ Internal distribution drift and distance-correlation calculations.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_clean_numeric_values(df: pd.DataFrame, field: str) -> list[float]` (L12) | function | Internal | Implementation helper for clean numeric values. |
-| `_split_values(values: list[float]) -> tuple[list[float], list[float]]` (L17) | function | Internal | Implementation helper for split values. |
-| `_mean_pairwise_abs_distance(left: list[float], right: list[float]) -> float` (L22) | function | Internal | Implementation helper for mean pairwise abs distance. |
-| `_ks_statistic(left: list[float], right: list[float]) -> float` (L29) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
-| `_wasserstein_distance(left: list[float], right: list[float]) -> float` (L47) | function | Internal | Computes one-dimensional Wasserstein distance from empirical CDFs. |
-| `_energy_distance(left: list[float], right: list[float]) -> float` (L70) | function | Internal | Computes the sample energy-distance expression from cross- and within-sample distances. |
-| `_rbf_mmd(left: list[float], right: list[float], gamma: float | None = None) -> float` (L77) | function | Internal | Computes squared RBF-kernel MMD with a median-distance bandwidth when gamma is omitted. |
-| `_rbf_mmd.kernel_mean(a_values: list[float], b_values: list[float]) -> float` (L88) | nested function | Internal | Implementation helper for kernel mean. |
-| `_build_distributional_metric(df: pd.DataFrame, metric: dict, calculator, output_key: str) -> dict` (L102) | function | Internal | Implementation helper for build distributional metric. |
-| `compute_ks_feature_divergence(df: pd.DataFrame, metric: dict) -> dict` (L159) | function | Public | Computes KS feature divergence and returns a structured result. |
-| `compute_wasserstein_feature_distance(df: pd.DataFrame, metric: dict) -> dict` (L163) | function | Public | Computes wasserstein feature distance and returns a structured result. |
-| `compute_energy_distance(df: pd.DataFrame, metric: dict) -> dict` (L169) | function | Public | Computes energy distance and returns a structured result. |
-| `compute_maximum_mean_discrepancy(df: pd.DataFrame, metric: dict) -> dict` (L173) | function | Public | Computes maximum mean discrepancy and returns a structured result. |
-| `_distance_matrix(values: list[float]) -> list[list[float]]` (L179) | function | Internal | Implementation helper for distance matrix. |
-| `_double_center(matrix: list[list[float]]) -> list[list[float]]` (L183) | function | Internal | Implementation helper for double center. |
-| `_mean_product(left: list[list[float]], right: list[list[float]]) -> float` (L203) | function | Internal | Implementation helper for mean product. |
-| `_distance_correlation(left: list[float], right: list[float]) -> float` (L213) | function | Internal | Computes distance correlation from double-centered pairwise distance matrices. |
-| `compute_distance_correlation_profile(df: pd.DataFrame, candidate_fields: list[str]) -> dict` (L227) | function | Public | Computes distance correlation profile and returns a structured result. |
+| `_clean_numeric_values(df: pd.DataFrame, field: str) -> list[float]` (L19) | function | Internal | Implementation helper for clean numeric values. |
+| `_split_values(values: list[float]) -> tuple[list[float], list[float]]` (L24) | function | Internal | Implementation helper for split values. |
+| `_validated_pairwise_limit(value, *, default: int = PAIRWISE_SAMPLE_HARD_LIMIT) -> tuple[int, int]` (L29) | function | Internal | Implementation helper for validated pairwise limit. |
+| `_even_positions(length: int, maximum: int) -> list[int]` (L40) | function | Internal | Implementation helper for even positions. |
+| `_bounded_pairwise_dataframe_sample(df: pd.DataFrame, max_sample_size: int | None = None) -> tuple[pd.DataFrame, dict]` (L49) | function | Internal | Implementation helper for bounded pairwise dataframe sample. |
+| `_ensure_pairwise_sample_safe(*samples) -> None` (L74) | function | Internal | Implementation helper for ensure pairwise sample safe. |
+| `_mean_pairwise_abs_distance(left: list[float], right: list[float]) -> float` (L83) | function | Internal | Implementation helper for mean pairwise abs distance. |
+| `_ks_statistic(left: list[float], right: list[float]) -> float` (L91) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
+| `_wasserstein_distance(left: list[float], right: list[float]) -> float` (L109) | function | Internal | Computes one-dimensional Wasserstein distance from empirical CDFs. |
+| `_energy_distance(left: list[float], right: list[float]) -> float` (L132) | function | Internal | Computes the sample energy-distance expression from cross- and within-sample distances. |
+| `_rbf_mmd(left: list[float], right: list[float], gamma: float | None = None) -> float` (L140) | function | Internal | Computes squared RBF-kernel MMD with a median-distance bandwidth when gamma is omitted. |
+| `_rbf_mmd.kernel_mean(a_values: np.ndarray, b_values: np.ndarray) -> float` (L157) | nested function | Internal | Implementation helper for kernel mean. |
+| `_build_distributional_metric(df: pd.DataFrame, metric: dict, calculator, output_key: str) -> dict` (L169) | function | Internal | Implementation helper for build distributional metric. |
+| `compute_ks_feature_divergence(df: pd.DataFrame, metric: dict) -> dict` (L245) | function | Public | Computes KS feature divergence and returns a structured result. |
+| `compute_wasserstein_feature_distance(df: pd.DataFrame, metric: dict) -> dict` (L249) | function | Public | Computes wasserstein feature distance and returns a structured result. |
+| `compute_energy_distance(df: pd.DataFrame, metric: dict) -> dict` (L255) | function | Public | Computes energy distance and returns a structured result. |
+| `compute_maximum_mean_discrepancy(df: pd.DataFrame, metric: dict) -> dict` (L259) | function | Public | Computes maximum mean discrepancy and returns a structured result. |
+| `_distance_matrix(values: list[float]) -> list[list[float]]` (L265) | function | Internal | Compatibility helper retained for historical callers/tests. |
+| `_double_center(matrix: list[list[float]]) -> list[list[float]]` (L271) | function | Internal | Implementation helper for double center. |
+| `_mean_product(left: list[list[float]], right: list[list[float]]) -> float` (L291) | function | Internal | Implementation helper for mean product. |
+| `_distance_correlation(left: list[float], right: list[float]) -> float` (L301) | function | Internal | Computes distance correlation from double-centered pairwise distance matrices. |
+| `compute_distance_correlation_profile(df: pd.DataFrame, candidate_fields: list[str], max_sample_size: int | None = None) -> dict` (L333) | function | Public | Computes distance correlation profile and returns a structured result. |
 
 ## `cbr_tests/metrics/task_validation.py`
 
@@ -365,11 +369,11 @@ Timestamp, duration, timing-drift, hourly, and periodicity calculations.
 | `_mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]` (L273) | function | Internal | Implementation helper for mean pairwise total variation. |
 | `_cosine_similarity(left: list[int], right: list[int]) -> float | None` (L290) | function | Internal | Implementation helper for cosine similarity. |
 | `_mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]` (L299) | function | Internal | Implementation helper for mean pairwise cosine similarity. |
-| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L311) | function | Public | Measure pairwise day-to-day divergence in UTC hour-of-day activity. This is an intrinsic repeatability/stability diagnostic. Its value is contextual: real traffic can legitimately change from day to day. |
-| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L353) | function | Public | Measure pairwise day-to-day similarity of UTC hour-of-day activity shapes. |
-| `_continuous_hourly_counts(timestamps: list[pd.Timestamp]) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]` (L388) | function | Internal | Implementation helper for continuous hourly counts. |
-| `_lag_repeat_similarity(values: list[int], lag: int, minimum_pairs: int) -> tuple[float | None, int]` (L402) | function | Internal | Implementation helper for lag repeat similarity. |
-| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L422) | function | Public | Measure within-dataset repeat similarity at configured hourly lags. A configured lag such as 24 hours describes a structural hypothesis about the workload. High repeat similarity is favourable only when such periodicity is expected; otherwise the result is descriptive/contextual. |
+| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L313) | function | Public | Measure pairwise day-to-day divergence in UTC hour-of-day activity. This is an intrinsic repeatability/stability diagnostic. Its value is contextual: real traffic can legitimately change from day to day. |
+| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L355) | function | Public | Measure pairwise day-to-day similarity of UTC hour-of-day activity shapes. |
+| `_continuous_hourly_counts(timestamps: list[pd.Timestamp]) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]` (L390) | function | Internal | Implementation helper for continuous hourly counts. |
+| `_lag_repeat_similarity(values: list[int], lag: int, minimum_pairs: int) -> tuple[float | None, int]` (L404) | function | Internal | Implementation helper for lag repeat similarity. |
+| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L424) | function | Public | Measure within-dataset repeat similarity at configured hourly lags. A configured lag such as 24 hours describes a structural hypothesis about the workload. High repeat similarity is favourable only when such periodicity is expected; otherwise the result is descriptive/contextual. |
 
 ## `cbr_tests/metrics/timestamp_coherence.py`
 

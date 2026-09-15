@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 from itertools import combinations
-from math import exp, sqrt
-from statistics import median
+from math import sqrt
 
+import numpy as np
 import pandas as pd
 
 from cbr_tests.metrics.pearson import validate_candidate_fields
+
+
+# Pairwise estimators below are O(n^2). This ceiling is deliberately enforced
+# inside the metric implementation so callers cannot accidentally bypass the
+# memory guard by omitting or oversizing max_sample_size.
+PAIRWISE_SAMPLE_HARD_LIMIT = 1000
+DEFAULT_DISTANCE_CORRELATION_MAX_SAMPLE_SIZE = 1000
 
 
 def _clean_numeric_values(df: pd.DataFrame, field: str) -> list[float]:
@@ -19,9 +26,64 @@ def _split_values(values: list[float]) -> tuple[list[float], list[float]]:
     return values[:midpoint], values[midpoint:]
 
 
+def _validated_pairwise_limit(
+    value,
+    *,
+    default: int = PAIRWISE_SAMPLE_HARD_LIMIT,
+) -> tuple[int, int]:
+    requested = default if value is None else int(value)
+    if requested < 2:
+        raise ValueError("max_sample_size must be at least 2 for pairwise statistical metrics")
+    return requested, min(requested, PAIRWISE_SAMPLE_HARD_LIMIT)
+
+
+def _even_positions(length: int, maximum: int) -> list[int]:
+    if length <= maximum:
+        return list(range(length))
+    if maximum <= 1:
+        return [0]
+    step = (length - 1) / (maximum - 1)
+    return [round(index * step) for index in range(maximum)]
+
+
+def _bounded_pairwise_dataframe_sample(
+    df: pd.DataFrame,
+    max_sample_size: int | None = None,
+) -> tuple[pd.DataFrame, dict]:
+    requested, effective = _validated_pairwise_limit(
+        max_sample_size,
+        default=DEFAULT_DISTANCE_CORRELATION_MAX_SAMPLE_SIZE,
+    )
+    original_row_count = int(len(df))
+    if original_row_count > effective:
+        sampled = df.iloc[_even_positions(original_row_count, effective)].copy()
+    else:
+        sampled = df.copy()
+    return sampled, {
+        "method": "deterministic_evenly_spaced_rows",
+        "original_row_count": original_row_count,
+        "sampled_row_count": int(len(sampled)),
+        "requested_max_sample_size": requested,
+        "effective_max_sample_size": effective,
+        "hard_max_sample_size": PAIRWISE_SAMPLE_HARD_LIMIT,
+        "sampling_applied": original_row_count > effective,
+        "safety_cap_applied": requested > PAIRWISE_SAMPLE_HARD_LIMIT,
+    }
+
+
+def _ensure_pairwise_sample_safe(*samples) -> None:
+    largest = max((len(sample) for sample in samples), default=0)
+    if largest > PAIRWISE_SAMPLE_HARD_LIMIT:
+        raise ValueError(
+            "Pairwise statistical sample exceeds the safety limit of "
+            f"{PAIRWISE_SAMPLE_HARD_LIMIT} values; reduce max_sample_size."
+        )
+
+
 def _mean_pairwise_abs_distance(left: list[float], right: list[float]) -> float:
     if not left or not right:
         return 0.0
+    _ensure_pairwise_sample_safe(left, right)
     total = sum(abs(a - b) for a in left for b in right)
     return total / (len(left) * len(right))
 
@@ -68,6 +130,7 @@ def _wasserstein_distance(left: list[float], right: list[float]) -> float:
 
 
 def _energy_distance(left: list[float], right: list[float]) -> float:
+    _ensure_pairwise_sample_safe(left, right)
     cross = _mean_pairwise_abs_distance(left, right)
     left_internal = _mean_pairwise_abs_distance(left, left)
     right_internal = _mean_pairwise_abs_distance(right, right)
@@ -79,22 +142,26 @@ def _rbf_mmd(
     right: list[float],
     gamma: float | None = None,
 ) -> float:
-    combined = left + right
+    _ensure_pairwise_sample_safe(left, right)
+    left_values = np.asarray(left, dtype=np.float64)
+    right_values = np.asarray(right, dtype=np.float64)
+    combined = np.concatenate([left_values, right_values])
+
     if gamma is None:
-        distances = [abs(a - b) for a, b in combinations(combined, 2) if a != b]
-        sigma = median(distances) if distances else 1.0
+        pairwise_distances = np.abs(combined[:, None] - combined[None, :])
+        upper = pairwise_distances[np.triu_indices(len(combined), 1)]
+        positive = upper[upper > 0]
+        sigma = float(np.median(positive)) if positive.size else 1.0
         gamma = 1.0 / (2.0 * sigma * sigma) if sigma else 1.0
 
-    def kernel_mean(a_values: list[float], b_values: list[float]) -> float:
-        total = sum(
-            exp(-gamma * (a - b) ** 2) for a in a_values for b in b_values
-        )
-        return total / (len(a_values) * len(b_values))
+    def kernel_mean(a_values: np.ndarray, b_values: np.ndarray) -> float:
+        squared_distances = (a_values[:, None] - b_values[None, :]) ** 2
+        return float(np.exp(-gamma * squared_distances).mean())
 
     value = (
-        kernel_mean(left, left)
-        + kernel_mean(right, right)
-        - 2 * kernel_mean(left, right)
+        kernel_mean(left_values, left_values)
+        + kernel_mean(right_values, right_values)
+        - 2 * kernel_mean(left_values, right_values)
     )
     return max(0.0, value)
 
@@ -107,8 +174,18 @@ def _build_distributional_metric(
 ) -> dict:
     candidate_fields = metric["input_requirements"]["candidate_fields"]
     parameters = metric.get("calculation", {}).get("parameters", {})
-    minimum_sample_size = parameters.get("minimum_sample_size", 2)
-    max_sample_size = parameters.get("max_sample_size", 1000)
+    minimum_sample_size = int(parameters.get("minimum_sample_size", 2))
+    requested_max_sample_size = int(parameters.get("max_sample_size", 1000))
+    if requested_max_sample_size < 2:
+        raise ValueError("max_sample_size must be at least 2")
+
+    is_pairwise_estimator = calculator in {_energy_distance, _rbf_mmd}
+    if is_pairwise_estimator:
+        requested_max_sample_size, effective_max_sample_size = _validated_pairwise_limit(
+            requested_max_sample_size
+        )
+    else:
+        effective_max_sample_size = requested_max_sample_size
 
     field_results = []
     runnable_count = 0
@@ -127,7 +204,7 @@ def _build_distributional_metric(
             field_results.append(result)
             continue
 
-        values = _clean_numeric_values(df, field)[: max_sample_size * 2]
+        values = _clean_numeric_values(df, field)[: effective_max_sample_size * 2]
         left, right = _split_values(values)
         result["sample_a_count"] = len(left)
         result["sample_b_count"] = len(right)
@@ -148,6 +225,15 @@ def _build_distributional_metric(
         "summary": {
             "field_count": len(field_results),
             "runnable_field_count": runnable_count,
+            "requested_max_sample_size_per_half": requested_max_sample_size,
+            "max_sample_size_per_half": effective_max_sample_size,
+            "pairwise_hard_max_sample_size_per_half": (
+                PAIRWISE_SAMPLE_HARD_LIMIT if is_pairwise_estimator else None
+            ),
+            "safety_cap_applied": (
+                is_pairwise_estimator
+                and requested_max_sample_size > effective_max_sample_size
+            ),
             f"mean_{output_key}": (
                 round(sum(values) / len(values), 6) if values else None
             ),
@@ -177,6 +263,8 @@ def compute_maximum_mean_discrepancy(df: pd.DataFrame, metric: dict) -> dict:
 
 
 def _distance_matrix(values: list[float]) -> list[list[float]]:
+    """Compatibility helper retained for historical callers/tests."""
+    _ensure_pairwise_sample_safe(values)
     return [[abs(a - b) for b in values] for a in values]
 
 
@@ -213,11 +301,29 @@ def _mean_product(left: list[list[float]], right: list[list[float]]) -> float:
 def _distance_correlation(left: list[float], right: list[float]) -> float:
     if len(left) < 2 or len(right) < 2 or len(left) != len(right):
         return 0.0
-    left_centered = _double_center(_distance_matrix(left))
-    right_centered = _double_center(_distance_matrix(right))
-    covariance_squared = _mean_product(left_centered, right_centered)
-    left_variance = _mean_product(left_centered, left_centered)
-    right_variance = _mean_product(right_centered, right_centered)
+    _ensure_pairwise_sample_safe(left, right)
+
+    left_values = np.asarray(left, dtype=np.float64)
+    right_values = np.asarray(right, dtype=np.float64)
+    left_distances = np.abs(left_values[:, None] - left_values[None, :])
+    right_distances = np.abs(right_values[:, None] - right_values[None, :])
+
+    left_centered = (
+        left_distances
+        - left_distances.mean(axis=1, keepdims=True)
+        - left_distances.mean(axis=0, keepdims=True)
+        + left_distances.mean()
+    )
+    right_centered = (
+        right_distances
+        - right_distances.mean(axis=1, keepdims=True)
+        - right_distances.mean(axis=0, keepdims=True)
+        + right_distances.mean()
+    )
+
+    covariance_squared = float(np.mean(left_centered * right_centered))
+    left_variance = float(np.mean(left_centered * left_centered))
+    right_variance = float(np.mean(right_centered * right_centered))
     denominator = sqrt(left_variance * right_variance)
     if denominator <= 0:
         return 0.0
@@ -227,7 +333,9 @@ def _distance_correlation(left: list[float], right: list[float]) -> float:
 def compute_distance_correlation_profile(
     df: pd.DataFrame,
     candidate_fields: list[str],
+    max_sample_size: int | None = None,
 ) -> dict:
+    df, sampling = _bounded_pairwise_dataframe_sample(df, max_sample_size)
     column_validation, runnable_fields, df = validate_candidate_fields(
         df, candidate_fields
     )
@@ -258,6 +366,7 @@ def compute_distance_correlation_profile(
     )
     return {
         "column_validation": column_validation,
+        "sampling": sampling,
         "profile": {
             "fields": runnable_fields,
             "matrix": matrix,
@@ -265,6 +374,7 @@ def compute_distance_correlation_profile(
                 "pair_count": len(pairs),
                 "mean_absolute_correlation": mean_absolute_correlation,
                 "pairs": pairs,
+                "sampling": sampling,
             },
         },
     }

@@ -271,20 +271,20 @@ def _daily_hour_vectors(
 
 
 def _mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]:
-    divergences: list[float] = []
+    total_divergence = 0.0
+    pair_count = 0
     for left_index in range(len(vectors)):
         left = _probabilities(vectors[left_index])
         for right_index in range(left_index + 1, len(vectors)):
             right = _probabilities(vectors[right_index])
-            divergences.append(
-                0.5 * sum(
-                    abs(left_value - right_value)
-                    for left_value, right_value in zip(left, right)
-                )
+            total_divergence += 0.5 * sum(
+                abs(left_value - right_value)
+                for left_value, right_value in zip(left, right)
             )
-    if not divergences:
+            pair_count += 1
+    if not pair_count:
         return None, 0
-    return sum(divergences) / len(divergences), len(divergences)
+    return total_divergence / pair_count, pair_count
 
 
 def _cosine_similarity(left: list[int], right: list[int]) -> float | None:
@@ -297,15 +297,17 @@ def _cosine_similarity(left: list[int], right: list[int]) -> float | None:
 
 
 def _mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]:
-    similarities: list[float] = []
+    total_similarity = 0.0
+    pair_count = 0
     for left_index in range(len(vectors)):
         for right_index in range(left_index + 1, len(vectors)):
             similarity = _cosine_similarity(vectors[left_index], vectors[right_index])
             if similarity is not None:
-                similarities.append(similarity)
-    if not similarities:
+                total_similarity += similarity
+                pair_count += 1
+    if not pair_count:
         return None, 0
-    return sum(similarities) / len(similarities), len(similarities)
+    return total_similarity / pair_count, pair_count
 
 
 def compute_hourly_activity_distribution_divergence(
