@@ -15,6 +15,7 @@ from runner.batch_progress import (
     render_batch_progress,
 )
 from runner.batch_reports import write_comparison_reports
+from runner.experiment_contract import validate_final_experiment_plan
 from runner.batch_state import (
     build_initial_batch_state,
     default_batch_state_path,
@@ -163,6 +164,11 @@ def parse_args() -> argparse.Namespace:
         help="Display mode passed to each dataset run",
     )
     parser.add_argument(
+        "--experiment-mode",
+        action="store_true",
+        help="Preflight every plan and run each job under the strict final-experiment contract",
+    )
+    parser.add_argument(
         "--force-output",
         action="store_true",
         help="Allow replacement if a generated outcome path already exists",
@@ -216,6 +222,17 @@ def main() -> int:
     meta = batch["batch_meta"]
     jobs = batch["jobs"]
     total_jobs = len(jobs)
+
+    if args.experiment_mode:
+        validated_plan_paths: set[Path] = set()
+        for job in jobs:
+            plan_path = _resolve_repo_path(repo_root, str(job["plan_path"]))
+            if plan_path in validated_plan_paths:
+                continue
+            payload = json.loads(plan_path.read_text(encoding="utf-8"))
+            validate_final_experiment_plan(payload)
+            validated_plan_paths.add(plan_path)
+        print(f"Final experiment contract validated for {len(validated_plan_paths)} plan(s).")
 
     output_value = args.output_dir or batch.get("output_directory") or str(
         Path("outcomes") / str(meta["batch_id"])
@@ -364,6 +381,8 @@ def main() -> int:
         ]
         if args.workers is not None:
             command.extend(["--workers", str(args.workers)])
+        if args.experiment_mode:
+            command.append("--experiment-mode")
         if args.force_output:
             command.append("--force-output")
         if args.no_update_field_translation:

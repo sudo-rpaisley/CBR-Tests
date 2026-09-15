@@ -8,6 +8,7 @@ from runner.dataset_loading import is_tabular_dataset, load_shared_tabular_datas
 from runner.dataset_summary import ensure_dataset_summary
 from runner.dispatch import build_metric_handlers
 from runner.execution import auto_worker_count, render_live_taxonomy, run_metrics_parallel
+from runner.experiment_contract import validate_final_experiment_plan
 from runner.field_translation import (
     available_translated_fields,
     build_field_translation_report,
@@ -92,6 +93,9 @@ def run_once(args):
     display_max_lines = context.display_max_lines
     default_metric_predictions = context.default_metric_predictions
     plan = context.plan
+    experiment_contract_report = (
+        validate_final_experiment_plan(plan) if getattr(args, "experiment_mode", False) else None
+    )
     dataset_path = context.dataset_path
     output_path = context.output_path
     case_id = context.case_id
@@ -230,6 +234,8 @@ def run_once(args):
     )
     phase_timings["provenance_hashing"] = round(time.perf_counter() - provenance_start, 6)
     provenance["phase_timings_seconds"] = phase_timings
+    if experiment_contract_report is not None:
+        provenance["experiment_contract"] = experiment_contract_report
 
     base_header_lines = build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size=True)
     print_title_box(base_header_lines)
