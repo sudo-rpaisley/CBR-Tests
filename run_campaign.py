@@ -16,8 +16,10 @@ from runner.campaign import (
     load_campaign_state,
     resolve_repo_path,
     slug,
+    validate_batch_manifest,
     write_campaign_state,
 )
+from runner.experiment_contract import validate_final_experiment_plan
 
 
 ATTENTION_BATCH_STATUSES = {"needs_attention", "interrupted", "failed", "error", "cancelled", "unknown"}
@@ -65,6 +67,32 @@ def _replace_result(state: dict[str, Any], result: dict[str, Any]) -> None:
 
 def _matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path:
     return campaign_output_dir / f"{index:03d}_{slug(str(matrix['batch_id']))}"
+
+
+def _preflight_campaign(
+    repo_root: Path,
+    matrices: list[dict[str, Any]],
+    *,
+    experiment_mode: bool,
+) -> tuple[int, int]:
+    """Validate every queued matrix before any campaign output or experiment work starts."""
+
+    batch_paths: set[Path] = set()
+    plan_paths: set[Path] = set()
+    for matrix in matrices:
+        batch_path = resolve_repo_path(repo_root, str(matrix["batch_path"]))
+        batch = validate_batch_manifest(batch_path)
+        batch_paths.add(batch_path)
+        if not experiment_mode:
+            continue
+        for job in batch["jobs"]:
+            plan_path = resolve_repo_path(repo_root, str(job["plan_path"]))
+            if plan_path in plan_paths:
+                continue
+            payload = json.loads(plan_path.read_text(encoding="utf-8"))
+            validate_final_experiment_plan(payload)
+            plan_paths.add(plan_path)
+    return len(batch_paths), len(plan_paths)
 
 
 def _build_batch_command(
@@ -180,6 +208,20 @@ def main() -> int:
     campaign = load_campaign(campaign_path)
     meta = campaign["campaign_meta"]
     matrices = campaign["matrices"]
+
+    validated_batches, validated_plans = _preflight_campaign(
+        repo_root,
+        matrices,
+        experiment_mode=bool(args.experiment_mode),
+    )
+    if args.experiment_mode:
+        print(
+            f"Campaign preflight: {validated_batches} batch manifest(s) and "
+            f"{validated_plans} unique final-experiment plan(s) validated."
+        )
+    else:
+        print(f"Campaign preflight: {validated_batches} batch manifest(s) validated.")
+
     output_value = args.output_dir or campaign.get("output_directory") or str(Path("outcomes") / str(meta["campaign_id"]))
     output_dir = resolve_repo_path(repo_root, str(output_value))
     output_dir.mkdir(parents=True, exist_ok=True)
