@@ -423,6 +423,15 @@ Python symbols defined by `cbr_tests/rerun_workflow.py`.
 | `_copy_baseline_companion(baseline_path: Path, record_dir: Path) -> Path | None` (L86) | function | Internal | Implementation helper for copy baseline companion. |
 | `run_and_compare(*, repo_root: Path, baseline_path: Path, plan_path: Path, dataset_path: Path, record_dir: Path, case_id: str = 'ad_hoc_case', display: str = 'compact', workers: int | None = None, extra_args: Sequence[str] = (), force: bool = False) -> dict` (L100) | function | Public | Archive a baseline, rerun a plan, compare outcomes, and write a manifest. The authoritative baseline is copied before execution. The original baseline is never modified. The post-overhaul outcome is produced by the normal ``run_plan.py`` path rather than by a special test harness. |
 
+## `create_campaign.py`
+
+Python symbols defined by `create_campaign.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `parse_args() -> argparse.Namespace` (L9) | function | Public | Parses args. |
+| `main() -> int` (L26) | function | Public | Implementation helper for main. |
+
 ## `create_plan.py`
 
 Python symbols defined by `create_plan.py`.
@@ -481,6 +490,24 @@ Python symbols defined by `run_batch.py`.
 | `parse_args() -> argparse.Namespace` (L150) | function | Public | Parses args. |
 | `main() -> int` (L217) | function | Public | Implementation helper for main. |
 
+## `run_campaign.py`
+
+Python symbols defined by `run_campaign.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_read_batch_status(output_dir: Path) -> str` (L28) | function | Internal | Implementation helper for read batch status. |
+| `_matrix_needs_attention(result: dict[str, Any]) -> bool` (L39) | function | Internal | Implementation helper for matrix needs attention. |
+| `_result_map(state: dict[str, Any]) -> dict[str, dict[str, Any]]` (L43) | function | Internal | Implementation helper for result map. |
+| `_replace_result(state: dict[str, Any], result: dict[str, Any]) -> None` (L51) | function | Internal | Implementation helper for replace result. |
+| `_matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path` (L68) | function | Internal | Implementation helper for matrix output dir. |
+| `_preflight_campaign(repo_root: Path, matrices: list[dict[str, Any]], *, experiment_mode: bool) -> tuple[int, int]` (L72) | function | Internal | Validate every queued matrix before any campaign output or experiment work starts. |
+| `_build_batch_command(*, repo_root: Path, batch_path: Path, output_dir: Path, args: argparse.Namespace, resume: bool, retry_failed: bool) -> list[str]` (L98) | function | Internal | Implementation helper for build batch command. |
+| `_initial_state(*, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> dict[str, Any]` (L138) | function | Internal | Implementation helper for initial state. |
+| `_validate_resume_state(state: dict[str, Any], *, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> None` (L161) | function | Internal | Implementation helper for validate resume state. |
+| `parse_args() -> argparse.Namespace` (L176) | function | Public | Parses args. |
+| `main() -> int` (L204) | function | Public | Implementation helper for main. |
+
 ## `run_plan.py`
 
 Top-level command workflow from parsed arguments to the atomic outcome JSON.
@@ -536,6 +563,44 @@ Python symbols defined by `runner/batch_state.py`.
 | `write_batch_state(path: Path, payload: dict) -> Path` (L101) | function | Public | Atomically write a batch checkpoint so interruption cannot leave partial JSON. |
 | `result_map(state: dict) -> dict[str, dict]` (L130) | function | Public | Implementation helper for result map. |
 | `replace_result(state: dict, result: dict) -> None` (L138) | function | Public | Implementation helper for replace result. |
+
+## `runner/campaign.py`
+
+Python symbols defined by `runner/campaign.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `slug(value: str) -> str` (L17) | function | Public | Implementation helper for slug. |
+| `resolve_repo_path(repo_root: Path, value: str | Path) -> Path` (L22) | function | Public | Resolves repo path. |
+| `portable_path(path: Path, repo_root: Path) -> str` (L27) | function | Public | Implementation helper for portable path. |
+| `file_sha256(path: Path) -> str` (L35) | function | Public | Implementation helper for file sha256. |
+| `_read_json(path: Path) -> dict[str, Any]` (L43) | function | Internal | Implementation helper for read JSON. |
+| `validate_batch_manifest(path: Path) -> dict[str, Any]` (L50) | function | Public | Validates batch manifest. |
+| `build_campaign(*, name: str, batch_paths: Iterable[Path], repo_root: Path, description: str = '') -> dict[str, Any]` (L69) | function | Public | Builds campaign. |
+| `load_campaign(path: Path) -> dict[str, Any]` (L123) | function | Public | Loads campaign. |
+| `_write_json_atomic(path: Path, payload: dict[str, Any], *, overwrite: bool = True) -> Path` (L151) | function | Internal | Implementation helper for write JSON atomic. |
+| `write_campaign(path: Path, payload: dict[str, Any], *, overwrite: bool = False) -> Path` (L171) | function | Public | Writes campaign. |
+| `load_campaign_payload(payload: dict[str, Any]) -> None` (L176) | function | Public | Loads campaign payload. |
+| `campaign_state_path(output_dir: Path) -> Path` (L187) | function | Public | Implementation helper for campaign state path. |
+| `write_campaign_state(path: Path, payload: dict[str, Any]) -> Path` (L191) | function | Public | Writes campaign state. |
+| `load_campaign_state(path: Path) -> dict[str, Any]` (L195) | function | Public | Loads campaign state. |
+
+## `runner/campaign_tui.py`
+
+Python symbols defined by `runner/campaign_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `campaign_toolbox_items() -> tuple[ToolboxItem, ...]` (L39) | function | Public | Implementation helper for campaign toolbox items. |
+| `_automatic_output(name: str) -> str` (L43) | function | Internal | Implementation helper for automatic output. |
+| `_resolve(root: Path, value: str) -> Path` (L47) | function | Internal | Implementation helper for resolve. |
+| `_campaign_review_lines(state: dict[str, Any], root: Path) -> list[str]` (L51) | function | Internal | Implementation helper for campaign review lines. |
+| `_campaign_issues(state: dict[str, Any], root: Path) -> list[str]` (L74) | function | Internal | Implementation helper for campaign issues. |
+| `_review_campaign(stdscr, state: dict[str, Any], root: Path) -> bool` (L93) | function | Internal | Implementation helper for review campaign. |
+| `_campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None` (L109) | function | Internal | Implementation helper for campaign builder curses. |
+| `launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L222) | function | Public | Implementation helper for launch campaign builder. |
+| `_campaign_run_command(root: Path, selected: str) -> list[str] | None` (L242) | function | Internal | Implementation helper for campaign run command. |
+| `run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int` (L301) | function | Public | Runs campaign tool action. |
 
 ## `runner/contract.py`
 
@@ -1208,12 +1273,12 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_menu_items() -> tuple[ToolboxItem, ...]` (L16) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
-| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L34) | function | Internal | Implementation helper for safe addstr. |
-| `_tool_rows() -> list[tuple[int | None, str, str]]` (L47) | function | Internal | Implementation helper for tool rows. |
-| `_choose_mode_curses(stdscr) -> str | None` (L58) | function | Internal | Implementation helper for choose mode curses. |
-| `_pause_after_tool() -> None` (L102) | function | Internal | Implementation helper for pause after tool. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L109) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
+| `_menu_items() -> tuple[ToolboxItem, ...]` (L17) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L43) | function | Internal | Implementation helper for safe addstr. |
+| `_tool_rows() -> list[tuple[int | None, str, str]]` (L56) | function | Internal | Implementation helper for tool rows. |
+| `_choose_mode_curses(stdscr) -> str | None` (L67) | function | Internal | Implementation helper for choose mode curses. |
+| `_pause_after_tool() -> None` (L111) | function | Internal | Implementation helper for pause after tool. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L118) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
 ## `scripts/build_documentation_inventory.py`
 

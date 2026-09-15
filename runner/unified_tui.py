@@ -3,6 +3,7 @@ from __future__ import annotations
 import curses
 from pathlib import Path
 
+from runner.campaign_tui import campaign_toolbox_items, run_campaign_tool_action
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
 from runner.toolbox_tui import ToolboxItem, run_tool_action, toolbox_items
 
@@ -17,14 +18,22 @@ def _menu_items() -> tuple[ToolboxItem, ...]:
     """Return user-facing toolbox entries, including guided workflow shortcuts."""
 
     items = list(toolbox_items())
+    campaign_items = {item.key: item for item in campaign_toolbox_items()}
+
+    batch_index = next((index for index, item in enumerate(items) if item.key == "batch"), 1)
+    items.insert(batch_index + 1, campaign_items["campaign_run"])
+
+    build_index = next((index for index, item in enumerate(items) if item.key == "build_plan"), len(items) - 1)
+    items.insert(build_index + 1, campaign_items["campaign_build"])
+
     shortcut = ToolboxItem(
         "field_mapping",
         "Validate / map dataset fields",
         "Run field-translation preflight and map missing canonical fields before an experiment.",
         "Prepare experiments",
     )
-    insert_at = next((index + 1 for index, item in enumerate(items) if item.key == "build_plan"), len(items))
-    items.insert(insert_at, shortcut)
+    build_index = next((index for index, item in enumerate(items) if item.key == "campaign_build"), len(items) - 1)
+    items.insert(build_index + 1, shortcut)
     return tuple(items)
 
 
@@ -64,7 +73,7 @@ def _choose_mode_curses(stdscr) -> str | None:
         stdscr.erase()
         height, _ = stdscr.getmaxyx()
         _safe_addstr(stdscr, 0, 0, "CBR Tests Toolbox", curses.A_BOLD)
-        _safe_addstr(stdscr, 1, 0, "Run experiments, build plans, inspect results and access maintenance tools from one place.")
+        _safe_addstr(stdscr, 1, 0, "Run experiments, build plans, queue matrices, inspect results and access maintenance tools from one place.")
         _safe_addstr(stdscr, 2, 0, "↑/↓ move   Enter open   PgUp/PgDn page   q/Esc quit")
 
         selected_row = next((i for i, (index, _, _) in enumerate(rows) if index == selected), 0)
@@ -110,6 +119,7 @@ def launch_unified_tui(args, repo_root: Path | None = None):
     """Launch the CBR-Tests toolbox and return only when a run workflow is selected."""
 
     root = (repo_root or Path.cwd()).expanduser().resolve()
+    campaign_actions = {item.key for item in campaign_toolbox_items()}
     while True:
         mode = curses.wrapper(_choose_mode_curses)
         if mode is None:
@@ -125,7 +135,10 @@ def launch_unified_tui(args, repo_root: Path | None = None):
             return args
 
         try:
-            run_tool_action(mode, root)
+            if mode in campaign_actions:
+                run_campaign_tool_action(mode, root)
+            else:
+                run_tool_action(mode, root)
         except (OSError, ValueError, RuntimeError) as exc:
             print(f"\nTool failed: {exc}")
         _pause_after_tool()
