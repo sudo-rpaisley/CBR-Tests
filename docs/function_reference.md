@@ -743,6 +743,41 @@ Translation preflight and requested-report workflow.
 | `_write_requested_reports(args, field_translation_report: dict[str, Any], human_report: str) -> None` (L190) | function | Internal | Implementation helper for write requested reports. |
 | `_should_use_color() -> bool` (L202) | function | Internal | Implementation helper for should use color. |
 
+## `runner/friendly_tui.py`
+
+Python symbols defined by `runner/friendly_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `build_friendly_single_fields(args, repo_root: Path | None = None) -> list[TuiField]` (L45) | function | Public | Build the normal run fields plus the strict final-experiment switch. The existing field model is deliberately reused so this UI is only a presentation layer over the established runner configuration. |
+| `visible_single_fields(fields: list[TuiField], show_advanced: bool) -> list[TuiField]` (L70) | function | Public | Implementation helper for visible single fields. |
+| `_field_by_name(fields: list[TuiField], name: str) -> TuiField | None` (L77) | function | Internal | Implementation helper for field by name. |
+| `_field_value(fields: list[TuiField], name: str, default: object = '') -> object` (L81) | function | Internal | Implementation helper for field value. |
+| `_resolve_from_root(value: str, root: Path) -> Path` (L86) | function | Internal | Implementation helper for resolve from root. |
+| `_selection_kind(case_value: str, root: Path) -> str` (L93) | function | Internal | Implementation helper for selection kind. |
+| `single_setup_issues(fields: list[TuiField], repo_root: Path | None = None) -> list[str]` (L110) | function | Public | Return concise setup problems that should be fixed before starting a run. |
+| `single_review_lines(fields: list[TuiField], repo_root: Path | None = None) -> list[str]` (L144) | function | Public | Implementation helper for single review lines. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L163) | function | Internal | Implementation helper for safe addstr. |
+| `_initialise_colours() -> None` (L176) | function | Internal | Implementation helper for initialise colours. |
+| `_status_attr(ok: bool) -> int` (L189) | function | Internal | Implementation helper for status attr. |
+| `_choice_dialog(stdscr, title: str, choices: tuple[str, ...], current: object) -> str | None` (L195) | function | Internal | Implementation helper for choice dialog. |
+| `_dataset_browser_entries(directory: Path, root: Path)` (L227) | function | Internal | Implementation helper for dataset browser entries. |
+| `_friendly_dataset_browser(stdscr, root: Path, initial: str) -> str | None` (L235) | function | Internal | Implementation helper for friendly dataset browser. |
+| `_rows_for_fields(fields: list[TuiField]) -> list[tuple[int | None, str]]` (L321) | function | Internal | Implementation helper for rows for fields. |
+| `_refresh_auto_output(fields: list[TuiField], root: Path) -> None` (L332) | function | Internal | Implementation helper for refresh auto output. |
+| `_review_single(stdscr, fields: list[TuiField], root: Path) -> bool` (L339) | function | Internal | Implementation helper for review single. |
+| `_edit_single_field(stdscr, field: TuiField, fields: list[TuiField], root: Path) -> None` (L358) | function | Internal | Implementation helper for edit single field. |
+| `_single_setup_curses(stdscr, fields: list[TuiField], root: Path) -> list[TuiField] | None` (L380) | function | Internal | Implementation helper for single setup curses. |
+| `launch_single_tui(args, repo_root: Path | None = None)` (L484) | function | Public | Implementation helper for launch single tui. |
+| `batch_visible_field_names(show_advanced: bool) -> tuple[str, ...]` (L493) | function | Public | Implementation helper for batch visible field names. |
+| `batch_review_lines(state: dict[str, Any]) -> list[str]` (L510) | function | Public | Implementation helper for batch review lines. |
+| `_review_batch(stdscr, state: dict[str, Any]) -> bool` (L526) | function | Internal | Implementation helper for review batch. |
+| `_batch_value(state: dict[str, Any], name: str) -> str` (L542) | function | Internal | Implementation helper for batch value. |
+| `_batch_label(name: str) -> str` (L558) | function | Internal | Implementation helper for batch label. |
+| `_batch_help(name: str) -> str` (L573) | function | Internal | Implementation helper for batch help. |
+| `_friendly_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L588) | function | Internal | Implementation helper for friendly batch setup curses. |
+| `launch_friendly_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L716) | function | Public | Implementation helper for launch friendly batch tui. |
+
 ## `runner/human_summary.py`
 
 Python symbols defined by `runner/human_summary.py`.
@@ -1143,8 +1178,9 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_choose_mode_curses(stdscr) -> str | None` (L13) | function | Internal | Implementation helper for choose mode curses. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L45) | function | Public | Launch the single-run TUI or the batch/comparison TUI from one entry point. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L17) | function | Internal | Implementation helper for safe addstr. |
+| `_choose_mode_curses(stdscr) -> str | None` (L30) | function | Internal | Implementation helper for choose mode curses. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L67) | function | Public | Launch the guided single-run or batch/comparison terminal UI. |
 
 ## `scripts/build_documentation_inventory.py`
 

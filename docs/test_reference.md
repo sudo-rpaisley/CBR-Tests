@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **312 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **318 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -378,6 +378,27 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_canonical_plan() -> dict` (L17) | Implementation helper for canonical plan. |
+
+## `tests/test_friendly_tui.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_friendly_single_defaults_to_only_essential_fields(tmp_path)` (L42) | Verifies that friendly single defaults to only essential fields. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'cases' / 'case.json').write_text`, `build_friendly_single_fields`, `visible_single_fields`, `_args` |
+| `test_friendly_single_exposes_strict_experiment_mode_without_changing_runner_contract(tmp_path)` (L62) | Verifies that friendly single exposes strict experiment mode without changing runner contract. | `build_friendly_single_fields`, `next`, `apply_tui_fields`, `_args` |
+| `test_direct_plan_requires_dataset_before_review(tmp_path)` (L73) | Verifies that direct plan requires dataset before review. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'plans' / 'plan.json').write_text`, `build_friendly_single_fields`, `dataset.write_text`, `_args`, `single_setup_issues`, `next` |
+| `test_case_can_supply_its_own_dataset(tmp_path)` (L89) | Verifies that case can supply its own dataset. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'cases' / 'case.json').write_text`, `build_friendly_single_fields`, `_args`, `single_setup_issues`, `single_review_lines` |
+| `test_batch_defaults_to_essential_fields_and_keeps_advanced_options_available()` (L101) | Verifies that batch defaults to essential fields and keeps advanced options available. | `batch_visible_field_names` |
+| `test_batch_review_summarises_comparison_matrix(tmp_path)` (L111) | Verifies that batch review summarises comparison matrix. | `batch_review_lines` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_args(**overrides)` (L16) | Implementation helper for args. |
 
 ## `tests/test_human_summary.py`
 
