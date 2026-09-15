@@ -1208,11 +1208,12 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L18) | function | Internal | Implementation helper for safe addstr. |
-| `_tool_rows() -> list[tuple[int | None, str, str]]` (L31) | function | Internal | Implementation helper for tool rows. |
-| `_choose_mode_curses(stdscr) -> str | None` (L42) | function | Internal | Implementation helper for choose mode curses. |
-| `_pause_after_tool() -> None` (L87) | function | Internal | Implementation helper for pause after tool. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L94) | function | Public | Launch the CBR-Tests toolbox and return only when a run mode is selected. |
+| `_menu_items() -> tuple[ToolboxItem, ...]` (L16) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L34) | function | Internal | Implementation helper for safe addstr. |
+| `_tool_rows() -> list[tuple[int | None, str, str]]` (L47) | function | Internal | Implementation helper for tool rows. |
+| `_choose_mode_curses(stdscr) -> str | None` (L58) | function | Internal | Implementation helper for choose mode curses. |
+| `_pause_after_tool() -> None` (L102) | function | Internal | Implementation helper for pause after tool. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L109) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
 ## `scripts/build_documentation_inventory.py`
 
