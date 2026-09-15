@@ -6,6 +6,11 @@ from pathlib import Path
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
 
 
+# Preserve these historical module-level hooks so existing tests and callers can
+# monkeypatch them without knowing which presentation layer is currently used.
+launch_tui = launch_single_tui
+launch_batch_tui = launch_friendly_batch_tui
+
 TUI_MODES = ("Single dataset run", "Batch / comparison run")
 
 
@@ -66,8 +71,8 @@ def launch_unified_tui(args, repo_root: Path | None = None):
     if mode is None:
         raise SystemExit("TUI cancelled")
     if mode == "single":
-        return launch_single_tui(args, repo_root=repo_root)
+        return launch_tui(args, repo_root=repo_root)
 
-    args.tui_batch_spec = launch_friendly_batch_tui(args, repo_root=repo_root)
+    args.tui_batch_spec = launch_batch_tui(args, repo_root=repo_root)
     args.tui = False
     return args
