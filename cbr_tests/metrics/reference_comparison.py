@@ -54,7 +54,9 @@ def _apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.Data
             "Reference field mapping would overwrite existing columns: "
             + ", ".join(sorted(set(collisions)))
         )
-    return dataframe.rename(columns=rename_map, copy=False)
+    mapped = dataframe.copy(deep=False)
+    mapped.rename(columns=rename_map, inplace=True)
+    return mapped
 
 
 def _load_reference_df(metric: dict) -> pd.DataFrame:

@@ -223,7 +223,7 @@ def main() -> int:
     jobs = batch["jobs"]
     total_jobs = len(jobs)
 
-    if args.experiment_mode:
+    if getattr(args, "experiment_mode", False):
         validated_plan_paths: set[Path] = set()
         for job in jobs:
             plan_path = _resolve_repo_path(repo_root, str(job["plan_path"]))
@@ -381,7 +381,7 @@ def main() -> int:
         ]
         if args.workers is not None:
             command.extend(["--workers", str(args.workers)])
-        if args.experiment_mode:
+        if getattr(args, "experiment_mode", False):
             command.append("--experiment-mode")
         if args.force_output:
             command.append("--force-output")
