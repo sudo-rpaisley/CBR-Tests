@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from itertools import combinations
-from math import exp, sqrt
-from statistics import median
+from math import sqrt
 
 import numpy as np
 import pandas as pd
@@ -144,22 +143,25 @@ def _rbf_mmd(
     gamma: float | None = None,
 ) -> float:
     _ensure_pairwise_sample_safe(left, right)
-    combined = left + right
+    left_values = np.asarray(left, dtype=np.float64)
+    right_values = np.asarray(right, dtype=np.float64)
+    combined = np.concatenate([left_values, right_values])
+
     if gamma is None:
-        distances = [abs(a - b) for a, b in combinations(combined, 2) if a != b]
-        sigma = median(distances) if distances else 1.0
+        pairwise_distances = np.abs(combined[:, None] - combined[None, :])
+        upper = pairwise_distances[np.triu_indices(len(combined), 1)]
+        positive = upper[upper > 0]
+        sigma = float(np.median(positive)) if positive.size else 1.0
         gamma = 1.0 / (2.0 * sigma * sigma) if sigma else 1.0
 
-    def kernel_mean(a_values: list[float], b_values: list[float]) -> float:
-        total = sum(
-            exp(-gamma * (a - b) ** 2) for a in a_values for b in b_values
-        )
-        return total / (len(a_values) * len(b_values))
+    def kernel_mean(a_values: np.ndarray, b_values: np.ndarray) -> float:
+        squared_distances = (a_values[:, None] - b_values[None, :]) ** 2
+        return float(np.exp(-gamma * squared_distances).mean())
 
     value = (
-        kernel_mean(left, left)
-        + kernel_mean(right, right)
-        - 2 * kernel_mean(left, right)
+        kernel_mean(left_values, left_values)
+        + kernel_mean(right_values, right_values)
+        - 2 * kernel_mean(left_values, right_values)
     )
     return max(0.0, value)
 
@@ -173,9 +175,17 @@ def _build_distributional_metric(
     candidate_fields = metric["input_requirements"]["candidate_fields"]
     parameters = metric.get("calculation", {}).get("parameters", {})
     minimum_sample_size = int(parameters.get("minimum_sample_size", 2))
-    max_sample_size = int(parameters.get("max_sample_size", 1000))
-    if max_sample_size < 2:
+    requested_max_sample_size = int(parameters.get("max_sample_size", 1000))
+    if requested_max_sample_size < 2:
         raise ValueError("max_sample_size must be at least 2")
+
+    is_pairwise_estimator = calculator in {_energy_distance, _rbf_mmd}
+    if is_pairwise_estimator:
+        requested_max_sample_size, effective_max_sample_size = _validated_pairwise_limit(
+            requested_max_sample_size
+        )
+    else:
+        effective_max_sample_size = requested_max_sample_size
 
     field_results = []
     runnable_count = 0
@@ -194,7 +204,7 @@ def _build_distributional_metric(
             field_results.append(result)
             continue
 
-        values = _clean_numeric_values(df, field)[: max_sample_size * 2]
+        values = _clean_numeric_values(df, field)[: effective_max_sample_size * 2]
         left, right = _split_values(values)
         result["sample_a_count"] = len(left)
         result["sample_b_count"] = len(right)
@@ -215,7 +225,15 @@ def _build_distributional_metric(
         "summary": {
             "field_count": len(field_results),
             "runnable_field_count": runnable_count,
-            "max_sample_size_per_half": max_sample_size,
+            "requested_max_sample_size_per_half": requested_max_sample_size,
+            "max_sample_size_per_half": effective_max_sample_size,
+            "pairwise_hard_max_sample_size_per_half": (
+                PAIRWISE_SAMPLE_HARD_LIMIT if is_pairwise_estimator else None
+            ),
+            "safety_cap_applied": (
+                is_pairwise_estimator
+                and requested_max_sample_size > effective_max_sample_size
+            ),
             f"mean_{output_key}": (
                 round(sum(values) / len(values), 6) if values else None
             ),
