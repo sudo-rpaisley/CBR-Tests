@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **293 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **312 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -281,6 +281,39 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_plan(*, sample_mode: str = 'full', allow_skips: bool = False) -> dict` (L23) | Implementation helper for plan. |
 
+## `tests/test_experiment_mode_integration.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_run_plan_experiment_mode_writes_contract_to_provenance(tmp_path: Path)` (L15) | Verifies that run plan experiment mode writes contract to provenance. | `migrate_plan_to_canonical_ids`, `plan_path.write_text`, `subprocess.run`, `(REPO_ROOT / 'examples/quickstart/plan.json').read_text`, `output_path.read_text` |
+| `test_run_plan_experiment_mode_rejects_historical_quickstart_plan(tmp_path: Path)` (L64) | Verifies that run plan experiment mode rejects historical quickstart plan. | `subprocess.run`, `output_path.exists` |
+
+## `tests/test_experiment_resource_safety.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_compact_pcap_view_preserves_canonical_values_and_reduces_memory(tmp_path: Path)` (L41) | Verifies that compact PCAP view preserves canonical values and reduces memory. | `_write_repetitive_capture`, `build_pcap_packet_dataframe`, `build_compact_pcap_packet_dataframe`, `dataframe_memory_bytes`, `compact[column].astype(str).tolist`, `canonical[column].astype(str).tolist`, `compact[column].astype`, `canonical[column].astype` |
+| `test_compact_pcap_view_preserves_all_packet_metric_results(tmp_path: Path)` (L62) | Verifies that compact PCAP view preserves all packet metric results. | `_write_repetitive_capture`, `build_pcap_packet_dataframe`, `build_compact_pcap_packet_dataframe`, `build_metric_handlers`, `AssertionError`, `pcap_metric_template`, `canonical_handlers[metric_id]`, `compact_handlers[metric_id]` |
+| `test_memory_policy_caps_workers_relative_to_loaded_dataframe()` (L83) | Verifies that memory policy caps workers relative to loaded dataframe. | `dataframe_memory_bytes`, `choose_worker_policy` |
+| `test_memory_policy_does_not_change_runs_without_shared_dataframe()` (L111) | Verifies that memory policy does not change runs without shared dataframe. | `choose_worker_policy` |
+| `test_csv_loader_avoids_chunk_collection_concat_peak(monkeypatch, tmp_path: Path)` (L121) | Verifies that csv loader avoids chunk collection concat peak. | `dataset.write_text`, `monkeypatch.setattr`, `load_tabular_dataset`, `calls.append`, `progress.append` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_repetitive_capture(path: Path, packet_count: int = 2000) -> None` (L21) | Implementation helper for write repetitive capture. |
+| `test_compact_pcap_view_preserves_all_packet_metric_results.forbidden_loader(_path)` (L68) | Implementation helper for forbidden loader. |
+| `test_csv_loader_avoids_chunk_collection_concat_peak.fake_read_csv(path, **kwargs)` (L126) | Implementation helper for fake read csv. |
+
 ## `tests/test_field_translation.py`
 
 Translation loading, detection, sidecars, reports, suggestions, and formatting.
@@ -324,6 +357,27 @@ Translation loading, detection, sidecars, reports, suggestions, and formatting.
 | Helper | Purpose |
 | --- | --- |
 | `test_format_column_section_uses_terminal_width_fallback.fake_get_terminal_size(fallback)` (L415) | Implementation helper for fake get terminal size. |
+
+## `tests/test_final_experiment_contract.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_final_experiment_contract_accepts_canonical_full_plan_without_skips()` (L26) | Verifies that final experiment contract accepts canonical full plan without skips. | `validate_final_experiment_plan`, `_canonical_plan` |
+| `test_final_experiment_contract_rejects_legacy_metric_ids()` (L37) | Verifies that final experiment contract rejects legacy metric ids. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_compatibility_only_profiles()` (L45) | Verifies that final experiment contract rejects compatibility only profiles. | `_canonical_plan`, `deepcopy`, `plan['metrics'].append`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_non_full_sample_mode_at_schema_boundary()` (L62) | Verifies that final experiment contract rejects non full sample mode at schema boundary. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_skippable_metrics()` (L72) | Verifies that final experiment contract rejects skippable metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_plan_with_no_enabled_metrics()` (L80) | Verifies that final experiment contract rejects plan with no enabled metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_canonical_plan() -> dict` (L17) | Implementation helper for canonical plan. |
 
 ## `tests/test_human_summary.py`
 
@@ -607,6 +661,21 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write_packets(path: Path, packets) -> None` (L31) | Implementation helper for write packets. |
+
+## `tests/test_reference_memory_safety.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_shared_reference_dataframe_is_reused_without_full_copy()` (L20) | Verifies that shared reference dataframe is reused without full copy. | `_load_reference_df` |
+| `test_cached_csv_reference_dataframe_is_reused_without_full_copy(tmp_path: Path)` (L29) | Verifies that cached csv reference dataframe is reused without full copy. | `_REFERENCE_DF_CACHE.clear`, `_load_reference_df`, `reference_path.resolve` |
+| `test_reference_field_mapping_does_not_mutate_cached_columns(tmp_path: Path)` (L44) | Verifies that reference field mapping does not mutate cached columns. | `_REFERENCE_DF_CACHE.clear`, `_load_reference_df`, `reference_path.resolve` |
+| `test_correlation_profile_only_copies_requested_fields_and_preserves_input()` (L62) | Verifies that correlation profile only copies requested fields and preserves input. | `dataframe.copy`, `_correlation_profile` |
+| `test_reference_metric_does_not_mutate_shared_reference_dataframe()` (L78) | Verifies that reference metric does not mutate shared reference dataframe. | `reference.copy`, `compute_pearson_matrix_deviation_from_reference` |
+| `test_raw_pcap_reference_uses_compact_packet_storage(tmp_path: Path)` (L93) | Verifies that raw PCAP reference uses compact packet storage. | `wrpcap`, `_REFERENCE_DF_CACHE.clear`, `_load_reference_df`, `build_pcap_packet_dataframe`, `packets.append`, `dataframe_memory_bytes`, `compact['Source IP'].astype(str).tolist`, `canonical['Source IP'].astype(str).tolist` |
 
 ## `tests/test_reference_model_comparison_profile.py`
 

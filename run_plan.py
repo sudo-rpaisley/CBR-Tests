@@ -8,6 +8,7 @@ from runner.dataset_loading import is_tabular_dataset, load_shared_tabular_datas
 from runner.dataset_summary import ensure_dataset_summary
 from runner.dispatch import build_metric_handlers
 from runner.execution import auto_worker_count, render_live_taxonomy, run_metrics_parallel
+from runner.experiment_contract import validate_final_experiment_plan
 from runner.field_translation import (
     available_translated_fields,
     build_field_translation_report,
@@ -28,7 +29,9 @@ from runner.parallel_progress import build_parallel_progress_callback
 from runner.parallel_results import collect_parallel_metric_results
 from runner.progress import print_live_status
 from runner.provenance import build_provenance_manifest
-from runner.pcap_adapter import PCAP_PACKET_BACKED_METRICS, build_pcap_packet_dataframe, is_packet_capture
+from runner.pcap_adapter import PCAP_PACKET_BACKED_METRICS, is_packet_capture
+from runner.pcap_compact import build_compact_pcap_packet_dataframe
+from runner.resource_policy import choose_worker_policy
 from runner.run_context import prepare_run_context
 from runner.run_display import print_phase_status, print_title_box
 from runner.run_plan_helpers import (
@@ -90,6 +93,9 @@ def run_once(args):
     display_max_lines = context.display_max_lines
     default_metric_predictions = context.default_metric_predictions
     plan = context.plan
+    experiment_contract_report = (
+        validate_final_experiment_plan(plan) if getattr(args, "experiment_mode", False) else None
+    )
     dataset_path = context.dataset_path
     output_path = context.output_path
     case_id = context.case_id
@@ -228,6 +234,8 @@ def run_once(args):
     )
     phase_timings["provenance_hashing"] = round(time.perf_counter() - provenance_start, 6)
     provenance["phase_timings_seconds"] = phase_timings
+    if experiment_contract_report is not None:
+        provenance["experiment_contract"] = experiment_contract_report
 
     base_header_lines = build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size=True)
     print_title_box(base_header_lines)
@@ -269,8 +277,8 @@ def run_once(args):
     elif is_packet_capture(dataset_path) and any(
         metric["metric_id"] in PCAP_PACKET_BACKED_METRICS for metric in metrics
     ):
-        print_phase_status("PCAP", "Building canonical packet view")
-        shared_tabular_df = build_pcap_packet_dataframe(dataset_path)
+        print_phase_status("PCAP", "Building compact canonical packet view")
+        shared_tabular_df = build_compact_pcap_packet_dataframe(dataset_path)
     phase_timings["dataset_loading"] = round(time.perf_counter() - dataset_load_start, 6)
 
     dataset_summary_start = time.perf_counter()
@@ -318,10 +326,18 @@ def run_once(args):
     total_metrics = len(metrics)
     completed_statuses: dict[str, str] = {}
     completed_durations: dict[str, float] = {}
-    workers = args.workers if args.workers is not None else auto_worker_count(total_metrics)
-    workers = max(1, int(workers))
-    if shared_tabular_df is not None and workers > 4:
-        workers = 4
+    requested_workers = args.workers if args.workers is not None else auto_worker_count(total_metrics)
+    worker_policy = choose_worker_policy(
+        requested_workers=max(1, int(requested_workers)),
+        shared_dataframe=shared_tabular_df,
+    )
+    workers = int(worker_policy["effective_workers"])
+    provenance["resource_policy"] = worker_policy
+    if worker_policy.get("cap_reason"):
+        print_phase_status(
+            "Resources",
+            f"Workers capped {worker_policy['requested_workers']} -> {workers} ({worker_policy['cap_reason']})",
+        )
     mode = "parallel" if workers > 1 else "serial"
     if shared_tabular_df is not None:
         source_field, destination_field = detect_ip_fields(shared_tabular_df)

@@ -21,7 +21,8 @@ from cbr_tests.metrics.temporal import (
     _probabilities,
     _timestamp_unit,
 )
-from runner.pcap_adapter import build_pcap_packet_dataframe, is_packet_capture
+from runner.pcap_adapter import is_packet_capture
+from runner.pcap_compact import build_compact_pcap_packet_dataframe
 
 
 def _reference_path(metric: dict) -> str | None:
@@ -53,13 +54,15 @@ def _apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.Data
             "Reference field mapping would overwrite existing columns: "
             + ", ".join(sorted(set(collisions)))
         )
-    return dataframe.rename(columns=rename_map)
+    mapped = dataframe.copy(deep=False)
+    mapped.rename(columns=rename_map, inplace=True)
+    return mapped
 
 
 def _load_reference_df(metric: dict) -> pd.DataFrame:
     shared = metric.get("_reference_df")
     if isinstance(shared, pd.DataFrame):
-        return _apply_reference_field_map(shared.copy(), metric)
+        return _apply_reference_field_map(shared, metric)
 
     path_value = _reference_path(metric)
     if not path_value:
@@ -72,16 +75,17 @@ def _load_reference_df(metric: dict) -> pd.DataFrame:
     with _REFERENCE_DF_CACHE_LOCK:
         cached = _REFERENCE_DF_CACHE.get(cache_key)
         if cached is not None:
-            return _apply_reference_field_map(cached.copy(), metric)
+            return _apply_reference_field_map(cached, metric)
         suffix = path.suffix.lower()
         if is_packet_capture(path):
-            dataframe = build_pcap_packet_dataframe(path)
+            dataframe = build_compact_pcap_packet_dataframe(path)
         elif suffix in {".csv", ".tsv"}:
             dataframe = pd.read_csv(
                 path,
                 sep="\t" if suffix == ".tsv" else ",",
                 skipinitialspace=True,
                 low_memory=False,
+                memory_map=True,
             )
         elif suffix in {".xlsx", ".xls"}:
             dataframe = pd.read_excel(path)
@@ -90,7 +94,7 @@ def _load_reference_df(metric: dict) -> pd.DataFrame:
         if dataframe.empty:
             raise ValueError(f"Reference dataset contains no usable rows: {path}")
         _REFERENCE_DF_CACHE[cache_key] = dataframe
-        return _apply_reference_field_map(dataframe.copy(), metric)
+        return _apply_reference_field_map(dataframe, metric)
 
 
 def _candidate_fields(metric: dict) -> list[str]:
@@ -282,7 +286,7 @@ def _matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict:
 
 def _correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict:
     usable = []
-    work_df = df.copy()
+    work_df = df[[field for field in fields if field in df.columns]].copy()
     for field in fields:
         if field in work_df.columns:
             numeric = pd.to_numeric(work_df[field], errors="coerce")

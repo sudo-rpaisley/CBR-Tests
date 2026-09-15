@@ -198,6 +198,11 @@ def parse_run_plan_args() -> argparse.Namespace:
     parser.add_argument("--case-id", default="ad_hoc_case", help="Case ID used when running a plan JSON directly")
     parser.add_argument("--force-output", action="store_true", help="Allow replacement of an existing output file")
     parser.add_argument(
+        "--experiment-mode",
+        action="store_true",
+        help="Enforce the strict canonical contract required for final experiment runs",
+    )
+    parser.add_argument(
         "--dataset-summary",
         action=argparse.BooleanOptionalAction,
         default=True,
