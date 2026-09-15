@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **298 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **312 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -281,6 +281,17 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_plan(*, sample_mode: str = 'full', allow_skips: bool = False) -> dict` (L23) | Implementation helper for plan. |
 
+## `tests/test_experiment_mode_integration.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_run_plan_experiment_mode_writes_contract_to_provenance(tmp_path: Path)` (L15) | Verifies that run plan experiment mode writes contract to provenance. | `migrate_plan_to_canonical_ids`, `plan_path.write_text`, `subprocess.run`, `(REPO_ROOT / 'examples/quickstart/plan.json').read_text`, `output_path.read_text` |
+| `test_run_plan_experiment_mode_rejects_historical_quickstart_plan(tmp_path: Path)` (L64) | Verifies that run plan experiment mode rejects historical quickstart plan. | `subprocess.run`, `output_path.exists` |
+
 ## `tests/test_experiment_resource_safety.py`
 
 Tests and local helpers in this module.
@@ -346,6 +357,27 @@ Translation loading, detection, sidecars, reports, suggestions, and formatting.
 | Helper | Purpose |
 | --- | --- |
 | `test_format_column_section_uses_terminal_width_fallback.fake_get_terminal_size(fallback)` (L415) | Implementation helper for fake get terminal size. |
+
+## `tests/test_final_experiment_contract.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_final_experiment_contract_accepts_canonical_full_plan_without_skips()` (L26) | Verifies that final experiment contract accepts canonical full plan without skips. | `validate_final_experiment_plan`, `_canonical_plan` |
+| `test_final_experiment_contract_rejects_legacy_metric_ids()` (L37) | Verifies that final experiment contract rejects legacy metric ids. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_compatibility_only_profiles()` (L45) | Verifies that final experiment contract rejects compatibility only profiles. | `_canonical_plan`, `deepcopy`, `plan['metrics'].append`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_non_full_sample_mode()` (L62) | Verifies that final experiment contract rejects non full sample mode. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_skippable_metrics()` (L70) | Verifies that final experiment contract rejects skippable metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+| `test_final_experiment_contract_rejects_plan_with_no_enabled_metrics()` (L78) | Verifies that final experiment contract rejects plan with no enabled metrics. | `_canonical_plan`, `pytest.raises`, `validate_final_experiment_plan` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_canonical_plan() -> dict` (L17) | Implementation helper for canonical plan. |
 
 ## `tests/test_human_summary.py`
 
@@ -629,6 +661,21 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write_packets(path: Path, packets) -> None` (L31) | Implementation helper for write packets. |
+
+## `tests/test_reference_memory_safety.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_shared_reference_dataframe_is_reused_without_full_copy()` (L20) | Verifies that shared reference dataframe is reused without full copy. | `_load_reference_df` |
+| `test_cached_csv_reference_dataframe_is_reused_without_full_copy(tmp_path: Path)` (L29) | Verifies that cached csv reference dataframe is reused without full copy. | `_REFERENCE_DF_CACHE.clear`, `_load_reference_df`, `reference_path.resolve` |
+| `test_reference_field_mapping_does_not_mutate_cached_columns(tmp_path: Path)` (L44) | Verifies that reference field mapping does not mutate cached columns. | `_REFERENCE_DF_CACHE.clear`, `_load_reference_df`, `reference_path.resolve` |
+| `test_correlation_profile_only_copies_requested_fields_and_preserves_input()` (L62) | Verifies that correlation profile only copies requested fields and preserves input. | `dataframe.copy`, `_correlation_profile` |
+| `test_reference_metric_does_not_mutate_shared_reference_dataframe()` (L78) | Verifies that reference metric does not mutate shared reference dataframe. | `reference.copy`, `compute_pearson_matrix_deviation_from_reference` |
+| `test_raw_pcap_reference_uses_compact_packet_storage(tmp_path: Path)` (L93) | Verifies that raw PCAP reference uses compact packet storage. | `wrpcap`, `_REFERENCE_DF_CACHE.clear`, `_load_reference_df`, `build_pcap_packet_dataframe`, `packets.append`, `dataframe_memory_bytes`, `compact['Source IP'].astype(str).tolist`, `canonical['Source IP'].astype(str).tolist` |
 
 ## `tests/test_reference_model_comparison_profile.py`
 

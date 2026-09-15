@@ -230,48 +230,48 @@ Python symbols defined by `cbr_tests/metrics/reference_comparison.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_reference_path(metric: dict) -> str | None` (L27) | function | Internal | Implementation helper for reference path. |
-| `_apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.DataFrame` (L37) | function | Internal | Implementation helper for apply reference field map. |
-| `_load_reference_df(metric: dict) -> pd.DataFrame` (L59) | function | Internal | Implementation helper for load reference dataframe. |
-| `_candidate_fields(metric: dict) -> list[str]` (L96) | function | Internal | Implementation helper for candidate fields. |
-| `_even_positions(length: int, maximum: int) -> list[int]` (L100) | function | Internal | Implementation helper for even positions. |
-| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L109) | function | Internal | Implementation helper for numeric values. |
-| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L119) | function | Internal | Implementation helper for sample dataframe. |
-| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L125) | function | Internal | Implementation helper for numeric matrix. |
-| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L136) | function | Internal | Implementation helper for multivariate rbf MMD. |
-| `_multivariate_rbf_mmd.squared_distances(left, right)` (L149) | nested function | Internal | Implementation helper for squared distances. |
-| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L169) | function | Internal | Implementation helper for feature metric. |
-| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L205) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
-| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L211) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
-| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L217) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
-| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L223) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
-| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L256) | function | Internal | Implementation helper for matrix deviation. |
-| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L283) | function | Internal | Implementation helper for correlation profile. |
-| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L295) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
-| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L312) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
-| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L329) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
-| `_timestamp_field(metric: dict) -> str` (L354) | function | Internal | Implementation helper for timestamp field. |
-| `_parsed_reference_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L358) | function | Internal | Implementation helper for parsed reference timestamps. |
-| `_timestamp_span(series: pd.Series) -> dict[str, str | None]` (L362) | function | Internal | Implementation helper for timestamp span. |
-| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L369) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
-| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L395) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
-| `_activity_timezone(metric: dict) -> str` (L418) | function | Internal | Implementation helper for activity timezone. |
-| `_activity_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L423) | function | Internal | Implementation helper for activity timestamps. |
-| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L432) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
-| `_slice_field(metric: dict) -> str` (L462) | function | Internal | Implementation helper for slice field. |
-| `_label_field(metric: dict) -> str` (L466) | function | Internal | Implementation helper for label field. |
-| `_normalise_category(value) -> str | None` (L470) | function | Internal | Implementation helper for normalise category. |
-| `_category_values(df: pd.DataFrame, field: str) -> list[str]` (L484) | function | Internal | Implementation helper for category values. |
-| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L494) | function | Internal | Implementation helper for categorical distribution. |
-| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float | None` (L503) | function | Internal | Implementation helper for tv distance. |
-| `_valid_categories(df: pd.DataFrame, field: str) -> set[str]` (L512) | function | Internal | Implementation helper for valid categories. |
-| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L516) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
-| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L537) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
-| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L579) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
-| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L636) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
-| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L657) | function | Public | Computes port use divergence from reference and returns a structured result. |
-| `_flow_definition_ids(metric: dict) -> tuple[str | None, str | None]` (L694) | function | Internal | Implementation helper for flow definition ids. |
-| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L707) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
+| `_reference_path(metric: dict) -> str | None` (L28) | function | Internal | Implementation helper for reference path. |
+| `_apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.DataFrame` (L38) | function | Internal | Implementation helper for apply reference field map. |
+| `_load_reference_df(metric: dict) -> pd.DataFrame` (L60) | function | Internal | Implementation helper for load reference dataframe. |
+| `_candidate_fields(metric: dict) -> list[str]` (L98) | function | Internal | Implementation helper for candidate fields. |
+| `_even_positions(length: int, maximum: int) -> list[int]` (L102) | function | Internal | Implementation helper for even positions. |
+| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L111) | function | Internal | Implementation helper for numeric values. |
+| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L121) | function | Internal | Implementation helper for sample dataframe. |
+| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L127) | function | Internal | Implementation helper for numeric matrix. |
+| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L138) | function | Internal | Implementation helper for multivariate rbf MMD. |
+| `_multivariate_rbf_mmd.squared_distances(left, right)` (L151) | nested function | Internal | Implementation helper for squared distances. |
+| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L171) | function | Internal | Implementation helper for feature metric. |
+| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L207) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
+| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L213) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
+| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L219) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
+| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L225) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
+| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L258) | function | Internal | Implementation helper for matrix deviation. |
+| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L285) | function | Internal | Implementation helper for correlation profile. |
+| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L297) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
+| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L314) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
+| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L331) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
+| `_timestamp_field(metric: dict) -> str` (L356) | function | Internal | Implementation helper for timestamp field. |
+| `_parsed_reference_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L360) | function | Internal | Implementation helper for parsed reference timestamps. |
+| `_timestamp_span(series: pd.Series) -> dict[str, str | None]` (L364) | function | Internal | Implementation helper for timestamp span. |
+| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L371) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
+| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L397) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
+| `_activity_timezone(metric: dict) -> str` (L420) | function | Internal | Implementation helper for activity timezone. |
+| `_activity_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L425) | function | Internal | Implementation helper for activity timestamps. |
+| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L434) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
+| `_slice_field(metric: dict) -> str` (L464) | function | Internal | Implementation helper for slice field. |
+| `_label_field(metric: dict) -> str` (L468) | function | Internal | Implementation helper for label field. |
+| `_normalise_category(value) -> str | None` (L472) | function | Internal | Implementation helper for normalise category. |
+| `_category_values(df: pd.DataFrame, field: str) -> list[str]` (L486) | function | Internal | Implementation helper for category values. |
+| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L496) | function | Internal | Implementation helper for categorical distribution. |
+| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float | None` (L505) | function | Internal | Implementation helper for tv distance. |
+| `_valid_categories(df: pd.DataFrame, field: str) -> set[str]` (L514) | function | Internal | Implementation helper for valid categories. |
+| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L518) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
+| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L539) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
+| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L581) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
+| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L638) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
+| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L659) | function | Public | Computes port use divergence from reference and returns a structured result. |
+| `_flow_definition_ids(metric: dict) -> tuple[str | None, str | None]` (L696) | function | Internal | Implementation helper for flow definition ids. |
+| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L709) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
 
 ## `cbr_tests/metrics/slice_representation.py`
 
@@ -467,17 +467,17 @@ Python symbols defined by `run_batch.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_slug(value: str) -> str` (L33) | function | Internal | Implementation helper for slug. |
-| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L38) | function | Internal | Implementation helper for resolve repo path. |
-| `load_batch(path: Path) -> dict` (L43) | function | Public | Loads batch. |
-| `_read_outcome_status(path: Path) -> str` (L68) | function | Internal | Implementation helper for read outcome status. |
-| `_write_batch_summary(path: Path, payload: dict) -> Path` (L76) | function | Internal | Implementation helper for write batch summary. |
-| `_result_needs_attention(result: dict) -> bool` (L84) | function | Internal | Implementation helper for result needs attention. |
-| `_print_batch_position(*, meta: dict, current_job: int, total_jobs: int, results: list[dict], candidate_name: str, reference_name: str | None) -> None` (L91) | function | Internal | Implementation helper for print batch position. |
-| `_outcome_path_for_attempt(*, output_dir: Path, index: int, dataset_path: Path, reference_path: Path | None, timestamp: str, attempt: int) -> Path` (L115) | function | Internal | Implementation helper for outcome path for attempt. |
-| `_attempt_history(prior: dict | None) -> list[dict]` (L132) | function | Internal | Implementation helper for attempt history. |
-| `parse_args() -> argparse.Namespace` (L149) | function | Public | Parses args. |
-| `main() -> int` (L211) | function | Public | Implementation helper for main. |
+| `_slug(value: str) -> str` (L34) | function | Internal | Implementation helper for slug. |
+| `_resolve_repo_path(repo_root: Path, value: str) -> Path` (L39) | function | Internal | Implementation helper for resolve repo path. |
+| `load_batch(path: Path) -> dict` (L44) | function | Public | Loads batch. |
+| `_read_outcome_status(path: Path) -> str` (L69) | function | Internal | Implementation helper for read outcome status. |
+| `_write_batch_summary(path: Path, payload: dict) -> Path` (L77) | function | Internal | Implementation helper for write batch summary. |
+| `_result_needs_attention(result: dict) -> bool` (L85) | function | Internal | Implementation helper for result needs attention. |
+| `_print_batch_position(*, meta: dict, current_job: int, total_jobs: int, results: list[dict], candidate_name: str, reference_name: str | None) -> None` (L92) | function | Internal | Implementation helper for print batch position. |
+| `_outcome_path_for_attempt(*, output_dir: Path, index: int, dataset_path: Path, reference_path: Path | None, timestamp: str, attempt: int) -> Path` (L116) | function | Internal | Implementation helper for outcome path for attempt. |
+| `_attempt_history(prior: dict | None) -> list[dict]` (L133) | function | Internal | Implementation helper for attempt history. |
+| `parse_args() -> argparse.Namespace` (L150) | function | Public | Parses args. |
+| `main() -> int` (L217) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -485,11 +485,11 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L62) | function | Internal | Implementation helper for confirm sidecar update. |
-| `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L75) | function | Internal | Implementation helper for run result. |
-| `run_once(args)` (L85) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
-| `run_once._load_dataset_for_metric(path: Path)` (L310) | nested function | Internal | Implementation helper for load dataset for metric. |
-| `main()` (L471) | function | Public | Implementation helper for main. |
+| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L63) | function | Internal | Implementation helper for confirm sidecar update. |
+| `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L76) | function | Internal | Implementation helper for run result. |
+| `run_once(args)` (L86) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
+| `run_once._load_dataset_for_metric(path: Path)` (L316) | nested function | Internal | Implementation helper for load dataset for metric. |
+| `main()` (L477) | function | Public | Implementation helper for main. |
 
 ## `runner/batch_progress.py`
 
@@ -628,6 +628,15 @@ Live status rendering and bounded parallel metric execution.
 | `run_metrics_parallel(dataset_path: Path, metrics: list[dict], metric_handlers: dict, workers: int, progress_callback = None, control_state: dict | None = None, fail_fast: bool = False) -> list[tuple[int, bool, dict]]` (L103) | function | Public | Run metrics with bounded submission and deterministic result records. At most ``workers`` metrics are submitted at once. When fail-fast is enabled, a failed metric stops new submissions. Already-running work is allowed to finish because Python threads cannot be safely terminated; metrics that were never started are explicitly marked ``not_run_fail_fast``. Cancellation returns promptly, attempts to cancel queued futures, and marks all unfinished or unsubmitted metrics ``not_run_cancelled``. |
 | `run_metrics_parallel._timed_call(metric_id: str, metric: dict)` (L131) | nested function | Internal | Implementation helper for timed call. |
 | `run_metrics_parallel._submit_available() -> None` (L152) | nested function | Internal | Implementation helper for submit available. |
+
+## `runner/experiment_contract.py`
+
+Python symbols defined by `runner/experiment_contract.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `ExperimentContractError` (L14) | class | Public | Raised when a plan is runnable historically but unsafe for final experiments. |
+| `validate_final_experiment_plan(plan: dict) -> dict` (L18) | function | Public | Validate the stricter contract used for authoritative experiment runs. Normal ``run_plan.py`` execution intentionally remains backwards compatible so historical outcomes can be reproduced. Final experiments need a tighter boundary: canonical metric identities only, no compatibility-only profiles, a full-population execution policy, and no field-mapping skips. The returned dictionary is suitable for provenance and records the contract that was enforced. Scientific metric definitions and thresholds are not changed by this function. |
 
 ## `runner/field_translation.py`
 
@@ -996,7 +1005,7 @@ CLI parsing, headers, signal handlers, outcome construction, and atomic writes.
 | `configure_signal_handlers._handle_sigusr1(_signum, _frame)` (L173) | nested function | Internal | Implementation helper for handle sigusr1. |
 | `configure_signal_handlers._handle_sigusr2(_signum, _frame)` (L177) | nested function | Internal | Implementation helper for handle sigusr2. |
 | `parse_run_plan_args() -> argparse.Namespace` (L188) | function | Public | Parses run plan args. |
-| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L274) | function | Public | Updates live header. |
+| `update_live_header(lines: list[str], status_lines: list[str] | None = None, width: int = 108) -> None` (L279) | function | Public | Updates live header. |
 
 ## `runner/run_plan_serial.py`
 
