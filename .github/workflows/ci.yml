@@ -50,6 +50,23 @@ jobs:
         if: matrix.python-version == '3.11'
         run: python scripts/build_reference_documentation.py --check
 
+      - name: Check canonical metric oracle coverage
+        if: matrix.python-version == '3.11'
+        run: |
+          PYTHONPATH=. python scripts/audit_metric_verification_coverage.py
+          git diff --exit-code -- docs/metric_verification_coverage.md docs/metric_verification_coverage.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("docs/metric_verification_coverage.json").read_text(encoding="utf-8"))
+          metrics = payload["metrics"]
+          assert payload["canonical_metric_count"] == 61
+          unresolved = [row["metric_id"] for row in metrics if row["oracle_status"] != "explicit_oracle_test"]
+          if unresolved:
+              raise SystemExit("Canonical metrics without explicit oracle coverage:\n" + "\n".join(unresolved))
+          PY
+
       - name: Check local documentation links
         if: matrix.python-version == '3.11'
         run: |
