@@ -432,6 +432,15 @@ Python symbols defined by `create_campaign.py`.
 | `parse_args() -> argparse.Namespace` (L9) | function | Public | Parses args. |
 | `main() -> int` (L26) | function | Public | Implementation helper for main. |
 
+## `create_fixed_plan_matrix.py`
+
+Python symbols defined by `create_fixed_plan_matrix.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `parse_args() -> argparse.Namespace` (L9) | function | Public | Parses args. |
+| `main() -> int` (L22) | function | Public | Implementation helper for main. |
+
 ## `create_plan.py`
 
 Python symbols defined by `create_plan.py`.
@@ -810,6 +819,32 @@ Translation preflight and requested-report workflow.
 | `_write_requested_reports(args, field_translation_report: dict[str, Any], human_report: str) -> None` (L190) | function | Internal | Implementation helper for write requested reports. |
 | `_should_use_color() -> bool` (L202) | function | Internal | Implementation helper for should use color. |
 
+## `runner/fixed_plan_matrix.py`
+
+Python symbols defined by `runner/fixed_plan_matrix.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_slug(value: str) -> str` (L19) | function | Internal | Implementation helper for slug. |
+| `_portable_path(path: Path, repo_root: Path) -> str` (L24) | function | Internal | Implementation helper for portable path. |
+| `_file_sha256(path: Path) -> str` (L32) | function | Internal | Implementation helper for file sha256. |
+| `_write_json_atomic(path: Path, payload: dict, *, overwrite: bool) -> Path` (L40) | function | Internal | Implementation helper for write JSON atomic. |
+| `_load_plan(path: Path) -> dict` (L60) | function | Internal | Implementation helper for load plan. |
+| `_normalise_pcaps(values: list[Path | str], *, label: str) -> list[Path]` (L71) | function | Internal | Implementation helper for normalise pcaps. |
+| `_configured_reference(plan: dict) -> Path | None` (L89) | function | Internal | Implementation helper for configured reference. |
+| `build_fixed_plan_matrix(*, name: str, plan_path: Path | str, candidate_paths: list[Path | str], reference_paths: list[Path | str] | None = None, output_path: Path | str, overwrite: bool = False, repo_root: Path | None = None) -> Path` (L112) | function | Public | Map PCAP datasets onto one existing scientific plan and write a batch manifest. The source plan is never regenerated from individual datasets. If references are supplied, one deterministic binding copy is written per reference and only the existing reference path changes. If no references are supplied and the source plan already contains reference metrics, its configured reference is reused and recorded in the matrix manifest. |
+
+## `runner/fixed_plan_matrix_tui.py`
+
+Python symbols defined by `runner/fixed_plan_matrix_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `fixed_plan_matrix_toolbox_item() -> ToolboxItem` (L17) | function | Public | Implementation helper for fixed plan matrix toolbox item. |
+| `_pcap_only(values: list[str], root: Path, *, label: str) -> list[str]` (L26) | function | Internal | Implementation helper for PCAP only. |
+| `_matrix_review_curses(stdscr, state: dict) -> dict | None` (L39) | function | Internal | Implementation helper for matrix review curses. |
+| `launch_fixed_plan_matrix_builder(repo_root: Path | None = None) -> Path | None` (L106) | function | Public | Implementation helper for launch fixed plan matrix builder. |
+
 ## `runner/friendly_tui.py`
 
 Python symbols defined by `runner/friendly_tui.py`.
@@ -1049,6 +1084,15 @@ Python symbols defined by `runner/provenance.py`.
 | `resolve_plan_source_path(case_file: Path) -> Path` (L119) | function | Public | Resolve the plan file used by a case, or return the direct plan file itself. |
 | `build_provenance_manifest(*, plan: dict, dataset_path: Path, case_file: Path, plan_source_path: Path, field_translation: dict[str, str], translation_path: Path | None, taxonomy_path: Path | None, cli_arguments: dict[str, Any]) -> dict[str, Any]` (L136) | function | Public | Build the immutable experiment-identification metadata stored with an outcome. |
 
+## `runner/reference_binding.py`
+
+Python symbols defined by `runner/reference_binding.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `reference_bound_metric_ids(plan: dict) -> list[str]` (L13) | function | Public | Return enabled metric IDs whose requirements contain a reference dataset path. |
+| `bind_runtime_reference(plan: dict, reference_dataset_path: Path | str) -> dict` (L26) | function | Public | Bind one PCAP/PCAPNG reference path into an existing reference-enabled plan. The scientific plan structure is preserved. Only the reference dataset path in already-configured reference metrics is replaced, allowing one validated PCAP plan to be reused across a matrix of candidate/reference dataset bindings. |
+
 ## `runner/resource_policy.py`
 
 Python symbols defined by `runner/resource_policy.py`.
@@ -1273,12 +1317,12 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_menu_items() -> tuple[ToolboxItem, ...]` (L17) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
-| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L43) | function | Internal | Implementation helper for safe addstr. |
-| `_tool_rows() -> list[tuple[int | None, str, str]]` (L56) | function | Internal | Implementation helper for tool rows. |
-| `_choose_mode_curses(stdscr) -> str | None` (L67) | function | Internal | Implementation helper for choose mode curses. |
-| `_pause_after_tool() -> None` (L111) | function | Internal | Implementation helper for pause after tool. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L118) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
+| `_menu_items() -> tuple[ToolboxItem, ...]` (L18) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L45) | function | Internal | Implementation helper for safe addstr. |
+| `_tool_rows() -> list[tuple[int | None, str, str]]` (L58) | function | Internal | Implementation helper for tool rows. |
+| `_choose_mode_curses(stdscr) -> str | None` (L69) | function | Internal | Implementation helper for choose mode curses. |
+| `_pause_after_tool() -> None` (L112) | function | Internal | Implementation helper for pause after tool. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L119) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
 ## `scripts/build_documentation_inventory.py`
 

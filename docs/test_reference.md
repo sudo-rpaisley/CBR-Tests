@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **331 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **336 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -399,6 +399,27 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_canonical_plan() -> dict` (L17) | Implementation helper for canonical plan. |
+
+## `tests/test_fixed_plan_matrix.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_runtime_reference_binding_changes_only_configured_reference_path(tmp_path)` (L38) | Verifies that runtime reference binding changes only configured reference path. | `_reference_plan`, `_pcap`, `bind_runtime_reference`, `next`, `plan_path.read_text`, `reference_bound_metric_ids`, `new_reference.resolve` |
+| `test_fixed_plan_matrix_reuses_same_scientific_plan_across_candidates(tmp_path)` (L53) | Verifies that fixed plan matrix reuses same scientific plan across candidates. | `_reference_plan`, `_pcap`, `build_fixed_plan_matrix`, `written.read_text` |
+| `test_fixed_plan_matrix_without_references_points_every_job_at_source_plan(tmp_path)` (L80) | Verifies that fixed plan matrix without references points every job at source plan. | `_reference_plan`, `_pcap`, `build_fixed_plan_matrix`, `output.read_text` |
+| `test_references_require_reference_enabled_plan(tmp_path)` (L99) | Verifies that references require reference enabled plan. | `_pcap`, `build_plan`, `write_plan`, `pytest.raises`, `build_fixed_plan_matrix` |
+| `test_toolbox_exposes_fixed_pcap_plan_mapping()` (L122) | Verifies that toolbox exposes fixed PCAP plan mapping. | `keys.index`, `_menu_items` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_pcap(path: Path) -> Path` (L18) | Implementation helper for PCAP. |
+| `_reference_plan(tmp_path: Path) -> Path` (L23) | Implementation helper for reference plan. |
 
 ## `tests/test_friendly_tui.py`
 

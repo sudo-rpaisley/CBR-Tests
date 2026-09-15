@@ -4,6 +4,7 @@ import curses
 from pathlib import Path
 
 from runner.campaign_tui import campaign_toolbox_items, run_campaign_tool_action
+from runner.fixed_plan_matrix_tui import fixed_plan_matrix_toolbox_item, launch_fixed_plan_matrix_builder
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
 from runner.toolbox_tui import ToolboxItem, run_tool_action, toolbox_items
 
@@ -24,7 +25,8 @@ def _menu_items() -> tuple[ToolboxItem, ...]:
     items.insert(batch_index + 1, campaign_items["campaign_run"])
 
     build_index = next((index for index, item in enumerate(items) if item.key == "build_plan"), len(items) - 1)
-    items.insert(build_index + 1, campaign_items["campaign_build"])
+    items.insert(build_index + 1, fixed_plan_matrix_toolbox_item())
+    items.insert(build_index + 2, campaign_items["campaign_build"])
 
     shortcut = ToolboxItem(
         "field_mapping",
@@ -73,7 +75,7 @@ def _choose_mode_curses(stdscr) -> str | None:
         stdscr.erase()
         height, _ = stdscr.getmaxyx()
         _safe_addstr(stdscr, 0, 0, "CBR Tests Toolbox", curses.A_BOLD)
-        _safe_addstr(stdscr, 1, 0, "Run experiments, build plans, queue matrices, inspect results and access maintenance tools from one place.")
+        _safe_addstr(stdscr, 1, 0, "Run experiments, build plans, map datasets, queue matrices, inspect results and access maintenance tools from one place.")
         _safe_addstr(stdscr, 2, 0, "↑/↓ move   Enter open   PgUp/PgDn page   q/Esc quit")
 
         selected_row = next((i for i, (index, _, _) in enumerate(rows) if index == selected), 0)
@@ -87,7 +89,6 @@ def _choose_mode_curses(stdscr) -> str | None:
             attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
             _safe_addstr(stdscr, screen_row, 0, f"{marker} {title}", attr)
             if description and screen_row + 1 < height:
-                # The selected item's full description is always shown in the footer.
                 pass
 
         if items:
@@ -135,7 +136,9 @@ def launch_unified_tui(args, repo_root: Path | None = None):
             return args
 
         try:
-            if mode in campaign_actions:
+            if mode == "fixed_pcap_matrix":
+                launch_fixed_plan_matrix_builder(root)
+            elif mode in campaign_actions:
                 run_campaign_tool_action(mode, root)
             else:
                 run_tool_action(mode, root)
