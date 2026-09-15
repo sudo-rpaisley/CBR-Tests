@@ -1,5 +1,6 @@
 import pandas as pd
 
+import cbr_tests.metrics.statistical as statistical_metrics
 from cbr_tests.metrics.intrinsic_diagnostics import (
     compute_burstiness_internal_drift,
     compute_day_to_day_diurnal_similarity,
@@ -73,6 +74,64 @@ def test_dependency_profiles_are_profiles_not_deviations():
     assert spearman["profile"]["matrix"]["x"]["y"] == 1.0
     assert dcor["profile"]["matrix"]["x"]["x_squared"] == 0.515923
     assert pearson["summary"]["comparison_scope"] == "within_dataset_dependency_profile"
+
+
+def test_distance_correlation_dependency_profile_enforces_pairwise_safety_cap(monkeypatch):
+    observed_sizes = []
+
+    def fake_distance_correlation(left, right):
+        observed_sizes.append((len(left), len(right)))
+        return 0.5
+
+    monkeypatch.setattr(statistical_metrics, "_distance_correlation", fake_distance_correlation)
+    row_count = 5000
+    df = pd.DataFrame({
+        "x": range(row_count),
+        "y": range(row_count),
+    })
+    metric = {
+        "input_requirements": {
+            "candidate_fields": ["x", "y"],
+            "minimum_runnable_fields": 2,
+        },
+        "calculation": {"parameters": {"max_sample_size": 100000}},
+    }
+
+    result = compute_distance_correlation_dependency_profile(df, metric)
+    sampling = result["sampling"]
+
+    assert observed_sizes == [(statistical_metrics.PAIRWISE_SAMPLE_HARD_LIMIT,) * 2]
+    assert sampling["original_row_count"] == row_count
+    assert sampling["sampled_row_count"] == statistical_metrics.PAIRWISE_SAMPLE_HARD_LIMIT
+    assert sampling["hard_max_sample_size"] == statistical_metrics.PAIRWISE_SAMPLE_HARD_LIMIT
+    assert sampling["safety_cap_applied"] is True
+    assert result["profile"]["summary"]["sampling"] == sampling
+    assert result["summary"]["sampling"] == sampling
+
+
+def test_distance_correlation_dependency_profile_honours_lower_configured_limit(monkeypatch):
+    observed_sizes = []
+
+    def fake_distance_correlation(left, right):
+        observed_sizes.append((len(left), len(right)))
+        return 0.5
+
+    monkeypatch.setattr(statistical_metrics, "_distance_correlation", fake_distance_correlation)
+    df = pd.DataFrame({"x": range(500), "y": range(500)})
+    metric = {
+        "input_requirements": {
+            "candidate_fields": ["x", "y"],
+            "minimum_runnable_fields": 2,
+        },
+        "calculation": {"parameters": {"max_sample_size": 200}},
+    }
+
+    result = compute_distance_correlation_dependency_profile(df, metric)
+
+    assert observed_sizes == [(200, 200)]
+    assert result["sampling"]["effective_max_sample_size"] == 200
+    assert result["sampling"]["sampling_applied"] is True
+    assert result["sampling"]["safety_cap_applied"] is False
 
 
 def test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics():
