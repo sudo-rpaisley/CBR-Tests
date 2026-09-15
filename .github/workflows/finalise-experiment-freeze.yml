@@ -30,7 +30,7 @@ jobs:
         run: python scripts/build_reference_documentation.py
 
       - name: Generate canonical metric verification audit
-        run: python scripts/audit_metric_verification_coverage.py
+        run: PYTHONPATH=. python scripts/audit_metric_verification_coverage.py
 
       - name: Commit generated artefacts
         run: |
