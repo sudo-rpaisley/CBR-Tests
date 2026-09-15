@@ -53,8 +53,8 @@ def test_friendly_single_defaults_to_only_essential_fields(tmp_path):
         "case",
         "dataset",
         "experiment_mode",
-        "field_translation_dry_run",
         "display",
+        "field_translation_dry_run",
     ]
     assert len(visible_single_fields(fields, show_advanced=True)) > len(visible)
 
