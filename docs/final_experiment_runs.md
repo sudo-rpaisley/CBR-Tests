@@ -53,13 +53,14 @@ Compatibility-only profiles currently include historical constructs whose meanin
 
 Final runs should not discover or silently edit field mappings while measurements are underway. Prepare and review field-translation sidecars first, then use `--no-update-field-translation` for the authoritative run.
 
-A preflight can be performed without running metrics:
+A strict preflight can be performed without running metrics:
 
 ```bash
 python run_plan.py \
   --case path/to/final_plan.json \
   --dataset path/to/candidate.csv \
   --output outcomes/preflight-unused.json \
+  --experiment-mode \
   --field-translation-dry-run \
   --no-update-field-translation
 ```
@@ -76,7 +77,7 @@ CSV/TSV datasets are loaded directly rather than collecting all chunks and conca
 
 ## 5. Dataset summaries
 
-Dataset summary sidecars are descriptive supporting artefacts, not realism metrics. If valid hash-matched summaries already exist, the runner reuses them. On a constrained experiment host, `--no-dataset-summary` (single run) or `--no-dataset-summary` (batch) may be used to suppress this additional descriptive scan; the choice is recorded in run provenance and does not change metric calculations.
+Dataset summary sidecars are descriptive supporting artefacts, not realism metrics. If valid hash-matched summaries already exist, the runner reuses them. On a constrained experiment host, `--no-dataset-summary` may be used to suppress this additional descriptive scan for either a single run or a batch; the choice is recorded in run provenance and does not change metric calculations.
 
 ## 6. Preserve authoritative outputs
 
