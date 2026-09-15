@@ -49,6 +49,24 @@ def test_distributional_metrics_match_hand_calculated_shifted_half_oracles():
         == 0.85085
     )
 
+    # Regression guard for large traces: split the complete usable sequence
+    # before sampling. The former truncation-first implementation examined only
+    # the first 2,000 values here and incorrectly compared zeros with zeros.
+    long_df = pd.DataFrame({"feature": [0.0] * 2000 + [100.0] * 2000})
+    sampled_metric = _metric("feature")
+    sampled_metric["calculation"]["parameters"]["max_sample_size"] = 1000
+    result = compute_ks_feature_divergence(long_df, sampled_metric)
+    field = result["fields"][0]
+    assert field["population_a_count"] == 2000
+    assert field["population_b_count"] == 2000
+    assert field["sample_a_count"] == 1000
+    assert field["sample_b_count"] == 1000
+    assert field["ks_statistic"] == 1.0
+    assert (
+        result["summary"]["sampling_policy"]
+        == "split_full_usable_sequence_then_evenly_sample_each_half"
+    )
+
 
 def test_distance_correlation_profile_matches_nonlinear_dependency_oracle():
     df = pd.DataFrame({
