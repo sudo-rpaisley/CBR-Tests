@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **325 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **330 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -116,6 +116,26 @@ Tests and local helpers in this module.
 | --- | --- |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L87) | Implementation helper for fake create batch. |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L105) | Implementation helper for fake run. |
+
+## `tests/test_campaign_queue.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_build_campaign_preserves_matrix_order_and_counts_jobs(tmp_path)` (L36) | Verifies that build campaign preserves matrix order and counts jobs. | `_write_batch`, `build_campaign` |
+| `test_same_batch_can_be_queued_more_than_once_with_distinct_queue_ids(tmp_path)` (L54) | Verifies that same batch can be queued more than once with distinct queue ids. | `_write_batch`, `build_campaign` |
+| `test_campaign_manifest_round_trip_and_duplicate_queue_guard(tmp_path)` (L66) | Verifies that campaign manifest round trip and duplicate queue guard. | `_write_batch`, `build_campaign`, `write_campaign`, `load_campaign`, `loaded['matrices'].append`, `manifest.write_text`, `pytest.raises` |
+| `test_campaign_batch_command_passes_resume_retry_and_experiment_controls(tmp_path)` (L81) | Verifies that campaign batch command passes resume retry and experiment controls. | `argparse.Namespace`, `_build_batch_command`, `command.index` |
+| `test_toolbox_exposes_campaign_builder_and_runner()` (L109) | Verifies that toolbox exposes campaign builder and runner. | `keys.index`, `_menu_items` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_batch(path: Path, batch_id: str, job_count: int) -> Path` (L14) | Implementation helper for write batch. |
 
 ## `tests/test_correctness_reproducibility.py`
 
