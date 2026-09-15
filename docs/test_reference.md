@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **285 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **288 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -353,17 +353,21 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles()` (L28) | Verifies that canonical distribution diagnostics preserve hand calculated oracles. | `_feature_metric`, `compute_feature_ks_internal_drift`, `compute_feature_wasserstein_internal_drift`, `compute_feature_energy_internal_drift`, `compute_feature_mmd2_internal_drift` |
-| `test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison()` (L39) | Verifies that canonical temporal diagnostic names do not claim reference comparison. | `all`, `compute_inter_arrival_internal_drift_ks`, `compute_burstiness_internal_drift`, `compute_day_to_day_hourly_activity_divergence`, `compute_day_to_day_diurnal_similarity`, `compute_lagged_periodicity_similarity` |
-| `test_dependency_profiles_are_profiles_not_deviations()` (L60) | Verifies that dependency profiles are profiles not deviations. | `compute_pearson_dependency_profile`, `compute_spearman_dependency_profile`, `compute_distance_correlation_dependency_profile` |
-| `test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics()` (L78) | Verifies that new taxonomy uses canonical ids and nests dataset heuristics. | `load_taxonomy_paths` |
-| `test_legacy_intrinsic_ids_remain_runtime_compatible_but_not_canonical_catalogue()` (L97) | Verifies that legacy intrinsic ids remain runtime compatible but not canonical catalogue. | `build_metric_handlers`, `LEGACY_METRIC_ID_ALIASES.items`, `available_metric_ids` |
+| `test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles()` (L29) | Verifies that canonical distribution diagnostics preserve hand calculated oracles. | `_feature_metric`, `compute_feature_ks_internal_drift`, `compute_feature_wasserstein_internal_drift`, `compute_feature_energy_internal_drift`, `compute_feature_mmd2_internal_drift` |
+| `test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison()` (L40) | Verifies that canonical temporal diagnostic names do not claim reference comparison. | `all`, `compute_inter_arrival_internal_drift_ks`, `compute_burstiness_internal_drift`, `compute_day_to_day_hourly_activity_divergence`, `compute_day_to_day_diurnal_similarity`, `compute_lagged_periodicity_similarity` |
+| `test_dependency_profiles_are_profiles_not_deviations()` (L61) | Verifies that dependency profiles are profiles not deviations. | `compute_pearson_dependency_profile`, `compute_spearman_dependency_profile`, `compute_distance_correlation_dependency_profile` |
+| `test_distance_correlation_dependency_profile_enforces_pairwise_safety_cap(monkeypatch)` (L79) | Verifies that distance correlation dependency profile enforces pairwise safety cap. | `monkeypatch.setattr`, `compute_distance_correlation_dependency_profile`, `observed_sizes.append` |
+| `test_distance_correlation_dependency_profile_honours_lower_configured_limit(monkeypatch)` (L112) | Verifies that distance correlation dependency profile honours lower configured limit. | `monkeypatch.setattr`, `compute_distance_correlation_dependency_profile`, `observed_sizes.append` |
+| `test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics()` (L137) | Verifies that new taxonomy uses canonical ids and nests dataset heuristics. | `load_taxonomy_paths` |
+| `test_legacy_intrinsic_ids_remain_runtime_compatible_but_not_canonical_catalogue()` (L156) | Verifies that legacy intrinsic ids remain runtime compatible but not canonical catalogue. | `build_metric_handlers`, `LEGACY_METRIC_ID_ALIASES.items`, `available_metric_ids` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_feature_metric()` (L21) | Implementation helper for feature metric. |
+| `_feature_metric()` (L22) | Implementation helper for feature metric. |
+| `test_distance_correlation_dependency_profile_enforces_pairwise_safety_cap.fake_distance_correlation(left, right)` (L82) | Implementation helper for fake distance correlation. |
+| `test_distance_correlation_dependency_profile_honours_lower_configured_limit.fake_distance_correlation(left, right)` (L115) | Implementation helper for fake distance correlation. |
 
 ## `tests/test_label_fidelity_profile.py`
 
@@ -810,15 +814,16 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_distributional_metrics_report_zero_for_matching_halves()` (L19) | Verifies that distributional metrics report zero for matching halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distributional_metrics_match_hand_calculated_shifted_half_oracles()` (L29) | Verifies that distributional metrics match hand calculated shifted half oracles. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L51) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
+| `test_distributional_metrics_report_zero_for_matching_halves()` (L21) | Verifies that distributional metrics report zero for matching halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
+| `test_distributional_metrics_match_hand_calculated_shifted_half_oracles()` (L31) | Verifies that distributional metrics match hand calculated shifted half oracles. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
+| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L53) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
+| `test_pairwise_calculators_reject_oversized_direct_samples(calculator)` (L78) | Verifies that pairwise calculators reject oversized direct samples. | `pytest.mark.parametrize`, `pytest.raises`, `calculator` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_metric(*fields)` (L12) | Implementation helper for metric. |
+| `_metric(*fields)` (L14) | Implementation helper for metric. |
 
 ## `tests/test_task_based_validation_profile.py`
 
