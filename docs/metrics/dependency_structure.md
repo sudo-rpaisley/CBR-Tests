@@ -8,10 +8,11 @@ Builds a distance-correlation matrix to detect linear and nonlinear dependence.
 
 - **Implementation:** `cbr_tests/metrics/statistical.py`
 - **Supplied-plan usage:** `deepsecure_plan`, `deepslice_plan`, `fortisedos_plan`
-- **Inputs:** `candidate_fields`; optional `minimum_runnable_fields` default 2.
-- **Primary output:** Distance-correlation matrix, pair overlap counts, and mean absolute correlation.
+- **Inputs:** `candidate_fields`; optional `minimum_runnable_fields` default 2; optional `calculation.parameters.max_sample_size`.
+- **Primary output:** Distance-correlation matrix, pair overlap counts, mean absolute correlation, and sampling metadata.
 - **Interpretation:** 0 indicates no detected dependence; larger values indicate stronger dependence.
-- **Current caveat:** Despite the ID, this is a profile rather than a reference deviation. It builds O(n²) distance matrices and currently has no default row cap.
+- **Computational safeguard:** Distance correlation requires O(n²) pairwise distance matrices. The implementation therefore uses deterministic evenly spaced row sampling with a default and hard maximum of 1,000 rows. A lower configured `max_sample_size` is honoured; a requested value above 1,000 is capped and recorded as `safety_cap_applied` in the outcome metadata. The bounded matrices are calculated with NumPy arrays rather than Python nested lists.
+- **Compatibility note:** Despite the legacy ID, this is a dependency profile rather than a candidate-versus-reference deviation. New plans use the canonical `distance_correlation_dependency_profile` ID.
 
 ## `pearson_correlation_profile`
 
