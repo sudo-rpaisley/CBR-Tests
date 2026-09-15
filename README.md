@@ -21,13 +21,15 @@ This writes the authoritative `outcomes/quickstart_example.json` plus `outcomes/
 
 ### Interactive terminal UI
 
-For an interactive run setup, use:
+For the interactive CBR-Tests Toolbox, use:
 
 ```bash
 python run_plan.py --tui
 ```
 
-The curses TUI lets you select an existing case or plan, browse for a dataset, configure execution and field-translation options, run mapping dry-runs, and review results without having to remember the command-line flags. `--case` is not required when `--tui` is used. The outcome filename is auto-filled from the selected plan/case title with a date/time suffix and refreshes at run time unless you type a custom output path. The TUI feeds the selected values into the same hardened runner as the normal CLI, so plan validation, output safety, skip policy and provenance checks still apply.
+The curses TUI is the interactive front door to the project. From one grouped menu you can run a single dataset, run a batch/comparison matrix, build dataset-aware plans, validate or migrate plans, compare outcomes, create rerun/comparison evidence records, export analysis tables, browse the metric catalogue, and access documentation maintenance tools. The normal run screens still expose field-translation validation, strict experiment mode, execution options and result review without requiring command-line flags.
+
+The integrated plan builder uses the same plan-construction functions as `create_plan.py`, so there is one source of truth for metric eligibility and batch generation. The TUI improves navigation only; the underlying CLI commands remain available for automation and reproducible experiment scripts. See the [CBR-Tests Toolbox TUI guide](docs/toolbox_tui.md).
 
 `--tui` is the setup/navigation interface. `--display interactive` is the live ANSI dashboard shown while a configured run is executing.
 
@@ -37,7 +39,7 @@ The dispatcher currently supports 64 metric IDs across:
 
 - completeness, duplicates, and column usability;
 - Pearson, Spearman, distance correlation, and distribution drift;
-- timestamp, duration, inter-arrival, diurnal, and periodicity behavior;
+- timestamp, duration, inter-arrival, diurnal, and periodicity behaviour;
 - label coverage, class balance, attack-window alignment, and split contamination;
 - slice coverage, balance, duplicate overlap, and identifier leakage;
 - reference-dataset comparisons;
@@ -79,6 +81,7 @@ Metrics that still need labels, slices, attack windows, train/test information, 
 Start with [the documentation index](docs/index.md).
 
 - [Getting started](docs/getting_started.md)
+- [CBR-Tests Toolbox TUI](docs/toolbox_tui.md)
 - [Metric reference](docs/metric_reference.md)
 - [Runner controls](docs/run_plan_controls.md)
 - [Plan schema](docs/plan_schema.md)
@@ -114,7 +117,7 @@ No project license has yet been declared. Add an appropriate license before publ
 
 ## Automatic dataset-aware plan creation
 
-Interactive plan creation asks for a plan name, derives the plan ID automatically, lets you browse for the dataset, and defaults the output to `plans/<plan-id>_plan.json`:
+The preferred interactive route is now **Build plan / batch definition** inside `python run_plan.py --tui`. The standalone CLI remains available and derives the plan ID automatically from the name:
 
 ```bash
 python create_plan.py
