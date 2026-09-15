@@ -32,6 +32,25 @@ jobs:
       - name: Generate canonical metric verification audit
         run: PYTHONPATH=. python scripts/audit_metric_verification_coverage.py
 
+      - name: Show metrics still needing oracle review
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path('docs/metric_verification_coverage.json').read_text())
+          unresolved = [
+              row['metric_id']
+              for row in payload['metrics']
+              if row['oracle_status'] != 'explicit_oracle_test'
+          ]
+          print(f"Unresolved oracle review count: {len(unresolved)}")
+          for metric_id in unresolved:
+              print(metric_id)
+          PY
+
+      - name: Run focused flow-semantics oracle tests
+        run: python -m pytest -q tests/test_flow_semantics_oracles.py
+
       - name: Commit generated artefacts
         run: |
           if git diff --quiet -- docs/function_reference.md docs/test_reference.md docs/metric_verification_coverage.md docs/metric_verification_coverage.json; then
