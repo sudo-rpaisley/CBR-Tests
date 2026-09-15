@@ -1,0 +1,45 @@
+name: Finalise experiment freeze artefacts
+
+on:
+  push:
+    branches:
+      - "final/experiment-freeze"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: final/experiment-freeze
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Regenerate reference documentation
+        run: python scripts/build_reference_documentation.py
+
+      - name: Generate canonical metric verification audit
+        run: python scripts/audit_metric_verification_coverage.py
+
+      - name: Commit generated artefacts
+        run: |
+          if git diff --quiet -- docs/function_reference.md docs/test_reference.md docs/metric_verification_coverage.md docs/metric_verification_coverage.json; then
+            echo "Generated artefacts already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/function_reference.md docs/test_reference.md docs/metric_verification_coverage.md docs/metric_verification_coverage.json
+          git commit -m "Regenerate experiment-freeze audit artefacts"
+          git push
