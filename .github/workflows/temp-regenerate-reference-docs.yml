@@ -6,7 +6,7 @@ on:
       - improve/metric-sampling-timing-memory
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   regenerate:
@@ -18,10 +18,14 @@ jobs:
           python-version: '3.11'
       - name: Regenerate reference documentation
         run: python scripts/build_reference_documentation.py
-      - name: Upload regenerated documentation
-        uses: actions/upload-artifact@v4
-        with:
-          name: regenerated-reference-docs
-          path: |
-            docs/function_reference.md
-            docs/test_reference.md
+      - name: Commit regenerated documentation
+        run: |
+          if git diff --quiet -- docs/function_reference.md docs/test_reference.md; then
+            echo "Reference documentation already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/function_reference.md docs/test_reference.md
+          git commit -m "Regenerate reference documentation"
+          git push origin HEAD:improve/metric-sampling-timing-memory
