@@ -4,6 +4,7 @@ import curses
 from pathlib import Path
 
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
+from runner.toolbox_tui import run_tool_action, toolbox_items
 
 
 # Preserve these historical module-level hooks so existing tests and callers can
@@ -11,7 +12,7 @@ from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
 launch_tui = launch_single_tui
 launch_batch_tui = launch_friendly_batch_tui
 
-TUI_MODES = ("Single dataset run", "Batch / comparison run")
+TUI_MODES = tuple(item.title for item in toolbox_items())
 
 
 def _safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None:
@@ -27,31 +28,46 @@ def _safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None:
         pass
 
 
+def _tool_rows() -> list[tuple[int | None, str, str]]:
+    rows: list[tuple[int | None, str, str]] = []
+    previous_group: str | None = None
+    for index, item in enumerate(toolbox_items()):
+        if item.group != previous_group:
+            rows.append((None, item.group.upper(), ""))
+            previous_group = item.group
+        rows.append((index, item.title, item.description))
+    return rows
+
+
 def _choose_mode_curses(stdscr) -> str | None:
     curses.curs_set(0)
     selected = 0
-    descriptions = (
-        "Configure and run one dataset using a case or plan.",
-        "Select several candidate datasets and optional references, then build the comparison matrix automatically.",
-    )
+    items = toolbox_items()
+    rows = _tool_rows()
     while True:
         stdscr.erase()
-        height, width = stdscr.getmaxyx()
-        _safe_addstr(stdscr, 0, 0, "CBR Tests", curses.A_BOLD)
-        _safe_addstr(stdscr, 1, 0, "What would you like to do?")
-        _safe_addstr(stdscr, 2, 0, "↑/↓ move   Enter select   q/Esc quit")
-        for index, mode in enumerate(TUI_MODES):
-            row = 4 + index * 4
+        height, _ = stdscr.getmaxyx()
+        _safe_addstr(stdscr, 0, 0, "CBR Tests Toolbox", curses.A_BOLD)
+        _safe_addstr(stdscr, 1, 0, "Run experiments, build plans, inspect results and access maintenance tools from one place.")
+        _safe_addstr(stdscr, 2, 0, "↑/↓ move   Enter open   PgUp/PgDn page   q/Esc quit")
+
+        selected_row = next((i for i, (index, _, _) in enumerate(rows) if index == selected), 0)
+        visible_height = max(1, height - 5)
+        start = min(max(0, selected_row - visible_height + 1), max(0, len(rows) - visible_height))
+        for screen_row, (index, title, description) in enumerate(rows[start : start + visible_height], start=4):
+            if index is None:
+                _safe_addstr(stdscr, screen_row, 0, title, curses.A_BOLD)
+                continue
             marker = ">" if index == selected else " "
             attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
-            _safe_addstr(stdscr, row, 0, f"{marker} {mode}", attr)
-            _safe_addstr(stdscr, row + 1, 4, descriptions[index])
-            if index == 0:
-                _safe_addstr(stdscr, row + 2, 4, "Best for checking or running one prepared experiment plan.")
-            else:
-                _safe_addstr(stdscr, row + 2, 4, "Best for experiment matrices and reference comparisons.")
-        if height > 14:
-            _safe_addstr(stdscr, height - 2, 0, "The next screen shows only essential settings by default; press a for advanced options.")
+            _safe_addstr(stdscr, screen_row, 0, f"{marker} {title}", attr)
+            if description and screen_row + 1 < height:
+                # Descriptions are shown inline where the terminal is wide enough;
+                # the selected item's full description is always shown in the footer.
+                pass
+
+        if items:
+            _safe_addstr(stdscr, height - 1, 0, items[selected].description, curses.A_BOLD)
 
         key = stdscr.getch()
         if key in (ord("q"), ord("Q"), 27):
@@ -59,20 +75,39 @@ def _choose_mode_curses(stdscr) -> str | None:
         if key in (curses.KEY_UP, ord("k")):
             selected = max(0, selected - 1)
         elif key in (curses.KEY_DOWN, ord("j")):
-            selected = min(len(TUI_MODES) - 1, selected + 1)
+            selected = min(len(items) - 1, selected + 1)
+        elif key == curses.KEY_PPAGE:
+            selected = max(0, selected - visible_height)
+        elif key == curses.KEY_NPAGE:
+            selected = min(len(items) - 1, selected + visible_height)
         elif key in (10, 13):
-            return "single" if selected == 0 else "batch"
+            return items[selected].key
+
+
+def _pause_after_tool() -> None:
+    try:
+        input("\nPress Enter to return to the CBR Tests Toolbox...")
+    except EOFError:
+        pass
 
 
 def launch_unified_tui(args, repo_root: Path | None = None):
-    """Launch the guided single-run or batch/comparison terminal UI."""
+    """Launch the CBR-Tests toolbox and return only when a run mode is selected."""
 
-    mode = curses.wrapper(_choose_mode_curses)
-    if mode is None:
-        raise SystemExit("TUI cancelled")
-    if mode == "single":
-        return launch_tui(args, repo_root=repo_root)
+    root = (repo_root or Path.cwd()).expanduser().resolve()
+    while True:
+        mode = curses.wrapper(_choose_mode_curses)
+        if mode is None:
+            raise SystemExit("TUI cancelled")
+        if mode == "single":
+            return launch_tui(args, repo_root=root)
+        if mode == "batch":
+            args.tui_batch_spec = launch_batch_tui(args, repo_root=root)
+            args.tui = False
+            return args
 
-    args.tui_batch_spec = launch_batch_tui(args, repo_root=repo_root)
-    args.tui = False
-    return args
+        try:
+            run_tool_action(mode, root)
+        except (OSError, ValueError, RuntimeError) as exc:
+            print(f"\nTool failed: {exc}")
+        _pause_after_tool()
