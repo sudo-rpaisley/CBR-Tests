@@ -20,6 +20,7 @@ def test_compute_missing_value_ratio_uses_candidate_fields():
         "total_cells": 6,
         "missing_cells": 3,
         "missing_value_ratio": 0.5,
+        "runnable": True,
     }
     assert [field["field"] for field in result["fields"]] == ["a", "b"]
 
@@ -37,6 +38,7 @@ def test_compute_duplicate_row_ratio_counts_repeated_rows_after_first():
     assert result["summary"]["duplicate_row_count"] == 2
     assert result["summary"]["duplicate_group_count"] == 2
     assert result["summary"]["duplicate_row_ratio"] == 0.4
+    assert result["summary"]["runnable"] is True
 
 
 def test_compute_spearman_profile_reports_rank_correlation():
@@ -56,3 +58,24 @@ def test_compute_spearman_profile_reports_rank_correlation():
     assert result["summary"]["pair_count"] == 1
     assert result["summary"]["mean_absolute_correlation"] == 1.0
     assert result["matrix"]["x"]["y"] == 1.0
+
+
+def test_data_quality_zero_denominators_are_not_numeric_scores():
+    df = pd.DataFrame({"a": pd.Series(dtype="float64"), "src": pd.Series(dtype="object")})
+
+    missing = compute_missing_value_ratio(
+        df,
+        {"input_requirements": {"candidate_fields": ["a"]}},
+    )
+    duplicate = compute_duplicate_row_ratio(
+        df,
+        {"input_requirements": {"subset_fields": ["src"]}},
+    )
+
+    assert missing["summary"]["total_cells"] == 0
+    assert missing["summary"]["missing_value_ratio"] is None
+    assert missing["summary"]["runnable"] is False
+    assert missing["fields"][0]["missing_value_ratio"] is None
+    assert duplicate["summary"]["row_count"] == 0
+    assert duplicate["summary"]["duplicate_row_ratio"] is None
+    assert duplicate["summary"]["runnable"] is False

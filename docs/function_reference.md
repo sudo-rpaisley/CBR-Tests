@@ -4,6 +4,19 @@ Exhaustive AST-generated reference for runtime code, metric implementations, com
 
 **Public** only means the leaf name lacks a leading underscore; it is not an API-stability promise. Nested functions are always internal.
 
+## `cbr_tests/metrics/address_validity.py`
+
+Python symbols defined by `cbr_tests/metrics/address_validity.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `classify_ip_value(value) -> tuple[str, object | None]` (L45) | function | Public | Return (classification, parsed-address) for one candidate IP value. Missing values are deliberately distinct from invalid values because the Valid IP Address Ratio is defined only over non-missing values that were actually checked. |
+| `_candidate_fields(df: pd.DataFrame, metric: dict) -> tuple[list[str], list[str]]` (L65) | function | Internal | Implementation helper for candidate fields. |
+| `compute_valid_ip_address_ratio(df: pd.DataFrame, metric: dict) -> dict` (L76) | function | Public | Compute N_valid / N_checked over non-missing candidate IP values. |
+| `special_use_categories(address) -> list[str]` (L147) | function | Public | Implementation helper for special use categories. |
+| `_misuse_categories(metric: dict) -> set[str]` (L174) | function | Internal | Implementation helper for misuse categories. |
+| `compute_reserved_address_misuse_ratio(df: pd.DataFrame, metric: dict) -> dict` (L190) | function | Public | Compute policy-inconsistent special-use addresses / valid checked addresses. Invalid and missing address values are intentionally excluded from this denominator: they are measured by Valid IP Address Ratio and completeness metrics respectively. A special-use address is only a misuse when its category is explicitly disallowed by the scenario policy. |
+
 ## `cbr_tests/metrics/column_quality.py`
 
 Column completeness, numeric usability, and variation metrics.
@@ -21,7 +34,67 @@ Missing-value and duplicate-row metrics.
 | --- | --- | --- | --- |
 | `_select_fields(df: pd.DataFrame, metric: dict, key: str) -> list[str]` (L6) | function | Internal | Implementation helper for select fields. |
 | `compute_missing_value_ratio(df: pd.DataFrame, metric: dict) -> dict` (L13) | function | Public | Computes missing value ratio and returns a structured result. |
-| `compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict` (L49) | function | Public | Computes duplicate row ratio and returns a structured result. |
+| `compute_duplicate_row_ratio(df: pd.DataFrame, metric: dict) -> dict` (L50) | function | Public | Computes duplicate row ratio and returns a structured result. |
+
+## `cbr_tests/metrics/decision_rules.py`
+
+Python symbols defined by `cbr_tests/metrics/decision_rules.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `resolve_ratio_decision_rule(parameters: dict | None, *, default_pass: float, default_warn: float) -> dict` (L6) | function | Public | Resolve PASS/WARN cutoffs and record their provenance. The thresholds classify a measured ratio; they do not define the ratio itself. Defaults are framework policy unless an experiment explicitly overrides them. |
+| `classify_ratio(value: float | None, decision_rule: dict) -> str` (L42) | function | Public | Apply a resolved decision policy to a ratio without redefining the metric. |
+| `resolve_maximum_ratio_failure_rule(parameters: dict | None, *, parameter_name: str, default: float) -> dict` (L53) | function | Public | Resolve a one-sided failure cutoff and record its provenance. This is a decision rule applied after measurement. It is deliberately separate from the metric equation and must not be presented as a universal realism constant unless its provenance explicitly supports that claim. |
+| `describe_measurement_parameter(parameters: dict | None, *, parameter_name: str, default, value = None) -> dict` (L89) | function | Public | Record provenance for a parameter that changes the measured quantity. Unlike PASS/WARN/FAIL cutoffs, measurement tolerances can alter which observations enter a metric numerator. They are therefore part of the operationalisation and must be reported explicitly. |
+
+## `cbr_tests/metrics/intrinsic_diagnostics.py`
+
+Python symbols defined by `cbr_tests/metrics/intrinsic_diagnostics.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_rename_summary_key(result: dict, old_key: str, new_key: str) -> dict` (L28) | function | Internal | Implementation helper for rename summary key. |
+| `compute_inter_arrival_internal_drift_ks(df: pd.DataFrame, metric: dict) -> dict` (L36) | function | Public | Computes inter arrival internal drift KS and returns a structured result. |
+| `compute_burstiness_internal_drift(df: pd.DataFrame, metric: dict) -> dict` (L45) | function | Public | Computes burstiness internal drift and returns a structured result. |
+| `compute_day_to_day_hourly_activity_divergence(df: pd.DataFrame, metric: dict) -> dict` (L54) | function | Public | Computes day to day hourly activity divergence and returns a structured result. |
+| `compute_day_to_day_diurnal_similarity(df: pd.DataFrame, metric: dict) -> dict` (L63) | function | Public | Computes day to day diurnal similarity and returns a structured result. |
+| `compute_lagged_periodicity_similarity(df: pd.DataFrame, metric: dict) -> dict` (L72) | function | Public | Computes lagged periodicity similarity and returns a structured result. |
+| `_mark_internal_distribution_drift(result: dict, *, estimator: str) -> dict` (L81) | function | Internal | Implementation helper for mark internal distribution drift. |
+| `compute_feature_ks_internal_drift(df: pd.DataFrame, metric: dict) -> dict` (L94) | function | Public | Computes feature KS internal drift and returns a structured result. |
+| `compute_feature_wasserstein_internal_drift(df: pd.DataFrame, metric: dict) -> dict` (L101) | function | Public | Computes feature wasserstein internal drift and returns a structured result. |
+| `compute_feature_energy_internal_drift(df: pd.DataFrame, metric: dict) -> dict` (L108) | function | Public | Computes feature energy internal drift and returns a structured result. |
+| `compute_feature_mmd2_internal_drift(df: pd.DataFrame, metric: dict) -> dict` (L115) | function | Public | Computes feature mmd2 internal drift and returns a structured result. |
+| `_dependency_requirements(metric: dict) -> tuple[list[str], int]` (L122) | function | Internal | Implementation helper for dependency requirements. |
+| `compute_pearson_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L130) | function | Public | Computes pearson dependency profile and returns a structured result. |
+| `compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L148) | function | Public | Computes spearman dependency profile and returns a structured result. |
+| `compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L168) | function | Public | Computes distance correlation dependency profile and returns a structured result. |
+
+## `cbr_tests/metrics/label_fidelity.py`
+
+Python symbols defined by `cbr_tests/metrics/label_fidelity.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_normalise(value) -> str | None` (L6) | function | Internal | Implementation helper for normalise. |
+| `_label_field(metric: dict) -> str` (L13) | function | Internal | Implementation helper for label field. |
+| `_slice_field(metric: dict) -> str` (L17) | function | Internal | Implementation helper for slice field. |
+| `_timestamp_field(metric: dict) -> str` (L21) | function | Internal | Implementation helper for timestamp field. |
+| `_parse_timestamps(df: pd.DataFrame, field: str) -> pd.Series` (L25) | function | Internal | Implementation helper for parse timestamps. |
+| `_label_values(metric: dict, key: str) -> set[str]` (L31) | function | Internal | Implementation helper for label values. |
+| `_observed_labels(series: pd.Series) -> list[str]` (L42) | function | Internal | Implementation helper for observed labels. |
+| `_valid_slice_groups(df: pd.DataFrame, slice_field: str)` (L52) | function | Internal | Yield normalised, non-missing slice IDs with their row subsets. |
+| `compute_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L65) | function | Public | Return labelled rows / rows in the declared label-required population. |
+| `compute_per_slice_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L89) | function | Public | Return label completeness for each valid, non-missing slice population. |
+| `_entropy_score(labels: list[str], expected_classes: list[str]) -> tuple[float | None, list[str], str]` (L144) | function | Internal | Return normalised Shannon entropy, unexpected labels and class-universe source. |
+| `compute_per_slice_label_entropy_score(df: pd.DataFrame, metric: dict) -> dict` (L179) | function | Public | Return normalised Shannon entropy per valid slice; interpretation is contextual. |
+| `compute_class_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L234) | function | Public | Return max-minus-min class-proportion skew over an independently declared class universe. |
+| `_attack_windows(metric: dict) -> list[tuple[pd.Timestamp, pd.Timestamp]]` (L317) | function | Internal | Implementation helper for attack windows. |
+| `_in_any_window(timestamp: pd.Timestamp, windows: list[tuple[pd.Timestamp, pd.Timestamp]]) -> bool` (L327) | function | Internal | Implementation helper for in any window. |
+| `compute_attack_window_alignment_score(df: pd.DataFrame, metric: dict) -> dict` (L333) | function | Public | Compare observed attack labels with the binary attack state defined by ground-truth windows. |
+| `compute_pre_post_attack_label_bleed_ratio(df: pd.DataFrame, metric: dict) -> dict` (L404) | function | Public | Measure attack labels among label-observable rows in declared pre/post attack buffers. |
+| `_split_masks(df: pd.DataFrame, metric: dict) -> tuple[pd.Series, pd.Series, str]` (L464) | function | Internal | Implementation helper for split masks. |
+| `compute_train_test_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L485) | function | Public | Return the fraction of distinct test signatures that are already present in train. |
+| `compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: dict) -> dict` (L530) | function | Public | Measure test identifiers already seen in train when entity-disjoint evaluation is required. |
 
 ## `cbr_tests/metrics/pcap_handshake.py`
 
@@ -43,6 +116,180 @@ Numeric validation and Pearson correlation profiles.
 | --- | --- | --- | --- |
 | `validate_candidate_fields(df: pd.DataFrame, candidate_fields: list[str]) -> tuple[list[dict], list[str], pd.DataFrame]` (L8) | function | Public | Validate and coerce fields that may be used for correlation metrics. |
 | `compute_pearson_profile(df: pd.DataFrame, runnable_fields: list[str]) -> dict` (L53) | function | Public | Compute the Pearson correlation profile for runnable fields. |
+
+## `cbr_tests/metrics/protocol_network/address_validity/reserved_ip_address_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/address_validity/reserved_ip_address_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `get_reserved_categories(addr) -> list[str]` (L36) | function | Public | Implementation helper for get reserved categories. |
+| `_enabled_categories(categories: list[str], params: dict) -> list[str]` (L66) | function | Internal | Implementation helper for enabled categories. |
+| `_diagnostic(status: str, *, invalid_count: int, invalid_ratio: float, reserved_count: int, checked_count: int, threshold: float, category_counts: dict, invalid_examples: list, reserved_examples: list) -> dict` (L74) | function | Internal | Implementation helper for diagnostic. |
+| `run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L117) | function | Public | Runs reserved IP address metric. |
+
+## `cbr_tests/metrics/protocol_network/address_validity/valid_ip_address_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/address_validity/valid_ip_address_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `classify_ip_value(ip_value) -> str` (L6) | function | Public | Classify an IP field value as missing, IPv4, IPv6, or invalid. |
+| `_port_is_valid(value) -> bool` (L24) | function | Internal | Implementation helper for port is valid. |
+| `_suspicious_tcp_flags(flags: int) -> list[str]` (L32) | function | Internal | Return unusual flag combinations without declaring them structurally invalid. SYN+FIN and SYN+RST are useful indicators of scans, crafted packets, malformed generators, or adversarial traffic. Security datasets can legitimately contain them, so they are descriptive evidence unless a plan explicitly opts them into the structural validity decision. |
+| `run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L52) | function | Public | Check deterministic packet structure and report non-deterministic anomalies. The validity ratio covers decoded IPv4/IPv6 packets only. Non-IP frames are reported separately rather than being silently counted as valid IP packets. A packet becomes structurally invalid only for deterministic problems such as address-family mismatch, impossible decoded ports, an unfragmented IPv4 TCP/ UDP protocol declaration with no matching transport layer, or an impossibly short network-layer packet. Suspicious TCP flag combinations are descriptive by default because attack/security traffic may contain them legitimately. |
+| `run_protocol_validity_metric.record_issue(packet_index: int, reason: str, **evidence) -> None` (L113) | nested function | Internal | Implementation helper for record issue. |
+
+## `cbr_tests/metrics/protocol_network/flow_semantics/derived_rate_consistency_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/derived_rate_consistency_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_within_tolerance(reported: pd.Series, expected: pd.Series, relative_tolerance: float, absolute_tolerance: float) -> pd.Series` (L23) | function | Internal | Implementation helper for within tolerance. |
+| `run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L33) | function | Public | Check whether reported packet/byte rates agree with counts, bytes, and duration. The duration unit must be declared in ``calculation.parameters.duration_unit``. At least one of ``flow_packets_per_second`` and ``flow_bytes_per_second`` must be mapped. This prevents the metric from silently assuming a dataset-specific duration unit or rate convention. |
+
+## `cbr_tests/metrics/protocol_network/flow_semantics/flow_duration_consistency_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/flow_duration_consistency_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L12) | function | Public | Runs flow duration consistency metric. |
+
+## `cbr_tests/metrics/protocol_network/flow_semantics/handshake_plausibility_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/handshake_plausibility_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_to_float(v)` (L8) | function | Internal | Implementation helper for to float. |
+| `run_handshake_plausibility_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L21) | function | Public | Runs handshake plausibility metric. |
+
+## `cbr_tests/metrics/protocol_network/flow_semantics/packet_byte_consistency_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/packet_byte_consistency_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L12) | function | Public | Runs packet byte consistency metric. |
+
+## `cbr_tests/metrics/protocol_network/flow_semantics/tcp_flag_consistency_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/flow_semantics/tcp_flag_consistency_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Runs TCP flag consistency metric. |
+
+## `cbr_tests/metrics/protocol_network/port_validity/service_port_consistency_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/port_validity/service_port_consistency_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `normalize_port_series(series)` (L19) | function | Public | Normalizes port series. |
+| `parse_port(value)` (L37) | function | Public | Parses port. |
+| `_not_applicable_result(*, service_name: str, expected_ports: list[int], match_mode: str, existing_fields: list[str], missing_fields: list[str], row_count: int, population_basis: str, reason_code: str, summary: str, suggestion: str, service_field: str | None = None, service_values: list[str] | None = None) -> tuple[bool, dict]` (L55) | function | Internal | Implementation helper for not applicable result. |
+| `_diagnostic(status: str, *, service_name: str, checked: int, matching: int, mismatching: int, match_ratio: float, pass_threshold: float, warn_threshold: float, invalid_rows: int, population_rows: int, population_basis: str, expected_ports: list[int], mismatch_examples: list, invalid_examples: list) -> dict` (L98) | function | Internal | Implementation helper for diagnostic. |
+| `run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L155) | function | Public | Heuristically check expected ports only within an independently selected service population. A mixed flow dataset must not be treated as though every row belongs to the configured service. In ``auto`` mode the metric therefore requires a usable service/application field, unless ``assume_dataset_service`` is explicitly enabled. A plan can also use ``population_mode=all_rows`` when the dataset is known to contain only the named service. |
+
+## `cbr_tests/metrics/protocol_network/port_validity/valid_port_range_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/port_validity/valid_port_range_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `parse_port(value, valid_min_port: int = 0, valid_max_port: int = 65535)` (L7) | function | Public | Parses port. |
+| `classify_port_range(port: int) -> str` (L29) | function | Public | Classifies port range. |
+| `_diagnostic(status: str, *, checked: int, invalid: int, non_integer: int, out_of_range: int, zero_count: int, invalid_ratio: float | None, threshold: float, valid_min_port: int, valid_max_port: int, examples: list) -> dict` (L39) | function | Internal | Implementation helper for diagnostic. |
+| `run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L88) | function | Public | Runs valid port range metric. |
+
+## `cbr_tests/metrics/protocol_network/slice_metadata_integrity/slice_identifier_consistency_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/slice_metadata_integrity/slice_identifier_consistency_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_norm(v, case_sensitive: bool)` (L7) | function | Internal | Implementation helper for norm. |
+| `_rule_match(field_value, operator, target, case_sensitive)` (L16) | function | Internal | Implementation helper for rule match. |
+| `run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L38) | function | Public | Check slice assignment against scenario rules on applicable rows. Rows with no applicable rule are outside the metric denominator. Missing slice values are completeness evidence and are excluded from the canonical consistency denominator by default; ``count_invalid`` remains available as a legacy/strict policy. |
+
+## `cbr_tests/metrics/protocol_network/slice_metadata_integrity/valid_slice_identifier_profile.py`
+
+Python symbols defined by `cbr_tests/metrics/protocol_network/slice_metadata_integrity/valid_slice_identifier_profile.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `normalise_slice_id(value, case_sensitive: bool, aliases: dict)` (L7) | function | Public | Normalizes slice id. |
+| `run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L21) | function | Public | Check non-missing slice identifiers against a declared vocabulary. Missing slice identifiers are completeness evidence and are excluded from the canonical identifier-validity denominator by default. ``count_invalid`` is retained as an explicit legacy/strict policy for reproducing older plans. |
+
+## `cbr_tests/metrics/reference_comparison.py`
+
+Python symbols defined by `cbr_tests/metrics/reference_comparison.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_reference_path(metric: dict) -> str | None` (L27) | function | Internal | Implementation helper for reference path. |
+| `_apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.DataFrame` (L37) | function | Internal | Implementation helper for apply reference field map. |
+| `_load_reference_df(metric: dict) -> pd.DataFrame` (L59) | function | Internal | Implementation helper for load reference dataframe. |
+| `_candidate_fields(metric: dict) -> list[str]` (L96) | function | Internal | Implementation helper for candidate fields. |
+| `_even_positions(length: int, maximum: int) -> list[int]` (L100) | function | Internal | Implementation helper for even positions. |
+| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L109) | function | Internal | Implementation helper for numeric values. |
+| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L119) | function | Internal | Implementation helper for sample dataframe. |
+| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L125) | function | Internal | Implementation helper for numeric matrix. |
+| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L136) | function | Internal | Implementation helper for multivariate rbf MMD. |
+| `_multivariate_rbf_mmd.squared_distances(left, right)` (L149) | nested function | Internal | Implementation helper for squared distances. |
+| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L169) | function | Internal | Implementation helper for feature metric. |
+| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L205) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
+| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L211) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
+| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L217) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
+| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L223) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
+| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L256) | function | Internal | Implementation helper for matrix deviation. |
+| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L283) | function | Internal | Implementation helper for correlation profile. |
+| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L295) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
+| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L312) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
+| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L329) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
+| `_timestamp_field(metric: dict) -> str` (L354) | function | Internal | Implementation helper for timestamp field. |
+| `_parsed_reference_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L358) | function | Internal | Implementation helper for parsed reference timestamps. |
+| `_timestamp_span(series: pd.Series) -> dict[str, str | None]` (L362) | function | Internal | Implementation helper for timestamp span. |
+| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L369) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
+| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L395) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
+| `_activity_timezone(metric: dict) -> str` (L418) | function | Internal | Implementation helper for activity timezone. |
+| `_activity_timestamps(df: pd.DataFrame, metric: dict) -> pd.Series` (L423) | function | Internal | Implementation helper for activity timestamps. |
+| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L432) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
+| `_slice_field(metric: dict) -> str` (L462) | function | Internal | Implementation helper for slice field. |
+| `_label_field(metric: dict) -> str` (L466) | function | Internal | Implementation helper for label field. |
+| `_normalise_category(value) -> str | None` (L470) | function | Internal | Implementation helper for normalise category. |
+| `_category_values(df: pd.DataFrame, field: str) -> list[str]` (L484) | function | Internal | Implementation helper for category values. |
+| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L494) | function | Internal | Implementation helper for categorical distribution. |
+| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float | None` (L503) | function | Internal | Implementation helper for tv distance. |
+| `_valid_categories(df: pd.DataFrame, field: str) -> set[str]` (L512) | function | Internal | Implementation helper for valid categories. |
+| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L516) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
+| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L537) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
+| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L579) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
+| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L636) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
+| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L657) | function | Public | Computes port use divergence from reference and returns a structured result. |
+| `_flow_definition_ids(metric: dict) -> tuple[str | None, str | None]` (L694) | function | Internal | Implementation helper for flow definition ids. |
+| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L707) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
+
+## `cbr_tests/metrics/slice_representation.py`
+
+Python symbols defined by `cbr_tests/metrics/slice_representation.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_normalise(value) -> str | None` (L4) | function | Internal | Implementation helper for normalise. |
+| `_slice_field(metric: dict) -> str` (L11) | function | Internal | Implementation helper for slice field. |
+| `_normalised_slice_series(df: pd.DataFrame, slice_field: str) -> pd.Series` (L15) | function | Internal | Implementation helper for normalised slice series. |
+| `_observed_slices(df: pd.DataFrame, slice_field: str) -> list[str]` (L22) | function | Internal | Implementation helper for observed slices. |
+| `_unique_normalised(values) -> list[str]` (L27) | function | Internal | Implementation helper for unique normalised. |
+| `compute_per_slice_sample_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L38) | function | Public | Measure whether declared expected slices meet a minimum sample count. Coverage is undefined without an independently declared expected slice set. Observed sample counts/proportions are still returned as descriptive evidence. |
+| `compute_per_slice_feature_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L98) | function | Public | Compute row-level non-missing completeness for each feature within each slice. |
+| `compute_per_slice_class_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L156) | function | Public | Measure expected-class coverage in each observed slice. Expected classes must be declared independently; deriving them from the candidate dataset would make globally absent classes impossible to detect. |
+| `compute_slice_distribution_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L216) | function | Public | Report intrinsic slice-distribution skew as the max-minus-min proportion range. |
+| `compute_cross_slice_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L251) | function | Public | Measure the fraction of checked signatures that occur in multiple slices. |
+| `compute_cross_slice_identifier_leakage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L320) | function | Public | Measure cross-slice identifier overlap and label it leakage only under an explicit exclusivity policy. |
 
 ## `cbr_tests/metrics/spearman.py`
 
@@ -86,12 +333,12 @@ Accuracy and binary precision, recall, and F1 calculations.
 | --- | --- | --- | --- |
 | `_normalise(value) -> str | None` (L6) | function | Internal | Implementation helper for normalise. |
 | `_fields(metric: dict) -> tuple[str, str]` (L13) | function | Internal | Implementation helper for fields. |
-| `_positive_label(metric: dict, labels: list[str]) -> str | None` (L21) | function | Internal | Uses an explicit positive class or the lexicographically last class when exactly two labels are observed. |
-| `_confusion_counts(df: pd.DataFrame, metric: dict) -> dict` (L29) | function | Internal | Implementation helper for confusion counts. |
-| `compute_benchmark_model_accuracy(df: pd.DataFrame, metric: dict) -> dict` (L80) | function | Public | Computes benchmark model accuracy and returns a structured result. |
-| `compute_benchmark_model_precision(df: pd.DataFrame, metric: dict) -> dict` (L91) | function | Public | Computes benchmark model precision and returns a structured result. |
-| `compute_benchmark_model_recall(df: pd.DataFrame, metric: dict) -> dict` (L99) | function | Public | Computes benchmark model recall and returns a structured result. |
-| `compute_benchmark_model_f1_score(df: pd.DataFrame, metric: dict) -> dict` (L107) | function | Public | Computes benchmark model f1 score and returns a structured result. |
+| `_positive_label(metric: dict) -> str | None` (L21) | function | Internal | Return only an explicitly configured positive label. Precision, recall and F1 are positive-class, one-vs-rest measures in the canonical taxonomy. The framework must therefore never infer the positive class from lexical ordering or from the candidate data itself. |
+| `_confusion_counts(df: pd.DataFrame, metric: dict) -> dict` (L33) | function | Internal | Implementation helper for confusion counts. |
+| `compute_benchmark_model_accuracy(df: pd.DataFrame, metric: dict) -> dict` (L93) | function | Public | Compute exact-match accuracy over complete label/prediction pairs. Accuracy is naturally valid for binary or multiclass labels. Rows with a missing/blank true label or prediction are excluded from the metric and the evaluation coverage is reported separately. |
+| `compute_benchmark_model_precision(df: pd.DataFrame, metric: dict) -> dict` (L114) | function | Public | Compute positive-class precision using an explicit one-vs-rest label. |
+| `compute_benchmark_model_recall(df: pd.DataFrame, metric: dict) -> dict` (L133) | function | Public | Compute positive-class recall using an explicit one-vs-rest label. |
+| `compute_benchmark_model_f1_score(df: pd.DataFrame, metric: dict) -> dict` (L152) | function | Public | Compute positive-class F1 using an explicit one-vs-rest label. The confusion-count form is used so a valid case with TP=0, FP>0 and FN>0 returns F1=0 rather than becoming undefined through a 0/0 precision/recall harmonic-mean expression. |
 
 ## `cbr_tests/metrics/temporal.py`
 
@@ -102,26 +349,27 @@ Timestamp, duration, timing-drift, hourly, and periodicity calculations.
 | `_timestamp_field(metric: dict, default: str = 'timestamp') -> str` (L8) | function | Internal | Implementation helper for timestamp field. |
 | `_timestamp_unit(metric: dict) -> str | None` (L12) | function | Internal | Implementation helper for timestamp unit. |
 | `_parse_timestamp_series(df: pd.DataFrame, field: str, unit: str | None = None) -> pd.Series` (L22) | function | Internal | Implementation helper for parse timestamp series. |
-| `_ks_statistic(left: list[float], right: list[float]) -> float` (L34) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
-| `_split_list(values: list) -> tuple[list, list]` (L53) | function | Internal | Implementation helper for split list. |
-| `_inter_arrival_seconds(timestamps: pd.Series) -> list[float]` (L58) | function | Internal | Implementation helper for inter arrival seconds. |
-| `compute_timestamp_parse_success_ratio(df: pd.DataFrame, metric: dict) -> dict` (L66) | function | Public | Computes timestamp parse success ratio and returns a structured result. |
-| `compute_start_end_timestamp_consistency_ratio(df: pd.DataFrame, metric: dict) -> dict` (L84) | function | Public | Computes start end timestamp consistency ratio and returns a structured result. |
-| `compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict` (L114) | function | Public | Computes non negative duration ratio and returns a structured result. |
-| `compute_inter_arrival_time_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L148) | function | Public | Computes inter arrival time distribution divergence and returns a structured result. |
-| `_burstiness(values: list[float]) -> float | None` (L171) | function | Internal | Implementation helper for burstiness. |
-| `compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict` (L181) | function | Public | Computes burstiness coefficient deviation and returns a structured result. |
-| `_hourly_counts(timestamps: list[pd.Timestamp]) -> list[int]` (L208) | function | Internal | Implementation helper for hourly counts. |
-| `_probabilities(counts: list[int]) -> list[float]` (L215) | function | Internal | Implementation helper for probabilities. |
-| `_daily_hour_vectors(timestamps: list[pd.Timestamp]) -> list[tuple[str, list[int]]]` (L220) | function | Internal | Return one 24-hour UTC activity vector per observed calendar day. |
-| `_mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]` (L233) | function | Internal | Implementation helper for mean pairwise total variation. |
-| `_cosine_similarity(left: list[int], right: list[int]) -> float | None` (L250) | function | Internal | Implementation helper for cosine similarity. |
-| `_mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]` (L259) | function | Internal | Implementation helper for mean pairwise cosine similarity. |
-| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L271) | function | Public | Measure day-to-day divergence in UTC hour-of-day activity distributions. Comparing chronological packet halves confounds the result with capture time: an eight-hour regular capture, for example, puts different hours in each half and appears maximally divergent. This implementation instead compares one 24-hour profile per observed calendar day and therefore requires at least two observed days before producing a value. |
-| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L314) | function | Public | Measure day-to-day similarity of UTC hour-of-day activity shapes. |
-| `_continuous_hourly_counts(timestamps: list[pd.Timestamp]) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]` (L347) | function | Internal | Implementation helper for continuous hourly counts. |
-| `_lag_repeat_similarity(values: list[int], lag: int, minimum_pairs: int) -> tuple[float | None, int]` (L361) | function | Internal | Implementation helper for lag repeat similarity. |
-| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L381) | function | Public | Measure how closely hourly activity repeats at configured temporal lags. The previous implementation autocorrelated two 24-element hour-of-day histograms, so a lag of 24 could never be evaluated. Here the lag is applied to the actual continuous hourly activity series: lag 24 therefore compares each observed hour with the corresponding hour one day later. |
+| `_timestamp_missing_mask(df: pd.DataFrame, field: str) -> pd.Series` (L34) | function | Internal | Implementation helper for timestamp missing mask. |
+| `_ks_statistic(left: list[float], right: list[float]) -> float` (L41) | function | Internal | Computes the largest empirical-CDF difference between two samples. |
+| `_split_list(values: list) -> tuple[list, list]` (L60) | function | Internal | Implementation helper for split list. |
+| `_inter_arrival_seconds(timestamps: pd.Series) -> list[float]` (L65) | function | Internal | Implementation helper for inter arrival seconds. |
+| `compute_timestamp_parse_success_ratio(df: pd.DataFrame, metric: dict) -> dict` (L73) | function | Public | Measure parser success among non-missing timestamp values actually attempted. |
+| `compute_start_end_timestamp_consistency_ratio(df: pd.DataFrame, metric: dict) -> dict` (L105) | function | Public | Computes start end timestamp consistency ratio and returns a structured result. |
+| `compute_non_negative_duration_ratio(df: pd.DataFrame, metric: dict) -> dict` (L137) | function | Public | Computes non negative duration ratio and returns a structured result. |
+| `compute_inter_arrival_time_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L173) | function | Public | Measure within-dataset IAT drift between chronological halves. This is an intrinsic stability diagnostic, not a candidate-versus-reference realism comparison. A low value is not universally more realistic because genuine traffic can be non-stationary. |
+| `_burstiness(values: list[float]) -> float | None` (L206) | function | Internal | Implementation helper for burstiness. |
+| `compute_burstiness_coefficient_deviation(df: pd.DataFrame, metric: dict) -> dict` (L216) | function | Public | Measure change in burstiness between chronological halves of one trace. |
+| `_hourly_counts(timestamps: list[pd.Timestamp]) -> list[int]` (L248) | function | Internal | Implementation helper for hourly counts. |
+| `_probabilities(counts: list[int]) -> list[float]` (L255) | function | Internal | Implementation helper for probabilities. |
+| `_daily_hour_vectors(timestamps: list[pd.Timestamp]) -> list[tuple[str, list[int]]]` (L260) | function | Internal | Return one 24-hour UTC activity vector per observed calendar day. |
+| `_mean_pairwise_total_variation(vectors: list[list[int]]) -> tuple[float | None, int]` (L273) | function | Internal | Implementation helper for mean pairwise total variation. |
+| `_cosine_similarity(left: list[int], right: list[int]) -> float | None` (L290) | function | Internal | Implementation helper for cosine similarity. |
+| `_mean_pairwise_cosine_similarity(vectors: list[list[int]]) -> tuple[float | None, int]` (L299) | function | Internal | Implementation helper for mean pairwise cosine similarity. |
+| `compute_hourly_activity_distribution_divergence(df: pd.DataFrame, metric: dict) -> dict` (L311) | function | Public | Measure pairwise day-to-day divergence in UTC hour-of-day activity. This is an intrinsic repeatability/stability diagnostic. Its value is contextual: real traffic can legitimately change from day to day. |
+| `compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> dict` (L353) | function | Public | Measure pairwise day-to-day similarity of UTC hour-of-day activity shapes. |
+| `_continuous_hourly_counts(timestamps: list[pd.Timestamp]) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]` (L388) | function | Internal | Implementation helper for continuous hourly counts. |
+| `_lag_repeat_similarity(values: list[int], lag: int, minimum_pairs: int) -> tuple[float | None, int]` (L402) | function | Internal | Implementation helper for lag repeat similarity. |
+| `compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> dict` (L422) | function | Public | Measure within-dataset repeat similarity at configured hourly lags. A configured lag such as 24 hours describes a structural hypothesis about the workload. High repeat similarity is favourable only when such periodicity is expected; otherwise the result is descriptive/contextual. |
 
 ## `cbr_tests/metrics/timestamp_coherence.py`
 
@@ -130,6 +378,46 @@ Raw packet timestamp coherence scanning.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `run_timestamp_coherence_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L8) | function | Public | Scan a PCAP and assess whether packet timestamps are coherent. |
+
+## `cbr_tests/outcome_comparison.py`
+
+Python symbols defined by `cbr_tests/outcome_comparison.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `load_outcome(path: str | Path) -> dict` (L53) | function | Public | Load one JSON outcome object from disk. |
+| `_identity_key(items: list[Any]) -> str | None` (L61) | function | Internal | Implementation helper for identity key. |
+| `flatten_outcome(value: Any, *, include_volatile: bool = False, path: str = '$') -> tuple[dict[str, Any], list[str]]` (L79) | function | Public | Flatten JSON into stable paths while tracking ignored run metadata. Lists of dictionaries are keyed by a stable identifier such as ``metric_id`` or ``field`` when possible. This avoids false changes when result ordering changes between executions. |
+| `flatten_outcome.visit(node: Any, node_path: str) -> None` (L94) | nested function | Internal | Implementation helper for visit. |
+| `_numbers_equal(before: Any, after: Any, *, abs_tol: float, rel_tol: float) -> bool` (L126) | function | Internal | Implementation helper for numbers equal. |
+| `_impact(path: str) -> str` (L138) | function | Internal | Implementation helper for impact. |
+| `_numeric_delta(before: Any, after: Any) -> float | None` (L143) | function | Internal | Implementation helper for numeric delta. |
+| `compare_outcomes(before: dict, after: dict, *, abs_tol: float = 1e-12, rel_tol: float = 1e-09, include_volatile: bool = False) -> dict` (L151) | function | Public | Return a machine-readable comparison between two outcome objects. |
+| `_display_value(value: Any, *, limit: int = 100) -> str` (L255) | function | Internal | Implementation helper for display value. |
+| `render_markdown(report: dict) -> str` (L264) | function | Public | Render a comparison report suitable for experiment records and review. |
+
+## `cbr_tests/plan_migration.py`
+
+Python symbols defined by `cbr_tests/plan_migration.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `legacy_intrinsic_metric_ids(plan: dict) -> list[str]` (L154) | function | Public | Return legacy intrinsic metric IDs present in a plan, in plan order. |
+| `compatibility_only_metric_ids(plan: dict) -> list[str]` (L164) | function | Public | Return profile IDs that require plan regeneration for final experiments. |
+| `migrate_plan_to_canonical_ids(plan: dict) -> tuple[dict, list[dict]]` (L174) | function | Public | Return a schema-valid copy of a plan with legacy intrinsic IDs migrated. Scientific inputs and calculation parameters are preserved. Only the metric identity, human label and taxonomy path are refreshed to the canonical overhaul contract. Compatibility-only profiles are intentionally left alone because they require plan regeneration rather than a one-to-one rename. |
+
+## `cbr_tests/rerun_workflow.py`
+
+Python symbols defined by `cbr_tests/rerun_workflow.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `file_sha256(path: Path) -> str` (L17) | function | Public | Return the SHA-256 digest of one file. |
+| `current_git_commit(repo_root: Path) -> str | None` (L26) | function | Public | Return HEAD when the working copy is a Git repository. |
+| `outcome_dataset_sha256(outcome: dict) -> str | None` (L42) | function | Public | Read the dataset digest already recorded by normal run provenance. |
+| `build_run_plan_command(*, repo_root: Path, plan_path: Path, dataset_path: Path, output_path: Path, case_id: str, display: str = 'compact', workers: int | None = None, extra_args: Sequence[str] = ()) -> list[str]` (L54) | function | Public | Build the canonical ``run_plan.py`` invocation for one rerun. |
+| `_copy_baseline_companion(baseline_path: Path, record_dir: Path) -> Path | None` (L86) | function | Internal | Implementation helper for copy baseline companion. |
+| `run_and_compare(*, repo_root: Path, baseline_path: Path, plan_path: Path, dataset_path: Path, record_dir: Path, case_id: str = 'ad_hoc_case', display: str = 'compact', workers: int | None = None, extra_args: Sequence[str] = (), force: bool = False) -> dict` (L100) | function | Public | Archive a baseline, rerun a plan, compare outcomes, and write a manifest. The authoritative baseline is copied before execution. The original baseline is never modified. The post-overhaul outcome is produced by the normal ``run_plan.py`` path rather than by a special test harness. |
 
 ## `create_plan.py`
 
@@ -296,32 +584,32 @@ Metric registry, wrappers, field translation, and handler construction.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `register_metric(metric_id: str)` (L117) | function | Public | Implementation helper for register metric. |
-| `register_metric._decorator(function)` (L118) | nested function | Internal | Implementation helper for decorator. |
-| `run_pearson_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L125) | function | Public | Runs pearson metric. |
-| `run_spearman_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L147) | function | Public | Runs spearman metric. |
-| `run_missing_value_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L175) | function | Public | Runs missing value metric. |
-| `run_duplicate_row_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L187) | function | Public | Runs duplicate row metric. |
-| `run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None, metric_id: str, compute_fn)` (L199) | function | Public | Runs tabular metric. |
-| `run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L211) | function | Public | Runs distance correlation metric. |
-| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L261) | function | Public | Runs column quality metric. |
-| `_timestamp_metric(dataset_path: Path, metric: dict)` (L274) | function | Internal | Implementation helper for timestamp metric. |
-| `_protocol_metric(dataset_path: Path, metric: dict)` (L279) | function | Internal | Implementation helper for protocol metric. |
-| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L284) | function | Internal | Implementation helper for reserved IP metric. |
-| `_valid_port_metric(dataset_path: Path, metric: dict)` (L289) | function | Internal | Implementation helper for valid port metric. |
-| `_service_port_metric(dataset_path: Path, metric: dict)` (L294) | function | Internal | Implementation helper for service port metric. |
-| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L299) | function | Internal | Implementation helper for TCP flag metric. |
-| `_handshake_metric(dataset_path: Path, metric: dict)` (L304) | function | Internal | Implementation helper for handshake metric. |
-| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L311) | function | Internal | Implementation helper for flow duration metric. |
-| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L316) | function | Internal | Implementation helper for packet byte metric. |
-| `_derived_rate_metric(dataset_path: Path, metric: dict)` (L321) | function | Internal | Implementation helper for derived rate metric. |
-| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L326) | function | Internal | Implementation helper for slice valid metric. |
-| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L331) | function | Internal | Implementation helper for slice consistency metric. |
-| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L385) | function | Internal | Implementation helper for wrap registered handler. |
-| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L390) | nested function | Internal | Implementation helper for wrapped. |
-| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L405) | function | Internal | Implementation helper for make tabular compute handler. |
-| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L426) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
-| `build_metric_handlers._translate(metric: dict)` (L436) | nested function | Internal | Implementation helper for translate. |
+| `register_metric(metric_id: str)` (L135) | function | Public | Implementation helper for register metric. |
+| `register_metric._decorator(function)` (L136) | nested function | Internal | Implementation helper for decorator. |
+| `run_pearson_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L143) | function | Public | Runs pearson metric. |
+| `run_spearman_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L165) | function | Public | Runs spearman metric. |
+| `run_missing_value_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L193) | function | Public | Runs missing value metric. |
+| `run_duplicate_row_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L205) | function | Public | Runs duplicate row metric. |
+| `run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None, metric_id: str, compute_fn)` (L217) | function | Public | Runs tabular metric. |
+| `run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L229) | function | Public | Runs distance correlation metric. |
+| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L279) | function | Public | Runs column quality metric. |
+| `_timestamp_metric(dataset_path: Path, metric: dict)` (L292) | function | Internal | Implementation helper for timestamp metric. |
+| `_protocol_metric(dataset_path: Path, metric: dict)` (L297) | function | Internal | Implementation helper for protocol metric. |
+| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L302) | function | Internal | Implementation helper for reserved IP metric. |
+| `_valid_port_metric(dataset_path: Path, metric: dict)` (L307) | function | Internal | Implementation helper for valid port metric. |
+| `_service_port_metric(dataset_path: Path, metric: dict)` (L312) | function | Internal | Implementation helper for service port metric. |
+| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L317) | function | Internal | Implementation helper for TCP flag metric. |
+| `_handshake_metric(dataset_path: Path, metric: dict)` (L322) | function | Internal | Implementation helper for handshake metric. |
+| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L329) | function | Internal | Implementation helper for flow duration metric. |
+| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L334) | function | Internal | Implementation helper for packet byte metric. |
+| `_derived_rate_metric(dataset_path: Path, metric: dict)` (L339) | function | Internal | Implementation helper for derived rate metric. |
+| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L344) | function | Internal | Implementation helper for slice valid metric. |
+| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L349) | function | Internal | Implementation helper for slice consistency metric. |
+| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L420) | function | Internal | Implementation helper for wrap registered handler. |
+| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L425) | nested function | Internal | Implementation helper for wrapped. |
+| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L440) | function | Internal | Implementation helper for make tabular compute handler. |
+| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L461) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
+| `build_metric_handlers._translate(metric: dict)` (L471) | nested function | Internal | Implementation helper for translate. |
 
 ## `runner/execution.py`
 
@@ -498,18 +786,18 @@ Python symbols defined by `runner/metric_catalog.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `available_metric_ids() -> list[str]` (L34) | function | Public | Return metric IDs accepted by the runtime dispatcher. The plan builder deliberately asks the dispatcher for its handlers instead of keeping a second metric-ID list. Adding a runnable metric therefore makes it discoverable by plan creation automatically. |
-| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L46) | function | Internal | Implementation helper for walk taxonomy. |
-| `load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[str]]` (L63) | function | Public | Loads taxonomy paths. |
-| `load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]` (L73) | function | Public | Collect existing plan metric definitions as configuration templates. |
-| `required_fields(metric: dict) -> list[str]` (L94) | function | Public | Implementation helper for required fields. |
-| `choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None` (L103) | function | Public | Implementation helper for choose metric template. |
-| `choose_metric_template.score(metric: dict) -> tuple[int, int, int, str]` (L108) | nested function | Internal | Implementation helper for score. |
-| `metric_manual_configuration_reason(metric_id: str) -> str | None` (L121) | function | Public | Implementation helper for metric manual configuration reason. |
-| `humanize_metric_id(metric_id: str) -> str` (L127) | function | Public | Implementation helper for humanize metric id. |
-| `_blank_reference_paths(value)` (L131) | function | Internal | Implementation helper for blank reference paths. |
-| `sanitize_manual_template(metric: dict, reason: str) -> dict` (L143) | function | Public | Remove dataset-specific values that would be unsafe as universal defaults. |
-| `build_metric_catalog(*, metric_ids: Iterable[str] | None = None, taxonomy_path: Path = DEFAULT_TAXONOMY_PATH, plans_dir: Path = DEFAULT_PLANS_DIR, available_fields: set[str] | None = None) -> list[dict]` (L173) | function | Public | Build catalogue entries for every runnable metric. |
+| `available_metric_ids() -> list[str]` (L57) | function | Public | Return canonical metric IDs exposed by automatic plan creation. Legacy IDs are deliberately omitted here even though the runtime dispatcher still accepts them, preventing old construct names from re-entering newly generated plans. |
+| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L73) | function | Internal | Implementation helper for walk taxonomy. |
+| `load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[str]]` (L90) | function | Public | Loads taxonomy paths. |
+| `load_metric_templates(plans_dir: Path = DEFAULT_PLANS_DIR) -> dict[str, list[dict]]` (L100) | function | Public | Collect plan templates and migrate legacy intrinsic IDs in memory. Saved plans are not rewritten. Their configuration is copied to the canonical replacement ID for new plan generation so historical artefacts remain reproducible while the new taxonomy stays clean. |
+| `required_fields(metric: dict) -> list[str]` (L133) | function | Public | Implementation helper for required fields. |
+| `choose_metric_template(candidates: Iterable[dict], available_fields: set[str] | None = None) -> dict | None` (L142) | function | Public | Implementation helper for choose metric template. |
+| `choose_metric_template.score(metric: dict) -> tuple[int, int, int, str]` (L147) | nested function | Internal | Implementation helper for score. |
+| `metric_manual_configuration_reason(metric_id: str) -> str | None` (L160) | function | Public | Implementation helper for metric manual configuration reason. |
+| `humanize_metric_id(metric_id: str) -> str` (L166) | function | Public | Implementation helper for humanize metric id. |
+| `_blank_reference_paths(value)` (L170) | function | Internal | Implementation helper for blank reference paths. |
+| `sanitize_manual_template(metric: dict, reason: str) -> dict` (L182) | function | Public | Remove dataset-specific values that would be unsafe as universal defaults. |
+| `build_metric_catalog(*, metric_ids: Iterable[str] | None = None, taxonomy_path: Path = DEFAULT_TAXONOMY_PATH, plans_dir: Path = DEFAULT_PLANS_DIR, available_fields: set[str] | None = None) -> list[dict]` (L230) | function | Public | Build catalogue entries for every runnable canonical metric. |
 
 ## `runner/metric_diagnostics.py`
 
@@ -558,26 +846,26 @@ Python symbols defined by `runner/pcap_adapter.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `is_packet_capture(path: Path) -> bool` (L168) | function | Public | Implementation helper for is packet capture. |
-| `_packet_fields(packet) -> dict[str, Any] | None` (L172) | function | Internal | Implementation helper for packet fields. |
-| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L221) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. Values in this view are copied from decoded packet fields rather than derived from reconstructed flows, so packet-level metrics can operate on raw capture evidence without first inventing exporter-specific flow semantics. |
-| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L256) | function | Internal | Implementation helper for endpoint key. |
-| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L260) | function | Internal | Implementation helper for flow key. |
-| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L273) | function | Internal | Implementation helper for safe std variance. |
-| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L281) | function | Internal | Implementation helper for series stats. |
-| `_DirectionStats` (L292) | class | Internal | Data model for DirectionStats. |
-| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L301) | method | Public | Implementation helper for add. |
-| `_DirectionStats.min_length(self) -> float` (L311) | method | Public | Implementation helper for min length. |
-| `_DirectionStats.max_length(self) -> float` (L314) | method | Public | Implementation helper for max length. |
-| `_DirectionStats.mean_length(self) -> float` (L317) | method | Public | Implementation helper for mean length. |
-| `_FlowState` (L322) | class | Internal | Data model for FlowState. |
-| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L350) | method | Public | Implementation helper for is forward. |
-| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L364) | method | Public | Implementation helper for add packet. |
-| `_FlowState.as_row(self) -> dict[str, Any]` (L402) | method | Public | Implementation helper for as row. |
-| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L447) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. The first observed packet defines the forward direction. Packet lengths are captured frame lengths and durations/IATs are expressed in seconds. No idle timeout is guessed: one row is produced per bidirectional 5-tuple across the capture. Consequently this view is infrastructure for later sequence and reference metrics, not evidence that self-derived flow arithmetic is realistic. |
-| `pcap_metric_template(metric_id: str) -> dict | None` (L505) | function | Public | Return a deterministic template for a metric safe on decoded packet evidence. The templates deliberately avoid dataset-specific policy such as service definitions, allowed slice IDs, reference datasets, attack windows, or model configuration. Numeric dependency/drift metrics use packet length and capture-order inter-arrival time because those quantities have meaningful continuous scales; TCP flag bitmasks and port identifiers are not treated as ordinal measurements for correlation. |
-| `pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict` (L739) | function | Public | Build a service-port metric only for an explicitly single-service capture. The service population must come from independent experiment knowledge. The framework never infers a service from the same ports it is about to test. |
-| `pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None` (L774) | function | Public | Return a same-representation packet-level reference metric template. |
+| `is_packet_capture(path: Path) -> bool` (L201) | function | Public | Implementation helper for is packet capture. |
+| `_packet_fields(packet) -> dict[str, Any] | None` (L205) | function | Internal | Implementation helper for packet fields. |
+| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L252) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. |
+| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L281) | function | Internal | Implementation helper for endpoint key. |
+| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L285) | function | Internal | Implementation helper for flow key. |
+| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L298) | function | Internal | Implementation helper for safe std variance. |
+| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L306) | function | Internal | Implementation helper for series stats. |
+| `_DirectionStats` (L317) | class | Internal | Data model for DirectionStats. |
+| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L326) | method | Public | Implementation helper for add. |
+| `_DirectionStats.min_length(self) -> float` (L336) | method | Public | Implementation helper for min length. |
+| `_DirectionStats.max_length(self) -> float` (L339) | method | Public | Implementation helper for max length. |
+| `_DirectionStats.mean_length(self) -> float` (L342) | method | Public | Implementation helper for mean length. |
+| `_FlowState` (L347) | class | Internal | Data model for FlowState. |
+| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L375) | method | Public | Implementation helper for is forward. |
+| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L389) | method | Public | Implementation helper for add packet. |
+| `_FlowState.as_row(self) -> dict[str, Any]` (L427) | method | Public | Implementation helper for as row. |
+| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L472) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. |
+| `pcap_metric_template(metric_id: str) -> dict | None` (L522) | function | Public | Return a deterministic template for a metric safe on decoded packet evidence. Canonical intrinsic diagnostic IDs reuse the established packet-view configuration. Historical IDs continue to resolve for replaying old plans. |
+| `pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict` (L780) | function | Public | Build a service-port metric only for an explicitly single-service capture. |
+| `pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None` (L810) | function | Public | Return a same-representation packet-level reference metric template. |
 
 ## `runner/plan_builder.py`
 
@@ -635,6 +923,16 @@ Python symbols defined by `runner/provenance.py`.
 | `software_manifest() -> dict[str, Any]` (L101) | function | Public | Implementation helper for software manifest. |
 | `resolve_plan_source_path(case_file: Path) -> Path` (L119) | function | Public | Resolve the plan file used by a case, or return the direct plan file itself. |
 | `build_provenance_manifest(*, plan: dict, dataset_path: Path, case_file: Path, plan_source_path: Path, field_translation: dict[str, str], translation_path: Path | None, taxonomy_path: Path | None, cli_arguments: dict[str, Any]) -> dict[str, Any]` (L136) | function | Public | Build the immutable experiment-identification metadata stored with an outcome. |
+
+## `runner/result_semantics.py`
+
+Python symbols defined by `runner/result_semantics.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_result_summary(payload: object) -> dict` (L9) | function | Internal | Implementation helper for result summary. |
+| `metric_result_semantics(payload: object) -> dict` (L16) | function | Public | Separate applicability/verdict semantics from execution success. Execution status belongs to ``metric_results`` and only says whether the handler ran. This function inspects the scientific result payload and reports whether the metric was actually runnable/applicable and whether it emitted a decision-policy verdict. |
+| `scientific_status_fragments(payload: object) -> list[str]` (L67) | function | Public | Return concise TUI fragments describing applicability and verdict. |
 
 ## `runner/run_context.py`
 
@@ -746,42 +1044,42 @@ Python symbols defined by `runner/tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_outcome_filename_slug(value: str) -> str` (L16) | function | Internal | Implementation helper for outcome filename slug. |
-| `_selected_run_title(case_path: str | None, repo_root: Path) -> str` (L21) | function | Internal | Implementation helper for selected run title. |
-| `default_outcome_path(case_path: str | None = None, *, repo_root: Path | None = None, now: datetime | None = None) -> str` (L65) | function | Public | Implementation helper for default outcome path. |
-| `detected_max_workers() -> int` (L77) | function | Public | Implementation helper for detected max workers. |
-| `FileBrowserEntry` (L82) | class | Public | Data model for FileBrowserEntry. |
-| `TuiField` (L89) | class | Public | Data model for TuiField. |
-| `_discover_files(root: Path, patterns: tuple[str, ...]) -> tuple[str, ...]` (L100) | function | Internal | Implementation helper for discover files. |
-| `_display_path(path: Path, root: Path) -> str` (L107) | function | Internal | Implementation helper for display path. |
-| `list_file_browser_entries(directory: Path, root: Path) -> list[FileBrowserEntry]` (L115) | function | Public | Implementation helper for list file browser entries. |
-| `build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiField]` (L129) | function | Public | Builds default tui fields. |
-| `apply_tui_fields(args, fields: list[TuiField])` (L156) | function | Public | Implementation helper for apply tui fields. |
-| `validate_required_run_args(args) -> None` (L168) | function | Public | Validates required run args. |
-| `_format_value(field: TuiField) -> str` (L173) | function | Internal | Implementation helper for format value. |
-| `field_action_hint(field: TuiField) -> str` (L183) | function | Public | Implementation helper for field action hint. |
-| `describe_tui_field(field: TuiField) -> list[str]` (L193) | function | Public | Implementation helper for describe tui field. |
-| `_edit_text(stdscr, y: int, x: int, initial: str, width: int) -> str` (L202) | function | Internal | Implementation helper for edit text. |
-| `_initial_browser_directory(initial: str, root: Path) -> Path` (L212) | function | Internal | Implementation helper for initial browser directory. |
-| `_browse_file(stdscr, root: Path, initial: str) -> str | None` (L224) | function | Internal | Implementation helper for browse file. |
-| `_run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None` (L269) | function | Internal | Implementation helper for run curses. |
-| `launch_tui(args, repo_root: Path | None = None)` (L334) | function | Public | Implementation helper for launch tui. |
-| `_result_lines(result: dict | None, args) -> list[str]` (L342) | function | Internal | Implementation helper for result lines. |
-| `_field_mapping_choices(dataset_columns: list[str], mappings: dict[str, str], field: str) -> list[str]` (L365) | function | Internal | Implementation helper for field mapping choices. |
-| `save_field_mappings(path: Path, mappings: dict[str, str]) -> None` (L373) | function | Public | Implementation helper for save field mappings. |
-| `_field_mapping_curses(stdscr, result: dict) -> str` (L384) | function | Internal | Implementation helper for field mapping curses. |
-| `show_field_mapping_menu(result: dict) -> str` (L432) | function | Public | Implementation helper for show field mapping menu. |
-| `_confirm_run_after_errors(stdscr, skipped_count: int, result: dict | None = None) -> str` (L436) | function | Internal | Implementation helper for confirm run after errors. |
-| `ResultSection` (L461) | class | Public | Data model for ResultSection. |
-| `_load_outcome_payload(output_path: str | None) -> dict` (L467) | function | Internal | Implementation helper for load outcome payload. |
-| `_scalar_summary_items(payload: object, limit: int = 4) -> list[str]` (L476) | function | Internal | Implementation helper for scalar summary items. |
-| `_test_result_for_metric(test_results: dict, metric_id: str) -> object` (L489) | function | Internal | Implementation helper for test result for metric. |
-| `_metric_result_line(metric: dict, test_results: dict) -> str` (L498) | function | Internal | Implementation helper for metric result line. |
-| `_outcome_result_sections(output_path: str | None) -> tuple[list[str], list[str], list[str], list[str]]` (L514) | function | Internal | Implementation helper for outcome result sections. |
-| `build_result_sections(result: dict | None) -> list[ResultSection]` (L537) | function | Public | Builds result sections. |
-| `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L561) | function | Internal | Implementation helper for visible result rows. |
-| `_post_run_curses(stdscr, result: dict | None, args) -> str` (L571) | function | Internal | Implementation helper for post run curses. |
-| `show_post_run_menu(result: dict | None, args) -> str` (L612) | function | Public | Implementation helper for show post run menu. |
+| `_outcome_filename_slug(value: str) -> str` (L22) | function | Internal | Implementation helper for outcome filename slug. |
+| `_selected_run_title(case_path: str | None, repo_root: Path) -> str` (L27) | function | Internal | Implementation helper for selected run title. |
+| `default_outcome_path(case_path: str | None = None, *, repo_root: Path | None = None, now: datetime | None = None) -> str` (L71) | function | Public | Implementation helper for default outcome path. |
+| `detected_max_workers() -> int` (L83) | function | Public | Implementation helper for detected max workers. |
+| `FileBrowserEntry` (L88) | class | Public | Data model for FileBrowserEntry. |
+| `TuiField` (L95) | class | Public | Data model for TuiField. |
+| `_discover_files(root: Path, patterns: tuple[str, ...]) -> tuple[str, ...]` (L106) | function | Internal | Implementation helper for discover files. |
+| `_display_path(path: Path, root: Path) -> str` (L113) | function | Internal | Implementation helper for display path. |
+| `list_file_browser_entries(directory: Path, root: Path) -> list[FileBrowserEntry]` (L121) | function | Public | Implementation helper for list file browser entries. |
+| `build_default_tui_fields(args, repo_root: Path | None = None) -> list[TuiField]` (L135) | function | Public | Builds default tui fields. |
+| `apply_tui_fields(args, fields: list[TuiField])` (L162) | function | Public | Implementation helper for apply tui fields. |
+| `validate_required_run_args(args) -> None` (L174) | function | Public | Validates required run args. |
+| `_format_value(field: TuiField) -> str` (L179) | function | Internal | Implementation helper for format value. |
+| `field_action_hint(field: TuiField) -> str` (L189) | function | Public | Implementation helper for field action hint. |
+| `describe_tui_field(field: TuiField) -> list[str]` (L199) | function | Public | Implementation helper for describe tui field. |
+| `_edit_text(stdscr, y: int, x: int, initial: str, width: int) -> str` (L208) | function | Internal | Implementation helper for edit text. |
+| `_initial_browser_directory(initial: str, root: Path) -> Path` (L218) | function | Internal | Implementation helper for initial browser directory. |
+| `_browse_file(stdscr, root: Path, initial: str) -> str | None` (L230) | function | Internal | Implementation helper for browse file. |
+| `_run_curses(stdscr, fields: list[TuiField]) -> list[TuiField] | None` (L275) | function | Internal | Implementation helper for run curses. |
+| `launch_tui(args, repo_root: Path | None = None)` (L340) | function | Public | Implementation helper for launch tui. |
+| `_result_lines(result: dict | None, args) -> list[str]` (L348) | function | Internal | Implementation helper for result lines. |
+| `_field_mapping_choices(dataset_columns: list[str], mappings: dict[str, str], field: str) -> list[str]` (L371) | function | Internal | Implementation helper for field mapping choices. |
+| `save_field_mappings(path: Path, mappings: dict[str, str]) -> None` (L379) | function | Public | Implementation helper for save field mappings. |
+| `_field_mapping_curses(stdscr, result: dict) -> str` (L390) | function | Internal | Implementation helper for field mapping curses. |
+| `show_field_mapping_menu(result: dict) -> str` (L438) | function | Public | Implementation helper for show field mapping menu. |
+| `_confirm_run_after_errors(stdscr, skipped_count: int, result: dict | None = None) -> str` (L442) | function | Internal | Implementation helper for confirm run after errors. |
+| `ResultSection` (L467) | class | Public | Data model for ResultSection. |
+| `_load_outcome_payload(output_path: str | None) -> dict` (L473) | function | Internal | Implementation helper for load outcome payload. |
+| `_scalar_summary_items(payload: object, limit: int = 4) -> list[str]` (L482) | function | Internal | Implementation helper for scalar summary items. |
+| `_test_result_for_metric(test_results: dict, metric_id: str) -> object` (L495) | function | Internal | Implementation helper for test result for metric. |
+| `_metric_result_line(metric: dict, test_results: dict) -> str` (L504) | function | Internal | Implementation helper for metric result line. |
+| `_outcome_result_sections(output_path: str | None) -> dict[str, list[str]]` (L528) | function | Internal | Implementation helper for outcome result sections. |
+| `build_result_sections(result: dict | None) -> list[ResultSection]` (L581) | function | Public | Builds result sections. |
+| `_visible_result_rows(sections: list[ResultSection]) -> list[tuple[int | None, str]]` (L623) | function | Internal | Implementation helper for visible result rows. |
+| `_post_run_curses(stdscr, result: dict | None, args) -> str` (L633) | function | Internal | Implementation helper for post run curses. |
+| `show_post_run_menu(result: dict | None, args) -> str` (L674) | function | Public | Implementation helper for show post run menu. |
 
 ## `runner/tui_batch.py`
 
@@ -836,6 +1134,24 @@ Repository inventory generator used for documentation audits.
 | `parse_args() -> argparse.Namespace` (L249) | function | Public | Parses args. |
 | `main() -> int` (L257) | function | Public | Implementation helper for main. |
 
+## `scripts/compare_outcomes.py`
+
+Python symbols defined by `scripts/compare_outcomes.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `build_parser() -> argparse.ArgumentParser` (L13) | function | Public | Builds parser. |
+| `main() -> int` (L58) | function | Public | Implementation helper for main. |
+
+## `scripts/migrate_plan_to_canonical_ids.py`
+
+Python symbols defined by `scripts/migrate_plan_to_canonical_ids.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_parser() -> argparse.ArgumentParser` (L13) | function | Internal | Implementation helper for parser. |
+| `main() -> int` (L39) | function | Public | Implementation helper for main. |
+
 ## `scripts/reference_documentation.py`
 
 AST engine that generates the exhaustive function and test references.
@@ -860,192 +1176,13 @@ AST engine that generates the exhaustive function and test references.
 | `parse_args() -> argparse.Namespace` (L406) | function | Public | Parses args. |
 | `main() -> int` (L413) | function | Public | Implementation helper for main. |
 
-## `tests/label_fidelity_profile.py`
+## `scripts/rerun_and_compare.py`
 
-Label-integrity metric implementations awaiting package migration.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_normalise(value) -> str | None` (L6) | function | Internal | Implementation helper for normalise. |
-| `_label_field(metric: dict) -> str` (L13) | function | Internal | Implementation helper for label field. |
-| `_slice_field(metric: dict) -> str` (L17) | function | Internal | Implementation helper for slice field. |
-| `_timestamp_field(metric: dict) -> str` (L21) | function | Internal | Implementation helper for timestamp field. |
-| `_parse_timestamps(df: pd.DataFrame, field: str) -> pd.Series` (L25) | function | Internal | Implementation helper for parse timestamps. |
-| `_label_values(metric: dict, key: str) -> set[str]` (L31) | function | Internal | Implementation helper for label values. |
-| `_observed_labels(series: pd.Series) -> list[str]` (L35) | function | Internal | Implementation helper for observed labels. |
-| `compute_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L39) | function | Public | Computes label coverage ratio and returns a structured result. |
-| `compute_per_slice_label_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L57) | function | Public | Computes per slice label coverage ratio and returns a structured result. |
-| `_entropy_score(labels: list[str], expected_classes: list[str]) -> float` (L87) | function | Internal | Implementation helper for entropy score. |
-| `compute_per_slice_label_entropy_score(df: pd.DataFrame, metric: dict) -> dict` (L108) | function | Public | Computes per slice label entropy score and returns a structured result. |
-| `compute_class_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L124) | function | Public | Computes class imbalance score and returns a structured result. |
-| `_attack_windows(metric: dict) -> list[tuple[pd.Timestamp, pd.Timestamp]]` (L143) | function | Internal | Implementation helper for attack windows. |
-| `_in_any_window(timestamp: pd.Timestamp, windows: list[tuple[pd.Timestamp, pd.Timestamp]]) -> bool` (L153) | function | Internal | Implementation helper for in any window. |
-| `compute_attack_window_alignment_score(df: pd.DataFrame, metric: dict) -> dict` (L157) | function | Public | Computes attack window alignment score and returns a structured result. |
-| `compute_pre_post_attack_label_bleed_ratio(df: pd.DataFrame, metric: dict) -> dict` (L176) | function | Public | Computes pre post attack label bleed ratio and returns a structured result. |
-| `_split_masks(df: pd.DataFrame, metric: dict) -> tuple[pd.Series, pd.Series, str]` (L197) | function | Internal | Implementation helper for split masks. |
-| `compute_train_test_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L208) | function | Public | Computes train test duplicate overlap ratio and returns a structured result. |
-| `compute_train_test_identifier_contamination_ratio(df: pd.DataFrame, metric: dict) -> dict` (L221) | function | Public | Computes train test identifier contamination ratio and returns a structured result. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/address_validity/reserved_ip_address_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
+Python symbols defined by `scripts/rerun_and_compare.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `get_reserved_categories(addr) -> list[str]` (L35) | function | Public | Implementation helper for get reserved categories. |
-| `_enabled_categories(categories: list[str], params: dict) -> list[str]` (L65) | function | Internal | Implementation helper for enabled categories. |
-| `_diagnostic(status: str, *, invalid_count: int, invalid_ratio: float, reserved_count: int, checked_count: int, threshold: float, category_counts: dict, invalid_examples: list, reserved_examples: list) -> dict` (L73) | function | Internal | Implementation helper for diagnostic. |
-| `run_reserved_ip_address_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L116) | function | Public | Runs reserved IP address metric. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/address_validity/valid_ip_address_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `classify_ip_value(ip_value) -> str` (L5) | function | Public | Classify an IP field value as missing, IPv4, IPv6, or invalid. |
-| `_port_is_valid(value) -> bool` (L23) | function | Internal | Implementation helper for port is valid. |
-| `_suspicious_tcp_flags(flags: int) -> list[str]` (L31) | function | Internal | Return unusual flag combinations without declaring them structurally invalid. SYN+FIN and SYN+RST are useful indicators of scans, crafted packets, malformed generators, or adversarial traffic. Security datasets can legitimately contain them, so they are descriptive evidence unless a plan explicitly opts them into the structural validity decision. |
-| `run_protocol_validity_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L51) | function | Public | Check deterministic packet structure and report non-deterministic anomalies. The validity ratio covers decoded IPv4/IPv6 packets only. Non-IP frames are reported separately rather than being silently counted as valid IP packets. A packet becomes structurally invalid only for deterministic problems such as address-family mismatch, impossible decoded ports, an unfragmented IPv4 TCP/ UDP protocol declaration with no matching transport layer, or an impossibly short network-layer packet. Suspicious TCP flag combinations are descriptive by default because attack/security traffic may contain them legitimately. |
-| `run_protocol_validity_metric.record_issue(packet_index: int, reason: str, **evidence) -> None` (L108) | nested function | Internal | Implementation helper for record issue. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/derived_rate_consistency_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_within_tolerance(reported: pd.Series, expected: pd.Series, relative_tolerance: float, absolute_tolerance: float) -> pd.Series` (L18) | function | Internal | Implementation helper for within tolerance. |
-| `run_derived_rate_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L28) | function | Public | Check whether reported packet/byte rates agree with counts, bytes, and duration. The duration unit must be declared in ``calculation.parameters.duration_unit``. At least one of ``flow_packets_per_second`` and ``flow_bytes_per_second`` must be mapped. This prevents the metric from silently assuming a dataset-specific duration unit or rate convention. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/flow_duration_consistency_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `run_flow_duration_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L7) | function | Public | Runs flow duration consistency metric. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/handshake_plausibility_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_to_float(v)` (L7) | function | Internal | Implementation helper for to float. |
-| `run_handshake_plausibility_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L20) | function | Public | Runs handshake plausibility metric. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/packet_byte_consistency_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `run_packet_byte_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L7) | function | Public | Runs packet byte consistency metric. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/flow_semantics/tcp_flag_consistency_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `run_tcp_flag_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L7) | function | Public | Runs TCP flag consistency metric. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/port_validity/service_port_consistency_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `normalize_port_series(series)` (L18) | function | Public | Normalizes port series. |
-| `parse_port(value)` (L36) | function | Public | Parses port. |
-| `_not_applicable_result(*, service_name: str, expected_ports: list[int], match_mode: str, existing_fields: list[str], missing_fields: list[str], row_count: int, population_basis: str, reason_code: str, summary: str, suggestion: str, service_field: str | None = None, service_values: list[str] | None = None) -> tuple[bool, dict]` (L54) | function | Internal | Implementation helper for not applicable result. |
-| `_diagnostic(status: str, *, service_name: str, checked: int, matching: int, mismatching: int, match_ratio: float, pass_threshold: float, warn_threshold: float, invalid_rows: int, population_rows: int, population_basis: str, expected_ports: list[int], mismatch_examples: list, invalid_examples: list) -> dict` (L97) | function | Internal | Implementation helper for diagnostic. |
-| `run_service_port_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L154) | function | Public | Heuristically check expected ports only within an independently selected service population. A mixed flow dataset must not be treated as though every row belongs to the configured service. In ``auto`` mode the metric therefore requires a usable service/application field, unless ``assume_dataset_service`` is explicitly enabled. A plan can also use ``population_mode=all_rows`` when the dataset is known to contain only the named service. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/port_validity/valid_port_range_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `parse_port(value, valid_min_port: int = 0, valid_max_port: int = 65535)` (L6) | function | Public | Parses port. |
-| `classify_port_range(port: int) -> str` (L28) | function | Public | Classifies port range. |
-| `_diagnostic(status: str, *, checked: int, invalid: int, non_integer: int, out_of_range: int, zero_count: int, invalid_ratio: float | None, threshold: float, valid_min_port: int, valid_max_port: int, examples: list) -> dict` (L38) | function | Internal | Implementation helper for diagnostic. |
-| `run_valid_port_range_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L87) | function | Public | Runs valid port range metric. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/slice_metadata_integrity/slice_identifier_consistency_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_norm(v, case_sensitive: bool)` (L6) | function | Internal | Implementation helper for norm. |
-| `_rule_match(field_value, operator, target, case_sensitive)` (L15) | function | Internal | Implementation helper for rule match. |
-| `run_slice_identifier_consistency_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L37) | function | Public | Slice metadata integrity tests are context-dependent. A valid slice identifier only shows that the slice value belongs to the expected vocabulary. Slice identifier consistency checks whether that value is plausible given other row metadata, such as source file, traffic group, or label. A consistency failure should be interpreted as a possible metadata, labelling, merge, or extraction issue, not automatically as proof that the dataset is unusable. |
-
-## `tests/metrics/dataset_heuristics/protocol_and_network_realism/slice_metadata_integrity/valid_slice_identifier_profile.py`
-
-Network/protocol realism implementation module awaiting migration from the test package.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `normalise_slice_id(value, case_sensitive: bool, aliases: dict)` (L6) | function | Public | Normalizes slice id. |
-| `run_valid_slice_identifier_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]` (L20) | function | Public | Slice metadata integrity tests are context-dependent. A valid slice identifier only shows that the slice value belongs to the expected vocabulary. Slice identifier consistency checks whether that value is plausible given other row metadata, such as source file, traffic group, or label. A consistency failure should be interpreted as a possible metadata, labelling, merge, or extraction issue, not automatically as proof that the dataset is unusable. |
-
-## `tests/reference_model_comparison_profile.py`
-
-Reference-comparison metric implementations awaiting package migration.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_reference_path(metric: dict) -> str | None` (L21) | function | Internal | Implementation helper for reference path. |
-| `_apply_reference_field_map(dataframe: pd.DataFrame, metric: dict) -> pd.DataFrame` (L31) | function | Internal | Implementation helper for apply reference field map. |
-| `_load_reference_df(metric: dict) -> pd.DataFrame` (L52) | function | Internal | Implementation helper for load reference dataframe. |
-| `_candidate_fields(metric: dict) -> list[str]` (L84) | function | Internal | Implementation helper for candidate fields. |
-| `_even_positions(length: int, maximum: int) -> list[int]` (L88) | function | Internal | Implementation helper for even positions. |
-| `_numeric_values(df: pd.DataFrame, field: str, max_sample_size: int) -> list[float]` (L97) | function | Internal | Implementation helper for numeric values. |
-| `_sample_dataframe(df: pd.DataFrame, max_sample_size: int) -> pd.DataFrame` (L107) | function | Internal | Implementation helper for sample dataframe. |
-| `_numeric_matrix(df: pd.DataFrame, fields: list[str], max_sample_size: int) -> tuple[np.ndarray, list[str]]` (L113) | function | Internal | Implementation helper for numeric matrix. |
-| `_multivariate_rbf_mmd(current: np.ndarray, reference: np.ndarray) -> tuple[float | None, float | None]` (L122) | function | Internal | Implementation helper for multivariate rbf MMD. |
-| `_multivariate_rbf_mmd.squared_distances(left, right)` (L133) | nested function | Internal | Implementation helper for squared distances. |
-| `_feature_metric(df: pd.DataFrame, metric: dict, output_key: str, calculator) -> dict` (L153) | function | Internal | Implementation helper for feature metric. |
-| `compute_feature_wise_wasserstein_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L176) | function | Public | Computes feature wise wasserstein distance from reference and returns a structured result. |
-| `compute_feature_wise_ks_statistic_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L180) | function | Public | Computes feature wise KS statistic from reference and returns a structured result. |
-| `compute_feature_wise_energy_distance_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L184) | function | Public | Computes feature wise energy distance from reference and returns a structured result. |
-| `compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L188) | function | Public | Computes feature set MMD score from reference and returns a structured result. |
-| `_matrix_deviation(current_matrix: dict, reference_matrix: dict) -> dict` (L210) | function | Internal | Implementation helper for matrix deviation. |
-| `_correlation_profile(df: pd.DataFrame, fields: list[str], method: str) -> dict` (L222) | function | Internal | Implementation helper for correlation profile. |
-| `compute_pearson_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L234) | function | Public | Computes pearson matrix deviation from reference and returns a structured result. |
-| `compute_spearman_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L241) | function | Public | Computes spearman matrix deviation from reference and returns a structured result. |
-| `compute_distance_correlation_matrix_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L248) | function | Public | Computes distance correlation matrix deviation from reference and returns a structured result. |
-| `_timestamp_field(metric: dict) -> str` (L262) | function | Internal | Implementation helper for timestamp field. |
-| `compute_inter_arrival_distribution_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L266) | function | Public | Computes inter arrival distribution divergence from reference and returns a structured result. |
-| `compute_burstiness_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L274) | function | Public | Computes burstiness deviation from reference and returns a structured result. |
-| `compute_hourly_activity_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L282) | function | Public | Computes hourly activity divergence from reference and returns a structured result. |
-| `_slice_field(metric: dict) -> str` (L294) | function | Internal | Implementation helper for slice field. |
-| `_label_field(metric: dict) -> str` (L298) | function | Internal | Implementation helper for label field. |
-| `_categorical_distribution(df: pd.DataFrame, field: str) -> dict[str, float]` (L302) | function | Internal | Implementation helper for categorical distribution. |
-| `_tv_distance(left: dict[str, float], right: dict[str, float]) -> float` (L310) | function | Internal | Implementation helper for tv distance. |
-| `compute_slice_proportion_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L315) | function | Public | Computes slice proportion deviation from reference and returns a structured result. |
-| `compute_per_slice_class_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L321) | function | Public | Computes per slice class divergence from reference and returns a structured result. |
-| `compute_per_slice_feature_distribution_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L337) | function | Public | Computes per slice feature distribution deviation from reference and returns a structured result. |
-| `compute_protocol_mix_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L358) | function | Public | Computes protocol mix divergence from reference and returns a structured result. |
-| `compute_port_use_divergence_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L365) | function | Public | Computes port use divergence from reference and returns a structured result. |
-| `compute_flow_statistic_deviation_from_reference(df: pd.DataFrame, metric: dict) -> dict` (L374) | function | Public | Computes flow statistic deviation from reference and returns a structured result. |
-
-## `tests/slice_representation_profile.py`
-
-Slice-representation metric implementations awaiting package migration.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `_normalise(value) -> str | None` (L4) | function | Internal | Implementation helper for normalise. |
-| `_slice_field(metric: dict) -> str` (L11) | function | Internal | Implementation helper for slice field. |
-| `_observed_slices(df: pd.DataFrame, slice_field: str) -> list[str]` (L15) | function | Internal | Implementation helper for observed slices. |
-| `compute_per_slice_sample_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L21) | function | Public | Computes per slice sample coverage ratio and returns a structured result. |
-| `compute_per_slice_feature_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L42) | function | Public | Computes per slice feature coverage ratio and returns a structured result. |
-| `compute_per_slice_class_coverage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L72) | function | Public | Computes per slice class coverage ratio and returns a structured result. |
-| `compute_slice_distribution_imbalance_score(df: pd.DataFrame, metric: dict) -> dict` (L108) | function | Public | Computes slice distribution imbalance score and returns a structured result. |
-| `compute_cross_slice_duplicate_overlap_ratio(df: pd.DataFrame, metric: dict) -> dict` (L131) | function | Public | Computes cross slice duplicate overlap ratio and returns a structured result. |
-| `compute_cross_slice_identifier_leakage_ratio(df: pd.DataFrame, metric: dict) -> dict` (L154) | function | Public | Computes cross slice identifier leakage ratio and returns a structured result. |
+| `build_parser() -> argparse.ArgumentParser` (L18) | function | Public | Builds parser. |
+| `_resolved_plan_payload(run_definition: Path) -> tuple[Path, dict]` (L75) | function | Internal | Resolve either a direct plan or a case's referenced plan. |
+| `_reject_legacy_representative_plan(run_definition: Path) -> None` (L94) | function | Internal | Implementation helper for reject legacy representative plan. |
+| `main() -> int` (L131) | function | Public | Implementation helper for main. |

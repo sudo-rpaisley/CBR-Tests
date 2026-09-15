@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **207 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **285 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -8,6 +8,18 @@ python -m pytest -q
 ```
 
 Run one test with `python -m pytest -q path/to/test.py::test_name`.
+
+## `tests/test_address_validity_canonical.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_valid_ip_address_ratio_uses_non_missing_checked_values_as_denominator()` (L9) | Verifies that valid IP address ratio uses non missing checked values as denominator. | `compute_valid_ip_address_ratio` |
+| `test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations()` (L33) | Verifies that reserved address misuse ratio counts only explicit policy violations. | `compute_reserved_address_misuse_ratio` |
+| `test_reserved_address_profile_without_policy_does_not_claim_zero_misuse()` (L67) | Verifies that reserved address profile without policy does not claim zero misuse. | `compute_reserved_address_misuse_ratio` |
 
 ## `tests/test_batch_plan.py`
 
@@ -160,8 +172,21 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_compute_missing_value_ratio_uses_candidate_fields()` (L7) | Verifies that compute missing value ratio uses candidate fields. | `compute_missing_value_ratio` |
-| `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L27) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
-| `test_compute_spearman_profile_reports_rank_correlation()` (L42) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+| `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L28) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
+| `test_compute_spearman_profile_reports_rank_correlation()` (L44) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+| `test_data_quality_zero_denominators_are_not_numeric_scores()` (L63) | Verifies that data quality zero denominators are not numeric scores. | `compute_missing_value_ratio`, `compute_duplicate_row_ratio` |
+
+## `tests/test_data_quality_semantics.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_duplicate_ratio_reports_full_row_basis_when_all_columns_define_identity()` (L6) | Verifies that duplicate ratio reports full row basis when all columns define identity. | `compute_duplicate_row_ratio` |
+| `test_duplicate_ratio_labels_configured_subset_as_signature_not_full_row()` (L17) | Verifies that duplicate ratio labels configured subset as signature not full row. | `compute_duplicate_row_ratio` |
+| `test_duplicate_ratio_is_not_runnable_without_any_available_identity_fields()` (L29) | Verifies that duplicate ratio is not runnable without any available identity fields. | `compute_duplicate_row_ratio` |
 
 ## `tests/test_dataset_summary.py`
 
@@ -194,6 +219,20 @@ Tests and local helpers in this module.
 | `test_dataset_summary_cli_defaults_enabled(monkeypatch)` (L10) | Verifies that dataset summary CLI defaults enabled. | `monkeypatch.setattr`, `parse_run_plan_args` |
 | `test_dataset_summary_cli_can_disable_and_force_refresh(monkeypatch)` (L17) | Verifies that dataset summary CLI can disable and force refresh. | `monkeypatch.setattr`, `parse_run_plan_args` |
 | `test_tui_exposes_dataset_summary_controls(monkeypatch)` (L34) | Verifies that tui exposes dataset summary controls. | `monkeypatch.setattr`, `parse_run_plan_args`, `build_default_tui_fields` |
+
+## `tests/test_decision_rules.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_ratio_decision_rule_marks_unoverridden_cutoffs_as_framework_defaults()` (L6) | Verifies that ratio decision rule marks unoverridden cutoffs as framework defaults. | `resolve_ratio_decision_rule` |
+| `test_ratio_decision_rule_marks_threshold_overrides_as_scenario_configured()` (L14) | Verifies that ratio decision rule marks threshold overrides as scenario configured. | `resolve_ratio_decision_rule`, `classify_ratio` |
+| `test_ratio_decision_rule_allows_explicit_provenance_label()` (L26) | Verifies that ratio decision rule allows explicit provenance label. | `resolve_ratio_decision_rule` |
+| `test_ratio_decision_rule_rejects_invalid_ordering()` (L39) | Verifies that ratio decision rule rejects invalid ordering. | `pytest.raises`, `resolve_ratio_decision_rule` |
+| `test_none_ratio_is_not_applicable_not_failure()` (L48) | Verifies that none ratio is not applicable not failure. | `resolve_ratio_decision_rule`, `classify_ratio` |
 
 ## `tests/test_derived_rate_consistency_profile.py`
 
@@ -306,6 +345,26 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_example_outcome() -> dict` (L8) | Implementation helper for example outcome. |
 
+## `tests/test_intrinsic_diagnostic_restructure.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles()` (L28) | Verifies that canonical distribution diagnostics preserve hand calculated oracles. | `_feature_metric`, `compute_feature_ks_internal_drift`, `compute_feature_wasserstein_internal_drift`, `compute_feature_energy_internal_drift`, `compute_feature_mmd2_internal_drift` |
+| `test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison()` (L39) | Verifies that canonical temporal diagnostic names do not claim reference comparison. | `all`, `compute_inter_arrival_internal_drift_ks`, `compute_burstiness_internal_drift`, `compute_day_to_day_hourly_activity_divergence`, `compute_day_to_day_diurnal_similarity`, `compute_lagged_periodicity_similarity` |
+| `test_dependency_profiles_are_profiles_not_deviations()` (L60) | Verifies that dependency profiles are profiles not deviations. | `compute_pearson_dependency_profile`, `compute_spearman_dependency_profile`, `compute_distance_correlation_dependency_profile` |
+| `test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics()` (L78) | Verifies that new taxonomy uses canonical ids and nests dataset heuristics. | `load_taxonomy_paths` |
+| `test_legacy_intrinsic_ids_remain_runtime_compatible_but_not_canonical_catalogue()` (L97) | Verifies that legacy intrinsic ids remain runtime compatible but not canonical catalogue. | `build_metric_handlers`, `LEGACY_METRIC_ID_ALIASES.items`, `available_metric_ids` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_feature_metric()` (L21) | Implementation helper for feature metric. |
+
 ## `tests/test_label_fidelity_profile.py`
 
 Tests and local helpers in this module.
@@ -315,8 +374,14 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_label_completeness_and_distribution_metrics()` (L15) | Verifies that label completeness and distribution metrics. | `compute_label_coverage_ratio`, `compute_per_slice_label_coverage_ratio`, `compute_per_slice_label_entropy_score`, `compute_class_imbalance_score` |
-| `test_temporal_label_correctness_metrics()` (L28) | Verifies that temporal label correctness metrics. | `compute_attack_window_alignment_score`, `compute_pre_post_attack_label_bleed_ratio` |
-| `test_split_integrity_metrics()` (L52) | Verifies that split integrity metrics. | `compute_train_test_duplicate_overlap_ratio`, `compute_train_test_identifier_contamination_ratio` |
+| `test_per_slice_label_metrics_exclude_missing_slice_ids()` (L34) | Verifies that per slice label metrics exclude missing slice ids. | `compute_per_slice_label_coverage_ratio`, `compute_per_slice_label_entropy_score` |
+| `test_entropy_is_undefined_for_labels_outside_declared_class_universe()` (L57) | Verifies that entropy is undefined for labels outside declared class universe. | `compute_per_slice_label_entropy_score` |
+| `test_class_imbalance_requires_independent_expected_class_universe()` (L76) | Verifies that class imbalance requires independent expected class universe. | `compute_class_imbalance_score` |
+| `test_temporal_label_correctness_metrics()` (L97) | Verifies that temporal label correctness metrics. | `compute_attack_window_alignment_score`, `compute_pre_post_attack_label_bleed_ratio` |
+| `test_attack_metrics_refuse_unconfigured_ground_truth()` (L129) | Verifies that attack metrics refuse unconfigured ground truth. | `compute_attack_window_alignment_score`, `compute_pre_post_attack_label_bleed_ratio` |
+| `test_bleed_excludes_missing_labels_from_eligible_buffer_denominator()` (L144) | Verifies that bleed excludes missing labels from eligible buffer denominator. | `compute_pre_post_attack_label_bleed_ratio` |
+| `test_split_integrity_metrics_use_test_population_denominators()` (L177) | Verifies that split integrity metrics use test population denominators. | `compute_train_test_duplicate_overlap_ratio`, `compute_train_test_identifier_contamination_ratio` |
+| `test_identifier_overlap_is_not_called_contamination_without_entity_disjoint_policy()` (L207) | Verifies that identifier overlap is not called contamination without entity disjoint policy. | `compute_train_test_identifier_contamination_ratio` |
 
 ## `tests/test_metric_failure_diagnostics.py`
 
@@ -374,6 +439,22 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_write_flow_csv(path: Path, *, offset: float = 0.0) -> None` (L14) | Implementation helper for write flow csv. |
 
+## `tests/test_outcome_comparison.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_comparison_ignores_volatile_run_metadata_by_default()` (L4) | Verifies that comparison ignores volatile run metadata by default. | `compare_outcomes` |
+| `test_comparison_can_include_volatile_metadata_when_requested()` (L24) | Verifies that comparison can include volatile metadata when requested. | `compare_outcomes` |
+| `test_numeric_tolerance_suppresses_insignificant_float_noise()` (L34) | Verifies that numeric tolerance suppresses insignificant float noise. | `compare_outcomes` |
+| `test_status_and_ratio_changes_are_high_impact_and_keep_numeric_delta()` (L43) | Verifies that status and ratio changes are high impact and keep numeric delta. | `compare_outcomes` |
+| `test_metric_result_reordering_does_not_create_false_changes()` (L64) | Verifies that metric result reordering does not create false changes. | `compare_outcomes` |
+| `test_new_decision_policy_metadata_is_visible_as_high_impact()` (L83) | Verifies that new decision policy metadata is visible as high impact. | `compare_outcomes`, `all` |
+| `test_render_markdown_includes_summary_and_difference_table()` (L114) | Verifies that render markdown includes summary and difference table. | `compare_outcomes`, `render_markdown` |
+
 ## `tests/test_pcap_adapter.py`
 
 Tests and local helpers in this module.
@@ -382,16 +463,17 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path)` (L37) | Verifies that build PCAP packet dataframe copies raw packet fields. | `_write_capture`, `build_pcap_packet_dataframe` |
-| `test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path)` (L52) | Verifies that build PCAP flow dataframe reconstructs bidirectional view. | `_write_capture`, `build_pcap_flow_dataframe`, `pytest.approx` |
-| `test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path)` (L78) | Verifies that packet adapted metrics run on raw packet view. | `_write_capture`, `build_pcap_packet_dataframe`, `runners.items`, `pcap_metric_template`, `runner` |
-| `test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates()` (L103) | Verifies that self derived flow invariants are not exposed as PCAP templates. | `pcap_metric_template` |
+| `test_build_pcap_packet_dataframe_copies_raw_packet_fields(tmp_path)` (L32) | Verifies that build PCAP packet dataframe copies raw packet fields. | `_write_capture`, `build_pcap_packet_dataframe` |
+| `test_build_pcap_flow_dataframe_reconstructs_bidirectional_view(tmp_path)` (L47) | Verifies that build PCAP flow dataframe reconstructs bidirectional view. | `_write_capture`, `build_pcap_flow_dataframe`, `pytest.approx` |
+| `test_packet_adapted_metrics_run_on_raw_packet_view(tmp_path)` (L73) | Verifies that packet adapted metrics run on raw packet view. | `_write_capture`, `build_pcap_packet_dataframe`, `metric_ids.issubset`, `build_metric_handlers`, `AssertionError`, `pcap_metric_template`, `handlers[metric_id]`, `handlers['valid_ip_address_ratio']` |
+| `test_self_derived_flow_invariants_are_not_exposed_as_pcap_templates()` (L98) | Verifies that self derived flow invariants are not exposed as PCAP templates. | `pcap_metric_template` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_write_capture(path: Path) -> None` (L25) | Implementation helper for write capture. |
+| `_write_capture(path: Path) -> None` (L20) | Implementation helper for write capture. |
+| `test_packet_adapted_metrics_run_on_raw_packet_view.forbidden_loader(_path)` (L81) | Implementation helper for forbidden loader. |
 
 ## `tests/test_pcap_all_runnable_metrics.py`
 
@@ -402,17 +484,17 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_pcap_supported_set_contains_every_current_automatic_packet_metric()` (L43) | Verifies that PCAP supported set contains every current automatic packet metric. | Assertions and fixtures in the module |
-| `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L50) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['timestamp_parse_success_ratio']`, `AssertionError`, `handlers[metric_id]` |
-| `test_automatic_pcap_plan_contains_all_twenty_one_currently_runnable_metrics(tmp_path)` (L77) | Verifies that automatic PCAP plan contains all twenty one currently runnable metrics. | `_write_capture`, `build_plan` |
-| `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L93) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
-| `test_context_configuration_reasons_are_not_silent_exclusions()` (L111) | Verifies that context configuration reasons are not silent exclusions. | Assertions and fixtures in the module |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture(tmp_path)` (L53) | Verifies that all packet view metrics execute on one shared capture. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['timestamp_parse_success_ratio']`, `AssertionError`, `handlers[metric_id]` |
+| `test_automatic_pcap_plan_contains_all_twenty_currently_runnable_metrics(tmp_path)` (L80) | Verifies that automatic PCAP plan contains all twenty currently runnable metrics. | `_write_capture`, `build_plan` |
+| `test_distance_correlation_pcap_template_declares_computational_cap(tmp_path)` (L99) | Verifies that distance correlation PCAP template declares computational cap. | `_write_capture`, `build_pcap_packet_dataframe`, `build_metric_handlers`, `pcap_metric_template`, `handlers['distance_correlation_matrix_deviation']` |
+| `test_context_configuration_reasons_are_explicit()` (L117) | Verifies that context configuration reasons are explicit. | Assertions and fixtures in the module |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
 | `_write_capture(path: Path, packet_count: int = 64) -> None` (L21) | Implementation helper for write capture. |
-| `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L59) | Implementation helper for forbidden loader. |
+| `test_all_packet_view_metrics_execute_on_one_shared_capture.forbidden_loader(_path)` (L62) | Implementation helper for forbidden loader. |
 
 ## `tests/test_pcap_handshake.py`
 
@@ -457,6 +539,25 @@ Tests and local helpers in this module.
 | `test_tabular_missing_fields_advise_mapping_without_fabrication(tmp_path)` (L262) | Verifies that tabular missing fields advise mapping without fabrication. | `build_plan`, `report['metrics'].values`, `details.get` |
 | `test_print_report_shows_grouped_unlock_guidance(tmp_path, capsys)` (L278) | Verifies that print report shows grouped unlock guidance. | `dataset.write_bytes`, `build_plan`, `_print_report`, `capsys.readouterr` |
 
+## `tests/test_plan_migration.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_migration_replaces_all_legacy_intrinsic_ids_and_preserves_parameters()` (L29) | Verifies that migration replaces all legacy intrinsic ids and preserves parameters. | `_plan`, `migrate_plan_to_canonical_ids`, `all`, `validate_plan_schema`, `legacy_intrinsic_metric_ids` |
+| `test_migration_updates_label_and_taxonomy_path_to_canonical_construct()` (L41) | Verifies that migration updates label and taxonomy path to canonical construct. | `_plan`, `migrate_plan_to_canonical_ids` |
+| `test_migration_leaves_nonlegacy_metrics_unchanged()` (L58) | Verifies that migration leaves nonlegacy metrics unchanged. | `_plan`, `migrate_plan_to_canonical_ids` |
+| `test_migrated_plan_round_trips_as_json_and_schema_validates()` (L66) | Verifies that migrated plan round trips as JSON and schema validates. | `_plan`, `migrate_plan_to_canonical_ids`, `validate_plan_schema` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_plan(*metric_ids)` (L11) | Implementation helper for plan. |
+
 ## `tests/test_protocol_validity_profile.py`
 
 Tests and local helpers in this module.
@@ -487,9 +588,69 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_reference_distribution_dependency_and_temporal_metrics(tmp_path)` (L19) | Verifies that reference distribution dependency and temporal metrics. | `reference.to_csv`, `compute_feature_wise_ks_statistic_from_reference`, `compute_pearson_matrix_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
-| `test_reference_slice_and_protocol_metrics(tmp_path)` (L39) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
-| `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L65) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP`, `TCP` |
+| `test_reference_distribution_dependency_and_temporal_metrics(tmp_path)` (L28) | Verifies that reference distribution dependency and temporal metrics. | `reference.to_csv`, `compute_feature_wise_ks_statistic_from_reference`, `compute_pearson_matrix_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
+| `test_reference_distributional_metric_oracles(tmp_path)` (L48) | Verifies that reference distributional metric oracles. | `compute_feature_wise_wasserstein_distance_from_reference`, `compute_feature_wise_ks_statistic_from_reference`, `compute_feature_wise_energy_distance_from_reference`, `compute_feature_set_mmd_score_from_reference` |
+| `test_reference_correlation_matrix_deviation_oracles(tmp_path)` (L76) | Verifies that reference correlation matrix deviation oracles. | `compute_pearson_matrix_deviation_from_reference`, `compute_spearman_matrix_deviation_from_reference` |
+| `test_reference_distance_correlation_matrix_deviation_oracle(tmp_path)` (L102) | Verifies that reference distance correlation matrix deviation oracle. | `compute_distance_correlation_matrix_deviation_from_reference` |
+| `test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone()` (L125) | Verifies that reference temporal oracles use declared timestamp units and timezone. | `compute_inter_arrival_distribution_divergence_from_reference`, `compute_burstiness_deviation_from_reference`, `compute_hourly_activity_divergence_from_reference` |
+| `test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals()` (L156) | Verifies that reference slice metrics exclude missing and do not score unshared conditionals. | `compute_per_slice_class_divergence_from_reference`, `compute_per_slice_feature_distribution_deviation_from_reference`, `compute_slice_proportion_deviation_from_reference` |
+| `test_reference_protocol_and_port_metrics_exclude_missing_categories()` (L193) | Verifies that reference protocol and port metrics exclude missing categories. | `compute_port_use_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference` |
+| `test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation()` (L223) | Verifies that flow statistic reference distance requires matching flow definition for interpretation. | `compute_flow_statistic_deviation_from_reference` |
+| `test_reference_slice_and_protocol_metrics(tmp_path)` (L252) | Verifies that reference slice and protocol metrics. | `reference.to_csv`, `compute_slice_proportion_deviation_from_reference`, `compute_per_slice_class_divergence_from_reference`, `compute_protocol_mix_divergence_from_reference`, `compute_port_use_divergence_from_reference` |
+| `test_reference_metrics_load_raw_pcap_with_explicit_epoch_units(tmp_path)` (L277) | Verifies that reference metrics load raw PCAP with explicit epoch units. | `build_pcap_packet_dataframe`, `pcap_reference_metric_template`, `compute_inter_arrival_distribution_divergence_from_reference`, `wrpcap`, `compute_hourly_activity_divergence_from_reference`, `compute_feature_set_mmd_score_from_reference`, `Raw`, `IP` |
+
+## `tests/test_representative_rerun_guard.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_representative_rerun_rejects_legacy_intrinsic_plan(tmp_path)` (L21) | Verifies that representative rerun rejects legacy intrinsic plan. | `plan.write_text`, `pytest.raises`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_representative_rerun_rejects_compatibility_only_protocol_profile(tmp_path)` (L30) | Verifies that representative rerun rejects compatibility only protocol profile. | `plan.write_text`, `pytest.raises`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_representative_rerun_rejects_legacy_reserved_address_profile(tmp_path)` (L42) | Verifies that representative rerun rejects legacy reserved address profile. | `plan.write_text`, `pytest.raises`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_representative_rerun_accepts_canonical_plan(tmp_path)` (L51) | Verifies that representative rerun accepts canonical plan. | `plan.write_text`, `_reject_legacy_representative_plan`, `_plan` |
+| `test_case_guard_resolves_referenced_plan(tmp_path)` (L57) | Verifies that case guard resolves referenced plan. | `plans.mkdir`, `cases.mkdir`, `plan.write_text`, `case.write_text`, `_resolved_plan_payload`, `plan.resolve`, `pytest.raises`, `_reject_legacy_representative_plan` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_plan(metric_id: str) -> dict` (L8) | Implementation helper for plan. |
+
+## `tests/test_rerun_workflow.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_build_run_plan_command_uses_normal_runner_and_passes_options(tmp_path)` (L15) | Verifies that build run plan command uses normal runner and passes options. | `build_run_plan_command`, `command[command.index('--case') + 1].endswith`, `command[command.index('--dataset') + 1].endswith`, `command.index` |
+| `test_outcome_dataset_sha256_reads_normal_run_provenance()` (L36) | Verifies that outcome dataset sha256 reads normal run provenance. | `outcome_dataset_sha256` |
+| `test_run_and_compare_archives_baseline_and_reuses_dataset_digest(tmp_path, monkeypatch)` (L43) | Verifies that run and compare archives baseline and reuses dataset digest. | `repo.mkdir`, `(repo / 'run_plan.py').write_text`, `baseline.write_text`, `baseline.with_name('baseline_summary.md').write_text`, `plan.write_text`, `dataset.write_bytes`, `monkeypatch.setattr`, `run_and_compare` |
+| `test_run_and_compare_refuses_to_replace_existing_record_without_force(tmp_path)` (L127) | Verifies that run and compare refuses to replace existing record without force. | `repo.mkdir`, `(repo / 'run_plan.py').write_text`, `baseline.write_text`, `plan.write_text`, `dataset.write_text`, `record_dir.mkdir`, `(record_dir / 'comparison.json').write_text`, `pytest.raises` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.fake_run(command, **kwargs)` (L65) | Implementation helper for fake run. |
+| `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.guarded_sha256(path)` (L91) | Implementation helper for guarded sha256. |
+
+## `tests/test_result_semantics.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_execution_success_can_still_be_scientifically_not_runnable()` (L4) | Verifies that execution success can still be scientifically not runnable. | `metric_result_semantics`, `scientific_status_fragments` |
+| `test_verdict_is_reported_separately_from_runnable_state()` (L25) | Verifies that verdict is reported separately from runnable state. | `scientific_status_fragments` |
+| `test_not_applicable_verdict_forces_non_runnable_semantics()` (L30) | Verifies that not applicable verdict forces non runnable semantics. | `metric_result_semantics` |
+| `test_metric_without_explicit_applicability_does_not_invent_it()` (L37) | Verifies that metric without explicit applicability does not invent it. | `metric_result_semantics`, `scientific_status_fragments` |
 
 ## `tests/test_run_plan_field_translation.py`
 
@@ -603,6 +764,28 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_parse_port_categories()` (L4) | Verifies that parse port categories. | `parse_port` |
 
+## `tests/test_slice_context_configuration.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_slice_realism_context_is_not_inherited_from_saved_plan_templates()` (L4) | Verifies that slice realism context is not inherited from saved plan templates. | `build_metric_catalog` |
+
+## `tests/test_slice_identifier_denominator_policy.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_valid_slice_identifier_excludes_missing_by_default()` (L11) | Verifies that valid slice identifier excludes missing by default. | `run_valid_slice_identifier_metric` |
+| `test_valid_slice_identifier_can_reproduce_legacy_count_invalid_policy()` (L31) | Verifies that valid slice identifier can reproduce legacy count invalid policy. | `run_valid_slice_identifier_metric` |
+| `test_slice_consistency_excludes_unmatched_and_missing_rows_by_default()` (L52) | Verifies that slice consistency excludes unmatched and missing rows by default. | `run_slice_identifier_consistency_metric` |
+
 ## `tests/test_slice_representation_profile.py`
 
 Tests and local helpers in this module.
@@ -612,7 +795,12 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_slice_coverage_and_balance_metrics()` (L13) | Verifies that slice coverage and balance metrics. | `compute_per_slice_sample_coverage_ratio`, `compute_per_slice_feature_coverage_ratio`, `compute_per_slice_class_coverage_ratio`, `compute_slice_distribution_imbalance_score` |
-| `test_cross_slice_isolation_metrics()` (L27) | Verifies that cross slice isolation metrics. | `compute_cross_slice_duplicate_overlap_ratio`, `compute_cross_slice_identifier_leakage_ratio` |
+| `test_sample_coverage_requires_expected_slices_and_supports_minimum_counts()` (L48) | Verifies that sample coverage requires expected slices and supports minimum counts. | `compute_per_slice_sample_coverage_ratio` |
+| `test_feature_coverage_is_row_level_not_any_value_presence()` (L74) | Verifies that feature coverage is row level not any value presence. | `compute_per_slice_feature_coverage_ratio` |
+| `test_class_coverage_requires_independently_declared_expected_classes()` (L91) | Verifies that class coverage requires independently declared expected classes. | `compute_per_slice_class_coverage_ratio` |
+| `test_slice_imbalance_excludes_missing_slice_ids_from_distribution()` (L106) | Verifies that slice imbalance excludes missing slice ids from distribution. | `compute_slice_distribution_imbalance_score` |
+| `test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators()` (L118) | Verifies that cross slice isolation metrics use signature and identifier denominators. | `compute_cross_slice_duplicate_overlap_ratio`, `compute_cross_slice_identifier_leakage_ratio` |
+| `test_identifier_overlap_is_not_called_leakage_without_exclusivity_policy()` (L151) | Verifies that identifier overlap is not called leakage without exclusivity policy. | `compute_cross_slice_identifier_leakage_ratio` |
 
 ## `tests/test_statistical_fidelity_profile.py`
 
@@ -623,8 +811,8 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_distributional_metrics_report_zero_for_matching_halves()` (L19) | Verifies that distributional metrics report zero for matching halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distributional_metrics_detect_shifted_halves()` (L29) | Verifies that distributional metrics detect shifted halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distance_correlation_profile_reports_nonlinear_dependency()` (L39) | Verifies that distance correlation profile reports nonlinear dependency. | `compute_distance_correlation_profile` |
+| `test_distributional_metrics_match_hand_calculated_shifted_half_oracles()` (L29) | Verifies that distributional metrics match hand calculated shifted half oracles. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
+| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L51) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
 
 ### Test helpers
 
@@ -641,7 +829,29 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_benchmark_model_metrics_from_predictions()` (L11) | Verifies that benchmark model metrics from predictions. | `compute_benchmark_model_accuracy`, `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
-| `test_benchmark_model_metrics_ignore_missing_labels_or_predictions()` (L24) | Verifies that benchmark model metrics ignore missing labels or predictions. | `compute_benchmark_model_accuracy` |
+| `test_benchmark_model_accuracy_is_multiclass_exact_match_and_reports_coverage()` (L30) | Verifies that benchmark model accuracy is multiclass exact match and reports coverage. | `compute_benchmark_model_accuracy` |
+| `test_benchmark_model_metrics_ignore_missing_labels_or_predictions()` (L47) | Verifies that benchmark model metrics ignore missing labels or predictions. | `compute_benchmark_model_accuracy` |
+| `test_precision_recall_and_f1_never_infer_the_positive_class()` (L63) | Verifies that precision recall and f1 never infer the positive class. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+| `test_binary_task_metrics_are_explicit_positive_label_one_vs_rest()` (L85) | Verifies that binary task metrics are explicit positive label one vs rest. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+| `test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined()` (L106) | Verifies that f1 is zero when precision and recall are both zero but defined. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+| `test_positive_class_metrics_are_undefined_when_positive_support_is_absent()` (L123) | Verifies that positive class metrics are undefined when positive support is absent. | `compute_benchmark_model_precision`, `compute_benchmark_model_recall`, `compute_benchmark_model_f1_score` |
+
+## `tests/test_taxonomy_registry_conformance.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_every_metric_advertised_by_master_taxonomy_has_a_runtime_handler()` (L34) | Verifies that every metric advertised by master taxonomy has a runtime handler. | `_collect_metric_ids`, `build_metric_handlers`, `TAXONOMY_PATH.read_text` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_collect_metric_ids(node)` (L10) | Implementation helper for collect metric ids. |
+| `_unused_loader(_path)` (L30) | Implementation helper for unused loader. |
 
 ## `tests/test_telemetry.py`
 
@@ -670,11 +880,26 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_temporal_consistency_metrics()` (L15) | Verifies that temporal consistency metrics. | `compute_timestamp_parse_success_ratio`, `compute_start_end_timestamp_consistency_ratio`, `compute_non_negative_duration_ratio` |
-| `test_inter_arrival_and_burstiness_still_measure_internal_half_drift()` (L28) | Verifies that inter arrival and burstiness still measure internal half drift. | `compute_inter_arrival_time_distribution_divergence`, `compute_burstiness_coefficient_deviation` |
-| `test_regular_multiday_activity_has_identical_diurnal_profiles_and_periodicity()` (L40) | Verifies that regular multiday activity has identical diurnal profiles and periodicity. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
-| `test_shifted_daily_activity_is_detected_as_diurnally_different()` (L69) | Verifies that shifted daily activity is detected as diurnally different. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
-| `test_single_day_capture_is_not_mislabelled_as_diurnally_divergent()` (L93) | Verifies that single day capture is not mislabelled as diurnally divergent. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
-| `test_periodicity_rejects_non_positive_lags()` (L120) | Verifies that periodicity rejects non positive lags. | `compute_periodicity_preservation_score`, `AssertionError` |
+| `test_timestamp_parse_success_excludes_missing_values_from_the_denominator()` (L28) | Verifies that timestamp parse success excludes missing values from the denominator. | `compute_timestamp_parse_success_ratio` |
+| `test_inter_arrival_and_burstiness_still_measure_internal_half_drift()` (L47) | Verifies that inter arrival and burstiness still measure internal half drift. | `compute_inter_arrival_time_distribution_divergence`, `compute_burstiness_coefficient_deviation` |
+| `test_regular_multiday_activity_has_identical_diurnal_profiles_and_periodicity()` (L59) | Verifies that regular multiday activity has identical diurnal profiles and periodicity. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_shifted_daily_activity_is_detected_as_diurnally_different()` (L88) | Verifies that shifted daily activity is detected as diurnally different. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_single_day_capture_is_not_mislabelled_as_diurnally_divergent()` (L112) | Verifies that single day capture is not mislabelled as diurnally divergent. | `compute_periodicity_preservation_score`, `compute_hourly_activity_distribution_divergence`, `compute_diurnal_pattern_similarity_score` |
+| `test_periodicity_rejects_non_positive_lags()` (L139) | Verifies that periodicity rejects non positive lags. | `compute_periodicity_preservation_score`, `AssertionError` |
+| `test_temporal_consistency_zero_denominators_are_not_numeric_scores()` (L153) | Verifies that temporal consistency zero denominators are not numeric scores. | `compute_start_end_timestamp_consistency_ratio`, `compute_non_negative_duration_ratio` |
+
+## `tests/test_threshold_provenance.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_maximum_ratio_failure_rule_records_framework_default()` (L7) | Verifies that maximum ratio failure rule records framework default. | `resolve_maximum_ratio_failure_rule` |
+| `test_maximum_ratio_failure_rule_records_explicit_provenance()` (L16) | Verifies that maximum ratio failure rule records explicit provenance. | `resolve_maximum_ratio_failure_rule` |
+| `test_measurement_parameter_records_framework_default()` (L30) | Verifies that measurement parameter records framework default. | `describe_measurement_parameter` |
+| `test_measurement_parameter_records_configured_provenance()` (L39) | Verifies that measurement parameter records configured provenance. | `describe_measurement_parameter` |
 
 ## `tests/test_tui.py`
 
@@ -684,25 +909,28 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_build_default_tui_fields_discovers_case_and_plan_choices(tmp_path)` (L32) | Verifies that build default tui fields discovers case and plan choices. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases' / 'case_a.json').write_text`, `(tmp_path / 'plans' / 'plan_a.json').write_text`, `build_default_tui_fields`, `next`, `_args` |
-| `test_apply_tui_fields_converts_blank_optional_values_and_worker_count()` (L45) | Verifies that apply tui fields converts blank optional values and worker count. | `_args`, `build_default_tui_fields`, `apply_tui_fields` |
-| `test_validate_required_run_args_rejects_missing_case()` (L63) | Verifies that validate required run args rejects missing case. | `pytest.raises`, `validate_required_run_args`, `_args` |
-| `test_dataset_field_uses_file_browser()` (L68) | Verifies that dataset field uses file browser. | `build_default_tui_fields`, `next`, `_args` |
-| `test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path)` (L78) | Verifies that list file browser entries sorts directories first and skips internal dirs. | `(tmp_path / 'z_data.csv').write_text`, `(tmp_path / 'datasets').mkdir`, `(tmp_path / 'datasets' / 'sample.csv').write_text`, `(tmp_path / '.git').mkdir` |
-| `test_describe_tui_field_explains_selected_field_actions()` (L91) | Verifies that describe tui field explains selected field actions. | `build_default_tui_fields`, `next`, `describe_tui_field`, `any`, `_args` |
-| `test_worker_field_shows_detected_max_workers()` (L103) | Verifies that worker field shows detected max workers. | `build_default_tui_fields`, `next`, `describe_tui_field`, `_args`, `detected_max_workers` |
-| `test_post_dry_run_result_lines_offer_run_action()` (L114) | Verifies that post dry run result lines offer run action. | `_result_lines`, `_args` |
-| `test_post_dry_run_result_lines_show_attention_for_skips()` (L122) | Verifies that post dry run result lines show attention for skips. | `_result_lines`, `_args` |
-| `test_default_outcome_path_uses_plan_title_and_timestamp(tmp_path)` (L128) | Verifies that default outcome path uses plan title and timestamp. | `(tmp_path / 'plans').mkdir`, `plan.write_text`, `default_outcome_path`, `datetime` |
-| `test_default_outcome_path_uses_referenced_plan_title_for_case(tmp_path)` (L142) | Verifies that default outcome path uses referenced plan title for case. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `(tmp_path / 'cases' / 'case_example.json').write_text`, `default_outcome_path`, `datetime` |
-| `test_default_output_is_auto_managed_unless_explicit(tmp_path)` (L163) | Verifies that default output is auto managed unless explicit. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `build_default_tui_fields`, `next`, `automatic_output.value.startswith`, `_args` |
-| `test_report_fields_explain_each_report_format()` (L181) | Verifies that report fields explain each report format. | `build_default_tui_fields`, `next`, `_args` |
-| `test_result_sections_include_expandable_human_readable_metric_results(tmp_path)` (L192) | Verifies that result sections include expandable human readable metric results. | `output.write_text`, `build_result_sections`, `any` |
-| `test_field_mapping_choices_remove_already_selected_columns()` (L209) | Verifies that field mapping choices remove already selected columns. | `_field_mapping_choices` |
-| `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L218) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
+| `test_build_default_tui_fields_discovers_case_and_plan_choices(tmp_path)` (L33) | Verifies that build default tui fields discovers case and plan choices. | `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases' / 'case_a.json').write_text`, `(tmp_path / 'plans' / 'plan_a.json').write_text`, `build_default_tui_fields`, `next`, `_args` |
+| `test_apply_tui_fields_converts_blank_optional_values_and_worker_count()` (L46) | Verifies that apply tui fields converts blank optional values and worker count. | `_args`, `build_default_tui_fields`, `apply_tui_fields` |
+| `test_validate_required_run_args_rejects_missing_case()` (L64) | Verifies that validate required run args rejects missing case. | `pytest.raises`, `validate_required_run_args`, `_args` |
+| `test_dataset_field_uses_file_browser()` (L69) | Verifies that dataset field uses file browser. | `build_default_tui_fields`, `next`, `_args` |
+| `test_list_file_browser_entries_sorts_directories_first_and_skips_internal_dirs(tmp_path)` (L79) | Verifies that list file browser entries sorts directories first and skips internal dirs. | `(tmp_path / 'z_data.csv').write_text`, `(tmp_path / 'datasets').mkdir`, `(tmp_path / 'datasets' / 'sample.csv').write_text`, `(tmp_path / '.git').mkdir` |
+| `test_describe_tui_field_explains_selected_field_actions()` (L92) | Verifies that describe tui field explains selected field actions. | `build_default_tui_fields`, `next`, `describe_tui_field`, `any`, `_args` |
+| `test_worker_field_shows_detected_max_workers()` (L104) | Verifies that worker field shows detected max workers. | `build_default_tui_fields`, `next`, `describe_tui_field`, `_args`, `detected_max_workers` |
+| `test_post_dry_run_result_lines_offer_run_action()` (L115) | Verifies that post dry run result lines offer run action. | `_result_lines`, `_args` |
+| `test_post_dry_run_result_lines_show_attention_for_skips()` (L123) | Verifies that post dry run result lines show attention for skips. | `_result_lines`, `_args` |
+| `test_default_outcome_path_uses_plan_title_and_timestamp(tmp_path)` (L129) | Verifies that default outcome path uses plan title and timestamp. | `(tmp_path / 'plans').mkdir`, `plan.write_text`, `default_outcome_path`, `datetime` |
+| `test_default_outcome_path_uses_referenced_plan_title_for_case(tmp_path)` (L143) | Verifies that default outcome path uses referenced plan title for case. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'cases').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `(tmp_path / 'cases' / 'case_example.json').write_text`, `default_outcome_path`, `datetime` |
+| `test_default_output_is_auto_managed_unless_explicit(tmp_path)` (L164) | Verifies that default output is auto managed unless explicit. | `(tmp_path / 'plans').mkdir`, `(tmp_path / 'plans' / 'example_plan.json').write_text`, `build_default_tui_fields`, `next`, `automatic_output.value.startswith`, `_args` |
+| `test_report_fields_explain_each_report_format()` (L182) | Verifies that report fields explain each report format. | `build_default_tui_fields`, `next`, `_args` |
+| `test_result_sections_include_expandable_human_readable_metric_results(tmp_path)` (L193) | Verifies that result sections include expandable human readable metric results. | `output.write_text`, `build_result_sections`, `any` |
+| `test_field_mapping_choices_remove_already_selected_columns()` (L210) | Verifies that field mapping choices remove already selected columns. | `_field_mapping_choices` |
+| `test_save_field_mappings_updates_test_to_dataset_fields(tmp_path)` (L219) | Verifies that save field mappings updates test to dataset fields. | `save_field_mappings`, `__import__('json').loads`, `path.read_text`, `__import__` |
+| `test_result_sections_separate_execution_success_from_scientific_applicability(tmp_path)` (L228) | Verifies that result sections separate execution success from scientific applicability. | `output.write_text`, `build_result_sections`, `next`, `any`, `section.title.startswith` |
+| `test_result_sections_flag_legacy_intrinsic_ids(tmp_path)` (L252) | Verifies that result sections flag legacy intrinsic ids. | `output.write_text`, `build_result_sections`, `next`, `any` |
+| `test_result_sections_flag_compatibility_only_profile(tmp_path)` (L266) | Verifies that result sections flag compatibility only profile. | `output.write_text`, `build_result_sections`, `next`, `any`, `section.title.startswith` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_args(**overrides)` (L9) | Implementation helper for args. |
+| `_args(**overrides)` (L10) | Implementation helper for args. |
