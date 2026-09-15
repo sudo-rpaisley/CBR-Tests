@@ -1,0 +1,1351 @@
+{
+  "canonical_metric_count": 61,
+  "metrics": [
+    {
+      "metric_id": "duplicate_row_ratio",
+      "taxonomy_path": "dataset_heuristics/data_quality_and_provenance/data_quality/duplicate_row_ratio",
+      "implementation_symbols": [
+        "compute_duplicate_row_ratio",
+        "run_duplicate_row_metric"
+      ],
+      "test_count": 6,
+      "tests": [
+        "tests/test_data_quality_profile.py::test_compute_duplicate_row_ratio_counts_repeated_rows_after_first",
+        "tests/test_data_quality_profile.py::test_data_quality_zero_denominators_are_not_numeric_scores",
+        "tests/test_data_quality_semantics.py::test_duplicate_ratio_reports_full_row_basis_when_all_columns_define_identity",
+        "tests/test_data_quality_semantics.py::test_duplicate_ratio_labels_configured_subset_as_signature_not_full_row",
+        "tests/test_data_quality_semantics.py::test_duplicate_ratio_is_not_runnable_without_any_available_identity_fields",
+        "tests/test_pcap_evidence_classification.py::test_pcap_evidence_classes_separate_observations_from_diagnostics"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_data_quality_profile.py::test_compute_duplicate_row_ratio_counts_repeated_rows_after_first",
+        "tests/test_data_quality_profile.py::test_data_quality_zero_denominators_are_not_numeric_scores",
+        "tests/test_data_quality_semantics.py::test_duplicate_ratio_reports_full_row_basis_when_all_columns_define_identity",
+        "tests/test_data_quality_semantics.py::test_duplicate_ratio_labels_configured_subset_as_signature_not_full_row"
+      ],
+      "boundary_candidates": [
+        "tests/test_data_quality_profile.py::test_data_quality_zero_denominators_are_not_numeric_scores",
+        "tests/test_data_quality_semantics.py::test_duplicate_ratio_is_not_runnable_without_any_available_identity_fields"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "missing_value_ratio",
+      "taxonomy_path": "dataset_heuristics/data_quality_and_provenance/data_quality/missing_value_ratio",
+      "implementation_symbols": [
+        "compute_missing_value_ratio",
+        "run_missing_value_metric"
+      ],
+      "test_count": 7,
+      "tests": [
+        "tests/test_data_quality_profile.py::test_compute_missing_value_ratio_uses_candidate_fields",
+        "tests/test_data_quality_profile.py::test_data_quality_zero_denominators_are_not_numeric_scores",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_metric_package_layout.py::test_legacy_metric_modules_reexport_production_implementations",
+        "tests/test_optimisation_regressions.py::test_shared_dataframe_remains_unchanged_across_representative_metrics",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence",
+        "tests/test_run_plan_field_translation.py::test_field_translation_dry_run_creates_sidecar_and_report"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_data_quality_profile.py::test_compute_missing_value_ratio_uses_candidate_fields",
+        "tests/test_data_quality_profile.py::test_data_quality_zero_denominators_are_not_numeric_scores",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_run_plan_field_translation.py::test_field_translation_dry_run_creates_sidecar_and_report"
+      ],
+      "boundary_candidates": [
+        "tests/test_data_quality_profile.py::test_compute_missing_value_ratio_uses_candidate_fields",
+        "tests/test_data_quality_profile.py::test_data_quality_zero_denominators_are_not_numeric_scores",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_metric_package_layout.py::test_legacy_metric_modules_reexport_production_implementations",
+        "tests/test_optimisation_regressions.py::test_shared_dataframe_remains_unchanged_across_representative_metrics",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence",
+        "tests/test_run_plan_field_translation.py::test_field_translation_dry_run_creates_sidecar_and_report"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "label_coverage_ratio",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/label_completeness/label_coverage_ratio",
+      "implementation_symbols": [
+        "compute_label_coverage_ratio"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids"
+      ],
+      "boundary_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "per_slice_label_coverage_ratio",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/label_completeness/per_slice_label_coverage_ratio",
+      "implementation_symbols": [
+        "compute_per_slice_label_coverage_ratio"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids"
+      ],
+      "boundary_candidates": [
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "class_imbalance_score",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/label_distribution/class_imbalance_score",
+      "implementation_symbols": [
+        "compute_class_imbalance_score"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_class_imbalance_requires_independent_expected_class_universe"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_class_imbalance_requires_independent_expected_class_universe"
+      ],
+      "boundary_candidates": [
+        "tests/test_label_fidelity_profile.py::test_class_imbalance_requires_independent_expected_class_universe"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "per_slice_label_entropy_score",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/label_distribution/per_slice_label_entropy_score",
+      "implementation_symbols": [
+        "compute_per_slice_label_entropy_score"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids",
+        "tests/test_label_fidelity_profile.py::test_entropy_is_undefined_for_labels_outside_declared_class_universe"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_label_fidelity_profile.py::test_label_completeness_and_distribution_metrics",
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids",
+        "tests/test_label_fidelity_profile.py::test_entropy_is_undefined_for_labels_outside_declared_class_universe"
+      ],
+      "boundary_candidates": [
+        "tests/test_label_fidelity_profile.py::test_per_slice_label_metrics_exclude_missing_slice_ids",
+        "tests/test_label_fidelity_profile.py::test_entropy_is_undefined_for_labels_outside_declared_class_universe"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "train_test_duplicate_overlap_ratio",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/split_integrity/train_test_duplicate_overlap_ratio",
+      "implementation_symbols": [
+        "compute_train_test_duplicate_overlap_ratio"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_label_fidelity_profile.py::test_split_integrity_metrics_use_test_population_denominators"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_label_fidelity_profile.py::test_split_integrity_metrics_use_test_population_denominators"
+      ],
+      "boundary_candidates": [
+        "tests/test_label_fidelity_profile.py::test_split_integrity_metrics_use_test_population_denominators"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "train_test_identifier_contamination_ratio",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/split_integrity/train_test_identifier_contamination_ratio",
+      "implementation_symbols": [
+        "compute_train_test_identifier_contamination_ratio"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_label_fidelity_profile.py::test_split_integrity_metrics_use_test_population_denominators",
+        "tests/test_label_fidelity_profile.py::test_identifier_overlap_is_not_called_contamination_without_entity_disjoint_policy",
+        "tests/test_preexperiment_metric_contract.py::test_identifier_contamination_uses_field_qualified_namespaces"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_label_fidelity_profile.py::test_split_integrity_metrics_use_test_population_denominators",
+        "tests/test_label_fidelity_profile.py::test_identifier_overlap_is_not_called_contamination_without_entity_disjoint_policy",
+        "tests/test_preexperiment_metric_contract.py::test_identifier_contamination_uses_field_qualified_namespaces"
+      ],
+      "boundary_candidates": [
+        "tests/test_label_fidelity_profile.py::test_split_integrity_metrics_use_test_population_denominators",
+        "tests/test_label_fidelity_profile.py::test_identifier_overlap_is_not_called_contamination_without_entity_disjoint_policy"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "attack_window_alignment_score",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/temporal_label_correctness/attack_window_alignment_score",
+      "implementation_symbols": [
+        "compute_attack_window_alignment_score"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_label_fidelity_profile.py::test_temporal_label_correctness_metrics",
+        "tests/test_label_fidelity_profile.py::test_attack_metrics_refuse_unconfigured_ground_truth"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_label_fidelity_profile.py::test_temporal_label_correctness_metrics"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "pre_post_attack_label_bleed_ratio",
+      "taxonomy_path": "dataset_heuristics/label_fidelity/temporal_label_correctness/pre_post_attack_label_bleed_ratio",
+      "implementation_symbols": [
+        "compute_pre_post_attack_label_bleed_ratio"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_label_fidelity_profile.py::test_temporal_label_correctness_metrics",
+        "tests/test_label_fidelity_profile.py::test_attack_metrics_refuse_unconfigured_ground_truth",
+        "tests/test_label_fidelity_profile.py::test_bleed_excludes_missing_labels_from_eligible_buffer_denominator"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_label_fidelity_profile.py::test_temporal_label_correctness_metrics",
+        "tests/test_label_fidelity_profile.py::test_bleed_excludes_missing_labels_from_eligible_buffer_denominator"
+      ],
+      "boundary_candidates": [
+        "tests/test_label_fidelity_profile.py::test_bleed_excludes_missing_labels_from_eligible_buffer_denominator"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "reserved_address_misuse_ratio",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/address_validity/reserved_address_misuse_ratio",
+      "implementation_symbols": [
+        "compute_reserved_address_misuse_ratio"
+      ],
+      "test_count": 4,
+      "tests": [
+        "tests/test_address_validity_canonical.py::test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations",
+        "tests/test_address_validity_canonical.py::test_reserved_address_profile_without_policy_does_not_claim_zero_misuse",
+        "tests/test_pcap_all_runnable_metrics.py::test_automatic_pcap_plan_contains_only_independent_currently_runnable_metrics",
+        "tests/test_pcap_all_runnable_metrics.py::test_context_configuration_reasons_are_explicit"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_address_validity_canonical.py::test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations",
+        "tests/test_address_validity_canonical.py::test_reserved_address_profile_without_policy_does_not_claim_zero_misuse"
+      ],
+      "boundary_candidates": [
+        "tests/test_address_validity_canonical.py::test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations",
+        "tests/test_address_validity_canonical.py::test_reserved_address_profile_without_policy_does_not_claim_zero_misuse",
+        "tests/test_pcap_all_runnable_metrics.py::test_automatic_pcap_plan_contains_only_independent_currently_runnable_metrics"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "valid_ip_address_ratio",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/address_validity/valid_ip_address_ratio",
+      "implementation_symbols": [
+        "compute_valid_ip_address_ratio"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_address_validity_canonical.py::test_valid_ip_address_ratio_uses_non_missing_checked_values_as_denominator",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_address_validity_canonical.py::test_valid_ip_address_ratio_uses_non_missing_checked_values_as_denominator"
+      ],
+      "boundary_candidates": [
+        "tests/test_address_validity_canonical.py::test_valid_ip_address_ratio_uses_non_missing_checked_values_as_denominator",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "flow_duration_consistency_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/flow_semantics/flow_duration_consistency_ratio",
+      "implementation_symbols": [
+        "_flow_duration_metric",
+        "run_flow_duration_consistency_metric"
+      ],
+      "test_count": 0,
+      "tests": [],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [],
+      "boundary_candidates": [],
+      "oracle_status": "no_pytest_reference_detected"
+    },
+    {
+      "metric_id": "handshake_plausibility_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/flow_semantics/handshake_plausibility_ratio",
+      "implementation_symbols": [
+        "_handshake_metric",
+        "run_handshake_plausibility_metric",
+        "run_pcap_handshake_plausibility_metric"
+      ],
+      "test_count": 7,
+      "tests": [
+        "tests/test_pcap_all_runnable_metrics.py::test_automatic_pcap_plan_contains_only_independent_currently_runnable_metrics",
+        "tests/test_pcap_evidence_classification.py::test_pcap_evidence_classes_separate_observations_from_diagnostics",
+        "tests/test_pcap_evidence_classification.py::test_automatic_pcap_plan_records_evidence_class",
+        "tests/test_pcap_handshake.py::test_pcap_handshake_ignores_boundary_and_incomplete_attempts",
+        "tests/test_pcap_handshake.py::test_pcap_handshake_warns_on_direction_contradiction",
+        "tests/test_pcap_handshake.py::test_pcap_handshake_not_applicable_without_opening_syn",
+        "tests/test_plan_builder.py::test_pcap_handshake_is_automatically_runnable_without_boundary_policy"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_pcap_handshake.py::test_pcap_handshake_ignores_boundary_and_incomplete_attempts",
+        "tests/test_pcap_handshake.py::test_pcap_handshake_warns_on_direction_contradiction"
+      ],
+      "boundary_candidates": [
+        "tests/test_pcap_all_runnable_metrics.py::test_automatic_pcap_plan_contains_only_independent_currently_runnable_metrics",
+        "tests/test_pcap_handshake.py::test_pcap_handshake_ignores_boundary_and_incomplete_attempts",
+        "tests/test_pcap_handshake.py::test_pcap_handshake_not_applicable_without_opening_syn",
+        "tests/test_plan_builder.py::test_pcap_handshake_is_automatically_runnable_without_boundary_policy"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "packet_byte_consistency_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/flow_semantics/packet_byte_consistency_ratio",
+      "implementation_symbols": [
+        "_packet_byte_metric",
+        "run_packet_byte_consistency_metric"
+      ],
+      "test_count": 0,
+      "tests": [],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [],
+      "boundary_candidates": [],
+      "oracle_status": "no_pytest_reference_detected"
+    },
+    {
+      "metric_id": "tcp_flag_consistency_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/flow_semantics/tcp_flag_consistency_ratio",
+      "implementation_symbols": [
+        "_tcp_flag_metric",
+        "run_tcp_flag_consistency_metric"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_preexperiment_metric_contract.py::test_tcp_flag_metric_declares_aggregate_not_state_machine_scope"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [],
+      "boundary_candidates": [],
+      "oracle_status": "exact_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "service_port_consistency_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/port_validity/service_port_consistency_ratio",
+      "implementation_symbols": [
+        "_service_port_metric",
+        "run_service_port_consistency_metric"
+      ],
+      "test_count": 7,
+      "tests": [
+        "tests/test_metric_failure_diagnostics.py::test_service_port_consistency_does_not_treat_every_mixed_row_as_dns",
+        "tests/test_metric_failure_diagnostics.py::test_service_port_consistency_filters_to_service_population",
+        "tests/test_metric_failure_diagnostics.py::test_service_port_consistency_failure_contains_threshold_and_examples",
+        "tests/test_pcap_evidence_classification.py::test_pcap_evidence_classes_separate_observations_from_diagnostics",
+        "tests/test_plan_builder.py::test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule",
+        "tests/test_plan_builder.py::test_pcap_service_port_requires_explicit_single_service_assertion",
+        "tests/test_plan_builder.py::test_pcap_preflight_exclusions_include_unlock_advice"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_metric_failure_diagnostics.py::test_service_port_consistency_filters_to_service_population",
+        "tests/test_metric_failure_diagnostics.py::test_service_port_consistency_failure_contains_threshold_and_examples",
+        "tests/test_plan_builder.py::test_pcap_service_port_requires_explicit_single_service_assertion",
+        "tests/test_plan_builder.py::test_pcap_preflight_exclusions_include_unlock_advice"
+      ],
+      "boundary_candidates": [
+        "tests/test_metric_failure_diagnostics.py::test_service_port_consistency_does_not_treat_every_mixed_row_as_dns",
+        "tests/test_plan_builder.py::test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule",
+        "tests/test_plan_builder.py::test_pcap_service_port_requires_explicit_single_service_assertion"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "valid_port_range_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/port_validity/valid_port_range_ratio",
+      "implementation_symbols": [
+        "_valid_port_metric",
+        "run_valid_port_range_metric"
+      ],
+      "test_count": 11,
+      "tests": [
+        "tests/test_batch_reports.py::test_write_comparison_reports_creates_wide_long_and_metric_matrices",
+        "tests/test_metric_failure_diagnostics.py::test_valid_port_range_explains_normative_range_failure",
+        "tests/test_metric_failure_diagnostics.py::test_valid_port_range_is_not_applicable_when_all_ports_are_missing",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence",
+        "tests/test_plan_builder.py::test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule",
+        "tests/test_plan_builder.py::test_reference_metrics_are_reported_but_never_written_without_reference_configuration",
+        "tests/test_plan_builder.py::test_existing_field_translation_sidecar_can_make_metric_runnable",
+        "tests/test_runner_schema_taxonomy.py::test_metric_registry_contains_core_metrics",
+        "tests/test_tui.py::test_result_sections_separate_execution_success_from_scientific_applicability",
+        "tests/test_valid_port_range_conformance.py::test_canonical_port_ratio_uses_full_normative_16_bit_domain",
+        "tests/test_valid_port_range_conformance.py::test_canonical_port_ratio_rejects_scenario_specific_subranges"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_batch_reports.py::test_write_comparison_reports_creates_wide_long_and_metric_matrices",
+        "tests/test_metric_failure_diagnostics.py::test_valid_port_range_explains_normative_range_failure",
+        "tests/test_valid_port_range_conformance.py::test_canonical_port_ratio_uses_full_normative_16_bit_domain"
+      ],
+      "boundary_candidates": [
+        "tests/test_metric_failure_diagnostics.py::test_valid_port_range_explains_normative_range_failure",
+        "tests/test_metric_failure_diagnostics.py::test_valid_port_range_is_not_applicable_when_all_ports_are_missing",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence",
+        "tests/test_plan_builder.py::test_dataset_preflight_includes_ready_port_range_and_excludes_service_rule",
+        "tests/test_plan_builder.py::test_reference_metrics_are_reported_but_never_written_without_reference_configuration",
+        "tests/test_valid_port_range_conformance.py::test_canonical_port_ratio_rejects_scenario_specific_subranges"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "slice_identifier_consistency_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/slice_metadata_integrity/slice_identifier_consistency_ratio",
+      "implementation_symbols": [
+        "_slice_consistency_metric",
+        "run_slice_identifier_consistency_metric"
+      ],
+      "test_count": 4,
+      "tests": [
+        "tests/test_preexperiment_metric_contract.py::test_conflicting_overlapping_slice_rules_are_rejected",
+        "tests/test_preexperiment_metric_contract.py::test_identical_overlapping_slice_rules_are_allowed",
+        "tests/test_slice_identifier_denominator_policy.py::test_slice_consistency_excludes_unmatched_and_missing_rows_by_default",
+        "tests/test_slice_identifier_denominator_policy.py::test_new_plan_templates_do_not_inherit_legacy_slice_denominators"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_preexperiment_metric_contract.py::test_identical_overlapping_slice_rules_are_allowed",
+        "tests/test_slice_identifier_denominator_policy.py::test_slice_consistency_excludes_unmatched_and_missing_rows_by_default"
+      ],
+      "boundary_candidates": [
+        "tests/test_preexperiment_metric_contract.py::test_conflicting_overlapping_slice_rules_are_rejected",
+        "tests/test_slice_identifier_denominator_policy.py::test_slice_consistency_excludes_unmatched_and_missing_rows_by_default",
+        "tests/test_slice_identifier_denominator_policy.py::test_new_plan_templates_do_not_inherit_legacy_slice_denominators"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "valid_slice_identifier_profile",
+      "taxonomy_path": "dataset_heuristics/protocol_and_network_realism/slice_metadata_integrity/valid_slice_identifier_ratio",
+      "implementation_symbols": [
+        "_slice_valid_metric",
+        "run_valid_slice_identifier_metric"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_slice_identifier_denominator_policy.py::test_valid_slice_identifier_excludes_missing_by_default",
+        "tests/test_slice_identifier_denominator_policy.py::test_valid_slice_identifier_can_reproduce_legacy_count_invalid_policy",
+        "tests/test_slice_identifier_denominator_policy.py::test_new_plan_templates_do_not_inherit_legacy_slice_denominators"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_slice_identifier_denominator_policy.py::test_valid_slice_identifier_excludes_missing_by_default",
+        "tests/test_slice_identifier_denominator_policy.py::test_valid_slice_identifier_can_reproduce_legacy_count_invalid_policy"
+      ],
+      "boundary_candidates": [
+        "tests/test_slice_identifier_denominator_policy.py::test_valid_slice_identifier_excludes_missing_by_default",
+        "tests/test_slice_identifier_denominator_policy.py::test_valid_slice_identifier_can_reproduce_legacy_count_invalid_policy",
+        "tests/test_slice_identifier_denominator_policy.py::test_new_plan_templates_do_not_inherit_legacy_slice_denominators"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "slice_distribution_imbalance_score",
+      "taxonomy_path": "dataset_heuristics/slice_representation/slice_balance/slice_distribution_imbalance_score",
+      "implementation_symbols": [
+        "compute_slice_distribution_imbalance_score"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_slice_imbalance_excludes_missing_slice_ids_from_distribution"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_slice_imbalance_excludes_missing_slice_ids_from_distribution"
+      ],
+      "boundary_candidates": [
+        "tests/test_slice_representation_profile.py::test_slice_imbalance_excludes_missing_slice_ids_from_distribution"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "per_slice_class_coverage_ratio",
+      "taxonomy_path": "dataset_heuristics/slice_representation/slice_coverage/per_slice_class_coverage_ratio",
+      "implementation_symbols": [
+        "compute_per_slice_class_coverage_ratio"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_slice_context_configuration.py::test_slice_realism_context_is_not_inherited_from_saved_plan_templates",
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_class_coverage_requires_independently_declared_expected_classes"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_class_coverage_requires_independently_declared_expected_classes"
+      ],
+      "boundary_candidates": [
+        "tests/test_slice_representation_profile.py::test_class_coverage_requires_independently_declared_expected_classes"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "per_slice_feature_coverage_ratio",
+      "taxonomy_path": "dataset_heuristics/slice_representation/slice_coverage/per_slice_feature_coverage_ratio",
+      "implementation_symbols": [
+        "compute_per_slice_feature_coverage_ratio"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_feature_coverage_is_row_level_not_any_value_presence"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_feature_coverage_is_row_level_not_any_value_presence"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "per_slice_sample_coverage_ratio",
+      "taxonomy_path": "dataset_heuristics/slice_representation/slice_coverage/per_slice_sample_coverage_ratio",
+      "implementation_symbols": [
+        "compute_per_slice_sample_coverage_ratio"
+      ],
+      "test_count": 4,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_slice_context_configuration.py::test_slice_realism_context_is_not_inherited_from_saved_plan_templates",
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_sample_coverage_requires_expected_slices_and_supports_minimum_counts"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_slice_representation_profile.py::test_slice_coverage_and_balance_metrics",
+        "tests/test_slice_representation_profile.py::test_sample_coverage_requires_expected_slices_and_supports_minimum_counts"
+      ],
+      "boundary_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_slice_representation_profile.py::test_sample_coverage_requires_expected_slices_and_supports_minimum_counts"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "cross_slice_duplicate_overlap_ratio",
+      "taxonomy_path": "dataset_heuristics/slice_representation/slice_isolation/cross_slice_duplicate_overlap_ratio",
+      "implementation_symbols": [
+        "compute_cross_slice_duplicate_overlap_ratio"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_slice_representation_profile.py::test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_slice_representation_profile.py::test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators"
+      ],
+      "boundary_candidates": [
+        "tests/test_slice_representation_profile.py::test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "cross_slice_identifier_leakage_ratio",
+      "taxonomy_path": "dataset_heuristics/slice_representation/slice_isolation/cross_slice_identifier_leakage_ratio",
+      "implementation_symbols": [
+        "compute_cross_slice_identifier_leakage_ratio"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_slice_context_configuration.py::test_slice_realism_context_is_not_inherited_from_saved_plan_templates",
+        "tests/test_slice_representation_profile.py::test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators",
+        "tests/test_slice_representation_profile.py::test_identifier_overlap_is_not_called_leakage_without_exclusivity_policy"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_slice_representation_profile.py::test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators",
+        "tests/test_slice_representation_profile.py::test_identifier_overlap_is_not_called_leakage_without_exclusivity_policy"
+      ],
+      "boundary_candidates": [
+        "tests/test_slice_representation_profile.py::test_cross_slice_isolation_metrics_use_signature_and_identifier_denominators",
+        "tests/test_slice_representation_profile.py::test_identifier_overlap_is_not_called_leakage_without_exclusivity_policy"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "distance_correlation_dependency_profile",
+      "taxonomy_path": "dataset_heuristics/statistical_structure_diagnostics/dependency_profiles/distance_correlation_dependency_profile",
+      "implementation_symbols": [
+        "compute_distance_correlation_dependency_profile"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_dependency_profiles_are_profiles_not_deviations",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_distance_correlation_dependency_profile_enforces_pairwise_safety_cap",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_distance_correlation_dependency_profile_honours_lower_configured_limit"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_dependency_profiles_are_profiles_not_deviations",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_distance_correlation_dependency_profile_enforces_pairwise_safety_cap",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_distance_correlation_dependency_profile_honours_lower_configured_limit"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "pearson_dependency_profile",
+      "taxonomy_path": "dataset_heuristics/statistical_structure_diagnostics/dependency_profiles/pearson_dependency_profile",
+      "implementation_symbols": [
+        "compute_pearson_dependency_profile"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_dependency_profiles_are_profiles_not_deviations",
+        "tests/test_pcap_evidence_classification.py::test_pcap_evidence_classes_separate_observations_from_diagnostics"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_dependency_profiles_are_profiles_not_deviations"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "spearman_dependency_profile",
+      "taxonomy_path": "dataset_heuristics/statistical_structure_diagnostics/dependency_profiles/spearman_dependency_profile",
+      "implementation_symbols": [
+        "compute_spearman_dependency_profile"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_dependency_profiles_are_profiles_not_deviations"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_dependency_profiles_are_profiles_not_deviations"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "feature_energy_internal_drift",
+      "taxonomy_path": "dataset_heuristics/statistical_structure_diagnostics/internal_distribution_drift/feature_energy_internal_drift",
+      "implementation_symbols": [
+        "compute_feature_energy_internal_drift"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "feature_ks_internal_drift",
+      "taxonomy_path": "dataset_heuristics/statistical_structure_diagnostics/internal_distribution_drift/feature_ks_internal_drift",
+      "implementation_symbols": [
+        "compute_feature_ks_internal_drift"
+      ],
+      "test_count": 5,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_pcap_evidence_classification.py::test_pcap_evidence_classes_separate_observations_from_diagnostics",
+        "tests/test_pcap_evidence_classification.py::test_automatic_pcap_plan_records_evidence_class",
+        "tests/test_plan_migration.py::test_migration_updates_label_and_taxonomy_path_to_canonical_construct"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics",
+        "tests/test_plan_migration.py::test_migration_updates_label_and_taxonomy_path_to_canonical_construct"
+      ],
+      "boundary_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics"
+      ],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "feature_mmd2_internal_drift",
+      "taxonomy_path": "dataset_heuristics/statistical_structure_diagnostics/internal_distribution_drift/feature_mmd2_internal_drift",
+      "implementation_symbols": [
+        "compute_feature_mmd2_internal_drift"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "feature_wasserstein_internal_drift",
+      "taxonomy_path": "dataset_heuristics/statistical_structure_diagnostics/internal_distribution_drift/feature_wasserstein_internal_drift",
+      "implementation_symbols": [
+        "compute_feature_wasserstein_internal_drift"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles",
+        "tests/test_representative_rerun_guard.py::test_representative_rerun_accepts_canonical_plan",
+        "tests/test_tui.py::test_result_sections_flag_legacy_intrinsic_ids"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_distribution_diagnostics_preserve_hand_calculated_oracles"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "non_negative_duration_ratio",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_consistency/non_negative_duration_ratio",
+      "implementation_symbols": [
+        "compute_non_negative_duration_ratio"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_metrics",
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_zero_denominators_are_not_numeric_scores"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_metrics",
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_zero_denominators_are_not_numeric_scores"
+      ],
+      "boundary_candidates": [
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_zero_denominators_are_not_numeric_scores"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "start_end_timestamp_consistency_ratio",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_consistency/start_end_timestamp_consistency_ratio",
+      "implementation_symbols": [
+        "compute_start_end_timestamp_consistency_ratio"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_metrics",
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_zero_denominators_are_not_numeric_scores"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_metrics",
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_zero_denominators_are_not_numeric_scores"
+      ],
+      "boundary_candidates": [
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_zero_denominators_are_not_numeric_scores"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "timestamp_parse_success_ratio",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_consistency/timestamp_parse_success_ratio",
+      "implementation_symbols": [
+        "compute_timestamp_parse_success_ratio"
+      ],
+      "test_count": 5,
+      "tests": [
+        "tests/test_metric_package_layout.py::test_legacy_metric_modules_reexport_production_implementations",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence",
+        "tests/test_plan_migration.py::test_migration_leaves_nonlegacy_metrics_unchanged",
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_metrics",
+        "tests/test_temporal_metrics_profile.py::test_timestamp_parse_success_excludes_missing_values_from_the_denominator"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_temporal_metrics_profile.py::test_temporal_consistency_metrics",
+        "tests/test_temporal_metrics_profile.py::test_timestamp_parse_success_excludes_missing_values_from_the_denominator"
+      ],
+      "boundary_candidates": [
+        "tests/test_metric_package_layout.py::test_legacy_metric_modules_reexport_production_implementations",
+        "tests/test_pcap_adapter.py::test_decoder_derived_metrics_remain_diagnostic_but_are_not_automatic_pcap_evidence",
+        "tests/test_temporal_metrics_profile.py::test_timestamp_parse_success_excludes_missing_values_from_the_denominator"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "day_to_day_diurnal_similarity",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_structure_diagnostics/cyclic_structure/day_to_day_diurnal_similarity",
+      "implementation_symbols": [
+        "compute_day_to_day_diurnal_similarity"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison",
+        "tests/test_tui.py::test_result_sections_separate_execution_success_from_scientific_applicability"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "day_to_day_hourly_activity_divergence",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_structure_diagnostics/cyclic_structure/day_to_day_hourly_activity_divergence",
+      "implementation_symbols": [
+        "compute_day_to_day_hourly_activity_divergence"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "lagged_periodicity_similarity",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_structure_diagnostics/cyclic_structure/lagged_periodicity_similarity",
+      "implementation_symbols": [
+        "compute_lagged_periodicity_similarity"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "burstiness_internal_drift",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_structure_diagnostics/traffic_dynamics/burstiness_internal_drift",
+      "implementation_symbols": [
+        "compute_burstiness_internal_drift"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "inter_arrival_internal_drift_ks",
+      "taxonomy_path": "dataset_heuristics/temporal_metrics/temporal_structure_diagnostics/traffic_dynamics/inter_arrival_internal_drift_ks",
+      "implementation_symbols": [
+        "compute_inter_arrival_internal_drift_ks"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_canonical_temporal_diagnostic_names_do_not_claim_reference_comparison",
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics"
+      ],
+      "boundary_candidates": [
+        "tests/test_intrinsic_diagnostic_restructure.py::test_new_taxonomy_uses_canonical_ids_and_nests_dataset_heuristics"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "distance_correlation_matrix_deviation_from_reference",
+      "taxonomy_path": "reference_model_comparison/dependency_structure_similarity/distance_correlation_matrix_deviation_from_reference",
+      "implementation_symbols": [
+        "compute_distance_correlation_matrix_deviation_from_reference"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distance_correlation_matrix_deviation_oracle"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distance_correlation_matrix_deviation_oracle"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distance_correlation_matrix_deviation_oracle"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "pearson_matrix_deviation_from_reference",
+      "taxonomy_path": "reference_model_comparison/dependency_structure_similarity/pearson_matrix_deviation_from_reference",
+      "implementation_symbols": [
+        "compute_pearson_matrix_deviation_from_reference"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_multi_reference_workflow.py::test_tabular_reference_plan_unlocks_reference_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_correlation_matrix_deviation_oracles"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_correlation_matrix_deviation_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_correlation_matrix_deviation_oracles"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "spearman_matrix_deviation_from_reference",
+      "taxonomy_path": "reference_model_comparison/dependency_structure_similarity/spearman_matrix_deviation_from_reference",
+      "implementation_symbols": [
+        "compute_spearman_matrix_deviation_from_reference"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_correlation_matrix_deviation_oracles"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_correlation_matrix_deviation_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_correlation_matrix_deviation_oracles"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "feature_set_mmd_score_from_reference",
+      "taxonomy_path": "reference_model_comparison/distributional_similarity/feature_set_mmd_score_from_reference",
+      "implementation_symbols": [
+        "compute_feature_set_mmd_score_from_reference"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles",
+        "tests/test_reference_model_comparison_profile.py::test_reference_metrics_load_raw_pcap_with_explicit_epoch_units"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles",
+        "tests/test_reference_model_comparison_profile.py::test_reference_metrics_load_raw_pcap_with_explicit_epoch_units"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "feature_wise_energy_distance_from_reference",
+      "taxonomy_path": "reference_model_comparison/distributional_similarity/feature_wise_energy_distance_from_reference",
+      "implementation_symbols": [
+        "compute_feature_wise_energy_distance_from_reference"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "feature_wise_ks_statistic_from_reference",
+      "taxonomy_path": "reference_model_comparison/distributional_similarity/feature_wise_ks_statistic_from_reference",
+      "implementation_symbols": [
+        "compute_feature_wise_ks_statistic_from_reference"
+      ],
+      "test_count": 6,
+      "tests": [
+        "tests/test_multi_reference_workflow.py::test_tabular_reference_plan_unlocks_reference_metrics",
+        "tests/test_multi_reference_workflow.py::test_reference_sidecar_maps_different_raw_column_names",
+        "tests/test_multi_reference_workflow.py::test_batch_builds_candidate_reference_cross_product",
+        "tests/test_pcap_evidence_classification.py::test_pcap_evidence_classes_separate_observations_from_diagnostics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_multi_reference_workflow.py::test_reference_sidecar_maps_different_raw_column_names",
+        "tests/test_multi_reference_workflow.py::test_batch_builds_candidate_reference_cross_product",
+        "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "boundary_candidates": [
+        "tests/test_multi_reference_workflow.py::test_batch_builds_candidate_reference_cross_product"
+      ],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "feature_wise_wasserstein_distance_from_reference",
+      "taxonomy_path": "reference_model_comparison/distributional_similarity/feature_wise_wasserstein_distance_from_reference",
+      "implementation_symbols": [
+        "compute_feature_wise_wasserstein_distance_from_reference"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distributional_metric_oracles"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "flow_statistic_deviation_from_reference",
+      "taxonomy_path": "reference_model_comparison/protocol_behaviour_similarity/flow_statistic_deviation_from_reference",
+      "implementation_symbols": [
+        "compute_flow_statistic_deviation_from_reference"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation"
+      ],
+      "boundary_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_flow_statistic_reference_distance_requires_matching_flow_definition_for_interpretation"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "port_use_divergence_from_reference",
+      "taxonomy_path": "reference_model_comparison/protocol_behaviour_similarity/port_use_divergence_from_reference",
+      "implementation_symbols": [
+        "compute_port_use_divergence_from_reference"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_multi_reference_workflow.py::test_tabular_reference_plan_unlocks_reference_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_protocol_and_port_metrics_exclude_missing_categories",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_protocol_and_port_metrics_exclude_missing_categories",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "boundary_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_protocol_and_port_metrics_exclude_missing_categories"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "protocol_mix_divergence_from_reference",
+      "taxonomy_path": "reference_model_comparison/protocol_behaviour_similarity/protocol_mix_divergence_from_reference",
+      "implementation_symbols": [
+        "compute_protocol_mix_divergence_from_reference"
+      ],
+      "test_count": 3,
+      "tests": [
+        "tests/test_multi_reference_workflow.py::test_tabular_reference_plan_unlocks_reference_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_protocol_and_port_metrics_exclude_missing_categories",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_protocol_and_port_metrics_exclude_missing_categories",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "boundary_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_protocol_and_port_metrics_exclude_missing_categories"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "per_slice_class_divergence_from_reference",
+      "taxonomy_path": "reference_model_comparison/slice_profile_similarity/per_slice_class_divergence_from_reference",
+      "implementation_symbols": [
+        "compute_per_slice_class_divergence_from_reference"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "boundary_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "per_slice_feature_distribution_deviation_from_reference",
+      "taxonomy_path": "reference_model_comparison/slice_profile_similarity/per_slice_feature_distribution_deviation_from_reference",
+      "implementation_symbols": [
+        "compute_per_slice_feature_distribution_deviation_from_reference"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals"
+      ],
+      "boundary_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "slice_proportion_deviation_from_reference",
+      "taxonomy_path": "reference_model_comparison/slice_profile_similarity/slice_proportion_deviation_from_reference",
+      "implementation_symbols": [
+        "compute_slice_proportion_deviation_from_reference"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals",
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_and_protocol_metrics"
+      ],
+      "boundary_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_slice_metrics_exclude_missing_and_do_not_score_unshared_conditionals"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "burstiness_deviation_from_reference",
+      "taxonomy_path": "reference_model_comparison/temporal_profile_similarity/burstiness_deviation_from_reference",
+      "implementation_symbols": [
+        "compute_burstiness_deviation_from_reference"
+      ],
+      "test_count": 1,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "hourly_activity_divergence_from_reference",
+      "taxonomy_path": "reference_model_comparison/temporal_profile_similarity/hourly_activity_divergence_from_reference",
+      "implementation_symbols": [
+        "compute_hourly_activity_divergence_from_reference"
+      ],
+      "test_count": 4,
+      "tests": [
+        "tests/test_multi_reference_workflow.py::test_tabular_reference_plan_unlocks_reference_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone",
+        "tests/test_reference_model_comparison_profile.py::test_reference_metrics_load_raw_pcap_with_explicit_epoch_units"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_distribution_dependency_and_temporal_metrics",
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone",
+        "tests/test_reference_model_comparison_profile.py::test_reference_metrics_load_raw_pcap_with_explicit_epoch_units"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "inter_arrival_distribution_divergence_from_reference",
+      "taxonomy_path": "reference_model_comparison/temporal_profile_similarity/inter_arrival_distribution_divergence_from_reference",
+      "implementation_symbols": [
+        "compute_inter_arrival_distribution_divergence_from_reference"
+      ],
+      "test_count": 2,
+      "tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone",
+        "tests/test_reference_model_comparison_profile.py::test_reference_metrics_load_raw_pcap_with_explicit_epoch_units"
+      ],
+      "explicit_oracle_tests": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone"
+      ],
+      "numerical_oracle_candidates": [
+        "tests/test_reference_model_comparison_profile.py::test_reference_temporal_oracles_use_declared_timestamp_units_and_timezone",
+        "tests/test_reference_model_comparison_profile.py::test_reference_metrics_load_raw_pcap_with_explicit_epoch_units"
+      ],
+      "boundary_candidates": [],
+      "oracle_status": "explicit_oracle_test"
+    },
+    {
+      "metric_id": "benchmark_model_accuracy",
+      "taxonomy_path": "task_based_validation/benchmark_model_accuracy",
+      "implementation_symbols": [
+        "compute_benchmark_model_accuracy"
+      ],
+      "test_count": 4,
+      "tests": [
+        "tests/test_metric_package_layout.py::test_legacy_metric_modules_reexport_production_implementations",
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_accuracy_is_multiclass_exact_match_and_reports_coverage",
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_ignore_missing_labels_or_predictions"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_accuracy_is_multiclass_exact_match_and_reports_coverage",
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_ignore_missing_labels_or_predictions"
+      ],
+      "boundary_candidates": [
+        "tests/test_metric_package_layout.py::test_legacy_metric_modules_reexport_production_implementations",
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_accuracy_is_multiclass_exact_match_and_reports_coverage",
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_ignore_missing_labels_or_predictions"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "benchmark_model_f1_score",
+      "taxonomy_path": "task_based_validation/benchmark_model_f1_score",
+      "implementation_symbols": [
+        "compute_benchmark_model_f1_score"
+      ],
+      "test_count": 5,
+      "tests": [
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_precision_recall_and_f1_never_infer_the_positive_class",
+        "tests/test_task_based_validation_profile.py::test_binary_task_metrics_are_explicit_positive_label_one_vs_rest",
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined",
+        "tests/test_task_based_validation_profile.py::test_positive_class_metrics_are_undefined_when_positive_support_is_absent"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_binary_task_metrics_are_explicit_positive_label_one_vs_rest",
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined"
+      ],
+      "boundary_candidates": [
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined",
+        "tests/test_task_based_validation_profile.py::test_positive_class_metrics_are_undefined_when_positive_support_is_absent"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "benchmark_model_precision",
+      "taxonomy_path": "task_based_validation/benchmark_model_precision",
+      "implementation_symbols": [
+        "compute_benchmark_model_precision"
+      ],
+      "test_count": 5,
+      "tests": [
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_precision_recall_and_f1_never_infer_the_positive_class",
+        "tests/test_task_based_validation_profile.py::test_binary_task_metrics_are_explicit_positive_label_one_vs_rest",
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined",
+        "tests/test_task_based_validation_profile.py::test_positive_class_metrics_are_undefined_when_positive_support_is_absent"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_binary_task_metrics_are_explicit_positive_label_one_vs_rest",
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined"
+      ],
+      "boundary_candidates": [
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined",
+        "tests/test_task_based_validation_profile.py::test_positive_class_metrics_are_undefined_when_positive_support_is_absent"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    },
+    {
+      "metric_id": "benchmark_model_recall",
+      "taxonomy_path": "task_based_validation/benchmark_model_recall",
+      "implementation_symbols": [
+        "compute_benchmark_model_recall"
+      ],
+      "test_count": 5,
+      "tests": [
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_precision_recall_and_f1_never_infer_the_positive_class",
+        "tests/test_task_based_validation_profile.py::test_binary_task_metrics_are_explicit_positive_label_one_vs_rest",
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined",
+        "tests/test_task_based_validation_profile.py::test_positive_class_metrics_are_undefined_when_positive_support_is_absent"
+      ],
+      "explicit_oracle_tests": [],
+      "numerical_oracle_candidates": [
+        "tests/test_task_based_validation_profile.py::test_benchmark_model_metrics_from_predictions",
+        "tests/test_task_based_validation_profile.py::test_binary_task_metrics_are_explicit_positive_label_one_vs_rest",
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined"
+      ],
+      "boundary_candidates": [
+        "tests/test_task_based_validation_profile.py::test_f1_is_zero_when_precision_and_recall_are_both_zero_but_defined",
+        "tests/test_task_based_validation_profile.py::test_positive_class_metrics_are_undefined_when_positive_support_is_absent"
+      ],
+      "oracle_status": "numerical_assertion_needs_manual_oracle_review"
+    }
+  ]
+}
