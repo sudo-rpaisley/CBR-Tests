@@ -99,7 +99,11 @@ def run_once(args):
     run_state = context.run_state
     run_started_at = context.run_started_at
     run_start_perf = context.run_start_perf
+    phase_timings: dict[str, float] = {
+        "run_context": round(time.perf_counter() - run_start_perf, 6),
+    }
 
+    field_translation_start = time.perf_counter()
     dataset_columns = read_tabular_dataset_columns(dataset_path)
     detected_translation = detect_standard_pcap_field_translation_for_dataset(dataset_path)
     explicit_translation_path = translation_path is not None
@@ -183,6 +187,10 @@ def run_once(args):
                 format_field_translation_markdown_report(field_translation_report),
             )
 
+    phase_timings["field_translation_and_preflight"] = round(
+        time.perf_counter() - field_translation_start, 6
+    )
+
     if args.field_translation_dry_run:
         if translation_path is not None:
             print(f"Field translation file: {translation_path}")
@@ -204,8 +212,10 @@ def run_once(args):
         result["missing_fields"] = sorted({field for fields in skipped_metrics.values() for field in fields})
         result["dataset_columns"] = sorted(dataset_columns)
         result["field_translation_path"] = str(translation_path or default_field_translation_path(dataset_path))
+        result["phase_timings_seconds"] = phase_timings
         return result
 
+    provenance_start = time.perf_counter()
     provenance = build_provenance_manifest(
         plan=plan,
         dataset_path=dataset_path,
@@ -216,6 +226,8 @@ def run_once(args):
         taxonomy_path=context.taxonomy_path,
         cli_arguments=vars(args),
     )
+    phase_timings["provenance_hashing"] = round(time.perf_counter() - provenance_start, 6)
+    provenance["phase_timings_seconds"] = phase_timings
 
     base_header_lines = build_base_header_lines(plan, case_id, dataset_path, output_path, include_dataset_size=True)
     print_title_box(base_header_lines)
@@ -238,6 +250,7 @@ def run_once(args):
         "",
         None,
     )
+    dataset_load_start = time.perf_counter()
     shared_tabular_df = None
     if is_tabular_dataset(dataset_path):
         shared_tabular_df = load_shared_tabular_dataset(
@@ -258,7 +271,9 @@ def run_once(args):
     ):
         print_phase_status("PCAP", "Building canonical packet view")
         shared_tabular_df = build_pcap_packet_dataframe(dataset_path)
+    phase_timings["dataset_loading"] = round(time.perf_counter() - dataset_load_start, 6)
 
+    dataset_summary_start = time.perf_counter()
     if getattr(args, "dataset_summary", True):
         dataset_sha256 = provenance.get("dataset", {}).get("sha256")
         if dataset_sha256:
@@ -288,11 +303,14 @@ def run_once(args):
             }
     else:
         provenance["dataset_summary"] = {"status": "suppressed"}
+    phase_timings["dataset_summary"] = round(time.perf_counter() - dataset_summary_start, 6)
 
     def _load_dataset_for_metric(path: Path):
         return load_tabular_dataset(path, field_translation=field_translation)
 
+    handler_setup_start = time.perf_counter()
     metric_handlers = build_metric_handlers(shared_tabular_df, _load_dataset_for_metric, field_translation)
+    phase_timings["metric_handler_setup"] = round(time.perf_counter() - handler_setup_start, 6)
 
     execution_policy = plan.get("execution_policy", {})
     fail_fast = execution_policy.get("fail_fast", True)
@@ -323,6 +341,7 @@ def run_once(args):
         for mid, fields in skipped_metrics.items()
     ]
 
+    metric_execution_start = time.perf_counter()
     if workers > 1:
         parallel_progress = build_parallel_progress_callback(
             plan=plan,
@@ -357,6 +376,8 @@ def run_once(args):
             completed_statuses=completed_statuses,
             completed_durations=completed_durations,
         )
+        phase_timings["metric_execution"] = round(time.perf_counter() - metric_execution_start, 6)
+        phase_timings["total_before_output"] = round(time.perf_counter() - run_start_perf, 6)
         outcome = build_outcome(
             overall_status,
             case_id,
@@ -405,7 +426,13 @@ def run_once(args):
         run_state=run_state,
         provenance=provenance,
     )
+    phase_timings["metric_execution"] = round(time.perf_counter() - metric_execution_start, 6)
+    phase_timings["total_before_output"] = round(time.perf_counter() - run_start_perf, 6)
     if early_returned:
+        # Fail-fast serial execution may already have published the outcome before
+        # the outer runner can close the metric-execution timer. Re-publish it so
+        # the authoritative JSON contains the completed phase timings.
+        write_outcome(output_path, outcome)
         return _run_result(
             dry_run=False,
             status=outcome.get("status") if outcome else "cancelled",
