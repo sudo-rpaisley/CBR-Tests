@@ -20,6 +20,7 @@ The landing screen groups tools by workflow rather than exposing every low-level
 ### Prepare experiments
 
 - **Build plan / batch definition** — create a dataset-aware plan or batch definition using the current metric catalogue.
+- **Validate / map dataset fields** — open the single-run workflow directly in field-translation preflight mode so missing canonical fields can be reviewed and mapped before metrics run.
 - **Validate plan** — validate a saved plan against the live schema and metric registry.
 - **Migrate legacy plan IDs** — migrate safe one-to-one legacy intrinsic metric IDs to canonical IDs.
 
@@ -62,6 +63,10 @@ Press `a` to expose advanced options:
 Metric include/exclude selection uses a multi-select list. Leaving the include list empty means **all structurally runnable metrics** are considered.
 
 The builder uses the same `build_plan` and batch-construction implementation as `create_plan.py`; the TUI does not maintain a separate scientific definition of plan eligibility.
+
+## Field mapping preflight
+
+**Validate / map dataset fields** is a shortcut into the existing dry-run workflow. It starts with field validation enabled, reports missing required mappings without executing metrics, and then lets the normal results workflow open the field-mapping screen. This means field translation remains part of the same runner contract rather than becoming a second implementation.
 
 ## Review before action
 
