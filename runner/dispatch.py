@@ -146,8 +146,12 @@ def run_pearson_metric(
     load_tabular_dataset,
     shared_df: pd.DataFrame | None = None,
 ):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
     candidate_fields = metric["input_requirements"]["candidate_fields"]
+    if shared_df is not None:
+        present_fields = [field for field in candidate_fields if field in shared_df.columns]
+        df = shared_df[present_fields].copy()
+    else:
+        df = load_tabular_dataset(dataset_path)
     minimum_runnable_fields = metric["input_requirements"]["minimum_runnable_fields"]
     column_validation, runnable_fields, df = validate_candidate_fields(df, candidate_fields)
     if len(runnable_fields) < minimum_runnable_fields:
@@ -168,8 +172,12 @@ def run_spearman_metric(
     load_tabular_dataset,
     shared_df: pd.DataFrame | None = None,
 ):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
     candidate_fields = metric["input_requirements"]["candidate_fields"]
+    if shared_df is not None:
+        present_fields = [field for field in candidate_fields if field in shared_df.columns]
+        df = shared_df[present_fields].copy()
+    else:
+        df = load_tabular_dataset(dataset_path)
     minimum_runnable_fields = metric["input_requirements"].get(
         "minimum_runnable_fields", 2
     )
@@ -196,7 +204,7 @@ def run_missing_value_metric(
     load_tabular_dataset,
     shared_df: pd.DataFrame | None = None,
 ):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
+    df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
     return True, {
         "test_results": {"missing_value_ratio": compute_missing_value_ratio(df, metric)}
     }
@@ -208,7 +216,7 @@ def run_duplicate_row_metric(
     load_tabular_dataset,
     shared_df: pd.DataFrame | None = None,
 ):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
+    df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
     return True, {
         "test_results": {"duplicate_row_ratio": compute_duplicate_row_ratio(df, metric)}
     }
@@ -222,7 +230,10 @@ def run_tabular_metric(
     metric_id: str,
     compute_fn,
 ):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
+    # Shared dataframes are treated as read-only by metric compute functions.
+    # Avoid copying the complete dataset for each metric; functions that coerce
+    # or mutate columns must take their own narrow working copy.
+    df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
     return True, {"test_results": {metric_id: compute_fn(df, metric)}}
 
 
@@ -232,8 +243,12 @@ def run_distance_correlation_metric(
     load_tabular_dataset,
     shared_df: pd.DataFrame | None = None,
 ):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
     candidate_fields = metric["input_requirements"]["candidate_fields"]
+    if shared_df is not None:
+        present_fields = [field for field in candidate_fields if field in shared_df.columns]
+        df = shared_df[present_fields]
+    else:
+        df = load_tabular_dataset(dataset_path)
     minimum_runnable_fields = metric["input_requirements"].get(
         "minimum_runnable_fields", 2
     )
@@ -258,6 +273,10 @@ def run_distance_correlation_metric(
                 "sampled_row_count": len(df),
                 "max_sample_size": max_sample_size,
             }
+        else:
+            df = df.copy()
+    else:
+        df = df.copy()
     result = compute_distance_correlation_profile(df, candidate_fields)
     runnable_fields = result["profile"]["fields"]
     if len(runnable_fields) < minimum_runnable_fields:
@@ -282,7 +301,7 @@ def run_column_quality_metric(
     load_tabular_dataset,
     shared_df: pd.DataFrame | None = None,
 ):
-    df = shared_df.copy() if shared_df is not None else load_tabular_dataset(dataset_path)
+    df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
     candidate_fields = metric["input_requirements"]["candidate_fields"]
     quality_profile = compute_column_quality_profile(df, candidate_fields)
     return True, {"test_results": {"column_quality_profile": quality_profile}}
