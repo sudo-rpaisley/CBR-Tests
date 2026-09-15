@@ -1,5 +1,6 @@
 import pandas as pd
 
+from runner.metric_catalog import build_metric_catalog
 from tests.metrics.dataset_heuristics.protocol_and_network_realism.slice_metadata_integrity.valid_slice_identifier_profile import (
     run_valid_slice_identifier_metric,
 )
@@ -84,3 +85,18 @@ def test_slice_consistency_excludes_unmatched_and_missing_rows_by_default():
     assert result["unmatched_context_row_count"] == 1
     assert result["slice_identifier_consistency_ratio"] == 0.666667
     assert result["missing_policy"] == "exclude_missing"
+
+
+def test_new_plan_templates_do_not_inherit_legacy_slice_denominators():
+    entries = build_metric_catalog(
+        metric_ids=[
+            "valid_slice_identifier_profile",
+            "slice_identifier_consistency_profile",
+        ]
+    )
+    by_id = {entry["metric_id"]: entry for entry in entries}
+
+    for metric_id in by_id:
+        template = by_id[metric_id]["template"]
+        assert template is not None
+        assert template["calculation"]["parameters"]["missing_policy"] == "exclude_missing"

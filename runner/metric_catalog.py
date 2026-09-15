@@ -55,11 +55,12 @@ MANUAL_CONFIGURATION_REASONS = {
 
 
 def available_metric_ids() -> list[str]:
-    """Return canonical metric IDs exposed by automatic plan creation.
+    """Return non-legacy runtime metric IDs exposed to plan creation.
 
     Legacy IDs are deliberately omitted here even though the runtime dispatcher
     still accepts them, preventing old construct names from re-entering newly
-    generated plans.
+    generated plans. Taxonomy registration is checked separately when the
+    catalogue is assembled because supporting diagnostics are also executable.
     """
 
     handlers = build_metric_handlers(None, lambda _path: None, {})
@@ -93,7 +94,7 @@ def load_taxonomy_paths(path: Path = DEFAULT_TAXONOMY_PATH) -> dict[str, list[st
     if not isinstance(payload, dict):
         raise ValueError(f"Taxonomy must be a JSON object: {path}")
     output: dict[str, list[str]] = {}
-    _walk_taxonomy(payload, (), output)
+    _walk_taxonomy(output=output, node=payload, path=())
     return output
 
 
@@ -180,7 +181,7 @@ def _blank_reference_paths(value):
 
 
 def sanitize_manual_template(metric: dict, reason: str) -> dict:
-    """Remove dataset-specific values that would be unsafe as universal defaults."""
+    """Remove dataset-specific or non-canonical values from reusable templates."""
 
     metric = deepcopy(metric)
     inputs = metric.get("input_requirements")
@@ -195,8 +196,14 @@ def sanitize_manual_template(metric: dict, reason: str) -> dict:
         params["expected_ports"] = []
     elif reason == "allowed_slice_ids_required" and isinstance(params, dict):
         params["allowed_slice_ids"] = []
+        # Historical plans may use count_invalid to reproduce old outcomes, but
+        # the canonical paper equation excludes missing identifiers from N_checked.
+        params["missing_policy"] = "exclude_missing"
     elif reason == "slice_consistency_rules_required" and isinstance(params, dict):
         params["rules"] = []
+        # Keep newly generated plans on the canonical denominator even when the
+        # source template came from a historical compatibility plan.
+        params["missing_policy"] = "exclude_missing"
     elif reason == "expected_slice_ids_required" and isinstance(inputs, dict):
         inputs["expected_slice_ids"] = []
     elif reason == "expected_classes_required" and isinstance(inputs, dict):

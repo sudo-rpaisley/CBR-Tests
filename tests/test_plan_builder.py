@@ -6,6 +6,7 @@ import pytest
 from create_plan import _print_report, _slug
 from runner.metric_catalog import available_metric_ids, build_metric_catalog
 from runner.pcap_adapter import (
+    PCAP_AUTOMATIC_EXCLUSIONS,
     PCAP_DIRECT_METRICS,
     PCAP_PACKET_METRICS,
     PCAP_REFERENCE_METRICS,
@@ -140,6 +141,9 @@ def test_pcap_plan_includes_direct_and_independent_packet_adapter_metrics(tmp_pa
     for metric_id in PCAP_SELF_DERIVED_METRICS:
         assert metric_id not in metric_ids
         assert report["metrics"][metric_id]["reason"] == "self_derived_pcap_invariant_not_independent"
+    for metric_id, reason in PCAP_AUTOMATIC_EXCLUSIONS.items():
+        assert metric_id not in metric_ids
+        assert report["metrics"][metric_id]["reason"] == reason
 
 
 def test_include_exclude_rejects_unknown_metric_ids(tmp_path):
