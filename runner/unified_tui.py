@@ -4,7 +4,7 @@ import curses
 from pathlib import Path
 
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
-from runner.toolbox_tui import run_tool_action, toolbox_items
+from runner.toolbox_tui import ToolboxItem, run_tool_action, toolbox_items
 
 
 # Preserve these historical module-level hooks so existing tests and callers can
@@ -12,7 +12,23 @@ from runner.toolbox_tui import run_tool_action, toolbox_items
 launch_tui = launch_single_tui
 launch_batch_tui = launch_friendly_batch_tui
 
-TUI_MODES = tuple(item.title for item in toolbox_items())
+
+def _menu_items() -> tuple[ToolboxItem, ...]:
+    """Return user-facing toolbox entries, including guided workflow shortcuts."""
+
+    items = list(toolbox_items())
+    shortcut = ToolboxItem(
+        "field_mapping",
+        "Validate / map dataset fields",
+        "Run field-translation preflight and map missing canonical fields before an experiment.",
+        "Prepare experiments",
+    )
+    insert_at = next((index + 1 for index, item in enumerate(items) if item.key == "build_plan"), len(items))
+    items.insert(insert_at, shortcut)
+    return tuple(items)
+
+
+TUI_MODES = tuple(item.title for item in _menu_items())
 
 
 def _safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None:
@@ -31,7 +47,7 @@ def _safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None:
 def _tool_rows() -> list[tuple[int | None, str, str]]:
     rows: list[tuple[int | None, str, str]] = []
     previous_group: str | None = None
-    for index, item in enumerate(toolbox_items()):
+    for index, item in enumerate(_menu_items()):
         if item.group != previous_group:
             rows.append((None, item.group.upper(), ""))
             previous_group = item.group
@@ -42,7 +58,7 @@ def _tool_rows() -> list[tuple[int | None, str, str]]:
 def _choose_mode_curses(stdscr) -> str | None:
     curses.curs_set(0)
     selected = 0
-    items = toolbox_items()
+    items = _menu_items()
     rows = _tool_rows()
     while True:
         stdscr.erase()
@@ -62,8 +78,7 @@ def _choose_mode_curses(stdscr) -> str | None:
             attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
             _safe_addstr(stdscr, screen_row, 0, f"{marker} {title}", attr)
             if description and screen_row + 1 < height:
-                # Descriptions are shown inline where the terminal is wide enough;
-                # the selected item's full description is always shown in the footer.
+                # The selected item's full description is always shown in the footer.
                 pass
 
         if items:
@@ -92,7 +107,7 @@ def _pause_after_tool() -> None:
 
 
 def launch_unified_tui(args, repo_root: Path | None = None):
-    """Launch the CBR-Tests toolbox and return only when a run mode is selected."""
+    """Launch the CBR-Tests toolbox and return only when a run workflow is selected."""
 
     root = (repo_root or Path.cwd()).expanduser().resolve()
     while True:
@@ -100,6 +115,9 @@ def launch_unified_tui(args, repo_root: Path | None = None):
         if mode is None:
             raise SystemExit("TUI cancelled")
         if mode == "single":
+            return launch_tui(args, repo_root=root)
+        if mode == "field_mapping":
+            args.field_translation_dry_run = True
             return launch_tui(args, repo_root=root)
         if mode == "batch":
             args.tui_batch_spec = launch_batch_tui(args, repo_root=root)
