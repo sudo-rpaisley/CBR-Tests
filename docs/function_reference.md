@@ -66,8 +66,8 @@ Python symbols defined by `cbr_tests/metrics/intrinsic_diagnostics.py`.
 | `compute_feature_mmd2_internal_drift(df: pd.DataFrame, metric: dict) -> dict` (L115) | function | Public | Computes feature mmd2 internal drift and returns a structured result. |
 | `_dependency_requirements(metric: dict) -> tuple[list[str], int]` (L122) | function | Internal | Implementation helper for dependency requirements. |
 | `compute_pearson_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L130) | function | Public | Computes pearson dependency profile and returns a structured result. |
-| `compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L148) | function | Public | Computes spearman dependency profile and returns a structured result. |
-| `compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L168) | function | Public | Computes distance correlation dependency profile and returns a structured result. |
+| `compute_spearman_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L150) | function | Public | Computes spearman dependency profile and returns a structured result. |
+| `compute_distance_correlation_dependency_profile(df: pd.DataFrame, metric: dict) -> dict` (L172) | function | Public | Computes distance correlation dependency profile and returns a structured result. |
 
 ## `cbr_tests/metrics/label_fidelity.py`
 
@@ -319,15 +319,15 @@ Internal distribution drift and distance-correlation calculations.
 | `_rbf_mmd(left: list[float], right: list[float], gamma: float | None = None) -> float` (L140) | function | Internal | Computes squared RBF-kernel MMD with a median-distance bandwidth when gamma is omitted. |
 | `_rbf_mmd.kernel_mean(a_values: np.ndarray, b_values: np.ndarray) -> float` (L157) | nested function | Internal | Implementation helper for kernel mean. |
 | `_build_distributional_metric(df: pd.DataFrame, metric: dict, calculator, output_key: str) -> dict` (L169) | function | Internal | Implementation helper for build distributional metric. |
-| `compute_ks_feature_divergence(df: pd.DataFrame, metric: dict) -> dict` (L245) | function | Public | Computes KS feature divergence and returns a structured result. |
-| `compute_wasserstein_feature_distance(df: pd.DataFrame, metric: dict) -> dict` (L249) | function | Public | Computes wasserstein feature distance and returns a structured result. |
-| `compute_energy_distance(df: pd.DataFrame, metric: dict) -> dict` (L255) | function | Public | Computes energy distance and returns a structured result. |
-| `compute_maximum_mean_discrepancy(df: pd.DataFrame, metric: dict) -> dict` (L259) | function | Public | Computes maximum mean discrepancy and returns a structured result. |
-| `_distance_matrix(values: list[float]) -> list[list[float]]` (L265) | function | Internal | Compatibility helper retained for historical callers/tests. |
-| `_double_center(matrix: list[list[float]]) -> list[list[float]]` (L271) | function | Internal | Implementation helper for double center. |
-| `_mean_product(left: list[list[float]], right: list[list[float]]) -> float` (L291) | function | Internal | Implementation helper for mean product. |
-| `_distance_correlation(left: list[float], right: list[float]) -> float` (L301) | function | Internal | Computes distance correlation from double-centered pairwise distance matrices. |
-| `compute_distance_correlation_profile(df: pd.DataFrame, candidate_fields: list[str], max_sample_size: int | None = None) -> dict` (L333) | function | Public | Computes distance correlation profile and returns a structured result. |
+| `compute_ks_feature_divergence(df: pd.DataFrame, metric: dict) -> dict` (L262) | function | Public | Computes KS feature divergence and returns a structured result. |
+| `compute_wasserstein_feature_distance(df: pd.DataFrame, metric: dict) -> dict` (L266) | function | Public | Computes wasserstein feature distance and returns a structured result. |
+| `compute_energy_distance(df: pd.DataFrame, metric: dict) -> dict` (L272) | function | Public | Computes energy distance and returns a structured result. |
+| `compute_maximum_mean_discrepancy(df: pd.DataFrame, metric: dict) -> dict` (L276) | function | Public | Computes maximum mean discrepancy and returns a structured result. |
+| `_distance_matrix(values: list[float]) -> list[list[float]]` (L282) | function | Internal | Compatibility helper retained for historical callers/tests. |
+| `_double_center(matrix: list[list[float]]) -> list[list[float]]` (L288) | function | Internal | Implementation helper for double center. |
+| `_mean_product(left: list[list[float]], right: list[list[float]]) -> float` (L308) | function | Internal | Implementation helper for mean product. |
+| `_distance_correlation(left: list[float], right: list[float]) -> float` (L318) | function | Internal | Computes distance correlation from double-centered pairwise distance matrices. |
+| `compute_distance_correlation_profile(df: pd.DataFrame, candidate_fields: list[str], max_sample_size: int | None = None) -> dict` (L350) | function | Public | Computes distance correlation profile and returns a structured result. |
 
 ## `cbr_tests/metrics/task_validation.py`
 
@@ -488,8 +488,8 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 | `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L60) | function | Internal | Implementation helper for confirm sidecar update. |
 | `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L73) | function | Internal | Implementation helper for run result. |
 | `run_once(args)` (L83) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
-| `run_once._load_dataset_for_metric(path: Path)` (L292) | nested function | Internal | Implementation helper for load dataset for metric. |
-| `main()` (L434) | function | Public | Implementation helper for main. |
+| `run_once._load_dataset_for_metric(path: Path)` (L308) | nested function | Internal | Implementation helper for load dataset for metric. |
+| `main()` (L461) | function | Public | Implementation helper for main. |
 
 ## `runner/batch_progress.py`
 
@@ -591,29 +591,29 @@ Metric registry, wrappers, field translation, and handler construction.
 | `register_metric(metric_id: str)` (L135) | function | Public | Implementation helper for register metric. |
 | `register_metric._decorator(function)` (L136) | nested function | Internal | Implementation helper for decorator. |
 | `run_pearson_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L143) | function | Public | Runs pearson metric. |
-| `run_spearman_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L165) | function | Public | Runs spearman metric. |
-| `run_missing_value_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L193) | function | Public | Runs missing value metric. |
-| `run_duplicate_row_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L205) | function | Public | Runs duplicate row metric. |
-| `run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None, metric_id: str, compute_fn)` (L217) | function | Public | Runs tabular metric. |
-| `run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L229) | function | Public | Runs distance correlation metric. |
-| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L279) | function | Public | Runs column quality metric. |
-| `_timestamp_metric(dataset_path: Path, metric: dict)` (L292) | function | Internal | Implementation helper for timestamp metric. |
-| `_protocol_metric(dataset_path: Path, metric: dict)` (L297) | function | Internal | Implementation helper for protocol metric. |
-| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L302) | function | Internal | Implementation helper for reserved IP metric. |
-| `_valid_port_metric(dataset_path: Path, metric: dict)` (L307) | function | Internal | Implementation helper for valid port metric. |
-| `_service_port_metric(dataset_path: Path, metric: dict)` (L312) | function | Internal | Implementation helper for service port metric. |
-| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L317) | function | Internal | Implementation helper for TCP flag metric. |
-| `_handshake_metric(dataset_path: Path, metric: dict)` (L322) | function | Internal | Implementation helper for handshake metric. |
-| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L329) | function | Internal | Implementation helper for flow duration metric. |
-| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L334) | function | Internal | Implementation helper for packet byte metric. |
-| `_derived_rate_metric(dataset_path: Path, metric: dict)` (L339) | function | Internal | Implementation helper for derived rate metric. |
-| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L344) | function | Internal | Implementation helper for slice valid metric. |
-| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L349) | function | Internal | Implementation helper for slice consistency metric. |
-| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L420) | function | Internal | Implementation helper for wrap registered handler. |
-| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L425) | nested function | Internal | Implementation helper for wrapped. |
-| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L440) | function | Internal | Implementation helper for make tabular compute handler. |
-| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L461) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
-| `build_metric_handlers._translate(metric: dict)` (L471) | nested function | Internal | Implementation helper for translate. |
+| `run_spearman_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L169) | function | Public | Runs spearman metric. |
+| `run_missing_value_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L201) | function | Public | Runs missing value metric. |
+| `run_duplicate_row_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L213) | function | Public | Runs duplicate row metric. |
+| `run_tabular_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None, metric_id: str, compute_fn)` (L225) | function | Public | Runs tabular metric. |
+| `run_distance_correlation_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L240) | function | Public | Runs distance correlation metric. |
+| `run_column_quality_metric(dataset_path: Path, metric: dict, load_tabular_dataset, shared_df: pd.DataFrame | None = None)` (L298) | function | Public | Runs column quality metric. |
+| `_timestamp_metric(dataset_path: Path, metric: dict)` (L311) | function | Internal | Implementation helper for timestamp metric. |
+| `_protocol_metric(dataset_path: Path, metric: dict)` (L316) | function | Internal | Implementation helper for protocol metric. |
+| `_reserved_ip_metric(dataset_path: Path, metric: dict)` (L321) | function | Internal | Implementation helper for reserved IP metric. |
+| `_valid_port_metric(dataset_path: Path, metric: dict)` (L326) | function | Internal | Implementation helper for valid port metric. |
+| `_service_port_metric(dataset_path: Path, metric: dict)` (L331) | function | Internal | Implementation helper for service port metric. |
+| `_tcp_flag_metric(dataset_path: Path, metric: dict)` (L336) | function | Internal | Implementation helper for TCP flag metric. |
+| `_handshake_metric(dataset_path: Path, metric: dict)` (L341) | function | Internal | Implementation helper for handshake metric. |
+| `_flow_duration_metric(dataset_path: Path, metric: dict)` (L348) | function | Internal | Implementation helper for flow duration metric. |
+| `_packet_byte_metric(dataset_path: Path, metric: dict)` (L353) | function | Internal | Implementation helper for packet byte metric. |
+| `_derived_rate_metric(dataset_path: Path, metric: dict)` (L358) | function | Internal | Implementation helper for derived rate metric. |
+| `_slice_valid_metric(dataset_path: Path, metric: dict)` (L363) | function | Internal | Implementation helper for slice valid metric. |
+| `_slice_consistency_metric(dataset_path: Path, metric: dict)` (L368) | function | Internal | Implementation helper for slice consistency metric. |
+| `_wrap_registered_handler(handler, shared_df: pd.DataFrame | None, field_translation: dict[str, str] | None = None)` (L439) | function | Internal | Implementation helper for wrap registered handler. |
+| `_wrap_registered_handler._wrapped(dataset_path: Path, metric: dict)` (L444) | nested function | Internal | Implementation helper for wrapped. |
+| `_make_tabular_compute_handler(metric_id: str, compute_fn, shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L459) | function | Internal | Implementation helper for make tabular compute handler. |
+| `build_metric_handlers(shared_df: pd.DataFrame | None, load_tabular_dataset, field_translation: dict[str, str] | None = None)` (L480) | function | Public | Builds the metric-ID-to-callable mapping for a run. |
+| `build_metric_handlers._translate(metric: dict)` (L490) | nested function | Internal | Implementation helper for translate. |
 
 ## `runner/execution.py`
 
