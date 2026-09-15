@@ -1,0 +1,54 @@
+name: Apply CI regression fixes (temporary)
+
+on:
+  push:
+    branches:
+      - experiment-finalisation
+    paths:
+      - '.github/workflows/patch-ci-regressions-temp.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment-finalisation
+      - name: Apply exact patches
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          batch_path = Path('run_batch.py')
+          batch = batch_path.read_text(encoding='utf-8')
+          old = 'if args.experiment_mode:'
+          count = batch.count(old)
+          if count != 2:
+              raise SystemExit(f'run_batch.py: expected 2 experiment_mode checks, found {count}')
+          batch = batch.replace(old, 'if getattr(args, "experiment_mode", False):')
+          batch_path.write_text(batch, encoding='utf-8')
+
+          ref_path = Path('cbr_tests/metrics/reference_comparison.py')
+          ref = ref_path.read_text(encoding='utf-8')
+          old = '    return dataframe.rename(columns=rename_map, copy=False)\n'
+          new = (
+              '    mapped = dataframe.copy(deep=False)\n'
+              '    mapped.rename(columns=rename_map, inplace=True)\n'
+              '    return mapped\n'
+          )
+          count = ref.count(old)
+          if count != 1:
+              raise SystemExit(f'reference_comparison.py: expected rename target once, found {count}')
+          ref = ref.replace(old, new)
+          ref_path.write_text(ref, encoding='utf-8')
+          PY
+      - name: Commit fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add run_batch.py cbr_tests/metrics/reference_comparison.py
+          git commit -m 'Fix experiment mode compatibility and pandas warning'
+          git push origin HEAD:experiment-finalisation
