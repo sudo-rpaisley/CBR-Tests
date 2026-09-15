@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -87,6 +86,29 @@ def _normalise_pcaps(values: list[Path | str], *, label: str) -> list[Path]:
     return output
 
 
+def _configured_reference(plan: dict) -> Path | None:
+    paths: set[Path] = set()
+    for metric in plan.get("metrics", []):
+        if not isinstance(metric, dict) or not metric.get("enabled", True):
+            continue
+        requirements = metric.get("input_requirements")
+        if not isinstance(requirements, dict):
+            continue
+        value = requirements.get("reference_dataset_path")
+        if value:
+            paths.add(Path(str(value)).expanduser().resolve())
+    if not paths:
+        return None
+    if len(paths) != 1:
+        raise ValueError("The fixed PCAP plan contains more than one configured reference path.")
+    reference = next(iter(paths))
+    if not reference.is_file():
+        raise FileNotFoundError(f"Configured reference dataset does not exist: {reference}")
+    if reference.suffix.lower() not in PCAP_SUFFIXES:
+        raise ValueError("Configured reference dataset is not PCAP/PCAPNG.")
+    return reference
+
+
 def build_fixed_plan_matrix(
     *,
     name: str,
@@ -99,10 +121,11 @@ def build_fixed_plan_matrix(
 ) -> Path:
     """Map PCAP datasets onto one existing scientific plan and write a batch manifest.
 
-    The source plan is never regenerated from individual datasets. Candidate-only
-    jobs use the source plan directly. For reference matrices, one deterministic
-    binding copy is written per reference dataset; each copy changes only the
-    already-configured reference dataset path and records the source plan hash.
+    The source plan is never regenerated from individual datasets. If references
+    are supplied, one deterministic binding copy is written per reference and only
+    the existing reference path changes. If no references are supplied and the
+    source plan already contains reference metrics, its configured reference is
+    reused and recorded in the matrix manifest.
     """
 
     root = (repo_root or Path.cwd()).expanduser().resolve()
@@ -126,11 +149,15 @@ def build_fixed_plan_matrix(
     output = output.resolve()
 
     reference_metric_ids = reference_bound_metric_ids(source_plan)
+    configured_reference = _configured_reference(source_plan) if reference_metric_ids else None
+    explicit_reference_override = bool(references)
     if references and not reference_metric_ids:
         raise ValueError(
             "References were selected but the PCAP plan has no reference-enabled metrics. "
             "Build the plan once with any independent PCAP reference, then reuse it here."
         )
+    if not references and configured_reference is not None:
+        references = [configured_reference]
 
     combinations: list[tuple[Path, Path | None]] = []
     if references:
@@ -149,6 +176,9 @@ def build_fixed_plan_matrix(
     reference_plan_paths: dict[Path, Path] = {}
     if references:
         for index, reference in enumerate(references, start=1):
+            if not explicit_reference_override and configured_reference == reference:
+                reference_plan_paths[reference] = source_plan_path
+                continue
             bound = bind_runtime_reference(source_plan, reference)
             creation = bound.setdefault("plan_creation", {})
             creation["fixed_plan_matrix_binding"] = {
@@ -204,6 +234,7 @@ def build_fixed_plan_matrix(
             "plan_binding_mode": "fixed_pcap_plan",
             "source_plan": _portable_path(source_plan_path, root),
             "source_plan_sha256": source_hash,
+            "reference_binding": "explicit_matrix_override" if explicit_reference_override else "source_plan",
         },
         "output_directory": str(Path("outcomes") / batch_id),
         "common_metric_ids": metric_ids,
