@@ -485,11 +485,11 @@ Top-level command workflow from parsed arguments to the atomic outcome JSON.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L60) | function | Internal | Implementation helper for confirm sidecar update. |
-| `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L73) | function | Internal | Implementation helper for run result. |
-| `run_once(args)` (L83) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
-| `run_once._load_dataset_for_metric(path: Path)` (L308) | nested function | Internal | Implementation helper for load dataset for metric. |
-| `main()` (L461) | function | Public | Implementation helper for main. |
+| `_confirm_sidecar_update(action: str, path: Path, args) -> bool` (L62) | function | Internal | Implementation helper for confirm sidecar update. |
+| `_run_result(*, dry_run: bool, status: str | None, output_path: Path, metrics_total: int, skipped_count: int) -> dict` (L75) | function | Internal | Implementation helper for run result. |
+| `run_once(args)` (L85) | function | Public | Execute one configured run and return a small summary for the TUI/session layer. |
+| `run_once._load_dataset_for_metric(path: Path)` (L310) | nested function | Internal | Implementation helper for load dataset for metric. |
+| `main()` (L471) | function | Public | Implementation helper for main. |
 
 ## `runner/batch_progress.py`
 
@@ -871,6 +871,16 @@ Python symbols defined by `runner/pcap_adapter.py`.
 | `pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict` (L780) | function | Public | Build a service-port metric only for an explicitly single-service capture. |
 | `pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None` (L810) | function | Public | Return a same-representation packet-level reference metric template. |
 
+## `runner/pcap_compact.py`
+
+Python symbols defined by `runner/pcap_compact.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_intern(value: str, cache: dict[str, str]) -> str` (L13) | function | Internal | Reuse repeated endpoint strings without relying on process-global interning. |
+| `build_compact_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L22) | function | Public | Decode a PCAP/PCAPNG into the canonical packet view with bounded overhead. This preserves the same full-population packet semantics as ``build_pcap_packet_dataframe`` while avoiding one Python dictionary per decoded packet. Repeated IP strings are shared during decoding and compact numeric/category dtypes are used for the finished dataframe. The function still intentionally materialises the canonical packet view: several metrics depend on the complete ordered packet population. The aim here is to remove avoidable representation overhead, not to introduce an implicit sample that would change the experiment. |
+| `dataframe_memory_bytes(dataframe: pd.DataFrame | None) -> int | None` (L104) | function | Public | Return pandas' deep in-memory estimate for provenance/resource policy. |
+
 ## `runner/plan_builder.py`
 
 Python symbols defined by `runner/plan_builder.py`.
@@ -927,6 +937,16 @@ Python symbols defined by `runner/provenance.py`.
 | `software_manifest() -> dict[str, Any]` (L101) | function | Public | Implementation helper for software manifest. |
 | `resolve_plan_source_path(case_file: Path) -> Path` (L119) | function | Public | Resolve the plan file used by a case, or return the direct plan file itself. |
 | `build_provenance_manifest(*, plan: dict, dataset_path: Path, case_file: Path, plan_source_path: Path, field_translation: dict[str, str], translation_path: Path | None, taxonomy_path: Path | None, cli_arguments: dict[str, Any]) -> dict[str, Any]` (L136) | function | Public | Build the immutable experiment-identification metadata stored with an outcome. |
+
+## `runner/resource_policy.py`
+
+Python symbols defined by `runner/resource_policy.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `available_memory_bytes() -> int | None` (L13) | function | Public | Return currently available physical memory without adding a dependency. Linux ``MemAvailable`` is preferred because it accounts for reclaimable caches and is the value most relevant to the experiment hosts. A POSIX ``sysconf`` fallback is retained for environments where /proc is absent. |
+| `dataframe_memory_bytes(dataframe: pd.DataFrame | None) -> int | None` (L39) | function | Public | Implementation helper for dataframe memory bytes. |
+| `choose_worker_policy(*, requested_workers: int, shared_dataframe: pd.DataFrame | None, available_bytes: int | None = None, max_shared_workers: int = DEFAULT_MAX_SHARED_WORKERS, free_memory_fraction_for_workers: float = DEFAULT_FREE_MEMORY_FRACTION_FOR_WORKERS) -> dict` (L45) | function | Public | Return a transparent worker decision for a loaded experiment dataset. Parallel metrics can allocate temporary numeric arrays or narrow dataframe copies. The previous fixed cap of four workers did not take the resident dataset size into account, so four workers could be safe for a small CSV but unsafe for a multi-gigabyte packet view. The policy never samples or changes metric calculations. It only lowers concurrency when the shared dataframe is large relative to memory that is still available after loading. The complete decision is returned so it can be written into experiment provenance. |
 
 ## `runner/result_semantics.py`
 
@@ -1003,7 +1023,7 @@ CSV, TSV, XLSX, and XLS loading.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `load_tabular_dataset(dataset_path: Path, progress_callback = None, field_translation: dict[str, str] | None = None)` (L6) | function | Public | Loads tabular dataset. |
+| `load_tabular_dataset(dataset_path: Path, progress_callback = None, field_translation: dict[str, str] | None = None)` (L6) | function | Public | Load a supported tabular dataset into one shared dataframe. CSV/TSV inputs are intentionally read in one pandas call. The previous implementation collected every 250,000-row chunk in a Python list and then concatenated those chunks, which briefly retained both the chunk collection and the newly allocated full dataframe. On experiment-scale datasets that could roughly double the dataframe-side peak memory and trigger the OOM killer before any metric ran. The runner requires a complete dataframe for metrics whose semantics depend on the full ordered population, so chunked metric execution would not be an equivalent optimisation. A direct read therefore gives the same full-data semantics with a substantially lower peak allocation. The progress hook is still called once after loading so callers retain a deterministic completion update without changing the data path. |
 
 ## `runner/taxonomy.py`
 

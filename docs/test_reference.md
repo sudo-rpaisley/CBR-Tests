@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **293 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **298 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -280,6 +280,28 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_plan(*, sample_mode: str = 'full', allow_skips: bool = False) -> dict` (L23) | Implementation helper for plan. |
+
+## `tests/test_experiment_resource_safety.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_compact_pcap_view_preserves_canonical_values_and_reduces_memory(tmp_path: Path)` (L41) | Verifies that compact PCAP view preserves canonical values and reduces memory. | `_write_repetitive_capture`, `build_pcap_packet_dataframe`, `build_compact_pcap_packet_dataframe`, `dataframe_memory_bytes`, `compact[column].astype(str).tolist`, `canonical[column].astype(str).tolist`, `compact[column].astype`, `canonical[column].astype` |
+| `test_compact_pcap_view_preserves_all_packet_metric_results(tmp_path: Path)` (L62) | Verifies that compact PCAP view preserves all packet metric results. | `_write_repetitive_capture`, `build_pcap_packet_dataframe`, `build_compact_pcap_packet_dataframe`, `build_metric_handlers`, `AssertionError`, `pcap_metric_template`, `canonical_handlers[metric_id]`, `compact_handlers[metric_id]` |
+| `test_memory_policy_caps_workers_relative_to_loaded_dataframe()` (L83) | Verifies that memory policy caps workers relative to loaded dataframe. | `dataframe_memory_bytes`, `choose_worker_policy` |
+| `test_memory_policy_does_not_change_runs_without_shared_dataframe()` (L111) | Verifies that memory policy does not change runs without shared dataframe. | `choose_worker_policy` |
+| `test_csv_loader_avoids_chunk_collection_concat_peak(monkeypatch, tmp_path: Path)` (L121) | Verifies that csv loader avoids chunk collection concat peak. | `dataset.write_text`, `monkeypatch.setattr`, `load_tabular_dataset`, `calls.append`, `progress.append` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_repetitive_capture(path: Path, packet_count: int = 2000) -> None` (L21) | Implementation helper for write repetitive capture. |
+| `test_compact_pcap_view_preserves_all_packet_metric_results.forbidden_loader(_path)` (L68) | Implementation helper for forbidden loader. |
+| `test_csv_loader_avoids_chunk_collection_concat_peak.fake_read_csv(path, **kwargs)` (L126) | Implementation helper for fake read csv. |
 
 ## `tests/test_field_translation.py`
 
