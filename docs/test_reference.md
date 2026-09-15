@@ -816,8 +816,8 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_distributional_metrics_report_zero_for_matching_halves()` (L21) | Verifies that distributional metrics report zero for matching halves. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
 | `test_distributional_metrics_match_hand_calculated_shifted_half_oracles()` (L31) | Verifies that distributional metrics match hand calculated shifted half oracles. | `_metric`, `compute_ks_feature_divergence`, `compute_wasserstein_feature_distance`, `compute_energy_distance`, `compute_maximum_mean_discrepancy` |
-| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L53) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
-| `test_pairwise_calculators_reject_oversized_direct_samples(calculator)` (L78) | Verifies that pairwise calculators reject oversized direct samples. | `pytest.mark.parametrize`, `pytest.raises`, `calculator` |
+| `test_distance_correlation_profile_matches_nonlinear_dependency_oracle()` (L71) | Verifies that distance correlation profile matches nonlinear dependency oracle. | `compute_distance_correlation_profile` |
+| `test_pairwise_calculators_reject_oversized_direct_samples(calculator)` (L96) | Verifies that pairwise calculators reject oversized direct samples. | `pytest.mark.parametrize`, `pytest.raises`, `calculator` |
 
 ### Test helpers
 
