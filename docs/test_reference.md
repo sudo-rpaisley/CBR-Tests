@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **288 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **293 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -442,6 +442,30 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write_flow_csv(path: Path, *, offset: float = 0.0) -> None` (L14) | Implementation helper for write flow csv. |
+
+## `tests/test_optimisation_regressions.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_all_ordered_half_drift_metrics_sample_the_true_halves(compute_metric, result_key)` (L37) | Large traces must be split before sampling, for every ordered-half metric. | `pytest.mark.parametrize`, `compute_metric` |
+| `test_numpy_version_is_recorded_in_software_provenance()` (L65) | Verifies that numpy version is recorded in software provenance. | `software_manifest`, `metadata.version` |
+| `test_shared_dataframe_remains_unchanged_across_representative_metrics()` (L72) | Metric dispatch may share a dataframe, but metrics must treat it as read-only. | `dataframe.copy`, `run_pearson_metric`, `run_spearman_metric`, `run_distance_correlation_metric`, `run_tabular_metric`, `AssertionError` |
+| `test_successful_run_persists_complete_phase_timings(tmp_path: Path)` (L205) | Verifies that successful run persists complete phase timings. | `_write_tiny_plan_and_dataset`, `run_plan_module.run_once`, `_assert_complete_phase_timings`, `_run_args`, `output.read_text` |
+| `test_serial_fail_fast_republishes_completed_phase_timings(tmp_path: Path, monkeypatch)` (L216) | The early fail-fast write must be replaced after the execution timer closes. | `_write_tiny_plan_and_dataset`, `monkeypatch.setattr`, `run_plan_module.run_once`, `_assert_complete_phase_timings`, `_run_args`, `output.read_text` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `test_shared_dataframe_remains_unchanged_across_representative_metrics.unexpected_loader(_path: Path)` (L83) | Implementation helper for unexpected loader. |
+| `_write_tiny_plan_and_dataset(tmp_path: Path) -> tuple[Path, Path]` (L119) | Implementation helper for write tiny plan and dataset. |
+| `_run_args(plan_file: Path, dataset: Path, output: Path) -> SimpleNamespace` (L162) | Implementation helper for run args. |
+| `_assert_complete_phase_timings(outcome: dict) -> None` (L185) | Implementation helper for assert complete phase timings. |
+| `test_serial_fail_fast_republishes_completed_phase_timings.failing_handlers(_shared_df, _loader, _translation)` (L221) | Implementation helper for failing handlers. |
 
 ## `tests/test_outcome_comparison.py`
 
