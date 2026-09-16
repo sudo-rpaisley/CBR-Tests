@@ -37,6 +37,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add runner/campaign_tui.py tests/test_campaign_batch_picker.py tests/test_campaign_folder_selection.py docs/function_reference.md docs/test_reference.md scripts/_tmp_simplify_campaign_batch_picker.py .github/workflows/_tmp_apply_campaign_batch_picker.yml
+          git add -A
           git commit -m "Simplify campaigns around queued batch matrices"
           git push origin HEAD:feature/campaign-folder-matrix-import
