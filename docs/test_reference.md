@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **336 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **340 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -116,6 +116,25 @@ Tests and local helpers in this module.
 | --- | --- |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L87) | Implementation helper for fake create batch. |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L105) | Implementation helper for fake run. |
+
+## `tests/test_campaign_folder_selection.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_matrix_selection_accepts_generated_plan_folder(tmp_path)` (L41) | Verifies that matrix selection accepts generated plan folder. | `_write_batch_for_plan_folder`, `_resolve_matrix_selection`, `manifest.resolve`, `plan_dir.relative_to` |
+| `test_plan_folder_resolution_does_not_depend_on_manifest_filename(tmp_path)` (L49) | Verifies that plan folder resolution does not depend on manifest filename. | `_write_batch_for_plan_folder`, `_resolve_matrix_selection`, `manifest.resolve`, `plan_dir.relative_to` |
+| `test_matrix_selection_still_accepts_batch_manifest_directly(tmp_path)` (L57) | Verifies that matrix selection still accepts batch manifest directly. | `_write_batch_for_plan_folder`, `_resolve_matrix_selection`, `manifest.resolve`, `manifest.relative_to` |
+| `test_orphan_plan_folder_is_rejected_instead_of_guessing_matrix_metadata(tmp_path)` (L65) | Verifies that orphan plan folder is rejected instead of guessing matrix metadata. | `orphan.mkdir`, `(orphan / '01_plan.json').write_text`, `pytest.raises`, `_resolve_matrix_selection`, `orphan.relative_to` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_write_batch_for_plan_folder(root: Path, *, manifest_name: str = 'matrix_batch.json') -> tuple[Path, Path]` (L11) | Implementation helper for write batch for plan folder. |
 
 ## `tests/test_campaign_queue.py`
 
