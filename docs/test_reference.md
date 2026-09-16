@@ -117,7 +117,7 @@ Tests and local helpers in this module.
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L87) | Implementation helper for fake create batch. |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L105) | Implementation helper for fake run. |
 
-## `tests/test_campaign_folder_selection.py`
+## `tests/test_campaign_batch_picker.py`
 
 Tests and local helpers in this module.
 
@@ -125,16 +125,16 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_matrix_selection_accepts_generated_plan_folder(tmp_path)` (L41) | Verifies that matrix selection accepts generated plan folder. | `_write_batch_for_plan_folder`, `_resolve_matrix_selection`, `manifest.resolve`, `plan_dir.relative_to` |
-| `test_plan_folder_resolution_does_not_depend_on_manifest_filename(tmp_path)` (L49) | Verifies that plan folder resolution does not depend on manifest filename. | `_write_batch_for_plan_folder`, `_resolve_matrix_selection`, `manifest.resolve`, `plan_dir.relative_to` |
-| `test_matrix_selection_still_accepts_batch_manifest_directly(tmp_path)` (L57) | Verifies that matrix selection still accepts batch manifest directly. | `_write_batch_for_plan_folder`, `_resolve_matrix_selection`, `manifest.resolve`, `manifest.relative_to` |
-| `test_orphan_plan_folder_is_rejected_instead_of_guessing_matrix_metadata(tmp_path)` (L65) | Verifies that orphan plan folder is rejected instead of guessing matrix metadata. | `orphan.mkdir`, `(orphan / '01_plan.json').write_text`, `pytest.raises`, `_resolve_matrix_selection`, `orphan.relative_to` |
+| `test_discovers_saved_batch_manifests_under_plans(tmp_path)` (L33) | Verifies that discovers saved batch manifests under plans. | `_write_batch`, `_discover_batch_manifests`, `amazon.resolve`, `bucket.resolve` |
+| `test_discovery_ignores_normal_plan_json_files(tmp_path)` (L43) | Verifies that discovery ignores normal plan JSON files. | `_write_batch`, `(tmp_path / 'plans' / 'single_plan.json').write_text`, `_discover_batch_manifests` |
+| `test_discovery_does_not_descend_into_generated_batch_plan_folders(tmp_path)` (L52) | Verifies that discovery does not descend into generated batch plan folders. | `_write_batch`, `_discover_batch_manifests` |
+| `test_discovery_can_find_batches_in_nested_organisation_folders(tmp_path)` (L62) | Verifies that discovery can find batches in nested organisation folders. | `_write_batch`, `_discover_batch_manifests`, `first.resolve`, `second.resolve` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_write_batch_for_plan_folder(root: Path, *, manifest_name: str = 'matrix_batch.json') -> tuple[Path, Path]` (L11) | Implementation helper for write batch for plan folder. |
+| `_write_batch(path: Path, *, batch_id: str, job_count: int = 2) -> Path` (L9) | Implementation helper for write batch. |
 
 ## `tests/test_campaign_queue.py`
 

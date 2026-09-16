@@ -18,7 +18,7 @@ from runner.campaign import (
 )
 from runner.friendly_tui import _choice_dialog, _edit_text, _initialise_colours, _safe_addstr, _status_attr
 from runner.toolbox_tui import ToolboxItem, _json_browser
-from runner.tui import _display_path, list_file_browser_entries
+from runner.tui import _display_path
 
 
 CAMPAIGN_TOOLBOX_ITEMS = (
@@ -49,247 +49,82 @@ def _resolve(root: Path, value: str) -> Path:
     return resolve_repo_path(root, value)
 
 
-def _batch_manifest_for_plan_directory(root: Path, directory: Path) -> Path:
-    """Resolve a generated per-job plan directory back to its authoritative batch manifest."""
+def _discover_batch_manifests(root: Path, directory: Path | None = None) -> list[tuple[Path, dict[str, Any]]]:
+    """Return valid saved batch manifests without descending into generated per-job plan folders."""
 
-    directory = directory.expanduser().resolve()
-    if not directory.is_dir():
-        raise ValueError(f"Matrix plan directory does not exist: {directory}")
+    root = root.expanduser().resolve()
+    base = (directory or (root / "plans")).expanduser().resolve()
+    if not base.is_dir():
+        return []
 
-    matches: list[Path] = []
-    for candidate in sorted(directory.parent.glob("*.json")):
+    manifests: list[tuple[Path, dict[str, Any]]] = []
+    for candidate in sorted(base.rglob("*.json")):
+        try:
+            relative = candidate.relative_to(base)
+        except ValueError:
+            continue
+        if any(part.endswith("_batch_plans") for part in relative.parts[:-1]):
+            continue
         try:
             batch = validate_batch_manifest(candidate)
         except (OSError, ValueError, json.JSONDecodeError):
             continue
-
-        plan_paths = [
-            _resolve(root, str(job["plan_path"]))
-            for job in batch["jobs"]
-            if isinstance(job, dict) and job.get("plan_path")
-        ]
-        if plan_paths and all(path.parent == directory for path in plan_paths):
-            matches.append(candidate.resolve())
-
-    if not matches:
-        raise ValueError(
-            "No batch manifest was found for this plan folder. Select a generated *_batch_plans "
-            "folder whose sibling batch manifest still exists."
-        )
-    if len(matches) > 1:
-        names = ", ".join(path.name for path in matches)
-        raise ValueError(f"More than one batch manifest references this plan folder: {names}")
-    return matches[0]
+        manifests.append((candidate.resolve(), batch))
+    return manifests
 
 
-def _resolve_matrix_selection(root: Path, value: str) -> Path:
-    """Accept either a batch manifest or its generated per-job plan directory."""
-
-    path = _resolve(root, value)
-    if path.is_dir():
-        return _batch_manifest_for_plan_directory(root, path)
-    if not path.is_file():
-        raise ValueError(f"Matrix selection does not exist: {value}")
-    validate_batch_manifest(path)
-    return path
-
-
-def _matrix_browser(stdscr, root: Path, *, title: str, initial_dir: str) -> str | None:
-    """Browse JSON manifests while also allowing a generated plan directory to be selected."""
+def _batch_picker(stdscr, root: Path, *, initial_dir: str = "plans") -> list[str] | None:
+    """Select one or more already-built batch matrices to append to a campaign queue."""
 
     root = root.expanduser().resolve()
-    current = root / initial_dir
-    if not current.is_dir():
-        current = root
-    current = current.resolve()
+    search_root = (root / initial_dir).resolve()
     selected = 0
-    message = (
-        "↑/↓ move   Enter open/select JSON   s select this folder   "
-        "Backspace parent   e path   R repo   H home   q cancel"
-    )
-    while True:
-        stdscr.erase()
-        height, width = stdscr.getmaxyx()
-        entries = [
-            entry
-            for entry in list_file_browser_entries(current, root)
-            if entry.is_dir or entry.path.suffix.lower() == ".json"
-        ]
-        selected = min(selected, max(0, len(entries) - 1))
-        _safe_addstr(stdscr, 0, 0, title, curses.A_BOLD)
-        _safe_addstr(stdscr, 1, 0, message)
-        _safe_addstr(stdscr, 2, 0, f"Directory: {_display_path(current, root)}")
-        visible = max(1, height - 5)
-        start = min(max(0, selected - visible + 1), max(0, len(entries) - visible))
-        for row, entry in enumerate(entries[start : start + visible], start=4):
-            index = start + row - 4
-            marker = ">" if index == selected else " "
-            attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
-            _safe_addstr(stdscr, row, 0, f"{marker} {entry.label}", attr)
-        if not entries:
-            _safe_addstr(stdscr, 4, 0, "No JSON files or subdirectories in this directory.")
-
-        key = stdscr.getch()
-        if key in (ord("q"), ord("Q"), 27):
-            return None
-        if key in (ord("s"), ord("S")):
-            return _display_path(current, root)
-        if key == ord("R"):
-            current = root
-            selected = 0
-            continue
-        if key == ord("H"):
-            current = Path.home().resolve()
-            selected = 0
-            continue
-        if key == ord("e"):
-            typed = _edit_text(stdscr, min(height - 2, 4), 0, str(current), max(8, width - 1)).strip()
-            if not typed:
-                continue
-            path = Path(typed).expanduser()
-            if not path.is_absolute():
-                path = current / path
-            path = path.resolve()
-            if path.is_dir():
-                current = path
-                selected = 0
-            elif path.is_file() and path.suffix.lower() == ".json":
-                return _display_path(path, root)
-            else:
-                message = "Choose a JSON file or directory."
-            continue
-        if key in (curses.KEY_BACKSPACE, 127, 8):
-            if current.parent != current:
-                current = current.parent.resolve()
-                selected = 0
-            continue
-        if key in (curses.KEY_UP, ord("k")):
-            selected = max(0, selected - 1)
-            continue
-        if key in (curses.KEY_DOWN, ord("j")):
-            selected = min(max(0, len(entries) - 1), selected + 1)
-            continue
-        if key in (10, 13) and entries:
-            entry = entries[selected]
-            if entry.is_dir:
-                current = entry.path.resolve()
-                selected = 0
-            else:
-                return _display_path(entry.path, root)
-
-
-def _campaign_review_lines(state: dict[str, Any], root: Path) -> list[str]:
-    batches = list(state.get("batches") or [])
-    jobs = 0
-    names: list[str] = []
-    for value in batches:
-        path = _resolve(root, str(value))
-        try:
-            batch = validate_batch_manifest(path)
-        except (OSError, ValueError, json.JSONDecodeError):
-            names.append(Path(str(value)).name)
-            continue
-        meta = batch["batch_meta"]
-        names.append(str(meta.get("name") or meta["batch_id"]))
-        jobs += len(batch["jobs"])
-    return [
-        f"Campaign: {state.get('name') or 'Not named'}",
-        f"Matrices queued: {len(batches)}",
-        f"Comparison jobs queued: {jobs}",
-        f"Order: {' → '.join(names) if names else 'No matrices selected'}",
-        f"Manifest: {state.get('output') or _automatic_output(str(state.get('name') or 'comparison-campaign'))}",
-    ]
-
-
-def _campaign_issues(state: dict[str, Any], root: Path) -> list[str]:
-    issues: list[str] = []
-    if not str(state.get("name") or "").strip():
-        issues.append("Enter a campaign name.")
-    batches = list(state.get("batches") or [])
-    if not batches:
-        issues.append("Add at least one batch/comparison matrix.")
-    for value in batches:
-        path = _resolve(root, str(value))
-        if not path.is_file():
-            issues.append(f"Batch manifest does not exist: {value}")
-            continue
-        try:
-            validate_batch_manifest(path)
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
-            issues.append(str(exc))
-    return issues
-
-
-def _review_campaign(stdscr, state: dict[str, Any], root: Path) -> bool:
-    while True:
-        stdscr.erase()
-        _safe_addstr(stdscr, 0, 0, "Review comparison campaign", curses.A_BOLD)
-        _safe_addstr(stdscr, 1, 0, "Matrices run strictly in the order shown below.")
-        lines = _campaign_review_lines(state, root)
-        for row, line in enumerate(lines, start=3):
-            _safe_addstr(stdscr, row, 2, line)
-        _safe_addstr(stdscr, 3 + len(lines) + 1, 0, "Enter/b build campaign   Esc back", curses.A_BOLD)
-        key = stdscr.getch()
-        if key in (10, 13, ord("b"), ord("B")):
-            return True
-        if key in (27, ord("q"), ord("Q")):
-            return False
-
-
-def _campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None:
-    curses.curs_set(0)
-    _initialise_colours()
-    state: dict[str, Any] = {
-        "name": "",
-        "description": "",
-        "batches": [],
-        "output": "campaigns/comparison-campaign_campaign.json",
-        "output_auto": True,
-        "force": False,
-    }
-    selected = 0
+    checked: set[Path] = set()
+    manifests = _discover_batch_manifests(root, search_root)
     message = ""
 
     while True:
         stdscr.erase()
-        height, width = stdscr.getmaxyx()
-        batches = list(state["batches"])
-        selected = min(selected, max(0, len(batches) - 1))
-        issues = _campaign_issues(state, root)
-        ready = not issues
-
-        _safe_addstr(stdscr, 0, 0, "CBR Tests — Comparison campaign builder", curses.A_BOLD)
-        _safe_addstr(stdscr, 1, 0, "Queue independent matrices; each matrix finishes before the next starts.")
-        status = "READY TO BUILD" if ready else f"NEEDS ATTENTION — {issues[0]}"
-        _safe_addstr(stdscr, 2, 0, status, _status_attr(ready))
-        _safe_addstr(stdscr, 3, 0, "n name   a add matrix   x remove   U/D reorder   d description   o output   f overwrite   b build   q quit")
-        _safe_addstr(stdscr, 4, 0, f"Name: {state['name'] or '(not set)'}")
-        _safe_addstr(stdscr, 5, 0, f"Output: {state['output']}   Replace existing: {'ON' if state['force'] else 'off'}")
-        _safe_addstr(stdscr, 6, 0, f"Matrices queued: {len(batches)}")
+        height, _ = stdscr.getmaxyx()
+        selected = min(selected, max(0, len(manifests) - 1))
+        _safe_addstr(stdscr, 0, 0, "Choose saved batch matrices", curses.A_BOLD)
+        _safe_addstr(
+            stdscr,
+            1,
+            0,
+            "Space toggle   Enter queue selected   a select all   c clear   r refresh   q cancel",
+        )
+        _safe_addstr(
+            stdscr,
+            2,
+            0,
+            f"Found {len(manifests)} batch(es) under {_display_path(search_root, root)}; selected {len(checked)}",
+        )
         if message:
-            _safe_addstr(stdscr, 7, 0, message, curses.A_BOLD)
+            _safe_addstr(stdscr, 3, 0, message, curses.A_BOLD)
 
-        start_row = 9
-        visible = max(1, height - start_row - 2)
-        scroll = min(max(0, selected - visible + 1), max(0, len(batches) - visible))
-        for row, value in enumerate(batches[scroll : scroll + visible], start=start_row):
+        start_row = 5
+        visible = max(1, height - start_row - 1)
+        scroll = min(max(0, selected - visible + 1), max(0, len(manifests) - visible))
+        for row, (manifest_path, batch) in enumerate(manifests[scroll : scroll + visible], start=start_row):
             index = scroll + row - start_row
-            path = _resolve(root, str(value))
-            try:
-                batch = validate_batch_manifest(path)
-                meta = batch["batch_meta"]
-                label = f"{index + 1:02d}. {meta.get('name') or meta['batch_id']} — {len(batch['jobs'])} jobs"
-            except Exception:
-                label = f"{index + 1:02d}. {value} — INVALID"
+            meta = batch["batch_meta"]
+            name = str(meta.get("name") or meta["batch_id"])
             marker = ">" if index == selected else " "
+            tick = "x" if manifest_path in checked else " "
             attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
-            _safe_addstr(stdscr, row, 0, f"{marker} {label}", attr)
-        if not batches:
+            label = (
+                f"{marker} [{tick}] {name} — {len(batch['jobs'])} jobs — "
+                f"{_display_path(manifest_path, root)}"
+            )
+            _safe_addstr(stdscr, row, 0, label, attr)
+
+        if not manifests:
             _safe_addstr(
                 stdscr,
                 start_row,
-                2,
-                "No matrices queued. Press a to add a *_batch.json or select its *_batch_plans folder.",
+                0,
+                "No valid saved batch manifests were found under plans/. Build the batches first, then return here.",
             )
 
         key = stdscr.getch()
@@ -300,33 +135,22 @@ def _campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None:
             selected = max(0, selected - 1)
             continue
         if key in (curses.KEY_DOWN, ord("j")):
-            selected = min(max(0, len(batches) - 1), selected + 1)
+            selected = min(max(0, len(manifests) - 1), selected + 1)
             continue
-        if key in (ord("n"), ord("N")):
-            value = _edit_text(stdscr, min(height - 2, 5), 0, str(state["name"]), max(8, width - 1)).strip()
-            if value:
-                state["name"] = value
-                if state.get("output_auto"):
-                    state["output"] = _automatic_output(value)
-            continue
-        if key == ord("d"):
-            state["description"] = _edit_text(stdscr, min(height - 2, 5), 0, str(state["description"]), max(8, width - 1)).strip()
+        if key == ord(" ") and manifests:
+            manifest_path = manifests[selected][0]
+            if manifest_path in checked:
+                checked.remove(manifest_path)
+            else:
+                checked.add(manifest_path)
             continue
         if key in (ord("a"), ord("A")):
-            chosen = _matrix_browser(stdscr, root, title="Choose batch/comparison matrix", initial_dir="plans")
+            chosen = _batch_picker(stdscr, root, initial_dir="plans")
             if chosen is None:
                 continue
-            try:
-                manifest_path = _resolve_matrix_selection(root, chosen)
-                validate_batch_manifest(manifest_path)
-            except Exception as exc:
-                message = f"Not a valid matrix selection: {exc}"
-                continue
-            manifest_value = _display_path(manifest_path, root)
-            state["batches"].append(manifest_value)
+            state["batches"].extend(chosen)
             selected = len(state["batches"]) - 1
-            if _resolve(root, chosen).is_dir():
-                message = f"Added full matrix from folder: {Path(chosen).name}"
+            message = f"Queued {len(chosen)} batch matrix{'es' if len(chosen) != 1 else ''}."
             continue
         if key in (ord("x"), ord("X")) and batches:
             state["batches"].pop(selected)
@@ -373,7 +197,7 @@ def launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | N
     output = _resolve(root, str(state["output"]))
     written = write_campaign(output, payload, overwrite=bool(state.get("force")))
     print(f"Campaign written: {written}")
-    print(f"Matrices queued: {payload['campaign_meta']['matrix_count']}")
+    print(f"Batch matrices queued: {payload['campaign_meta']['matrix_count']}")
     print(f"Comparison jobs queued: {payload['campaign_meta']['job_count']}")
     return {"output_path": str(written), "campaign_id": payload["campaign_meta"]["campaign_id"]}
 
