@@ -600,16 +600,14 @@ Python symbols defined by `runner/campaign_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `campaign_toolbox_items() -> tuple[ToolboxItem, ...]` (L39) | function | Public | Implementation helper for campaign toolbox items. |
-| `_automatic_output(name: str) -> str` (L43) | function | Internal | Implementation helper for automatic output. |
-| `_resolve(root: Path, value: str) -> Path` (L47) | function | Internal | Implementation helper for resolve. |
-| `_campaign_review_lines(state: dict[str, Any], root: Path) -> list[str]` (L51) | function | Internal | Implementation helper for campaign review lines. |
-| `_campaign_issues(state: dict[str, Any], root: Path) -> list[str]` (L74) | function | Internal | Implementation helper for campaign issues. |
-| `_review_campaign(stdscr, state: dict[str, Any], root: Path) -> bool` (L93) | function | Internal | Implementation helper for review campaign. |
-| `_campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None` (L109) | function | Internal | Implementation helper for campaign builder curses. |
-| `launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L222) | function | Public | Implementation helper for launch campaign builder. |
-| `_campaign_run_command(root: Path, selected: str) -> list[str] | None` (L242) | function | Internal | Implementation helper for campaign run command. |
-| `run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int` (L301) | function | Public | Runs campaign tool action. |
+| `campaign_toolbox_items() -> tuple[ToolboxItem, ...]` (L40) | function | Public | Implementation helper for campaign toolbox items. |
+| `_automatic_output(name: str) -> str` (L44) | function | Internal | Implementation helper for automatic output. |
+| `_resolve(root: Path, value: str) -> Path` (L48) | function | Internal | Implementation helper for resolve. |
+| `_discover_batch_manifests(root: Path, directory: Path | None = None) -> list[tuple[Path, dict[str, Any]]]` (L52) | function | Internal | Return valid saved batch manifests without descending into generated per-job plan folders. |
+| `_batch_picker(stdscr, root: Path, *, initial_dir: str = 'plans') -> list[str] | None` (L76) | function | Internal | Select one or more already-built batch matrices to append to a campaign queue. |
+| `launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L185) | function | Public | Implementation helper for launch campaign builder. |
+| `_campaign_run_command(root: Path, selected: str) -> list[str] | None` (L205) | function | Internal | Implementation helper for campaign run command. |
+| `run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int` (L264) | function | Public | Runs campaign tool action. |
 
 ## `runner/contract.py`
 
