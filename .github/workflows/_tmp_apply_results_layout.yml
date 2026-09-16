@@ -20,7 +20,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Apply layout refactor
-        run: python scripts/_tmp_organise_experiment_results.py
+        run: |
+          python scripts/_tmp_organise_experiment_results.py
+          python scripts/_tmp_preserve_retry_filename.py
       - name: Install test dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Run focused tests
@@ -32,6 +34,7 @@ jobs:
       - name: Remove temporary helpers
         run: |
           rm scripts/_tmp_organise_experiment_results.py
+          rm scripts/_tmp_preserve_retry_filename.py
           rm .github/workflows/_tmp_apply_results_layout.yml
       - name: Commit final refactor
         run: |
