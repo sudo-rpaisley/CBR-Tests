@@ -66,7 +66,9 @@ def _replace_result(state: dict[str, Any], result: dict[str, Any]) -> None:
 
 
 def _matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path:
-    return campaign_output_dir / f"{index:03d}_{slug(str(matrix['batch_id']))}"
+    """Return the organised directory for a matrix within a campaign."""
+
+    return campaign_output_dir / "matrices" / f"{index:03d}_{slug(str(matrix['batch_id']))}"
 
 
 def _preflight_campaign(
@@ -267,7 +269,16 @@ def main() -> int:
             continue
 
         batch_path = resolve_repo_path(repo_root, str(matrix["batch_path"]))
-        matrix_output = _matrix_output_dir(output_dir, index, matrix)
+        recorded_output = None
+        for checkpoint_record in (prior, current):
+            if (
+                isinstance(checkpoint_record, dict)
+                and str(checkpoint_record.get("queue_id") or "") == queue_id
+                and checkpoint_record.get("output_directory")
+            ):
+                recorded_output = Path(str(checkpoint_record["output_directory"])).expanduser().resolve()
+                break
+        matrix_output = recorded_output or _matrix_output_dir(output_dir, index, matrix)
         matrix_output.mkdir(parents=True, exist_ok=True)
         child_state_exists = (matrix_output / "batch_state.json").is_file()
         was_interrupted_current = bool(current and str(current.get("queue_id")) == queue_id)
