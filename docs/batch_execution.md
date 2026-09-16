@@ -93,3 +93,29 @@ Use `--fail-fast` only when later datasets should not be started after the first
 A single `--reference-dataset` can be supplied during batch creation and is passed into each per-dataset plan preflight. Raw-PCAP reference rules remain unchanged: an independent PCAP/PCAPNG reference is required and self-comparison is rejected.
 
 For tabular reference-comparison metrics, the existing limitation in automatic reference wiring still applies until that workflow is extended separately.
+
+
+## Organised result layout
+
+New batch runs keep checkpoint state at the batch root, but place run artefacts under a timestamped `runs/` directory. Within a run, authoritative JSON outcomes are grouped by candidate dataset and then by reference dataset. Supplementary CSV/Markdown reports live separately under `reports/`.
+
+```text
+outcomes/<batch-id>/
+├── batch_state.json
+└── runs/<timestamp>/
+    ├── summary.json
+    ├── reports/
+    │   ├── overview.csv
+    │   ├── long.csv
+    │   ├── report.md
+    │   └── matrices/
+    └── results/
+        ├── <candidate>/
+        │   ├── vs_<reference>/
+        │   │   ├── outcome.json
+        │   │   └── retry02.json
+        │   └── ...
+        └── ...
+```
+
+Existing flat checkpoints are not moved. A resumed historical batch continues to honour the exact output paths already recorded in its checkpoint, while newly executed jobs use the organised layout.

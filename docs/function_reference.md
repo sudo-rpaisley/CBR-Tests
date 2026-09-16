@@ -494,10 +494,10 @@ Python symbols defined by `run_batch.py`.
 | `_write_batch_summary(path: Path, payload: dict) -> Path` (L77) | function | Internal | Implementation helper for write batch summary. |
 | `_result_needs_attention(result: dict) -> bool` (L85) | function | Internal | Implementation helper for result needs attention. |
 | `_print_batch_position(*, meta: dict, current_job: int, total_jobs: int, results: list[dict], candidate_name: str, reference_name: str | None) -> None` (L92) | function | Internal | Implementation helper for print batch position. |
-| `_outcome_path_for_attempt(*, output_dir: Path, index: int, dataset_path: Path, reference_path: Path | None, timestamp: str, attempt: int) -> Path` (L116) | function | Internal | Implementation helper for outcome path for attempt. |
-| `_attempt_history(prior: dict | None) -> list[dict]` (L133) | function | Internal | Implementation helper for attempt history. |
-| `parse_args() -> argparse.Namespace` (L150) | function | Public | Parses args. |
-| `main() -> int` (L217) | function | Public | Implementation helper for main. |
+| `_outcome_path_for_attempt(*, output_dir: Path, index: int, dataset_path: Path, reference_path: Path | None, timestamp: str, attempt: int) -> Path` (L116) | function | Internal | Return the organised outcome path for one batch job attempt. Outcomes are grouped by run, candidate dataset and reference dataset so large all-v-all matrices do not create one flat directory containing dozens or hundreds of JSON files. ``index`` is retained in the public helper signature for compatibility with older callers/checkpoints. |
+| `_attempt_history(prior: dict | None) -> list[dict]` (L145) | function | Internal | Implementation helper for attempt history. |
+| `parse_args() -> argparse.Namespace` (L162) | function | Public | Parses args. |
+| `main() -> int` (L229) | function | Public | Implementation helper for main. |
 
 ## `run_campaign.py`
 
@@ -509,13 +509,13 @@ Python symbols defined by `run_campaign.py`.
 | `_matrix_needs_attention(result: dict[str, Any]) -> bool` (L39) | function | Internal | Implementation helper for matrix needs attention. |
 | `_result_map(state: dict[str, Any]) -> dict[str, dict[str, Any]]` (L43) | function | Internal | Implementation helper for result map. |
 | `_replace_result(state: dict[str, Any], result: dict[str, Any]) -> None` (L51) | function | Internal | Implementation helper for replace result. |
-| `_matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path` (L68) | function | Internal | Implementation helper for matrix output dir. |
-| `_preflight_campaign(repo_root: Path, matrices: list[dict[str, Any]], *, experiment_mode: bool) -> tuple[int, int]` (L72) | function | Internal | Validate every queued matrix before any campaign output or experiment work starts. |
-| `_build_batch_command(*, repo_root: Path, batch_path: Path, output_dir: Path, args: argparse.Namespace, resume: bool, retry_failed: bool) -> list[str]` (L98) | function | Internal | Implementation helper for build batch command. |
-| `_initial_state(*, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> dict[str, Any]` (L138) | function | Internal | Implementation helper for initial state. |
-| `_validate_resume_state(state: dict[str, Any], *, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> None` (L161) | function | Internal | Implementation helper for validate resume state. |
-| `parse_args() -> argparse.Namespace` (L176) | function | Public | Parses args. |
-| `main() -> int` (L204) | function | Public | Implementation helper for main. |
+| `_matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path` (L68) | function | Internal | Return the organised directory for a matrix within a campaign. |
+| `_preflight_campaign(repo_root: Path, matrices: list[dict[str, Any]], *, experiment_mode: bool) -> tuple[int, int]` (L74) | function | Internal | Validate every queued matrix before any campaign output or experiment work starts. |
+| `_build_batch_command(*, repo_root: Path, batch_path: Path, output_dir: Path, args: argparse.Namespace, resume: bool, retry_failed: bool) -> list[str]` (L100) | function | Internal | Implementation helper for build batch command. |
+| `_initial_state(*, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> dict[str, Any]` (L140) | function | Internal | Implementation helper for initial state. |
+| `_validate_resume_state(state: dict[str, Any], *, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> None` (L163) | function | Internal | Implementation helper for validate resume state. |
+| `parse_args() -> argparse.Namespace` (L178) | function | Public | Parses args. |
+| `main() -> int` (L206) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -1323,6 +1323,14 @@ Python symbols defined by `runner/unified_tui.py`.
 | `_choose_mode_curses(stdscr) -> str | None` (L69) | function | Internal | Implementation helper for choose mode curses. |
 | `_pause_after_tool() -> None` (L112) | function | Internal | Implementation helper for pause after tool. |
 | `launch_unified_tui(args, repo_root: Path | None = None)` (L119) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
+
+## `scripts/_tmp_organise_experiment_results.py`
+
+Python symbols defined by `scripts/_tmp_organise_experiment_results.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `replace_once(path: str, old: str, new: str) -> None` (L4) | function | Public | Implementation helper for replace once. |
 
 ## `scripts/build_documentation_inventory.py`
 

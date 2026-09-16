@@ -243,8 +243,8 @@ def write_comparison_reports(
     for metric_id in sorted_metric_ids:
         overview_fields.extend([metric_id, f"{metric_id}__result_status"])
 
-    overview_path = output_dir / f"comparison_overview_{timestamp}.csv"
-    long_path = output_dir / f"comparison_long_{timestamp}.csv"
+    overview_path = output_dir / "overview.csv"
+    long_path = output_dir / "long.csv"
     _write_csv(overview_path, overview_fields, overview_rows)
     _write_csv(
         long_path,
@@ -266,7 +266,7 @@ def write_comparison_reports(
         long_rows,
     )
 
-    matrices_dir = output_dir / f"comparison_matrices_{timestamp}"
+    matrices_dir = output_dir / "matrices"
     matrices_dir.mkdir(parents=True, exist_ok=True)
     matrix_paths: dict[str, str] = {}
     row_labels = [candidate_labels[path] for path in candidate_paths]
@@ -300,7 +300,7 @@ def write_comparison_reports(
         _write_csv(matrix_path, ["candidate", *column_labels], rows)
         matrix_paths[metric_id] = str(matrix_path)
 
-    markdown_path = output_dir / f"comparison_report_{timestamp}.md"
+    markdown_path = output_dir / "report.md"
     markdown_lines = [
         f"# Comparison report — {batch_meta.get('name') or batch_meta.get('batch_id', 'batch')}",
         "",
