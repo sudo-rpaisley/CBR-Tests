@@ -1,0 +1,116 @@
+name: Apply campaign-wide plan migration support
+
+on:
+  push:
+    branches:
+      - feature/campaign-plan-migration
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/campaign-plan-migration
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Integrate migration into campaign UX
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Add a campaign-level preparation action to the Toolbox.
+          path = Path('runner/campaign_tui.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = '''    ToolboxItem(\n        "campaign_build",\n        "Build comparison campaign",\n        "Queue several prepared batch/comparison matrices to run one after another.",\n        "Prepare experiments",\n    ),\n'''
+          addition = anchor + '''    ToolboxItem(\n        "campaign_prepare",\n        "Prepare campaign plans for final experiment",\n        "Audit every queued plan, safely migrate canonical metric IDs and report regeneration blockers.",\n        "Prepare experiments",\n    ),\n'''
+          if anchor not in text:
+              raise SystemExit('campaign toolbox anchor not found')
+          text = text.replace(anchor, addition, 1)
+
+          action_anchor = '''    if action == "campaign_run":\n'''
+          prepare_action = '''    if action == "campaign_prepare":\n        selected = curses.wrapper(\n            _json_browser,\n            root,\n            title="Choose comparison campaign to prepare",\n            initial_dir="campaigns",\n        )\n        if selected is None:\n            return 0\n        script = root / "scripts" / "migrate_campaign_plans_to_canonical_ids.py"\n        audit = subprocess.run([sys.executable, str(script), selected], cwd=root, check=False)\n        if audit.returncode != 0:\n            return audit.returncode\n        choice = curses.wrapper(\n            _choice_dialog,\n            "Apply safe canonical-ID migrations?",\n            ("Apply safe migrations", "Leave unchanged"),\n            "Leave unchanged",\n        )\n        if choice != "Apply safe migrations":\n            return 0\n        return subprocess.run(\n            [sys.executable, str(script), selected, "--apply"],\n            cwd=root,\n            check=False,\n        ).returncode\n'''
+          if action_anchor not in text:
+              raise SystemExit('campaign action anchor not found')
+          text = text.replace(action_anchor, prepare_action + action_anchor, 1)
+          path.write_text(text, encoding='utf-8')
+
+          # Turn strict preflight contract failures into a concise actionable error,
+          # and identify the exact plan that failed.
+          path = Path('run_campaign.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              'from runner.experiment_contract import validate_final_experiment_plan',
+              'from runner.experiment_contract import ExperimentContractError, validate_final_experiment_plan',
+              1,
+          )
+          old_validate = '''            payload = json.loads(plan_path.read_text(encoding="utf-8"))\n            validate_final_experiment_plan(payload)\n            plan_paths.add(plan_path)\n'''
+          new_validate = '''            payload = json.loads(plan_path.read_text(encoding="utf-8"))\n            try:\n                validate_final_experiment_plan(payload)\n            except ExperimentContractError as exc:\n                raise ExperimentContractError(f"{plan_path}: {exc}") from exc\n            plan_paths.add(plan_path)\n'''
+          if old_validate not in text:
+              raise SystemExit('preflight plan validation anchor not found')
+          text = text.replace(old_validate, new_validate, 1)
+
+          old_call = '''    validated_batches, validated_plans = _preflight_campaign(\n        repo_root,\n        matrices,\n        experiment_mode=bool(args.experiment_mode),\n    )\n'''
+          new_call = '''    try:\n        validated_batches, validated_plans = _preflight_campaign(\n            repo_root,\n            matrices,\n            experiment_mode=bool(args.experiment_mode),\n        )\n    except (ExperimentContractError, OSError, ValueError, json.JSONDecodeError) as exc:\n        print("Campaign preflight FAILED.", file=sys.stderr)\n        print(str(exc), file=sys.stderr)\n        print("No campaign experiment jobs were started.", file=sys.stderr)\n        if args.experiment_mode:\n            migration_script = repo_root / "scripts" / "migrate_campaign_plans_to_canonical_ids.py"\n            print("Audit the whole campaign before retrying:", file=sys.stderr)\n            print(\n                f"  {sys.executable} {migration_script} {campaign_path}",\n                file=sys.stderr,\n            )\n        return 2\n'''
+          if old_call not in text:
+              raise SystemExit('campaign preflight call anchor not found')
+          text = text.replace(old_call, new_call, 1)
+          path.write_text(text, encoding='utf-8')
+
+          docs = Path('docs/comparison_campaigns.md')
+          dtext = docs.read_text(encoding='utf-8')
+          addition = r'''
+
+## Preparing an older campaign for strict final-experiment mode
+
+Strict campaign preflight validates every unique plan before Matrix 1 starts. If a campaign was built from plans that pre-date the canonical metric-ID contract, use the campaign-wide preparation command rather than migrating hundreds of generated sub-plans individually:
+
+```bash
+python scripts/migrate_campaign_plans_to_canonical_ids.py campaigns/<campaign>_campaign.json
+```
+
+The default is a dry run. It walks every queued batch, deduplicates reused plan paths, applies only the repository's explicit one-to-one metric-ID migrations in memory, and then checks the resulting plans against the complete strict final-experiment contract. If any plan contains a compatibility-only metric profile or another scientific/contract blocker, **nothing is changed** and every blocker is reported.
+
+When the dry run reports zero blockers, apply the migrations with:
+
+```bash
+python scripts/migrate_campaign_plans_to_canonical_ids.py campaigns/<campaign>_campaign.json --apply
+```
+
+`--apply` creates timestamped backups under `migration_backups/`, rewrites only the referenced plans that require safe ID migration, and validates every unique campaign plan again afterwards. Batch manifests do not change because the migrated plans stay at the same paths.
+
+The Toolbox exposes the same workflow as **Prepare campaign plans for final experiment**. Strict `run_campaign.py --experiment-mode` failures are reported as preflight failures with the exact offending plan and an audit command; they no longer need to be diagnosed from a traceback. No dataset job begins until the complete campaign preflight succeeds.
+'''
+          if '## Preparing an older campaign for strict final-experiment mode' not in dtext:
+              docs.write_text(dtext.rstrip() + addition + '\n', encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Run focused tests
+        run: |
+          python -m compileall -q scripts/migrate_campaign_plans_to_canonical_ids.py runner/campaign_tui.py run_campaign.py
+          python -m pytest -q tests/test_campaign_plan_migration.py tests/test_plan_migration.py tests/test_experiment_contract.py tests/test_campaign_queue.py tests/test_campaign_batch_picker.py
+
+      - name: Refresh generated references
+        run: |
+          python scripts/build_reference_documentation.py
+          python scripts/build_reference_documentation.py --check
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/_tmp_apply_campaign_migration.yml
+
+      - name: Commit integrated feature
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/migrate_campaign_plans_to_canonical_ids.py runner/campaign_tui.py run_campaign.py tests/test_campaign_plan_migration.py docs/comparison_campaigns.md docs/function_reference.md docs/test_reference.md .github/workflows/_tmp_apply_campaign_migration.yml
+          git commit -m "Prepare whole campaigns for strict experiments"
+          git push origin HEAD:feature/campaign-plan-migration
