@@ -611,13 +611,16 @@ Python symbols defined by `runner/campaign_tui.py`.
 | `campaign_toolbox_items() -> tuple[ToolboxItem, ...]` (L39) | function | Public | Implementation helper for campaign toolbox items. |
 | `_automatic_output(name: str) -> str` (L43) | function | Internal | Implementation helper for automatic output. |
 | `_resolve(root: Path, value: str) -> Path` (L47) | function | Internal | Implementation helper for resolve. |
-| `_campaign_review_lines(state: dict[str, Any], root: Path) -> list[str]` (L51) | function | Internal | Implementation helper for campaign review lines. |
-| `_campaign_issues(state: dict[str, Any], root: Path) -> list[str]` (L74) | function | Internal | Implementation helper for campaign issues. |
-| `_review_campaign(stdscr, state: dict[str, Any], root: Path) -> bool` (L93) | function | Internal | Implementation helper for review campaign. |
-| `_campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None` (L109) | function | Internal | Implementation helper for campaign builder curses. |
-| `launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L222) | function | Public | Implementation helper for launch campaign builder. |
-| `_campaign_run_command(root: Path, selected: str) -> list[str] | None` (L242) | function | Internal | Implementation helper for campaign run command. |
-| `run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int` (L301) | function | Public | Runs campaign tool action. |
+| `_discover_batch_manifests(root: Path, directory: Path | None = None) -> list[tuple[Path, dict[str, Any]]]` (L51) | function | Internal | Return valid saved batch manifests without entering generated per-job plan folders. |
+| `_batch_picker(stdscr, root: Path, *, initial_dir: str = 'plans') -> list[str] | None` (L75) | function | Internal | Select one or more already-built batch matrices for a campaign queue. |
+| `_batch_picker.display(path: Path) -> str` (L85) | nested function | Internal | Implementation helper for display. |
+| `_campaign_review_lines(state: dict[str, Any], root: Path) -> list[str]` (L174) | function | Internal | Implementation helper for campaign review lines. |
+| `_campaign_issues(state: dict[str, Any], root: Path) -> list[str]` (L197) | function | Internal | Implementation helper for campaign issues. |
+| `_review_campaign(stdscr, state: dict[str, Any], root: Path) -> bool` (L216) | function | Internal | Implementation helper for review campaign. |
+| `_campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None` (L232) | function | Internal | Implementation helper for campaign builder curses. |
+| `launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L341) | function | Public | Implementation helper for launch campaign builder. |
+| `_campaign_run_command(root: Path, selected: str) -> list[str] | None` (L361) | function | Internal | Implementation helper for campaign run command. |
+| `run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int` (L420) | function | Public | Runs campaign tool action. |
 
 ## `runner/contract.py`
 

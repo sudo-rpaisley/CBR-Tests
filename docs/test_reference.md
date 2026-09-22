@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **342 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **348 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -118,6 +118,33 @@ Tests and local helpers in this module.
 | --- | --- |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L87) | Implementation helper for fake create batch. |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L105) | Implementation helper for fake run. |
+
+## `tests/test_campaign_batch_picker.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_discovers_saved_batch_manifests_under_plans(tmp_path)` (L53) | Verifies that discovers saved batch manifests under plans. | `_write_batch`, `_discover_batch_manifests`, `amazon.resolve`, `bucket.resolve` |
+| `test_discovery_ignores_normal_plan_json_files(tmp_path)` (L61) | Verifies that discovery ignores normal plan JSON files. | `_write_batch`, `(tmp_path / 'plans' / 'single_plan.json').write_text`, `_discover_batch_manifests` |
+| `test_discovery_does_not_descend_into_generated_batch_plan_folders(tmp_path)` (L68) | Verifies that discovery does not descend into generated batch plan folders. | `_write_batch`, `_discover_batch_manifests` |
+| `test_discovery_can_find_batches_in_nested_organisation_folders(tmp_path)` (L76) | Verifies that discovery can find batches in nested organisation folders. | `_write_batch`, `_discover_batch_manifests`, `first.resolve`, `second.resolve` |
+| `test_batch_picker_can_queue_multiple_saved_matrices(tmp_path)` (L83) | Verifies that batch picker can queue multiple saved matrices. | `_write_batch`, `_FakeScreen`, `_batch_picker`, `ord` |
+| `test_batch_picker_select_all_queues_every_discovered_batch(tmp_path)` (L91) | Verifies that batch picker select all queues every discovered batch. | `_write_batch`, `_FakeScreen`, `_batch_picker`, `ord` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_FakeScreen` (L10) | Data model for FakeScreen. |
+| `_FakeScreen.__init__(self, keys: list[int])` (L11) | Implementation helper for init. |
+| `_FakeScreen.erase(self)` (L14) | Implementation helper for erase. |
+| `_FakeScreen.getmaxyx(self)` (L17) | Implementation helper for getmaxyx. |
+| `_FakeScreen.getch(self)` (L20) | Implementation helper for getch. |
+| `_FakeScreen.addstr(self, *args, **kwargs)` (L25) | Implementation helper for addstr. |
+| `_write_batch(path: Path, *, batch_id: str, job_count: int = 2) -> Path` (L29) | Implementation helper for write batch. |
 
 ## `tests/test_campaign_queue.py`
 
