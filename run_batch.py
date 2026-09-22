@@ -122,12 +122,24 @@ def _outcome_path_for_attempt(
     timestamp: str,
     attempt: int,
 ) -> Path:
-    dataset_slug = _slug(dataset_path.stem)
-    reference_slug = f"_vs_{_slug(reference_path.stem)}" if reference_path is not None else ""
-    retry_suffix = "" if attempt <= 1 else f"_retry{attempt:02d}"
-    return output_dir / (
-        f"outcome_{index:02d}_{dataset_slug}{reference_slug}_{timestamp}{retry_suffix}.json"
-    )
+    """Return the organised outcome path for one batch job attempt.
+
+    Outcomes are grouped by run, candidate dataset and reference dataset so
+    large all-v-all matrices do not create one flat directory containing
+    dozens or hundreds of JSON files.  ``index`` is retained in the public
+    helper signature for compatibility with older callers/checkpoints.
+    """
+
+    del index
+    run_dir = output_dir / "runs" / timestamp
+    candidate_dir = run_dir / "results" / _slug(dataset_path.stem)
+    if reference_path is None:
+        comparison_dir = candidate_dir / "standalone"
+    else:
+        comparison_dir = candidate_dir / f"vs_{_slug(reference_path.stem)}"
+    comparison_dir.mkdir(parents=True, exist_ok=True)
+    filename = "outcome.json" if attempt <= 1 else f"retry{attempt:02d}.json"
+    return comparison_dir / filename
 
 
 def _attempt_history(prior: dict | None) -> list[dict]:
@@ -292,6 +304,11 @@ def main() -> int:
         prior_results = {}
         interrupted_job = None
 
+    run_dir = output_dir / "runs" / timestamp
+    run_dir.mkdir(parents=True, exist_ok=True)
+    state["run_directory"] = str(run_dir.resolve())
+    write_batch_state(state_path, state)
+
     results: list[dict] = []
     interrupted = False
 
@@ -303,7 +320,8 @@ def main() -> int:
         print(f"Reference datasets: {meta.get('reference_dataset_count')}")
     print(f"Metric policy: {meta.get('metric_policy', 'unspecified')}")
     print("Execution: sequential")
-    print(f"Outputs: {output_dir}")
+    print(f"Batch root: {output_dir}")
+    print(f"Run outputs: {run_dir}")
     print(f"Checkpoint: {state_path}")
     print(f"Batch progress: {render_batch_progress(len(prior_results) if args.resume else 0, total_jobs)}")
     print("=" * 88)
@@ -486,7 +504,7 @@ def main() -> int:
     comparison_report_error: str | None = None
     try:
         comparison_reports = write_comparison_reports(
-            output_dir=output_dir,
+            output_dir=run_dir / "reports",
             timestamp=timestamp,
             batch_meta=meta,
             results=results,
@@ -508,6 +526,7 @@ def main() -> int:
         "batch_name": meta.get("name"),
         "batch_manifest": str(batch_path),
         "batch_state": str(state_path),
+        "run_directory": str(run_dir),
         "started_at": batch_started_at.isoformat(),
         "finished_at": batch_finished_at.isoformat(),
         "requested_job_count": total_jobs,
@@ -522,7 +541,7 @@ def main() -> int:
     if comparison_report_error:
         summary["comparison_report_error"] = comparison_report_error
 
-    summary_path = output_dir / f"batch_summary_{timestamp}.json"
+    summary_path = run_dir / "summary.json"
     _write_batch_summary(summary_path, summary)
 
     state["status"] = batch_status

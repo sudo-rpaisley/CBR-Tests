@@ -132,3 +132,23 @@ Use `--fail-fast` to stop the campaign before starting the next matrix after a m
 ## Scientific boundary
 
 A campaign is orchestration only. It does not combine metric populations, change thresholds, alter reference mappings, create aggregate realism scores or make matrices scientifically dependent on each other. Each saved batch remains an independent experiment definition and each `run_plan.py` invocation remains the authoritative metric execution unit.
+
+
+## Campaign result layout
+
+Campaign outputs keep campaign-wide state and summary files at the root and place independent matrices under `matrices/`. Each matrix then uses the normal organised batch layout.
+
+```text
+outcomes/<campaign-id>/
+├── campaign_state.json
+├── campaign_summary.json
+└── matrices/
+    ├── 001_<batch-id>/
+    │   ├── batch_state.json
+    │   └── runs/<timestamp>/...
+    ├── 002_<batch-id>/
+    │   └── ...
+    └── ...
+```
+
+When resuming an older campaign checkpoint, any matrix output directory already recorded in the checkpoint remains authoritative. This preserves compatibility with campaigns started before the hierarchical layout was introduced.

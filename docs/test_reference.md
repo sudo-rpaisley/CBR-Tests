@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **336 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **340 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -798,6 +798,19 @@ Tests and local helpers in this module.
 | --- | --- |
 | `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.fake_run(command, **kwargs)` (L65) | Implementation helper for fake run. |
 | `test_run_and_compare_archives_baseline_and_reuses_dataset_digest.guarded_sha256(path)` (L91) | Implementation helper for guarded sha256. |
+
+## `tests/test_result_layout.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_batch_results_are_grouped_by_run_candidate_and_reference(tmp_path)` (L7) | Verifies that batch results are grouped by run candidate and reference. | `_outcome_path_for_attempt`, `path.parent.is_dir` |
+| `test_retry_stays_with_original_comparison(tmp_path)` (L29) | Verifies that retry stays with original comparison. | `_outcome_path_for_attempt` |
+| `test_non_reference_job_gets_standalone_folder(tmp_path)` (L43) | Verifies that non reference job gets standalone folder. | `_outcome_path_for_attempt` |
+| `test_campaign_groups_matrices_under_matrices_directory(tmp_path)` (L57) | Verifies that campaign groups matrices under matrices directory. | `_matrix_output_dir` |
 
 ## `tests/test_result_semantics.py`
 
