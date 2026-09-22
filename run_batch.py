@@ -566,10 +566,11 @@ def main() -> int:
     elif failed_jobs:
         print(f"Retry attention jobs: python run_batch.py --batch {batch_path} --resume --retry-failed")
     if comparison_reports:
-        print(f"Comparison overview CSV: {comparison_reports['comparison_overview_csv']}")
-        print(f"Comparison long CSV: {comparison_reports['comparison_long_csv']}")
-        print(f"Comparison Markdown: {comparison_reports['comparison_markdown']}")
-        print(f"Metric matrices: {comparison_reports['comparison_matrices_directory']}")
+        print(f"Run overview: {comparison_reports['run_readme']}")
+        print(f"Candidate summary: {comparison_reports['candidate_summary_csv']}")
+        print(f"Attention report: {comparison_reports['attention_csv']}")
+        print(f"Detailed comparison report: {comparison_reports['comparison_markdown']}")
+        print(f"Analysis tables: {comparison_reports['comparison_matrices_directory']}")
     print("=" * 88)
     if interrupted:
         return 130

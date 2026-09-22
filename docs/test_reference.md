@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **340 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **342 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -60,16 +60,18 @@ Tests and local helpers in this module.
 
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
-| `test_extract_primary_metric_value_prefers_exact_then_mean_summary()` (L60) | Verifies that extract primary metric value prefers exact then mean summary. | `extract_primary_metric_value` |
-| `test_write_comparison_reports_creates_wide_long_and_metric_matrices(tmp_path)` (L78) | Verifies that write comparison reports creates wide long and metric matrices. | `write_comparison_reports`, `_read_csv`, `next`, `_write_outcome`, `results.append` |
-| `test_write_comparison_reports_returns_empty_for_non_reference_batch(tmp_path)` (L158) | Verifies that write comparison reports returns empty for non reference batch. | `write_comparison_reports` |
+| `test_extract_primary_metric_value_prefers_exact_then_mean_summary()` (L76) | Verifies that extract primary metric value prefers exact then mean summary. | `extract_primary_metric_value` |
+| `test_write_comparison_reports_creates_wide_long_and_metric_matrices(tmp_path)` (L94) | Verifies that write comparison reports creates wide long and metric matrices. | `write_comparison_reports`, `_read_csv`, `next`, `_write_outcome`, `results.append` |
+| `test_comparison_reports_add_research_ready_candidate_taxonomy_and_attention_views(tmp_path)` (L174) | Verifies that comparison reports add research ready candidate taxonomy and attention views. | `write_comparison_reports`, `_read_csv`, `all`, `any`, `run_readme.read_text`, `_write_outcome`, `results.append` |
+| `test_candidate_summary_flags_intrinsic_verdict_inconsistency_across_reference_jobs(tmp_path)` (L246) | Verifies that candidate summary flags intrinsic verdict inconsistency across reference jobs. | `write_comparison_reports`, `_write_outcome`, `results.append`, `_read_csv` |
+| `test_write_comparison_reports_returns_empty_for_non_reference_batch(tmp_path)` (L281) | Verifies that write comparison reports returns empty for non reference batch. | `write_comparison_reports` |
 
 ### Test helpers
 
 | Helper | Purpose |
 | --- | --- |
-| `_write_outcome(path: Path, *, ks: float, protocol: float, result_status: str = 'pass') -> None` (L12) | Implementation helper for write outcome. |
-| `_read_csv(path: Path) -> list[dict[str, str]]` (L55) | Implementation helper for read csv. |
+| `_write_outcome(path: Path, *, ks: float, protocol: float, result_status: str = 'pass', intrinsic_status: str = 'pass', intrinsic_execution_status: str = 'success') -> None` (L13) | Implementation helper for write outcome. |
+| `_read_csv(path: Path) -> list[dict[str, str]]` (L71) | Implementation helper for read csv. |
 
 ## `tests/test_batch_state.py`
 

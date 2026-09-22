@@ -7,13 +7,33 @@ from runner.batch_reports import extract_primary_metric_value, write_comparison_
 
 KS_METRIC = "feature_wise_ks_statistic_from_reference"
 PROTOCOL_METRIC = "protocol_mix_divergence_from_reference"
+INTRINSIC_METRIC = "valid_port_range_profile"
 
 
-def _write_outcome(path: Path, *, ks: float, protocol: float, result_status: str = "pass") -> None:
+def _write_outcome(
+    path: Path,
+    *,
+    ks: float,
+    protocol: float,
+    result_status: str = "pass",
+    intrinsic_status: str = "pass",
+    intrinsic_execution_status: str = "success",
+) -> None:
+    intrinsic_record = {
+        "metric_id": INTRINSIC_METRIC,
+        "status": intrinsic_execution_status,
+        "result_status": intrinsic_status,
+    }
+    if intrinsic_status in {"warn", "fail"}:
+        intrinsic_record["diagnostic"] = {
+            "reason_code": "port_realism_attention",
+            "summary": "Port validity needs attention.",
+        }
+
     payload = {
         "schema_version": 2,
         "status": "success",
-        "metric_ids": [KS_METRIC, PROTOCOL_METRIC, "valid_port_range_profile"],
+        "metric_ids": [KS_METRIC, PROTOCOL_METRIC, INTRINSIC_METRIC],
         "metric_results": [
             {
                 "metric_id": KS_METRIC,
@@ -25,11 +45,7 @@ def _write_outcome(path: Path, *, ks: float, protocol: float, result_status: str
                 "status": "success",
                 "result_status": result_status,
             },
-            {
-                "metric_id": "valid_port_range_profile",
-                "status": "success",
-                "result_status": "pass",
-            },
+            intrinsic_record,
         ],
         "test_results": {
             KS_METRIC: {
@@ -46,7 +62,7 @@ def _write_outcome(path: Path, *, ks: float, protocol: float, result_status: str
                     "protocol_field": "Protocol",
                 }
             },
-            "valid_port_range_profile": {"summary": {"valid_ratio": 1.0}},
+            INTRINSIC_METRIC: {"summary": {"valid_ratio": 1.0}},
         },
     }
     path.write_text(json.dumps(payload), encoding="utf-8")
@@ -114,7 +130,7 @@ def test_write_comparison_reports_creates_wide_long_and_metric_matrices(tmp_path
     assert set(row["reference"] for row in overview) == {"reference_1.csv", "reference_2.csv"}
     assert KS_METRIC in overview[0]
     assert f"{KS_METRIC}__result_status" in overview[0]
-    assert "valid_port_range_profile" not in overview[0]
+    assert INTRINSIC_METRIC not in overview[0]
 
     long_rows = _read_csv(Path(report["comparison_long_csv"]))
     assert len(long_rows) == 8
@@ -153,6 +169,113 @@ def test_write_comparison_reports_creates_wide_long_and_metric_matrices(tmp_path
     assert "0.1 (pass)" in markdown
     assert "candidate_a.csv" in markdown
     assert "reference_2.csv" in markdown
+
+
+def test_comparison_reports_add_research_ready_candidate_taxonomy_and_attention_views(tmp_path):
+    candidate = tmp_path / "candidate_a.pcapng"
+    references = [tmp_path / "reference_1.pcapng", tmp_path / "reference_2.pcapng"]
+    results = []
+
+    for index, reference in enumerate(references):
+        outcome_path = tmp_path / f"attention_{index}.json"
+        _write_outcome(
+            outcome_path,
+            ks=0.1 + index,
+            protocol=0.2 + index,
+            intrinsic_status="warn",
+        )
+        results.append(
+            {
+                "job_id": f"attention-{index}",
+                "dataset_path": str(candidate),
+                "reference_dataset_path": str(reference),
+                "output_path": str(outcome_path),
+                "outcome_status": "success",
+            }
+        )
+
+    report = write_comparison_reports(
+        output_dir=tmp_path / "run" / "reports",
+        timestamp="2026-09-22_12-00-00",
+        batch_meta={"batch_id": "research-ready", "name": "Research ready"},
+        results=results,
+    )
+
+    candidate_rows = _read_csv(Path(report["candidate_summary_csv"]))
+    assert len(candidate_rows) == 1
+    candidate_row = candidate_rows[0]
+    assert candidate_row["comparison_jobs"] == "2"
+    assert candidate_row["intrinsic_metrics"] == "1"
+    assert candidate_row["intrinsic_warn"] == "1"
+    assert candidate_row["reference_assessments"] == "4"
+
+    job_rows = _read_csv(Path(report["job_summary_csv"]))
+    assert len(job_rows) == 2
+    assert all(row["intrinsic_warn"] == "1" for row in job_rows)
+
+    attention_rows = _read_csv(Path(report["attention_csv"]))
+    intrinsic_attention = [row for row in attention_rows if row["metric_id"] == INTRINSIC_METRIC]
+    assert len(intrinsic_attention) == 1
+    assert intrinsic_attention[0]["reference"] == ""
+    assert intrinsic_attention[0]["reason_code"] == "port_realism_attention"
+
+    taxonomy_rows = _read_csv(Path(report["taxonomy_summary_csv"]))
+    assert any(
+        row["scope"] == "intrinsic" and row["dimension"] == "protocol_and_network_realism"
+        for row in taxonomy_rows
+    )
+    assert any(
+        row["scope"] == "reference" and row["dimension"] == "distributional_similarity"
+        for row in taxonomy_rows
+    )
+
+    markdown = Path(report["comparison_markdown"]).read_text(encoding="utf-8")
+    assert "No aggregate realism score is calculated" in markdown
+    assert "## Candidate summary" in markdown
+    assert "## Items needing attention" in markdown
+    assert "## Taxonomy/domain summary" in markdown
+
+    run_readme = Path(report["run_readme"])
+    assert run_readme == tmp_path / "run" / "README.md"
+    readme_text = run_readme.read_text(encoding="utf-8")
+    assert "# Experiment matrix run — Research ready" in readme_text
+    assert "reports/candidate_summary.csv" in readme_text
+    assert "No aggregate realism score" in readme_text
+
+
+def test_candidate_summary_flags_intrinsic_verdict_inconsistency_across_reference_jobs(tmp_path):
+    candidate = tmp_path / "candidate.pcapng"
+    references = [tmp_path / "reference_1.pcapng", tmp_path / "reference_2.pcapng"]
+    results = []
+
+    for index, reference in enumerate(references):
+        outcome_path = tmp_path / f"inconsistent_{index}.json"
+        _write_outcome(
+            outcome_path,
+            ks=0.1,
+            protocol=0.2,
+            intrinsic_status="pass" if index == 0 else "fail",
+        )
+        results.append(
+            {
+                "job_id": f"inconsistent-{index}",
+                "dataset_path": str(candidate),
+                "reference_dataset_path": str(reference),
+                "output_path": str(outcome_path),
+                "outcome_status": "success",
+            }
+        )
+
+    report = write_comparison_reports(
+        output_dir=tmp_path / "run" / "reports",
+        timestamp="2026-09-22_12-00-00",
+        batch_meta={"batch_id": "inconsistent"},
+        results=results,
+    )
+
+    candidate_row = _read_csv(Path(report["candidate_summary_csv"]))[0]
+    assert candidate_row["intrinsic_metrics"] == "1"
+    assert candidate_row["intrinsic_inconsistent_metrics"] == "1"
 
 
 def test_write_comparison_reports_returns_empty_for_non_reference_batch(tmp_path):

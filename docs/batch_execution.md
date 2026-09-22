@@ -121,3 +121,19 @@ outcomes/<batch-id>/
 The hierarchy is intentionally stable: batch/campaign summaries and analysis tooling should refer to the recorded outcome paths rather than relying on flat-directory filename discovery.
 
 Existing flat checkpoints are not moved. A resumed historical batch continues to honour the exact output paths already recorded in its checkpoint, while newly executed jobs use the organised layout.
+
+
+## Research-ready comparison reports
+
+Reference-comparison batches also produce a concise run-level `README.md` and several derived report tables under `reports/`. The authoritative evidence remains the individual JSON outcomes under `results/`; the report files are denormalised views intended to make large experiment matrices reviewable without opening every JSON file.
+
+The key derived files are:
+
+- `candidate_summary.csv`: one row per candidate, with intrinsic verdicts deduplicated across repeated all-v-all reference jobs and reference verdicts counted separately;
+- `job_summary.csv`: one row per candidate/reference comparison;
+- `taxonomy_summary.csv`: verdict and execution counts grouped by taxonomy dimension and by intrinsic/reference scope;
+- `attention.csv`: execution problems plus domain `WARN`/`FAIL` results with diagnostic reason codes where available;
+- `overview.csv` and `long.csv`: wide and long-form reference-comparison values for analysis;
+- `matrices/`: candidate × reference matrices for each reference-comparison metric.
+
+The generated Markdown report explicitly separates execution status from domain verdicts and does **not** calculate an aggregate realism score. Intrinsic metrics are counted once per candidate in candidate-level summaries even when an all-v-all matrix repeats them for every reference pairing. If repeated intrinsic verdicts disagree, the candidate summary records that inconsistency rather than hiding it.
