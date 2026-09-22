@@ -1324,14 +1324,6 @@ Python symbols defined by `runner/unified_tui.py`.
 | `_pause_after_tool() -> None` (L112) | function | Internal | Implementation helper for pause after tool. |
 | `launch_unified_tui(args, repo_root: Path | None = None)` (L119) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
-## `scripts/_tmp_organise_experiment_results.py`
-
-Python symbols defined by `scripts/_tmp_organise_experiment_results.py`.
-
-| Symbol | Kind | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `replace_once(path: str, old: str, new: str) -> None` (L4) | function | Public | Implementation helper for replace once. |
-
 ## `scripts/build_documentation_inventory.py`
 
 Repository inventory generator used for documentation audits.
