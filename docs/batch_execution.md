@@ -118,4 +118,6 @@ outcomes/<batch-id>/
         └── ...
 ```
 
+The hierarchy is intentionally stable: batch/campaign summaries and analysis tooling should refer to the recorded outcome paths rather than relying on flat-directory filename discovery.
+
 Existing flat checkpoints are not moved. A resumed historical batch continues to honour the exact output paths already recorded in its checkpoint, while newly executed jobs use the organised layout.
