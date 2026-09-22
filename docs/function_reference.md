@@ -511,11 +511,11 @@ Python symbols defined by `run_campaign.py`.
 | `_replace_result(state: dict[str, Any], result: dict[str, Any]) -> None` (L51) | function | Internal | Implementation helper for replace result. |
 | `_matrix_output_dir(campaign_output_dir: Path, index: int, matrix: dict[str, Any]) -> Path` (L68) | function | Internal | Return the organised directory for a matrix within a campaign. |
 | `_preflight_campaign(repo_root: Path, matrices: list[dict[str, Any]], *, experiment_mode: bool) -> tuple[int, int]` (L74) | function | Internal | Validate every queued matrix before any campaign output or experiment work starts. |
-| `_build_batch_command(*, repo_root: Path, batch_path: Path, output_dir: Path, args: argparse.Namespace, resume: bool, retry_failed: bool) -> list[str]` (L100) | function | Internal | Implementation helper for build batch command. |
-| `_initial_state(*, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> dict[str, Any]` (L140) | function | Internal | Implementation helper for initial state. |
-| `_validate_resume_state(state: dict[str, Any], *, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> None` (L163) | function | Internal | Implementation helper for validate resume state. |
-| `parse_args() -> argparse.Namespace` (L178) | function | Public | Parses args. |
-| `main() -> int` (L206) | function | Public | Implementation helper for main. |
+| `_build_batch_command(*, repo_root: Path, batch_path: Path, output_dir: Path, args: argparse.Namespace, resume: bool, retry_failed: bool) -> list[str]` (L103) | function | Internal | Implementation helper for build batch command. |
+| `_initial_state(*, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> dict[str, Any]` (L143) | function | Internal | Implementation helper for initial state. |
+| `_validate_resume_state(state: dict[str, Any], *, campaign_path: Path, campaign: dict[str, Any], output_dir: Path) -> None` (L166) | function | Internal | Implementation helper for validate resume state. |
+| `parse_args() -> argparse.Namespace` (L181) | function | Public | Parses args. |
+| `main() -> int` (L209) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -608,19 +608,19 @@ Python symbols defined by `runner/campaign_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `campaign_toolbox_items() -> tuple[ToolboxItem, ...]` (L39) | function | Public | Implementation helper for campaign toolbox items. |
-| `_automatic_output(name: str) -> str` (L43) | function | Internal | Implementation helper for automatic output. |
-| `_resolve(root: Path, value: str) -> Path` (L47) | function | Internal | Implementation helper for resolve. |
-| `_discover_batch_manifests(root: Path, directory: Path | None = None) -> list[tuple[Path, dict[str, Any]]]` (L51) | function | Internal | Return valid saved batch manifests without entering generated per-job plan folders. |
-| `_batch_picker(stdscr, root: Path, *, initial_dir: str = 'plans') -> list[str] | None` (L75) | function | Internal | Select one or more already-built batch matrices for a campaign queue. |
-| `_batch_picker.display(path: Path) -> str` (L85) | nested function | Internal | Implementation helper for display. |
-| `_campaign_review_lines(state: dict[str, Any], root: Path) -> list[str]` (L174) | function | Internal | Implementation helper for campaign review lines. |
-| `_campaign_issues(state: dict[str, Any], root: Path) -> list[str]` (L197) | function | Internal | Implementation helper for campaign issues. |
-| `_review_campaign(stdscr, state: dict[str, Any], root: Path) -> bool` (L216) | function | Internal | Implementation helper for review campaign. |
-| `_campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None` (L232) | function | Internal | Implementation helper for campaign builder curses. |
-| `launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L341) | function | Public | Implementation helper for launch campaign builder. |
-| `_campaign_run_command(root: Path, selected: str) -> list[str] | None` (L361) | function | Internal | Implementation helper for campaign run command. |
-| `run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int` (L420) | function | Public | Runs campaign tool action. |
+| `campaign_toolbox_items() -> tuple[ToolboxItem, ...]` (L45) | function | Public | Implementation helper for campaign toolbox items. |
+| `_automatic_output(name: str) -> str` (L49) | function | Internal | Implementation helper for automatic output. |
+| `_resolve(root: Path, value: str) -> Path` (L53) | function | Internal | Implementation helper for resolve. |
+| `_discover_batch_manifests(root: Path, directory: Path | None = None) -> list[tuple[Path, dict[str, Any]]]` (L57) | function | Internal | Return valid saved batch manifests without entering generated per-job plan folders. |
+| `_batch_picker(stdscr, root: Path, *, initial_dir: str = 'plans') -> list[str] | None` (L81) | function | Internal | Select one or more already-built batch matrices for a campaign queue. |
+| `_batch_picker.display(path: Path) -> str` (L91) | nested function | Internal | Implementation helper for display. |
+| `_campaign_review_lines(state: dict[str, Any], root: Path) -> list[str]` (L180) | function | Internal | Implementation helper for campaign review lines. |
+| `_campaign_issues(state: dict[str, Any], root: Path) -> list[str]` (L203) | function | Internal | Implementation helper for campaign issues. |
+| `_review_campaign(stdscr, state: dict[str, Any], root: Path) -> bool` (L222) | function | Internal | Implementation helper for review campaign. |
+| `_campaign_builder_curses(stdscr, root: Path) -> dict[str, Any] | None` (L238) | function | Internal | Implementation helper for campaign builder curses. |
+| `launch_campaign_builder(repo_root: Path | None = None) -> dict[str, Any] | None` (L347) | function | Public | Implementation helper for launch campaign builder. |
+| `_campaign_run_command(root: Path, selected: str) -> list[str] | None` (L367) | function | Internal | Implementation helper for campaign run command. |
+| `run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int` (L426) | function | Public | Runs campaign tool action. |
 
 ## `runner/contract.py`
 
@@ -1364,6 +1364,24 @@ Python symbols defined by `scripts/compare_outcomes.py`.
 | --- | --- | --- | --- |
 | `build_parser() -> argparse.ArgumentParser` (L13) | function | Public | Builds parser. |
 | `main() -> int` (L58) | function | Public | Implementation helper for main. |
+
+## `scripts/migrate_campaign_plans_to_canonical_ids.py`
+
+Python symbols defined by `scripts/migrate_campaign_plans_to_canonical_ids.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `PlanAssessment` (L38) | class | Public | Data model for PlanAssessment. |
+| `PlanAssessment.changed(self) -> bool` (L47) | method | Public | Implementation helper for changed. |
+| `PlanAssessment.ready_after_safe_migration(self) -> bool` (L51) | method | Public | Implementation helper for ready after safe migration. |
+| `_parser() -> argparse.ArgumentParser` (L55) | function | Internal | Implementation helper for parser. |
+| `_read_json(path: Path) -> dict[str, Any]` (L82) | function | Internal | Implementation helper for read JSON. |
+| `_atomic_write_json(path: Path, payload: dict[str, Any]) -> None` (L89) | function | Internal | Implementation helper for atomic write JSON. |
+| `_campaign_plan_paths(repo_root: Path, campaign_path: Path) -> tuple[dict[str, Any], list[Path]]` (L107) | function | Internal | Implementation helper for campaign plan paths. |
+| `assess_plan(path: Path) -> PlanAssessment` (L122) | function | Public | Implementation helper for assess plan. |
+| `_portable_backup_path(repo_root: Path, plan_path: Path) -> Path` (L142) | function | Internal | Implementation helper for portable backup path. |
+| `_print_assessment_summary(assessments: list[PlanAssessment], *, apply: bool) -> None` (L150) | function | Internal | Implementation helper for print assessment summary. |
+| `main() -> int` (L184) | function | Public | Implementation helper for main. |
 
 ## `scripts/migrate_plan_to_canonical_ids.py`
 

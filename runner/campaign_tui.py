@@ -33,6 +33,12 @@ CAMPAIGN_TOOLBOX_ITEMS = (
         "Queue several prepared batch/comparison matrices to run one after another.",
         "Prepare experiments",
     ),
+    ToolboxItem(
+        "campaign_prepare",
+        "Prepare campaign plans for final experiment",
+        "Audit every queued plan, safely migrate canonical metric IDs and report regeneration blockers.",
+        "Prepare experiments",
+    ),
 )
 
 
@@ -422,6 +428,32 @@ def run_campaign_tool_action(action: str, repo_root: Path | None = None) -> int:
     if action == "campaign_build":
         launch_campaign_builder(root)
         return 0
+    if action == "campaign_prepare":
+        selected = curses.wrapper(
+            _json_browser,
+            root,
+            title="Choose comparison campaign to prepare",
+            initial_dir="campaigns",
+        )
+        if selected is None:
+            return 0
+        script = root / "scripts" / "migrate_campaign_plans_to_canonical_ids.py"
+        audit = subprocess.run([sys.executable, str(script), selected], cwd=root, check=False)
+        if audit.returncode != 0:
+            return audit.returncode
+        choice = curses.wrapper(
+            _choice_dialog,
+            "Apply safe canonical-ID migrations?",
+            ("Apply safe migrations", "Leave unchanged"),
+            "Leave unchanged",
+        )
+        if choice != "Apply safe migrations":
+            return 0
+        return subprocess.run(
+            [sys.executable, str(script), selected, "--apply"],
+            cwd=root,
+            check=False,
+        ).returncode
     if action == "campaign_run":
         selected = curses.wrapper(_json_browser, root, title="Choose comparison campaign", initial_dir="campaigns")
         if selected is None:

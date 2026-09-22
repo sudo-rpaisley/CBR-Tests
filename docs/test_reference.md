@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **348 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **352 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -145,6 +145,26 @@ Tests and local helpers in this module.
 | `_FakeScreen.getch(self)` (L20) | Implementation helper for getch. |
 | `_FakeScreen.addstr(self, *args, **kwargs)` (L25) | Implementation helper for addstr. |
 | `_write_batch(path: Path, *, batch_id: str, job_count: int = 2) -> Path` (L29) | Implementation helper for write batch. |
+
+## `tests/test_campaign_plan_migration.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_assessment_marks_safe_legacy_ids_ready_after_migration(tmp_path)` (L37) | Verifies that assessment marks safe legacy ids ready after migration. | `_write_json`, `assess_plan`, `_plan` |
+| `test_assessment_refuses_compatibility_only_profile(tmp_path)` (L54) | Verifies that assessment refuses compatibility only profile. | `_write_json`, `assess_plan`, `_plan` |
+| `test_assessment_reports_other_strict_contract_blockers(tmp_path)` (L68) | Verifies that assessment reports other strict contract blockers. | `_write_json`, `assess_plan`, `_plan` |
+| `test_campaign_plan_collection_deduplicates_reused_plans(tmp_path)` (L81) | Verifies that campaign plan collection deduplicates reused plans. | `_write_json`, `_campaign_plan_paths`, `_plan`, `plan_a.resolve`, `plan_b.resolve`, `batch_path.relative_to` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_plan(*metric_ids: str, allow_skips: bool = False) -> dict` (L9) | Implementation helper for plan. |
+| `_write_json(path: Path, payload: dict) -> Path` (L31) | Implementation helper for write JSON. |
 
 ## `tests/test_campaign_queue.py`
 

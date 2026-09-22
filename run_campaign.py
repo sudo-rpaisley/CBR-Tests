@@ -19,7 +19,7 @@ from runner.campaign import (
     validate_batch_manifest,
     write_campaign_state,
 )
-from runner.experiment_contract import validate_final_experiment_plan
+from runner.experiment_contract import ExperimentContractError, validate_final_experiment_plan
 
 
 ATTENTION_BATCH_STATUSES = {"needs_attention", "interrupted", "failed", "error", "cancelled", "unknown"}
@@ -92,7 +92,10 @@ def _preflight_campaign(
             if plan_path in plan_paths:
                 continue
             payload = json.loads(plan_path.read_text(encoding="utf-8"))
-            validate_final_experiment_plan(payload)
+            try:
+                validate_final_experiment_plan(payload)
+            except ExperimentContractError as exc:
+                raise ExperimentContractError(f"{plan_path}: {exc}") from exc
             plan_paths.add(plan_path)
     return len(batch_paths), len(plan_paths)
 
@@ -211,11 +214,21 @@ def main() -> int:
     meta = campaign["campaign_meta"]
     matrices = campaign["matrices"]
 
-    validated_batches, validated_plans = _preflight_campaign(
-        repo_root,
-        matrices,
-        experiment_mode=bool(args.experiment_mode),
-    )
+    try:
+        validated_batches, validated_plans = _preflight_campaign(
+            repo_root,
+            matrices,
+            experiment_mode=bool(args.experiment_mode),
+        )
+    except (ExperimentContractError, OSError, ValueError, json.JSONDecodeError) as exc:
+        print("Campaign preflight FAILED.", file=sys.stderr)
+        print(str(exc), file=sys.stderr)
+        print("No campaign experiment jobs were started.", file=sys.stderr)
+        if args.experiment_mode:
+            migration_script = repo_root / "scripts" / "migrate_campaign_plans_to_canonical_ids.py"
+            print("Audit the whole campaign before retrying:", file=sys.stderr)
+            print(f"  {sys.executable} {migration_script} {campaign_path}", file=sys.stderr)
+        return 2
     if args.experiment_mode:
         print(
             f"Campaign preflight: {validated_batches} batch manifest(s) and "
