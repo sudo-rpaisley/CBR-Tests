@@ -547,15 +547,23 @@ Python symbols defined by `runner/batch_reports.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_load_json(path: Path) -> dict | None` (L12) | function | Internal | Implementation helper for load JSON. |
-| `_is_scalar(value: Any) -> bool` (L20) | function | Internal | Implementation helper for is scalar. |
-| `_metric_record_map(outcome: dict) -> dict[str, dict]` (L24) | function | Internal | Implementation helper for metric record map. |
-| `extract_primary_metric_value(metric_id: str, test_result: Any) -> tuple[Any, Any, dict]` (L35) | function | Public | Return a stable scalar comparison value, optional max value and summary. Reference-comparison implementations expose either ``summary[metric_id]`` or ``summary['mean_' + metric_id]`` as their batch-comparable scalar. The latter is used by feature-wise metrics that also retain per-field detail. |
-| `_unique_labels(paths: list[str]) -> dict[str, str]` (L71) | function | Internal | Create compact labels while disambiguating duplicate file names. |
-| `_write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> Path` (L93) | function | Internal | Implementation helper for write csv. |
-| `_format_markdown_value(value: Any) -> str` (L102) | function | Internal | Implementation helper for format markdown value. |
-| `_markdown_table(row_header: str, row_labels: list[str], column_labels: list[str], cells: dict[tuple[str, str], str]) -> list[str]` (L110) | function | Internal | Implementation helper for markdown table. |
-| `write_comparison_reports(*, output_dir: Path, timestamp: str, batch_meta: dict, results: list[dict]) -> dict[str, Any]` (L121) | function | Public | Write human-readable and analysis-friendly candidate/reference reports. Only jobs with an explicit reference dataset participate. Existing JSON outcomes remain authoritative; these files are denormalised views intended for comparison, spreadsheets and statistical analysis. |
+| `_load_json(path: Path) -> dict | None` (L13) | function | Internal | Implementation helper for load JSON. |
+| `_is_scalar(value: Any) -> bool` (L21) | function | Internal | Implementation helper for is scalar. |
+| `_metric_record_map(outcome: dict) -> dict[str, dict]` (L25) | function | Internal | Implementation helper for metric record map. |
+| `extract_primary_metric_value(metric_id: str, test_result: Any) -> tuple[Any, Any, dict]` (L36) | function | Public | Return a stable scalar comparison value, optional max value and summary. Reference-comparison implementations expose either ``summary[metric_id]`` or ``summary['mean_' + metric_id]`` as their batch-comparable scalar. The latter is used by feature-wise metrics that also retain per-field detail. |
+| `_unique_labels(paths: list[str]) -> dict[str, str]` (L72) | function | Internal | Create compact labels while disambiguating duplicate file names. |
+| `_write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> Path` (L94) | function | Internal | Implementation helper for write csv. |
+| `_format_markdown_value(value: Any) -> str` (L103) | function | Internal | Implementation helper for format markdown value. |
+| `_markdown_table(row_header: str, row_labels: list[str], column_labels: list[str], cells: dict[tuple[str, str], str]) -> list[str]` (L111) | function | Internal | Implementation helper for markdown table. |
+| `_record_counts(records: Iterable[dict]) -> dict[str, int]` (L127) | function | Internal | Implementation helper for record counts. |
+| `_scope_for_metric(metric_id: str) -> str` (L148) | function | Internal | Implementation helper for scope for metric. |
+| `_walk_taxonomy(node: dict, path: tuple[str, ...], output: dict[str, list[str]]) -> None` (L152) | function | Internal | Implementation helper for walk taxonomy. |
+| `_load_taxonomy_paths() -> dict[str, list[str]]` (L166) | function | Internal | Implementation helper for load taxonomy paths. |
+| `_taxonomy_dimension(metric_id: str, taxonomy_paths: dict[str, list[str]]) -> str` (L179) | function | Internal | Implementation helper for taxonomy dimension. |
+| `_representative_intrinsic_records(items: list[dict]) -> tuple[dict[str, dict], int]` (L188) | function | Internal | Deduplicate intrinsic metrics repeated across candidate/reference jobs. An all-v-all matrix re-runs intrinsic metrics for every reference pairing. Candidate summaries count each intrinsic metric once. If the execution or domain verdict changes between repeated runs, the metric is flagged as an inconsistency rather than silently counted multiple times. |
+| `_compact_domain_counts(row: dict, prefix: str) -> str` (L217) | function | Internal | Implementation helper for compact domain counts. |
+| `_attention_reason(record: dict) -> tuple[str, str]` (L224) | function | Internal | Implementation helper for attention reason. |
+| `write_comparison_reports(*, output_dir: Path, timestamp: str, batch_meta: dict, results: list[dict]) -> dict[str, Any]` (L232) | function | Public | Write human-readable and analysis-friendly candidate/reference reports. Only jobs with an explicit reference dataset participate. Existing JSON outcomes remain authoritative; these files are denormalised views intended for comparison, spreadsheets and statistical analysis. Candidate-level intrinsic counts are deduplicated because all-v-all matrices repeat those metrics for each reference pairing. |
 
 ## `runner/batch_state.py`
 
