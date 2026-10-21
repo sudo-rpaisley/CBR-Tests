@@ -524,7 +524,7 @@ Python symbols defined by `run_perturbation.py`.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `parse_args(argv: list[str] | None = None) -> argparse.Namespace` (L10) | function | Public | Parses args. |
-| `main(argv: list[str] | None = None) -> int` (L45) | function | Public | Implementation helper for main. |
+| `main(argv: list[str] | None = None) -> int` (L47) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -1053,14 +1053,14 @@ Python symbols defined by `runner/perturbation_experiment.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `file_sha256(path: Path) -> str` (L29) | function | Public | Implementation helper for file sha256. |
-| `parse_integer_set(raw: str, *, low: int, high: int) -> tuple[int, ...]` (L37) | function | Public | Parses integer set. |
-| `_write_json(path: Path, data: dict) -> None` (L49) | function | Internal | Implementation helper for write JSON. |
-| `_file_path(path: Path, label: str, suffixes: set[str] | None = None) -> Path` (L54) | function | Internal | Implementation helper for file path. |
-| `packet_count(path: Path) -> int` (L63) | function | Public | Independent full-capture count; bounded memory via Scapy's reader. |
-| `validate_generation(*, seed_dir: Path, source_path: Path, model_path: Path, percentages: tuple[int, ...], seed: int, size_tolerance_pct: float, verify_packets: bool = True) -> list[dict]` (L70) | function | Public | Reject malformed/missing outputs before any costly CBR metric jobs start. |
-| `collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[dict]` (L146) | function | Public | Join CBR-Tests' authoritative per-job outcomes with perturbation metadata. |
-| `run_experiment(*, source: Path, plan: Path, model: Path, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False) -> dict` (L183) | function | Public | Prepare one GAN sweep and one existing fixed-plan CBR batch per seed. |
+| `file_sha256(path: Path) -> str` (L30) | function | Public | Implementation helper for file sha256. |
+| `parse_integer_set(raw: str, *, low: int, high: int) -> tuple[int, ...]` (L38) | function | Public | Parses integer set. |
+| `_write_json(path: Path, data: dict) -> None` (L50) | function | Internal | Implementation helper for write JSON. |
+| `_file_path(path: Path, label: str, suffixes: set[str] | None = None) -> Path` (L55) | function | Internal | Implementation helper for file path. |
+| `packet_count(path: Path) -> int` (L64) | function | Public | Independent full-capture count; bounded memory via Scapy's reader. |
+| `validate_generation(*, seed_dir: Path, source_path: Path, model_path: Path, percentages: tuple[int, ...], seed: int, size_tolerance_pct: float, verify_packets: bool = True) -> list[dict]` (L71) | function | Public | Reject malformed/missing outputs before any costly CBR metric jobs start. |
+| `collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[dict]` (L147) | function | Public | Join CBR-Tests' authoritative per-job outcomes with perturbation metadata. |
+| `run_experiment(*, base: Path, comparison: Path, plan: Path, model: Path, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False) -> dict` (L186) | function | Public | Compare fixed Dataset 1 with Dataset 2 and its generated trailing suffixes. |
 
 ## `runner/perturbation_tui.py`
 
@@ -1068,12 +1068,12 @@ Python symbols defined by `runner/perturbation_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `initial_settings() -> dict[str, str | bool]` (L32) | function | Public | Defaults deliberately require explicit selection of all four inputs. |
-| `_resolve_file(value: str, root: Path) -> Path` (L46) | function | Internal | Resolve paths relative to the repository as all CBR CLI tools do. |
-| `validate_settings(values: dict, root: Path) -> list[str]` (L52) | function | Public | Preflight the chosen files and prevent accidental output replacement. |
-| `build_command(values: dict, root: Path) -> list[str]` (L83) | function | Public | Construct the existing CLI invocation from selected setup values. |
-| `_setup_curses(stdscr, root: Path) -> dict | None` (L100) | function | Internal | Display the GAN setup menu; Enter opens a picker on file fields. |
-| `run_perturbation_tool_action(repo_root: Path) -> int` (L185) | function | Public | Select files with the standard browser then run the existing CLI. |
+| `initial_settings() -> dict[str, str | bool]` (L33) | function | Public | Require both capture roles, a fixed plan, model and generator. |
+| `_resolve_file(value: str, root: Path) -> Path` (L48) | function | Internal | Resolve paths relative to the repository as all CBR CLI tools do. |
+| `validate_settings(values: dict, root: Path) -> list[str]` (L54) | function | Public | Preflight the chosen files and prevent accidental output replacement. |
+| `build_command(values: dict, root: Path) -> list[str]` (L89) | function | Public | Construct the existing CLI invocation from selected setup values. |
+| `_setup_curses(stdscr, root: Path) -> dict | None` (L107) | function | Internal | Display the GAN setup menu; Enter opens a picker on file fields. |
+| `run_perturbation_tool_action(repo_root: Path) -> int` (L192) | function | Public | Select files with the standard browser then run the existing CLI. |
 
 ## `runner/plan_builder.py`
 
