@@ -26,7 +26,7 @@ pickle checkpoint.
 python run_perturbation.py \
   --base /data/dataset1.pcapng \
   --comparison /data/dataset2.pcapng \
-  --plan plans/my_frozen_pcap_plan.json \
+  --auto-plan \
   --train-pcap /data/independent-training-a.pcapng \
   --train-pcap /data/independent-training-b.pcapng \
   --training-epochs 100 \
@@ -40,7 +40,15 @@ python run_perturbation.py \
 
 Or launch `python run_plan.py --tui`, select **GAN perturbation experiment**,
 and use the same **curses file selector** as other CBR-Tests workflows.
-Press **Enter** to browse for Dataset 1, Dataset 2 and the frozen JSON plan.
+Press **Enter** to browse for Dataset 1 and Dataset 2. **Test plan source**
+defaults to **Auto-create comparison plan**, which invokes the normal PCAP
+plan builder with Dataset 2 as the candidate and Dataset 1 as its independent
+reference. It includes supported reference-comparison metrics and saves a
+frozen `auto_comparison_plan.json` plus `auto_plan_report.json` in the experiment
+output directory. You do not need to select a pre-existing plan.
+Alternatively, choose **Use existing PCAP plan** and browse for a previously
+validated reference-enabled plan; the setup checks it before starting.
+
 The default model source is **Train new CTGAN from PCAPs**. Select **Training
 PCAPs (one or more)** to open the existing multiple-file selector. Press
 **Space** to select independent `.pcap`/`.pcapng` files and **d** when done.
@@ -80,9 +88,12 @@ committed to GitHub. Use `--model /path/to/ctgan.pkl` in place of
   The 0% candidate must be byte-for-byte identical to original Dataset 2.
 - **Approximately same size**, not exact per-packet bytes. The adapter rejects
   captures outside `--size-tolerance-pct` (default ±5%).
-- **One frozen plan** reused for every percentage. The plan **must include
-  reference-comparison metrics**. Those metrics are explicitly rebound to Dataset 1
-  for each evaluation, using the existing fixed-plan matrix binding machinery;
+- **One frozen plan** reused for every percentage. The default automatic
+  plan is built once using Dataset 2 and reference Dataset 1; it includes only
+  currently supported runnable PCAP metrics (including reference-comparison
+  metrics). An existing selected plan must already include reference metrics.
+  Those metrics are explicitly rebound to Dataset 1 for each evaluation,
+  using the existing fixed-plan matrix binding machinery;
   intrinsic metrics are still calculated for Dataset 2 candidates.
 - **Multiple seeds** use separate batch output directories to prevent the
   existing batch outcome filename convention from colliding.
@@ -102,6 +113,8 @@ outcomes/gan-pilot/
     training_flows.csv
     training_manifest.json
     individual_features/
+  auto_comparison_plan.json      # generated only for Auto-create comparison plan
+  auto_plan_report.json          # enabled/excluded metric report for generated plan
   experiment.json                # base + comparison identities/hashes, plan, GAN and seeds
   perturbation_metrics.csv       # base, comparison, seed, percentage, metric, native value
   seed_42/
