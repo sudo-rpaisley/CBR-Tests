@@ -130,3 +130,52 @@ def test_outcome_metric_values_are_joined_to_percentages(tmp_path):
     assert rows[0]["requested_pct"] == 10
     assert rows[0]["primary_value"] == 0.7
     assert rows[0]["domain_status"] == "warn"
+
+def test_gan_picker_filters_file_types_without_changing_dataset_picker(tmp_path):
+    from runner.friendly_tui import _dataset_browser_entries
+    for filename in ("one.pcap", "two.pcapng", "plan.json", "model.pkl", "traffic_gan.py"):
+        (tmp_path / filename).write_text("contents", encoding="utf-8")
+    (tmp_path / "nested").mkdir()
+    all_entries = _dataset_browser_entries(tmp_path, tmp_path)
+    assert "one.pcap" in [item.path.name for item in all_entries]
+    assert "plan.json" not in [item.path.name for item in all_entries]
+    capture_entries = _dataset_browser_entries(tmp_path, tmp_path, frozenset({".pcap", ".pcapng"}))
+    assert {item.path.name for item in capture_entries} == {"one.pcap", "two.pcapng", "nested"}
+    assert {item.path.name for item in _dataset_browser_entries(
+        tmp_path, tmp_path, frozenset({".pkl"})
+    )} == {"model.pkl", "nested"}
+
+
+def test_gan_setup_validates_selected_files_and_builds_command(tmp_path):
+    from runner.perturbation_tui import build_command, initial_settings, validate_settings
+    for filename in ("source.pcapng", "plan.json", "ctgan.pkl", "traffic_gan.py"):
+        (tmp_path / filename).write_text("fixture", encoding="utf-8")
+    values = initial_settings()
+    values.update({
+        "input": "source.pcapng",
+        "plan": "plan.json",
+        "model": "ctgan.pkl",
+        "generator_script": "traffic_gan.py",
+        "output_dir": "generated/new-experiment",
+    })
+    assert validate_settings(values, tmp_path) == []
+    command = build_command(values, tmp_path)
+    assert "--input" in command
+    assert command[command.index("--input") + 1] == str(tmp_path / "source.pcapng")
+    assert "--generator-script" in command
+    assert command[command.index("--generator-script") + 1] == str(tmp_path / "traffic_gan.py")
+    assert "--prepare-only" not in command
+    values["prepare_only"] = True
+    assert build_command(values, tmp_path)[-1] == "--prepare-only"
+
+
+def test_gan_setup_rejects_missing_files_and_existing_output(tmp_path):
+    from runner.perturbation_tui import initial_settings, validate_settings
+    values = initial_settings()
+    problems = validate_settings(values, tmp_path)
+    assert any("evaluation pcap" in issue.lower() for issue in problems)
+    values["output_dir"] = "prior-run"
+    (tmp_path / "prior-run").mkdir()
+    (tmp_path / "prior-run" / "experiment.json").write_text("{}")
+    problems = validate_settings(values, tmp_path)
+    assert any("must be new or empty" in issue for issue in problems)
