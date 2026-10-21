@@ -155,6 +155,7 @@ def test_gan_setup_validates_selected_files_and_builds_command(tmp_path):
         "base": "reference.pcapng",
         "comparison": "source.pcapng",
         "plan": "plan.json",
+        "model_source": "Use existing CTGAN checkpoint",
         "model": "ctgan.pkl",
         "generator_script": "traffic_gan.py",
         "output_dir": "generated/new-experiment",
@@ -279,3 +280,119 @@ def test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_pa
             generator_script=tmp_path / names[4], output_dir=output,
         )
     assert not output.exists()
+
+def test_training_picker_selects_many_pcaps_without_exposing_tabular_data(tmp_path):
+    from runner.tui_batch import _browser_entries
+    for name in ("a.pcap", "b.pcapng", "not-training.csv"):
+        (tmp_path / name).write_text("placeholder", encoding="utf-8")
+    selected = {item.path.name for item in _browser_entries(
+        tmp_path, tmp_path, frozenset({".pcap", ".pcapng"})
+    )}
+    assert selected == {"a.pcap", "b.pcapng"}
+
+
+def test_training_mode_builds_multiple_pcap_arguments(tmp_path):
+    from runner.perturbation_tui import build_command, initial_settings, validate_settings
+    names = ("base.pcap", "comparison.pcapng", "train1.pcap", "train2.pcapng",
+             "plan.json", "traffic_gan.py")
+    for name in names:
+        (tmp_path / name).write_text(name, encoding="utf-8")
+    values = initial_settings()
+    values.update({
+        "base": "base.pcap", "comparison": "comparison.pcapng",
+        "plan": "plan.json", "training_pcaps": ["train1.pcap", "train2.pcapng"],
+        "generator_script": "traffic_gan.py", "training_epochs": "30",
+        "training_device": "cpu",
+    })
+    assert validate_settings(values, tmp_path) == []
+    command = build_command(values, tmp_path)
+    assert command.count("--train-pcap") == 2
+    assert "--model" not in command
+    assert command[command.index("--training-epochs") + 1] == "30"
+
+
+def test_training_mode_rejects_selected_evaluation_capture(tmp_path):
+    from runner.perturbation_tui import initial_settings, validate_settings
+    for name in ("base.pcap", "comparison.pcap", "plan.json", "traffic_gan.py"):
+        (tmp_path / name).write_text(name, encoding="utf-8")
+    values = initial_settings()
+    values.update({
+        "base": "base.pcap", "comparison": "comparison.pcap",
+        "plan": "plan.json", "training_pcaps": ["comparison.pcap"],
+        "generator_script": "traffic_gan.py",
+    })
+    assert any("independent" in issue for issue in validate_settings(values, tmp_path))
+
+
+def test_training_cli_rejects_checkpoint_and_training_inputs_together():
+    with pytest.raises(SystemExit):
+        parse_args([
+            "--base", "a.pcap", "--comparison", "b.pcap", "--plan", "plan.json",
+            "--model", "model.pkl", "--train-pcap", "train.pcap", "--output-dir", "out",
+        ])
+    args = parse_args([
+        "--base", "a.pcap", "--comparison", "b.pcap", "--plan", "plan.json",
+        "--train-pcap", "train1.pcap", "--train-pcap", "train2.pcap",
+        "--output-dir", "out",
+    ])
+    assert args.training_pcaps == [Path("train1.pcap"), Path("train2.pcap")]
+
+
+def test_training_capture_duplicate_content_rejected_before_output(tmp_path, monkeypatch):
+    from runner import perturbation_experiment as experiment
+    paths = {name: tmp_path / name for name in
+             ("base.pcap", "comparison.pcap", "training.pcap", "plan.json", "traffic_gan.py")}
+    for name, path in paths.items():
+        path.write_text(name, encoding="utf-8")
+    paths["training.pcap"].write_bytes(paths["base.pcap"].read_bytes())
+    output = tmp_path / "outputs"
+    with pytest.raises(ValueError, match="independent"):
+        experiment.run_experiment(
+            base=paths["base.pcap"], comparison=paths["comparison.pcap"],
+            plan=paths["plan.json"], model=None,
+            generator_script=paths["traffic_gan.py"], output_dir=output,
+            training_pcaps=(paths["training.pcap"],),
+        )
+    assert not output.exists()
+
+
+def test_multiple_training_pcaps_extract_merge_and_train(tmp_path, monkeypatch):
+    import csv
+    from runner import gan_training
+    paths = [tmp_path / "train_1.pcap", tmp_path / "train_2.pcapng"]
+    for index, path in enumerate(paths):
+        path.write_bytes(bytes([index + 1]))
+    script = tmp_path / "traffic_gan.py"
+    script.write_text("stub", encoding="utf-8")
+    events = []
+
+    def fake_run(command, **kwargs):
+        events.append(command)
+        if command[2] == "extract":
+            destination = Path(command[command.index("--features") + 1])
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with destination.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.writer(stream)
+                writer.writerow(("protocol", "service_port", "packet_count_log",
+                                 "duration_ms_log", "mean_ip_length", "forward_fraction",
+                                 "mean_ttl"))
+                for _ in range(30):
+                    writer.writerow(("TCP", "80", "3", "3", "100", "1", "64"))
+            destination.with_suffix(".metadata.json").write_text(
+                json.dumps({"flow_count": 30}), encoding="utf-8"
+            )
+        elif command[2] == "train":
+            Path(command[command.index("--model") + 1]).write_bytes(b"local-checkpoint")
+        return type("Completed", (), {"returncode": 0})()
+
+    monkeypatch.setattr(gan_training.subprocess, "run", fake_run)
+    model, provenance = gan_training.train_from_captures(
+        captures=tuple(paths), generator_script=script,
+        output_dir=tmp_path / "training", epochs=15, batch_size=100,
+    )
+    assert len(events) == 3
+    assert model.is_file()
+    assert provenance["training_flow_count"] == 60
+    assert len(provenance["training_captures"]) == 2
+    with (tmp_path / "training" / "training_flows.csv").open(newline="", encoding="utf-8") as stream:
+        assert len(list(csv.DictReader(stream))) == 60
