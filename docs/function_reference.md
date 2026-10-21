@@ -524,7 +524,7 @@ Python symbols defined by `run_perturbation.py`.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `parse_args(argv: list[str] | None = None) -> argparse.Namespace` (L10) | function | Public | Parses args. |
-| `main(argv: list[str] | None = None) -> int` (L59) | function | Public | Implementation helper for main. |
+| `main(argv: list[str] | None = None) -> int` (L62) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -1068,7 +1068,7 @@ Python symbols defined by `runner/perturbation_experiment.py`.
 | `packet_count(path: Path) -> int` (L64) | function | Public | Independent full-capture count; bounded memory via Scapy's reader. |
 | `validate_generation(*, seed_dir: Path, source_path: Path, model_path: Path, percentages: tuple[int, ...], seed: int, size_tolerance_pct: float, verify_packets: bool = True) -> list[dict]` (L71) | function | Public | Reject malformed/missing outputs before any costly CBR metric jobs start. |
 | `collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[dict]` (L147) | function | Public | Join CBR-Tests' authoritative per-job outcomes with perturbation metadata. |
-| `run_experiment(*, base: Path, comparison: Path, plan: Path, model: Path | None, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False, training_pcaps: tuple[Path, ...] = (), training_epochs: int = 100, training_batch_size: int = 100, training_device: str = 'cpu') -> dict` (L186) | function | Public | Compare fixed Dataset 1 with Dataset 2 using an existing or newly trained CTGAN. |
+| `run_experiment(*, base: Path, comparison: Path, plan: Path | None, model: Path | None, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False, training_pcaps: tuple[Path, ...] = (), training_epochs: int = 100, training_batch_size: int = 100, training_device: str = 'cpu', auto_plan: bool = False) -> dict` (L186) | function | Public | Compare fixed Dataset 1 with Dataset 2 using an existing or newly trained CTGAN. |
 
 ## `runner/perturbation_tui.py`
 
@@ -1076,13 +1076,13 @@ Python symbols defined by `runner/perturbation_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `initial_settings() -> dict` (L40) | function | Public | Default to training from separate captures; existing models remain available. |
-| `_resolve_file(value: str, root: Path) -> Path` (L60) | function | Internal | Implementation helper for resolve file. |
-| `visible_fields(values: dict) -> tuple` (L65) | function | Public | Show only the fields applicable to the selected training mode. |
-| `validate_settings(values: dict, root: Path) -> list[str]` (L76) | function | Public | Preflight paths, capture roles, training options, and safe outputs. |
-| `build_command(values: dict, root: Path) -> list[str]` (L140) | function | Public | Pass selected training PCAPs or an existing checkpoint to the same runner. |
-| `_setup_curses(stdscr, root: Path) -> dict | None` (L167) | function | Internal | A compact setup screen with a multi-PCAP training file selector. |
-| `run_perturbation_tool_action(repo_root: Path) -> int` (L271) | function | Public | Launch the guided picker and the existing perturbation CLI. |
+| `initial_settings() -> dict` (L46) | function | Public | Default to training from separate captures; existing models remain available. |
+| `_resolve_file(value: str, root: Path) -> Path` (L67) | function | Internal | Implementation helper for resolve file. |
+| `visible_fields(values: dict) -> tuple` (L72) | function | Public | Show only the fields applicable to the selected training mode. |
+| `validate_settings(values: dict, root: Path) -> list[str]` (L86) | function | Public | Preflight paths, capture roles, training options, and safe outputs. |
+| `build_command(values: dict, root: Path) -> list[str]` (L166) | function | Public | Pass selected training PCAPs or an existing checkpoint to the same runner. |
+| `_setup_curses(stdscr, root: Path) -> dict | None` (L196) | function | Internal | A compact setup screen with a multi-PCAP training file selector. |
+| `run_perturbation_tool_action(repo_root: Path) -> int` (L306) | function | Public | Launch the guided picker and the existing perturbation CLI. |
 
 ## `runner/plan_builder.py`
 
