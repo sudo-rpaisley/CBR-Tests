@@ -155,11 +155,12 @@ def _toggle_selected(path: Path, selected: set[Path], ordered: list[str], root: 
             ordered.append(display)
 
 
-def _browser_entries(current_dir: Path, root: Path):
+def _browser_entries(current_dir: Path, root: Path, allowed_suffixes=None):
+    suffixes = SUPPORTED_DATASET_SUFFIXES if allowed_suffixes is None else allowed_suffixes
     return [
         entry
         for entry in list_file_browser_entries(current_dir, root)
-        if entry.is_dir or is_supported_dataset_path(entry.path)
+        if entry.is_dir or entry.path.suffix.lower() in suffixes
     ]
 
 
@@ -177,7 +178,10 @@ def _multi_file_browser(
     *,
     title: str,
     allow_empty: bool,
+    allowed_suffixes=None,
 ) -> list[str] | None:
+    """Browse multiple datasets; optional suffix filter keeps old callers unchanged."""
+    suffixes = SUPPORTED_DATASET_SUFFIXES if allowed_suffixes is None else allowed_suffixes
     root = root.expanduser().resolve()
     initial_dir = root / "datasets" if (root / "datasets").is_dir() else root
     current_dir = _initial_browser_directory(str(initial_dir), root)
@@ -191,7 +195,7 @@ def _multi_file_browser(
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
-        entries = _browser_entries(current_dir, root)
+        entries = _browser_entries(current_dir, root, suffixes)
         if selected_index >= len(entries):
             selected_index = max(0, len(entries) - 1)
 
@@ -211,7 +215,7 @@ def _multi_file_browser(
             attr = curses.A_REVERSE if index == selected_index else curses.A_NORMAL
             stdscr.addstr(row, 0, f"{cursor} {checked} {entry.label}"[: width - 1], attr)
 
-        footer = f"{len(ordered)} selected | files: {', '.join(sorted(SUPPORTED_DATASET_SUFFIXES))}"
+        footer = f"{len(ordered)} selected | files: {', '.join(sorted(suffixes))}"
         if ordered:
             preview = ", ".join(Path(value).name for value in ordered[-3:])
             footer += f" | latest: {preview}"
@@ -259,7 +263,7 @@ def _multi_file_browser(
                 current_dir = target
                 selected_index = 0
                 message = default_message
-            elif target.is_file() and is_supported_dataset_path(target):
+            elif target.is_file() and target.suffix.lower() in suffixes:
                 _toggle_selected(target, selected_paths, ordered, root)
                 current_dir = target.parent
                 selected_index = 0
