@@ -14,7 +14,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--base", type=Path, required=True, help="Dataset 1: unmodified reference PCAP/PCAPNG")
     parser.add_argument("--comparison", "--input", dest="comparison", type=Path, required=True,
                         help="Dataset 2: original comparison PCAP/PCAPNG; trailing packets are perturbed")
-    parser.add_argument("--plan", type=Path, required=True, help="Existing fixed PCAP test plan JSON")
+    plan_group = parser.add_mutually_exclusive_group(required=True)
+    plan_group.add_argument("--plan", type=Path, help="Existing fixed PCAP comparison plan JSON")
+    plan_group.add_argument("--auto-plan", action="store_true",
+                            help="Automatically build a frozen reference-comparison plan using Dataset 2 vs Dataset 1")
     model_group = parser.add_mutually_exclusive_group(required=True)
     model_group.add_argument("--model", type=Path,
                              help="Existing locally trained, trusted CTGAN checkpoint")
@@ -59,7 +62,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     result = run_experiment(
-        base=args.base, comparison=args.comparison, plan=args.plan, model=args.model,
+        base=args.base, comparison=args.comparison, plan=args.plan,
+        auto_plan=args.auto_plan, model=args.model,
         training_pcaps=tuple(args.training_pcaps or ()),
         training_epochs=args.training_epochs, training_batch_size=args.training_batch_size,
         training_device=args.training_device,
