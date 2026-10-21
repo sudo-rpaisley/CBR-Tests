@@ -50,10 +50,17 @@ python traffic_gan.py extract --input /data/training.pcapng --features ./trainin
 python traffic_gan.py train --features ./training_flows.csv --model ./ctgan.pkl --epochs 100 --device cpu --seed 42
 ```
 
-Then open `python run_plan.py --tui` and select **GAN perturbation experiment**.
-Choose Dataset 1 and Dataset 2 using the built-in selectors; the generator
-script defaults to `traffic_gan.py`. Select the newly trained `ctgan.pkl` as
-the model. The frozen metric plan must contain reference-comparison metrics.
+Alternatively, **no manual training commands are necessary**: open
+`python run_plan.py --tui`, choose **GAN perturbation experiment**, select
+Dataset 1 and Dataset 2 and choose **Train new CTGAN from PCAPs** (the default).
+Use the **Training PCAPs (one or more)** selector to check independent PCAPs
+with Space; press `d` to finish. The runner will extract and combine their
+flow features, train one model inside `<experiment output>/training/ctgan.pkl`,
+then use it for every GAN percentage. Choose CPU or CUDA, epochs and batch size
+in the same screen. Training source hashes and checkpoint identity are recorded.
+
+You can still select **Use existing CTGAN checkpoint** to reuse a trusted
+`ctgan.pkl`. The frozen metric plan must contain reference-comparison metrics.
 
 **Run scripts with a single line, or do not leave a blank line between Bash
 lines ending in a backslash.**
