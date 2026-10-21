@@ -123,3 +123,32 @@ def test_toolbox_exposes_fixed_pcap_plan_mapping():
     keys = [item.key for item in _menu_items()]
     assert "fixed_pcap_matrix" in keys
     assert keys.index("build_plan") < keys.index("fixed_pcap_matrix") < keys.index("campaign_build")
+
+
+def test_explicit_reference_overrides_stale_plan_reference(tmp_path):
+    plan_path = _reference_plan(tmp_path)
+    stale_reference = tmp_path / "seed_reference.pcapng"
+    stale_reference.unlink()
+    base = _pcap(tmp_path / "dataset_1.pcapng")
+    comparison = _pcap(tmp_path / "dataset_2.pcapng")
+    batch_path = tmp_path / "gan_batch.json"
+
+    build_fixed_plan_matrix(
+        name="Dataset 1 vs Dataset 2",
+        plan_path=plan_path,
+        candidate_paths=[comparison],
+        reference_paths=[base],
+        output_path=batch_path,
+        repo_root=tmp_path,
+    )
+
+    manifest = json.loads(batch_path.read_text(encoding="utf-8"))
+    assert manifest["batch_meta"]["job_count"] == 1
+    assert manifest["jobs"][0]["reference_dataset_path"] == str(base.resolve())
+    bound_path = tmp_path / manifest["jobs"][0]["plan_path"]
+    bound = json.loads(bound_path.read_text(encoding="utf-8"))
+    reference_metric = next(
+        metric for metric in bound["metrics"]
+        if metric["metric_id"] == REFERENCE_METRIC
+    )
+    assert reference_metric["input_requirements"]["reference_dataset_path"] == str(base.resolve())
