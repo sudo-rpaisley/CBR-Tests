@@ -15,7 +15,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--comparison", "--input", dest="comparison", type=Path, required=True,
                         help="Dataset 2: original comparison PCAP/PCAPNG; trailing packets are perturbed")
     parser.add_argument("--plan", type=Path, required=True, help="Existing fixed PCAP test plan JSON")
-    parser.add_argument("--model", type=Path, required=True, help="Locally trained trusted CTGAN checkpoint")
+    model_group = parser.add_mutually_exclusive_group(required=True)
+    model_group.add_argument("--model", type=Path,
+                             help="Existing locally trained, trusted CTGAN checkpoint")
+    model_group.add_argument("--train-pcap", type=Path, action="append", dest="training_pcaps",
+                             help="Training PCAP/PCAPNG; repeat to train from multiple independent captures")
+    parser.add_argument("--training-epochs", type=int, default=100)
+    parser.add_argument("--training-batch-size", type=int, default=100)
+    parser.add_argument("--training-device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--generator-script", type=Path,
                         default=Path(__file__).resolve().parent / "traffic_gan.py",
                         help="Optional generator script (defaults to bundled traffic_gan.py)")
@@ -36,6 +43,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         args.seeds = parse_integer_set(args.seeds, low=0, high=2**31 - 1)
         if 0 not in args.percentages:
             parser.error("Include 0 in --percentages for the unmodified baseline.")
+        if args.training_epochs < 1:
+            parser.error("--training-epochs must be positive.")
+        if args.training_batch_size < 10 or args.training_batch_size % 10:
+            parser.error("--training-batch-size must be a multiple of 10 and at least 10.")
         if args.workers is not None and args.workers < 1:
             parser.error("--workers must be positive.")
         if args.size_tolerance_pct < 0:
@@ -49,6 +60,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     result = run_experiment(
         base=args.base, comparison=args.comparison, plan=args.plan, model=args.model,
+        training_pcaps=tuple(args.training_pcaps or ()),
+        training_epochs=args.training_epochs, training_batch_size=args.training_batch_size,
+        training_device=args.training_device,
         generator_script=args.generator_script, output_dir=args.output_dir,
         percentages=args.percentages, seeds=args.seeds, basis=args.basis,
         workers=args.workers, display=args.display,
