@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **367 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **369 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -118,6 +118,17 @@ Tests and local helpers in this module.
 | --- | --- |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_create_batch(**kwargs)` (L87) | Implementation helper for fake create batch. |
 | `test_execute_batch_spec_uses_existing_batch_pipeline.fake_run(command, cwd, check)` (L105) | Implementation helper for fake run. |
+
+## `tests/test_bundled_gan_generator.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_generator_bundle_is_complete_and_pinned()` (L25) | Protect the embedded, peer-reviewable source snapshot from drift. | `hashlib.sha256(ARCHIVE.read_bytes()).hexdigest`, `tarfile.open`, `REQUIRED.issubset`, `hashlib.sha256`, `ARCHIVE.read_bytes`, `archive.getnames` |
+| `test_generator_launcher_exposes_extract_train_and_sweep()` (L33) | Exercise the same launcher and CLI that Spark users will invoke. | `subprocess.run` |
 
 ## `tests/test_campaign_batch_picker.py`
 
