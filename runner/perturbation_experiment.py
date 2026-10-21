@@ -20,7 +20,8 @@ from runner.batch_reports import extract_primary_metric_value
 
 DEFAULT_PERCENTAGES = tuple(range(0, 101, 10))
 RESULT_COLUMNS = (
-    "seed", "requested_pct", "actual_packet_pct", "metric_id",
+    "seed", "requested_pct", "actual_packet_pct", "base_dataset_path",
+    "comparison_dataset_path", "metric_id",
     "execution_status", "domain_status", "primary_value",
     "dataset_path", "outcome_path",
 )
@@ -170,6 +171,8 @@ def collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[di
                 "seed": capture["seed"],
                 "requested_pct": capture["requested_pct"],
                 "actual_packet_pct": capture["actual_packet_pct"],
+                "base_dataset_path": capture.get("base_dataset_path", ""),
+                "comparison_dataset_path": capture.get("comparison_dataset_path", ""),
                 "metric_id": metric_id,
                 "execution_status": metric.get("status", ""),
                 "domain_status": metric.get("result_status", ""),
@@ -182,7 +185,8 @@ def collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[di
 
 def run_experiment(
     *,
-    source: Path,
+    base: Path,
+    comparison: Path,
     plan: Path,
     model: Path,
     generator_script: Path,
@@ -196,8 +200,13 @@ def run_experiment(
     prepare_only: bool = False,
     experiment_mode: bool = False,
 ) -> dict:
-    """Prepare one GAN sweep and one existing fixed-plan CBR batch per seed."""
-    source = _file_path(source, "Source capture", {".pcap", ".pcapng"})
+    """Compare fixed Dataset 1 with Dataset 2 and its generated trailing suffixes."""
+    base = _file_path(base, "Dataset 1 (base reference)", {".pcap", ".pcapng"})
+    comparison = _file_path(comparison, "Dataset 2 (comparison)", {".pcap", ".pcapng"})
+    if base == comparison:
+        raise ValueError("Choose separate Dataset 1 (base) and Dataset 2 (comparison) captures.")
+    # The GAN replaces packets only from Dataset 2. Dataset 1 never enters the generator.
+    source = comparison
     plan = _file_path(plan, "Fixed test plan", {".json"})
     model = _file_path(model, "CTGAN model")
     generator_script = _file_path(generator_script, "Trusted GAN generator", {".py"})
@@ -212,6 +221,12 @@ def run_experiment(
     if size_tolerance_pct < 0:
         raise ValueError("File-size tolerance cannot be negative.")
     source_plan = _load_plan(plan)
+    if not reference_bound_metric_ids(source_plan):
+        raise ValueError(
+            "The fixed PCAP plan contains no reference-comparison metrics. "
+            "Create a plan with an independent reference PCAP first; the runner "
+            "will then bind those metrics to Dataset 1 for every comparison."
+        )
     if experiment_mode:
         from runner.experiment_contract import validate_final_experiment_plan
         validate_final_experiment_plan(source_plan)
@@ -225,8 +240,12 @@ def run_experiment(
         "name": "ctgan_trailing_suffix",
         "status": "running",
         "started_at": datetime.now(timezone.utc).isoformat(),
-        "source_path": str(source),
-        "source_sha256": file_sha256(source),
+        "base_dataset_path": str(base),
+        "base_dataset_sha256": file_sha256(base),
+        "comparison_dataset_path": str(comparison),
+        "comparison_dataset_sha256": file_sha256(comparison),
+        "source_path": str(comparison),
+        "source_sha256": file_sha256(comparison),
         "model_path": str(model),
         "model_sha256": file_sha256(model),
         "generator_script": str(generator_script),
@@ -259,19 +278,23 @@ def run_experiment(
                 percentages=percentages, seed=seed,
                 size_tolerance_pct=size_tolerance_pct,
             )
+            for capture in captures:
+                capture["base_dataset_path"] = str(base)
+                capture["comparison_dataset_path"] = str(comparison)
             matrix_path = seed_root / "fixed_plan_batch.json"
-            has_reference_metrics = bool(reference_bound_metric_ids(source_plan))
             build_fixed_plan_matrix(
                 name=f"gan-trailing-suffix-seed-{seed}",
                 plan_path=plan,
                 candidate_paths=[Path(row["dataset_path"]) for row in captures],
-                reference_paths=[source] if has_reference_metrics else [],
+                reference_paths=[base],
                 output_path=matrix_path,
                 overwrite=False,
                 repo_root=root,
             )
             run = {
                 "seed": seed,
+                "base_dataset_path": str(base),
+                "comparison_dataset_path": str(comparison),
                 "matrix": str(matrix_path),
                 "captures": captures,
                 "batch_output_dir": str(seed_root / "evaluation"),
