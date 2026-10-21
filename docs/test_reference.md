@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **352 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **359 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -707,6 +707,29 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write(path: Path, packets)` (L9) | Implementation helper for write. |
+
+## `tests/test_perturbation_experiment.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_integer_list_rejects_duplicates_and_bad_values()` (L65) | Verifies that integer list rejects duplicates and bad values. | `parse_integer_set`, `pytest.raises` |
+| `test_cli_requires_explicit_zero_baseline()` (L73) | Verifies that CLI requires explicit zero baseline. | `pytest.raises`, `parse_args` |
+| `test_manifest_sweep_validates_and_orders(tmp_path)` (L82) | Verifies that manifest sweep validates and orders. | `_fixture`, `_validate` |
+| `test_manifest_rejects_corrupted_hash(tmp_path)` (L89) | Verifies that manifest rejects corrupted hash. | `_fixture`, `changed.write_bytes`, `pytest.raises`, `_validate` |
+| `test_manifest_rejects_missing_provenance(tmp_path)` (L97) | Verifies that manifest rejects missing provenance. | `_fixture`, `(out / 'gan_010.packet_labels.csv').unlink`, `pytest.raises`, `_validate` |
+| `test_independent_packet_count_must_match(tmp_path, monkeypatch)` (L104) | Verifies that independent packet count must match. | `_fixture`, `monkeypatch.setattr`, `pytest.raises`, `adapter.validate_generation` |
+| `test_outcome_metric_values_are_joined_to_percentages(tmp_path)` (L116) | Verifies that outcome metric values are joined to percentages. | `_fixture`, `_validate`, `result_path.write_text`, `state.write_text`, `collect_metric_rows` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_fixture(tmp_path: Path)` (L19) | Implementation helper for fixture. |
+| `_validate(source, model, out, **kwargs)` (L57) | Implementation helper for validate. |
 
 ## `tests/test_plan_builder.py`
 
