@@ -883,22 +883,22 @@ Python symbols defined by `runner/friendly_tui.py`.
 | `_initialise_colours() -> None` (L176) | function | Internal | Implementation helper for initialise colours. |
 | `_status_attr(ok: bool) -> int` (L189) | function | Internal | Implementation helper for status attr. |
 | `_choice_dialog(stdscr, title: str, choices: tuple[str, ...], current: object) -> str | None` (L195) | function | Internal | Implementation helper for choice dialog. |
-| `_dataset_browser_entries(directory: Path, root: Path)` (L227) | function | Internal | Implementation helper for dataset browser entries. |
-| `_friendly_dataset_browser(stdscr, root: Path, initial: str) -> str | None` (L235) | function | Internal | Implementation helper for friendly dataset browser. |
-| `_rows_for_fields(fields: list[TuiField]) -> list[tuple[int | None, str]]` (L321) | function | Internal | Implementation helper for rows for fields. |
-| `_refresh_auto_output(fields: list[TuiField], root: Path) -> None` (L332) | function | Internal | Implementation helper for refresh auto output. |
-| `_review_single(stdscr, fields: list[TuiField], root: Path) -> bool` (L339) | function | Internal | Implementation helper for review single. |
-| `_edit_single_field(stdscr, field: TuiField, fields: list[TuiField], root: Path) -> None` (L358) | function | Internal | Implementation helper for edit single field. |
-| `_single_setup_curses(stdscr, fields: list[TuiField], root: Path) -> list[TuiField] | None` (L380) | function | Internal | Implementation helper for single setup curses. |
-| `launch_single_tui(args, repo_root: Path | None = None)` (L484) | function | Public | Implementation helper for launch single tui. |
-| `batch_visible_field_names(show_advanced: bool) -> tuple[str, ...]` (L493) | function | Public | Implementation helper for batch visible field names. |
-| `batch_review_lines(state: dict[str, Any]) -> list[str]` (L510) | function | Public | Implementation helper for batch review lines. |
-| `_review_batch(stdscr, state: dict[str, Any]) -> bool` (L526) | function | Internal | Implementation helper for review batch. |
-| `_batch_value(state: dict[str, Any], name: str) -> str` (L542) | function | Internal | Implementation helper for batch value. |
-| `_batch_label(name: str) -> str` (L558) | function | Internal | Implementation helper for batch label. |
-| `_batch_help(name: str) -> str` (L573) | function | Internal | Implementation helper for batch help. |
-| `_friendly_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L588) | function | Internal | Implementation helper for friendly batch setup curses. |
-| `launch_friendly_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L716) | function | Public | Implementation helper for launch friendly batch tui. |
+| `_dataset_browser_entries(directory: Path, root: Path, allowed_suffixes: frozenset[str] | set[str] | None = None)` (L227) | function | Internal | List directories and files allowed by this picker (datasets by default). |
+| `_friendly_dataset_browser(stdscr, root: Path, initial: str, *, title: str = 'Choose dataset', allowed_suffixes: frozenset[str] | set[str] | None = None, start_dir: Path | None = None) -> str | None` (L239) | function | Internal | Shared single-file browser for PCAPs, plans, checkpoints and scripts. |
+| `_rows_for_fields(fields: list[TuiField]) -> list[tuple[int | None, str]]` (L337) | function | Internal | Implementation helper for rows for fields. |
+| `_refresh_auto_output(fields: list[TuiField], root: Path) -> None` (L348) | function | Internal | Implementation helper for refresh auto output. |
+| `_review_single(stdscr, fields: list[TuiField], root: Path) -> bool` (L355) | function | Internal | Implementation helper for review single. |
+| `_edit_single_field(stdscr, field: TuiField, fields: list[TuiField], root: Path) -> None` (L374) | function | Internal | Implementation helper for edit single field. |
+| `_single_setup_curses(stdscr, fields: list[TuiField], root: Path) -> list[TuiField] | None` (L396) | function | Internal | Implementation helper for single setup curses. |
+| `launch_single_tui(args, repo_root: Path | None = None)` (L500) | function | Public | Implementation helper for launch single tui. |
+| `batch_visible_field_names(show_advanced: bool) -> tuple[str, ...]` (L509) | function | Public | Implementation helper for batch visible field names. |
+| `batch_review_lines(state: dict[str, Any]) -> list[str]` (L526) | function | Public | Implementation helper for batch review lines. |
+| `_review_batch(stdscr, state: dict[str, Any]) -> bool` (L542) | function | Internal | Implementation helper for review batch. |
+| `_batch_value(state: dict[str, Any], name: str) -> str` (L558) | function | Internal | Implementation helper for batch value. |
+| `_batch_label(name: str) -> str` (L574) | function | Internal | Implementation helper for batch label. |
+| `_batch_help(name: str) -> str` (L589) | function | Internal | Implementation helper for batch help. |
+| `_friendly_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L604) | function | Internal | Implementation helper for friendly batch setup curses. |
+| `launch_friendly_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L732) | function | Public | Implementation helper for launch friendly batch tui. |
 
 ## `runner/human_summary.py`
 
@@ -1068,8 +1068,12 @@ Python symbols defined by `runner/perturbation_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_ask(prompt: str, default: str = '') -> str` (L9) | function | Internal | Implementation helper for ask. |
-| `run_perturbation_tool_action(repo_root: Path) -> int` (L15) | function | Public | Offer a simple setup dialogue after exiting the curses Toolbox menu. |
+| `initial_settings() -> dict[str, str | bool]` (L32) | function | Public | Defaults deliberately require explicit selection of all four inputs. |
+| `_resolve_file(value: str, root: Path) -> Path` (L46) | function | Internal | Resolve paths relative to the repository as all CBR CLI tools do. |
+| `validate_settings(values: dict, root: Path) -> list[str]` (L52) | function | Public | Preflight the chosen files and prevent accidental output replacement. |
+| `build_command(values: dict, root: Path) -> list[str]` (L83) | function | Public | Construct the existing CLI invocation from selected setup values. |
+| `_setup_curses(stdscr, root: Path) -> dict | None` (L100) | function | Internal | Display the GAN setup menu; Enter opens a picker on file fields. |
+| `run_perturbation_tool_action(repo_root: Path) -> int` (L185) | function | Public | Select files with the standard browser then run the existing CLI. |
 
 ## `runner/plan_builder.py`
 
