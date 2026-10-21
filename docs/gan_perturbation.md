@@ -31,8 +31,16 @@ python run_perturbation.py \
 ```
 
 Or launch `python run_plan.py --tui`, select **GAN perturbation experiment**,
-and follow the setup prompts. Use `--prepare-only` to generate validated
-captures and reusable batch manifests without running metrics.
+and use the same **curses file selector** as other CBR-Tests workflows.
+On each file field, press **Enter** to browse directories and select the capture,
+fixed JSON plan, trained `.pkl` checkpoint or `traffic_gan.py` script. The
+browser filters by file type and supports **R** (repository), **H** (home),
+**M** (`/media`), **e** (enter a path), Backspace (parent) and **q** (return).
+Use **e** on the setup screen to type a path instead. Choose your percentages,
+seeds and empty output directory; press **r** to validate and run. Toggle
+**Prepare captures only** to generate validated captures and reusable batch
+manifests without executing the metrics. The file selector retains your choices
+when you return to the setup screen.
 
 ## Experimental contract
 
