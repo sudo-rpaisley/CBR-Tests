@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **362 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **367 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -462,6 +462,7 @@ Tests and local helpers in this module.
 | `test_fixed_plan_matrix_without_references_points_every_job_at_source_plan(tmp_path)` (L80) | Verifies that fixed plan matrix without references points every job at source plan. | `_reference_plan`, `_pcap`, `build_fixed_plan_matrix`, `output.read_text` |
 | `test_references_require_reference_enabled_plan(tmp_path)` (L99) | Verifies that references require reference enabled plan. | `_pcap`, `build_plan`, `write_plan`, `pytest.raises`, `build_fixed_plan_matrix` |
 | `test_toolbox_exposes_fixed_pcap_plan_mapping()` (L122) | Verifies that toolbox exposes fixed PCAP plan mapping. | `keys.index`, `_menu_items` |
+| `test_explicit_reference_overrides_stale_plan_reference(tmp_path)` (L128) | Verifies that explicit reference overrides stale plan reference. | `_reference_plan`, `stale_reference.unlink`, `_pcap`, `build_fixed_plan_matrix`, `next`, `batch_path.read_text`, `bound_path.read_text`, `base.resolve` |
 
 ### Test helpers
 
@@ -725,7 +726,11 @@ Tests and local helpers in this module.
 | `test_outcome_metric_values_are_joined_to_percentages(tmp_path)` (L116) | Verifies that outcome metric values are joined to percentages. | `_fixture`, `_validate`, `result_path.write_text`, `state.write_text`, `collect_metric_rows` |
 | `test_gan_picker_filters_file_types_without_changing_dataset_picker(tmp_path)` (L134) | Verifies that gan picker filters file types without changing dataset picker. | `(tmp_path / 'nested').mkdir`, `_dataset_browser_entries`, `(tmp_path / filename).write_text`, `frozenset` |
 | `test_gan_setup_validates_selected_files_and_builds_command(tmp_path)` (L149) | Verifies that gan setup validates selected files and builds command. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / filename).write_text`, `validate_settings`, `command.index` |
-| `test_gan_setup_rejects_missing_files_and_existing_output(tmp_path)` (L172) | Verifies that gan setup rejects missing files and existing output. | `initial_settings`, `validate_settings`, `any`, `(tmp_path / 'prior-run').mkdir`, `(tmp_path / 'prior-run' / 'experiment.json').write_text`, `issue.lower` |
+| `test_gan_setup_rejects_missing_files_and_existing_output(tmp_path)` (L173) | Verifies that gan setup rejects missing files and existing output. | `initial_settings`, `validate_settings`, `any`, `(tmp_path / 'prior-run').mkdir`, `(tmp_path / 'prior-run' / 'experiment.json').write_text`, `issue.lower` |
+| `test_gan_setup_prevents_using_same_capture_twice(tmp_path)` (L185) | Verifies that gan setup prevents using same capture twice. | `(tmp_path / 'shared.pcap').write_bytes`, `initial_settings`, `values.update`, `any`, `validate_settings` |
+| `test_cli_requires_both_datasets()` (L193) | Verifies that CLI requires both datasets. | `parse_args`, `pytest.raises` |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference(tmp_path, monkeypatch)` (L209) | Verifies that experiment uses dataset2 for generation and dataset1 for every reference. | `monkeypatch.setattr`, `experiment.run_experiment`, `filename.write_bytes`, `generated_command.append`, `type('Completed', (), {'returncode': 0})`, `reference_paths.extend`, `all`, `kwargs['output_path'].write_text` |
+| `test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_path, monkeypatch)` (L268) | Verifies that experiment rejects plan with no comparison metrics before output. | `monkeypatch.setattr`, `(tmp_path / name).write_text`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
 
 ### Test helpers
 
@@ -733,6 +738,9 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_fixture(tmp_path: Path)` (L19) | Implementation helper for fixture. |
 | `_validate(source, model, out, **kwargs)` (L57) | Implementation helper for validate. |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_run(command, **kwargs)` (L229) | Implementation helper for fake run. |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_validate(**kwargs)` (L234) | Implementation helper for fake validate. |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_matrix(**kwargs)` (L244) | Implementation helper for fake matrix. |
 
 ## `tests/test_plan_builder.py`
 
