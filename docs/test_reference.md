@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **369 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **375 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -737,11 +737,17 @@ Tests and local helpers in this module.
 | `test_outcome_metric_values_are_joined_to_percentages(tmp_path)` (L116) | Verifies that outcome metric values are joined to percentages. | `_fixture`, `_validate`, `result_path.write_text`, `state.write_text`, `collect_metric_rows` |
 | `test_gan_picker_filters_file_types_without_changing_dataset_picker(tmp_path)` (L134) | Verifies that gan picker filters file types without changing dataset picker. | `(tmp_path / 'nested').mkdir`, `_dataset_browser_entries`, `(tmp_path / filename).write_text`, `frozenset` |
 | `test_gan_setup_validates_selected_files_and_builds_command(tmp_path)` (L149) | Verifies that gan setup validates selected files and builds command. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / filename).write_text`, `validate_settings`, `command.index` |
-| `test_gan_setup_rejects_missing_files_and_existing_output(tmp_path)` (L173) | Verifies that gan setup rejects missing files and existing output. | `initial_settings`, `validate_settings`, `any`, `(tmp_path / 'prior-run').mkdir`, `(tmp_path / 'prior-run' / 'experiment.json').write_text`, `issue.lower` |
-| `test_gan_setup_prevents_using_same_capture_twice(tmp_path)` (L185) | Verifies that gan setup prevents using same capture twice. | `(tmp_path / 'shared.pcap').write_bytes`, `initial_settings`, `values.update`, `any`, `validate_settings` |
-| `test_cli_requires_both_datasets()` (L193) | Verifies that CLI requires both datasets. | `parse_args`, `pytest.raises` |
-| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference(tmp_path, monkeypatch)` (L209) | Verifies that experiment uses dataset2 for generation and dataset1 for every reference. | `monkeypatch.setattr`, `experiment.run_experiment`, `filename.write_bytes`, `generated_command.append`, `type('Completed', (), {'returncode': 0})`, `reference_paths.extend`, `all`, `kwargs['output_path'].write_text` |
-| `test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_path, monkeypatch)` (L268) | Verifies that experiment rejects plan with no comparison metrics before output. | `monkeypatch.setattr`, `(tmp_path / name).write_text`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
+| `test_gan_setup_rejects_missing_files_and_existing_output(tmp_path)` (L174) | Verifies that gan setup rejects missing files and existing output. | `initial_settings`, `validate_settings`, `any`, `(tmp_path / 'prior-run').mkdir`, `(tmp_path / 'prior-run' / 'experiment.json').write_text`, `issue.lower` |
+| `test_gan_setup_prevents_using_same_capture_twice(tmp_path)` (L186) | Verifies that gan setup prevents using same capture twice. | `(tmp_path / 'shared.pcap').write_bytes`, `initial_settings`, `values.update`, `any`, `validate_settings` |
+| `test_cli_requires_both_datasets()` (L194) | Verifies that CLI requires both datasets. | `parse_args`, `pytest.raises` |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference(tmp_path, monkeypatch)` (L210) | Verifies that experiment uses dataset2 for generation and dataset1 for every reference. | `monkeypatch.setattr`, `experiment.run_experiment`, `filename.write_bytes`, `generated_command.append`, `type('Completed', (), {'returncode': 0})`, `reference_paths.extend`, `all`, `kwargs['output_path'].write_text` |
+| `test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_path, monkeypatch)` (L269) | Verifies that experiment rejects plan with no comparison metrics before output. | `monkeypatch.setattr`, `(tmp_path / name).write_text`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
+| `test_training_picker_selects_many_pcaps_without_exposing_tabular_data(tmp_path)` (L284) | Verifies that training picker selects many pcaps without exposing tabular data. | `(tmp_path / name).write_text`, `_browser_entries`, `frozenset` |
+| `test_training_mode_builds_multiple_pcap_arguments(tmp_path)` (L294) | Verifies that training mode builds multiple PCAP arguments. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / name).write_text`, `validate_settings`, `command.count`, `command.index` |
+| `test_training_mode_rejects_selected_evaluation_capture(tmp_path)` (L314) | Verifies that training mode rejects selected evaluation capture. | `initial_settings`, `values.update`, `any`, `(tmp_path / name).write_text`, `validate_settings` |
+| `test_training_cli_rejects_checkpoint_and_training_inputs_together()` (L327) | Verifies that training CLI rejects checkpoint and training inputs together. | `parse_args`, `pytest.raises` |
+| `test_training_capture_duplicate_content_rejected_before_output(tmp_path, monkeypatch)` (L341) | Verifies that training capture duplicate content rejected before output. | `paths.items`, `paths['training.pcap'].write_bytes`, `path.write_text`, `paths['base.pcap'].read_bytes`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
+| `test_multiple_training_pcaps_extract_merge_and_train(tmp_path, monkeypatch)` (L359) | Verifies that multiple training pcaps extract merge and train. | `script.write_text`, `monkeypatch.setattr`, `gan_training.train_from_captures`, `model.is_file`, `path.write_bytes`, `events.append`, `type('Completed', (), {'returncode': 0})`, `(tmp_path / 'training' / 'training_flows.csv').open` |
 
 ### Test helpers
 
@@ -749,9 +755,10 @@ Tests and local helpers in this module.
 | --- | --- |
 | `_fixture(tmp_path: Path)` (L19) | Implementation helper for fixture. |
 | `_validate(source, model, out, **kwargs)` (L57) | Implementation helper for validate. |
-| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_run(command, **kwargs)` (L229) | Implementation helper for fake run. |
-| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_validate(**kwargs)` (L234) | Implementation helper for fake validate. |
-| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_matrix(**kwargs)` (L244) | Implementation helper for fake matrix. |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_run(command, **kwargs)` (L230) | Implementation helper for fake run. |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_validate(**kwargs)` (L235) | Implementation helper for fake validate. |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_matrix(**kwargs)` (L245) | Implementation helper for fake matrix. |
+| `test_multiple_training_pcaps_extract_merge_and_train.fake_run(command, **kwargs)` (L369) | Implementation helper for fake run. |
 
 ## `tests/test_plan_builder.py`
 
