@@ -16,7 +16,8 @@ from runner.perturbation_experiment import parse_integer_set
 
 
 FILE_FIELDS = (
-    ("input", "Evaluation PCAP/PCAPNG", frozenset({".pcap", ".pcapng"}), "datasets"),
+    ("base", "Dataset 1: base/reference PCAP", frozenset({".pcap", ".pcapng"}), "datasets"),
+    ("comparison", "Dataset 2: comparison PCAP (perturb)", frozenset({".pcap", ".pcapng"}), "datasets"),
     ("plan", "Existing PCAP test plan", frozenset({".json"}), "plans"),
     ("model", "Trained CTGAN model", frozenset({".pkl"}), "models"),
     ("generator_script", "GAN generator script", frozenset({".py"}), ""),
@@ -30,9 +31,10 @@ ALL_FIELDS = (*FILE_FIELDS, *TEXT_FIELDS, ("prepare_only", "Prepare captures onl
 
 
 def initial_settings() -> dict[str, str | bool]:
-    """Defaults deliberately require explicit selection of all four inputs."""
+    """Require both capture roles, a fixed plan, model and generator."""
     return {
-        "input": "",
+        "base": "",
+        "comparison": "",
         "plan": "",
         "model": "",
         "generator_script": "",
@@ -62,6 +64,10 @@ def validate_settings(values: dict, root: Path) -> list[str]:
             issues.append(f"{title} does not exist: {path}")
         elif path.suffix.lower() not in suffixes:
             issues.append(f"{title} must be {', '.join(sorted(suffixes))}.")
+    if values.get("base") and values.get("comparison") and (
+        _resolve_file(str(values["base"]), root) == _resolve_file(str(values["comparison"]), root)
+    ):
+        issues.append("Dataset 1 and Dataset 2 must be different captures.")
     output = str(values.get("output_dir", "")).strip()
     if not output:
         issues.append("Choose a new output directory.")
@@ -84,7 +90,8 @@ def build_command(values: dict, root: Path) -> list[str]:
     """Construct the existing CLI invocation from selected setup values."""
     command = [
         sys.executable, str(root / "run_perturbation.py"),
-        "--input", str(_resolve_file(str(values["input"]), root)),
+        "--base", str(_resolve_file(str(values["base"]), root)),
+        "--comparison", str(_resolve_file(str(values["comparison"]), root)),
         "--plan", str(_resolve_file(str(values["plan"]), root)),
         "--model", str(_resolve_file(str(values["model"]), root)),
         "--generator-script", str(_resolve_file(str(values["generator_script"]), root)),
@@ -102,14 +109,14 @@ def _setup_curses(stdscr, root: Path) -> dict | None:
     curses.curs_set(0)
     values = initial_settings()
     selected = 0
-    message = "Select the four files using Enter. Edit numbers/paths using Enter or e."
+    message = "Select Dataset 1 and Dataset 2, then plan/model/script. Enter browses files."
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
         _safe_addstr(stdscr, 0, 0, "CBR Tests - GAN trailing-suffix experiment", curses.A_BOLD)
         _safe_addstr(stdscr, 1, 0, "Up/Down move   Enter select/edit   e type path   Space toggle   r review/run   q/Esc cancel")
-        _safe_addstr(stdscr, 2, 0, "Uses a separate trained CTGAN checkpoint; original capture will never be modified.")
-        _safe_addstr(stdscr, 3, 0, "Source and GAN training captures must be independent. New/empty output directory only.")
+        _safe_addstr(stdscr, 2, 0, "Compares Dataset 1 vs Dataset 2 (0%), then Dataset 1 vs Dataset 2 at 10-100% GAN replacement.")
+        _safe_addstr(stdscr, 3, 0, "Only Dataset 2 is perturbed. GAN training must use independent captures.")
         visible = max(1, height - 8)
         start = min(max(0, selected - visible + 1), max(0, len(ALL_FIELDS) - visible))
         for row, item in enumerate(ALL_FIELDS[start : start + visible], start=5):
@@ -191,10 +198,11 @@ def run_perturbation_tool_action(repo_root: Path) -> int:
         return 0
     command = build_command(selected, root)
     print("\nGAN trailing-suffix perturbation experiment")
-    print(f"Evaluation capture: {selected['input']}")
+    print(f"Dataset 1 (fixed base/reference): {selected['base']}")
+    print(f"Dataset 2 (comparison to perturb): {selected['comparison']}")
     print(f"Fixed test plan: {selected['plan']}")
     print(f"Model: {selected['model']}")
     print(f"Generator: {selected['generator_script']}")
     print(f"Percentages: {selected['percentages']}   Seeds: {selected['seeds']}")
-    print("Input capture is read-only. Launching CBR-Tests experiment.\n")
+    print("Dataset 1 remains fixed; Dataset 2 is perturbed only in generated copies.\n")
     return subprocess.run(command, cwd=root, check=False).returncode
