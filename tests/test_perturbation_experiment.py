@@ -73,7 +73,7 @@ def test_integer_list_rejects_duplicates_and_bad_values():
 def test_cli_requires_explicit_zero_baseline():
     with pytest.raises(SystemExit):
         parse_args([
-            "--input", "test.pcap", "--plan", "test.json",
+            "--base", "reference.pcap", "--comparison", "test.pcap", "--plan", "test.json",
             "--model", "test.pkl", "--generator-script", "traffic_gan.py",
             "--output-dir", "out", "--percentages", "10,20",
         ])
@@ -148,11 +148,12 @@ def test_gan_picker_filters_file_types_without_changing_dataset_picker(tmp_path)
 
 def test_gan_setup_validates_selected_files_and_builds_command(tmp_path):
     from runner.perturbation_tui import build_command, initial_settings, validate_settings
-    for filename in ("source.pcapng", "plan.json", "ctgan.pkl", "traffic_gan.py"):
+    for filename in ("reference.pcapng", "source.pcapng", "plan.json", "ctgan.pkl", "traffic_gan.py"):
         (tmp_path / filename).write_text("fixture", encoding="utf-8")
     values = initial_settings()
     values.update({
-        "input": "source.pcapng",
+        "base": "reference.pcapng",
+        "comparison": "source.pcapng",
         "plan": "plan.json",
         "model": "ctgan.pkl",
         "generator_script": "traffic_gan.py",
@@ -160,8 +161,8 @@ def test_gan_setup_validates_selected_files_and_builds_command(tmp_path):
     })
     assert validate_settings(values, tmp_path) == []
     command = build_command(values, tmp_path)
-    assert "--input" in command
-    assert command[command.index("--input") + 1] == str(tmp_path / "source.pcapng")
+    assert command[command.index("--base") + 1] == str(tmp_path / "reference.pcapng")
+    assert command[command.index("--comparison") + 1] == str(tmp_path / "source.pcapng")
     assert "--generator-script" in command
     assert command[command.index("--generator-script") + 1] == str(tmp_path / "traffic_gan.py")
     assert "--prepare-only" not in command
@@ -173,9 +174,107 @@ def test_gan_setup_rejects_missing_files_and_existing_output(tmp_path):
     from runner.perturbation_tui import initial_settings, validate_settings
     values = initial_settings()
     problems = validate_settings(values, tmp_path)
-    assert any("evaluation pcap" in issue.lower() for issue in problems)
+    assert any("dataset 1" in issue.lower() for issue in problems)
+    assert any("dataset 2" in issue.lower() for issue in problems)
     values["output_dir"] = "prior-run"
     (tmp_path / "prior-run").mkdir()
     (tmp_path / "prior-run" / "experiment.json").write_text("{}")
     problems = validate_settings(values, tmp_path)
     assert any("must be new or empty" in issue for issue in problems)
+
+def test_gan_setup_prevents_using_same_capture_twice(tmp_path):
+    from runner.perturbation_tui import initial_settings, validate_settings
+    (tmp_path / "shared.pcap").write_bytes(b"capture")
+    values = initial_settings()
+    values.update({"base": "shared.pcap", "comparison": "shared.pcap"})
+    assert any("must be different" in issue for issue in validate_settings(values, tmp_path))
+
+
+def test_cli_requires_both_datasets():
+    with pytest.raises(SystemExit):
+        parse_args([
+            "--comparison", "dataset2.pcap", "--plan", "test.json",
+            "--model", "test.pkl", "--generator-script", "traffic_gan.py",
+            "--output-dir", "out",
+        ])
+    parsed = parse_args([
+        "--base", "dataset1.pcap", "--comparison", "dataset2.pcap",
+        "--plan", "test.json", "--model", "test.pkl",
+        "--generator-script", "traffic_gan.py", "--output-dir", "out",
+    ])
+    assert parsed.base == Path("dataset1.pcap")
+    assert parsed.comparison == Path("dataset2.pcap")
+
+
+def test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference(
+    tmp_path, monkeypatch
+):
+    from runner import perturbation_experiment as experiment
+
+    base = tmp_path / "dataset1.pcap"
+    comparison = tmp_path / "dataset2.pcap"
+    plan = tmp_path / "plan.json"
+    model = tmp_path / "gan.pkl"
+    script = tmp_path / "traffic_gan.py"
+    for filename in (base, comparison, plan, model, script):
+        filename.write_bytes(filename.name.encode())
+    fixed_plan = {"metrics": [{
+        "metric_id": "test_from_reference", "enabled": True,
+        "input_requirements": {"reference_dataset_path": str(base)}
+    }]}
+    monkeypatch.setattr(experiment, "_load_plan", lambda _: fixed_plan)
+    generated_command = []
+    reference_paths = []
+
+    def fake_run(command, **kwargs):
+        generated_command.append(command)
+        return type("Completed", (), {"returncode": 0})()
+
+    def fake_validate(**kwargs):
+        assert kwargs["source_path"] == comparison.resolve()
+        assert kwargs["percentages"] == (0, 10)
+        return [{
+            "seed": kwargs["seed"],
+            "requested_pct": pct,
+            "actual_packet_pct": pct,
+            "dataset_path": str(kwargs["seed_dir"] / f"gan_{pct:03d}.pcap"),
+        } for pct in kwargs["percentages"]]
+
+    def fake_matrix(**kwargs):
+        reference_paths.extend(kwargs["reference_paths"])
+        assert len(kwargs["candidate_paths"]) == 2
+        assert all(str(p).endswith(".pcap") for p in kwargs["candidate_paths"])
+        kwargs["output_path"].write_text("{}", encoding="utf-8")
+        return kwargs["output_path"]
+
+    monkeypatch.setattr(experiment.subprocess, "run", fake_run)
+    monkeypatch.setattr(experiment, "validate_generation", fake_validate)
+    monkeypatch.setattr(experiment, "build_fixed_plan_matrix", fake_matrix)
+    result = experiment.run_experiment(
+        base=base, comparison=comparison, plan=plan, model=model,
+        generator_script=script, output_dir=tmp_path / "results",
+        percentages=(0, 10), seeds=(7,), prepare_only=True,
+    )
+    assert result["status"] == "prepared"
+    assert reference_paths == [base.resolve()]
+    assert generated_command[0][generated_command[0].index("--input") + 1] == str(comparison.resolve())
+    assert str(base.resolve()) not in generated_command[0]
+    assert result["base_dataset_path"] == str(base.resolve())
+    assert result["comparison_dataset_path"] == str(comparison.resolve())
+    assert [x["requested_pct"] for x in result["runs"][0]["captures"]] == [0, 10]
+
+
+def test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_path, monkeypatch):
+    from runner import perturbation_experiment as experiment
+    names = ("a.pcap", "b.pcap", "plan.json", "gan.pkl", "traffic_gan.py")
+    for name in names:
+        (tmp_path / name).write_text(name, encoding="utf-8")
+    monkeypatch.setattr(experiment, "_load_plan", lambda _: {"metrics": []})
+    output = tmp_path / "output"
+    with pytest.raises(ValueError, match="reference-comparison metrics"):
+        experiment.run_experiment(
+            base=tmp_path / names[0], comparison=tmp_path / names[1],
+            plan=tmp_path / names[2], model=tmp_path / names[3],
+            generator_script=tmp_path / names[4], output_dir=output,
+        )
+    assert not output.exists()
