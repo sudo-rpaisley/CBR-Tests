@@ -5,13 +5,15 @@ existing plans, and existing outcomes are unchanged.
 
 ## Design
 
+The comparison is **Dataset 1 vs Dataset 2**, then **Dataset 1 vs Dataset 2-10%**, **Dataset 1 vs Dataset 2-20%**, through 100%. Dataset 1 stays unchanged in every pair; the percentages apply only to Dataset 2.
+
 `run_perturbation.py` orchestrates the companion CTGAN program's `sweep`
 command and reuses `runner.fixed_plan_matrix.build_fixed_plan_matrix` plus the
 existing `run_batch.py` execution/checkpoint/reporting machinery.
 
 The generator is **not bundled into CBR-Tests**. Install the companion
 `ctgan-pcap-same-count` project separately, train a checkpoint on **different
-captures** from the evaluation PCAP, and provide its trusted `traffic_gan.py`
+captures** from Dataset 1 and Dataset 2, and provide its trusted `traffic_gan.py`
 and `.pkl` checkpoint by path. Never load untrusted pickle checkpoints.
 
 ### Example
@@ -19,7 +21,8 @@ and `.pkl` checkpoint by path. Never load untrusted pickle checkpoints.
 ```bash
 # Install CBR-Tests (Scapy) and the companion generator (CTGAN, PyTorch).
 python run_perturbation.py \
-  --input /data/evaluation.pcapng \
+  --base /data/dataset1.pcapng \
+  --comparison /data/dataset2.pcapng \
   --plan plans/my_frozen_pcap_plan.json \
   --model /data/models/ctgan.pkl \
   --generator-script /path/to/ctgan-pcap-same-count/traffic_gan.py \
@@ -32,8 +35,9 @@ python run_perturbation.py \
 
 Or launch `python run_plan.py --tui`, select **GAN perturbation experiment**,
 and use the same **curses file selector** as other CBR-Tests workflows.
-On each file field, press **Enter** to browse directories and select the capture,
-fixed JSON plan, trained `.pkl` checkpoint or `traffic_gan.py` script. The
+On each file field, press **Enter** to browse directories and select **Dataset 1
+(base/reference PCAP)**, **Dataset 2 (comparison PCAP)**, the fixed JSON plan,
+trained `.pkl` checkpoint or `traffic_gan.py` script. The
 browser filters by file type and supports **R** (repository), **H** (home),
 **M** (`/media`), **e** (enter a path), Backspace (parent) and **q** (return).
 Use **e** on the setup screen to type a path instead. Choose your percentages,
@@ -46,13 +50,19 @@ when you return to the setup screen.
 
 - **Same number of packets** in each generated capture. The adapter
   independently reads the full output to check the packet count.
-- **Last X% replaced**: 10% keeps the first 90%, 20% keeps the first 80%.
-  The 0% candidate must be byte-for-byte identical to the source.
+- **Two separate capture roles:** Dataset 1 is the **fixed reference** and is never
+  perturbed; Dataset 2 is the **candidate** that the GAN modifies. The first
+  comparison is Dataset 1 vs original Dataset 2 (0%). The next is Dataset 1 vs
+  Dataset 2 with the final 10% replaced, then Dataset 1 vs Dataset 2 with the
+  final 20% replaced, and so on. The base remains fixed across all seeds.
+- **Last X% of Dataset 2 replaced**: 10% keeps its first 90%, 20% keeps its first 80%.
+  The 0% candidate must be byte-for-byte identical to original Dataset 2.
 - **Approximately same size**, not exact per-packet bytes. The adapter rejects
   captures outside `--size-tolerance-pct` (default ±5%).
-- **One frozen plan** reused for every percentage. If that plan includes
-  reference-bound metrics, they are explicitly bound to the unmodified PCAP,
-  using the existing fixed-plan matrix binding machinery.
+- **One frozen plan** reused for every percentage. The plan **must include
+  reference-comparison metrics**. Those metrics are explicitly rebound to Dataset 1
+  for each evaluation, using the existing fixed-plan matrix binding machinery;
+  intrinsic metrics are still calculated for Dataset 2 candidates.
 - **Multiple seeds** use separate batch output directories to prevent the
   existing batch outcome filename convention from colliding.
 - **Fail closed** on missing output/provenance, changed source/model hashes,
@@ -66,8 +76,8 @@ when you return to the setup screen.
 
 ```text
 outcomes/gan-pilot/
-  experiment.json                # source, plan, generator and model SHA-256; seeds; status
-  perturbation_metrics.csv       # seed, percentage, metric, status, primary value, outcome
+  experiment.json                # base + comparison identities/hashes, plan, GAN and seeds
+  perturbation_metrics.csv       # base, comparison, seed, percentage, metric, native value
   seed_42/
     captures/
       gan_000.pcapng
@@ -96,6 +106,9 @@ using `run_batch.py --resume`. This first adapter version does **not**
 resume a partially prepared experiment automatically.
 
 ## Limitations and controls
+
+The generator should be trained on a third, independent training capture. Do not train it on
+Dataset 1 or Dataset 2 if the evaluation is intended to test generalisation.
 
 This GAN version learns **tabular flow features**, then reconstructs
 packet templates and pseudo-random opaque payload bytes. It is not a
