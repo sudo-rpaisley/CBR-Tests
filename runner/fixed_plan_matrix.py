@@ -149,8 +149,13 @@ def build_fixed_plan_matrix(
     output = output.resolve()
 
     reference_metric_ids = reference_bound_metric_ids(source_plan)
-    configured_reference = _configured_reference(source_plan) if reference_metric_ids else None
     explicit_reference_override = bool(references)
+    # An explicitly selected reference supersedes the plan's former path.
+    # Do not require an obsolete configured reference to remain on disk.
+    configured_reference = (
+        _configured_reference(source_plan)
+        if reference_metric_ids and not explicit_reference_override else None
+    )
     if references and not reference_metric_ids:
         raise ValueError(
             "References were selected but the PCAP plan has no reference-enabled metrics. "
