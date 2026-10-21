@@ -187,7 +187,7 @@ def run_experiment(
     *,
     base: Path,
     comparison: Path,
-    plan: Path,
+    plan: Path | None,
     model: Path | None,
     generator_script: Path,
     output_dir: Path,
@@ -203,6 +203,7 @@ def run_experiment(
     training_epochs: int = 100,
     training_batch_size: int = 100,
     training_device: str = "cpu",
+    auto_plan: bool = False,
 ) -> dict:
     """Compare fixed Dataset 1 with Dataset 2 using an existing or newly trained CTGAN."""
     base = _file_path(base, "Dataset 1 (base reference)", {".pcap", ".pcapng"})
@@ -211,7 +212,12 @@ def run_experiment(
         raise ValueError("Choose separate Dataset 1 (base) and Dataset 2 (comparison) captures.")
     # The GAN replaces packets only from Dataset 2. Dataset 1 never enters the generator.
     source = comparison
-    plan = _file_path(plan, "Fixed test plan", {".json"})
+    if auto_plan and plan is not None:
+        raise ValueError("Choose either an auto-generated comparison plan or an existing plan, not both.")
+    if not auto_plan:
+        if plan is None:
+            raise ValueError("Choose an existing comparison plan or enable --auto-plan.")
+        plan = _file_path(plan, "Fixed test plan", {".json"})
     if bool(model) == bool(training_pcaps):
         raise ValueError("Choose either an existing CTGAN model or independent training captures.")
     training = tuple(
@@ -242,14 +248,14 @@ def run_experiment(
         raise ValueError("Seeds must be distinct nonnegative integers.")
     if size_tolerance_pct < 0:
         raise ValueError("File-size tolerance cannot be negative.")
-    source_plan = _load_plan(plan)
-    if not reference_bound_metric_ids(source_plan):
+    source_plan = _load_plan(plan) if plan is not None else None
+    if source_plan is not None and not reference_bound_metric_ids(source_plan):
         raise ValueError(
-            "The fixed PCAP plan contains no reference-comparison metrics. "
-            "Create a plan with an independent reference PCAP first; the runner "
-            "will then bind those metrics to Dataset 1 for every comparison."
+            "The selected PCAP plan has no reference-comparison metrics. "
+            "Choose Auto-create comparison plan in the Toolbox (or --auto-plan) "
+            "to make a correct, frozen plan from Dataset 1 and Dataset 2."
         )
-    if experiment_mode:
+    if experiment_mode and source_plan is not None:
         from runner.experiment_contract import validate_final_experiment_plan
         validate_final_experiment_plan(source_plan)
     root = Path(__file__).resolve().parents[1]
@@ -257,6 +263,34 @@ def run_experiment(
     if destination.exists() and any(destination.iterdir()):
         raise FileExistsError(f"Output directory must be empty to protect previous experiments: {destination}")
     destination.mkdir(parents=True, exist_ok=True)
+    auto_plan_report_path: Path | None = None
+    if auto_plan:
+        from runner.plan_builder import build_plan, write_plan
+        # Use the existing scientific builder rather than appending metrics to
+        # an inapplicable plan. It includes only runnable, supported PCAP metrics.
+        generated, report = build_plan(
+            plan_id="gan-reference-comparison",
+            name="GAN perturbation: Dataset 1 vs Dataset 2",
+            description=(
+                "Frozen auto-generated packet/reference metrics. Dataset 1 "
+                "is the fixed reference, Dataset 2 is the comparison capture."
+            ),
+            dataset_path=comparison,
+            reference_dataset_path=base,
+        )
+        if not reference_bound_metric_ids(generated):
+            raise ValueError(
+                "The automatic plan builder did not find runnable PCAP reference-comparison "
+                "metrics. Check dataset formats and available metric adapters."
+            )
+        if experiment_mode:
+            from runner.experiment_contract import validate_final_experiment_plan
+            validate_final_experiment_plan(generated)
+        plan = write_plan(destination / "auto_comparison_plan.json", generated)
+        auto_plan_report_path = destination / "auto_plan_report.json"
+        _write_json(auto_plan_report_path, report)
+        source_plan = generated
+    assert plan is not None and source_plan is not None
     metadata = {
         "schema_version": 1,
         "name": "ctgan_trailing_suffix",
@@ -283,6 +317,9 @@ def run_experiment(
         "generator_sha256": file_sha256(generator_script),
         "plan_path": str(plan),
         "plan_sha256": file_sha256(plan),
+        "plan_source": "auto_generated_from_dataset1_dataset2" if auto_plan else "selected_existing_plan",
+        "plan_reference_metric_ids": reference_bound_metric_ids(source_plan),
+        "auto_plan_report": str(auto_plan_report_path) if auto_plan_report_path else None,
         "percentages": list(percentages),
         "seeds": list(seeds),
         "basis": basis,
