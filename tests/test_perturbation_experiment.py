@@ -228,6 +228,7 @@ def test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_referenc
 
     def fake_run(command, **kwargs):
         generated_command.append(command)
+        Path(command[command.index("--output") + 1]).mkdir(parents=True, exist_ok=True)
         return type("Completed", (), {"returncode": 0})()
 
     def fake_validate(**kwargs):
