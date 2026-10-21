@@ -37,7 +37,7 @@ def initial_settings() -> dict[str, str | bool]:
         "comparison": "",
         "plan": "",
         "model": "",
-        "generator_script": "",
+        "generator_script": "traffic_gan.py",
         "output_dir": "outcomes/gan-perturbation",
         "percentages": "0,10,20,30,40,50,60,70,80,90,100",
         "seeds": "42",
