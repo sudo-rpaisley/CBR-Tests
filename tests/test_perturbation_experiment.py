@@ -396,3 +396,110 @@ def test_multiple_training_pcaps_extract_merge_and_train(tmp_path, monkeypatch):
     assert len(provenance["training_captures"]) == 2
     with (tmp_path / "training" / "training_flows.csv").open(newline="", encoding="utf-8") as stream:
         assert len(list(csv.DictReader(stream))) == 60
+
+def test_auto_plan_default_needs_no_selected_plan(tmp_path):
+    from runner.perturbation_tui import build_command, initial_settings, validate_settings
+    for name in ("reference.pcap", "comparison.pcap", "training.pcap", "traffic_gan.py"):
+        (tmp_path / name).write_text(name, encoding="utf-8")
+    values = initial_settings()
+    values.update({
+        "base": "reference.pcap", "comparison": "comparison.pcap",
+        "training_pcaps": ["training.pcap"], "generator_script": "traffic_gan.py",
+    })
+    assert validate_settings(values, tmp_path) == []
+    command = build_command(values, tmp_path)
+    assert "--auto-plan" in command
+    assert "--plan" not in command
+    assert "--train-pcap" in command
+
+
+def test_existing_plan_preflight_detects_missing_comparison_metrics(tmp_path):
+    from runner.plan_builder import build_plan, write_plan
+    from runner.perturbation_tui import (
+        EXISTING_PLAN, initial_settings, validate_settings,
+    )
+    for name in ("reference.pcap", "comparison.pcap", "training.pcap", "traffic_gan.py"):
+        (tmp_path / name).write_text(name, encoding="utf-8")
+    plan, _ = build_plan(
+        plan_id="no-reference", name="No reference",
+        dataset_path=tmp_path / "comparison.pcap",
+    )
+    write_plan(tmp_path / "no_ref.json", plan)
+    values = initial_settings()
+    values.update({
+        "base": "reference.pcap", "comparison": "comparison.pcap",
+        "training_pcaps": ["training.pcap"], "generator_script": "traffic_gan.py",
+        "plan_source": EXISTING_PLAN, "plan": "no_ref.json",
+    })
+    issues = validate_settings(values, tmp_path)
+    assert any("Auto-create comparison plan" in issue for issue in issues)
+
+
+def test_cli_auto_plan_and_explicit_plan_are_mutually_exclusive():
+    options = [
+        "--base", "dataset1.pcap", "--comparison", "dataset2.pcap",
+        "--model", "trusted.pkl", "--output-dir", "out",
+    ]
+    parsed = parse_args(options + ["--auto-plan"])
+    assert parsed.auto_plan and parsed.plan is None
+    with pytest.raises(SystemExit):
+        parse_args(options + ["--auto-plan", "--plan", "plan.json"])
+
+
+def test_auto_plan_uses_comparison_as_candidate_and_base_as_reference(tmp_path, monkeypatch):
+    from runner import perturbation_experiment as experiment
+    from runner.reference_binding import reference_bound_metric_ids
+
+    paths = {
+        name: tmp_path / name
+        for name in ("dataset1.pcap", "dataset2.pcap", "model.pkl", "traffic_gan.py")
+    }
+    for name, path in paths.items():
+        path.write_text(name, encoding="utf-8")
+    generator_commands = []
+    matrices = []
+
+    def fake_run(command, **kwargs):
+        generator_commands.append(command)
+        if "--output" in command:
+            Path(command[command.index("--output") + 1]).mkdir(parents=True, exist_ok=True)
+        return type("Completed", (), {"returncode": 0})()
+
+    def fake_validate(**kwargs):
+        return [
+            {
+                "seed": kwargs["seed"], "requested_pct": pct,
+                "actual_packet_pct": float(pct),
+                "dataset_path": str(kwargs["seed_dir"] / f"gan_{pct:03d}.pcap"),
+            }
+            for pct in kwargs["percentages"]
+        ]
+
+    def fake_matrix(**kwargs):
+        matrices.append(kwargs)
+        kwargs["output_path"].write_text("{}", encoding="utf-8")
+        return kwargs["output_path"]
+
+    monkeypatch.setattr(experiment.subprocess, "run", fake_run)
+    monkeypatch.setattr(experiment, "validate_generation", fake_validate)
+    monkeypatch.setattr(experiment, "build_fixed_plan_matrix", fake_matrix)
+    output = tmp_path / "auto-experiment"
+    outcome = experiment.run_experiment(
+        base=paths["dataset1.pcap"], comparison=paths["dataset2.pcap"],
+        plan=None, auto_plan=True, model=paths["model.pkl"],
+        generator_script=paths["traffic_gan.py"], output_dir=output,
+        percentages=(0, 10), seeds=(42,), prepare_only=True,
+    )
+    assert outcome["status"] == "prepared"
+    assert outcome["plan_source"] == "auto_generated_from_dataset1_dataset2"
+    plan = json.loads((output / "auto_comparison_plan.json").read_text(encoding="utf-8"))
+    assert reference_bound_metric_ids(plan)
+    assert plan["plan_creation"]["dataset"] == str(paths["dataset2.pcap"].resolve())
+    assert plan["plan_creation"]["reference_dataset"] == str(paths["dataset1.pcap"].resolve())
+    assert (output / "auto_plan_report.json").is_file()
+    assert matrices[0]["plan_path"] == output / "auto_comparison_plan.json"
+    assert matrices[0]["reference_paths"] == [paths["dataset1.pcap"].resolve()]
+    assert generator_commands[0][generator_commands[0].index("--input") + 1] == str(
+        paths["dataset2.pcap"].resolve()
+    )
+    assert outcome["plan_sha256"] == experiment.file_sha256(output / "auto_comparison_plan.json")
