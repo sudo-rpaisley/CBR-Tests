@@ -10,9 +10,15 @@ from runner.friendly_tui import _choice_dialog, _friendly_dataset_browser, _safe
 from runner.tui import _edit_text
 from runner.tui_batch import _multi_file_browser
 from runner.perturbation_experiment import parse_integer_set
+from runner.fixed_plan_matrix import _load_plan
+from runner.reference_binding import reference_bound_metric_ids
 
 
 CAPTURE_SUFFIXES = frozenset({".pcap", ".pcapng"})
+PLAN_MODES = ("Auto-create comparison plan", "Use existing PCAP plan")
+AUTO_PLAN = PLAN_MODES[0]
+EXISTING_PLAN = PLAN_MODES[1]
+PLAN_SOURCE = ("plan_source", "Test plan source")
 MODEL_MODES = ("Train new CTGAN from PCAPs", "Use existing CTGAN checkpoint")
 TRAIN_MODE = MODEL_MODES[0]
 EXISTING_MODE = MODEL_MODES[1]
@@ -43,6 +49,7 @@ def initial_settings() -> dict:
         "base": "",
         "comparison": "",
         "plan": "",
+        "plan_source": AUTO_PLAN,
         "model_source": TRAIN_MODE,
         "training_pcaps": [],
         "model": "",
@@ -64,7 +71,10 @@ def _resolve_file(value: str, root: Path) -> Path:
 
 def visible_fields(values: dict) -> tuple:
     """Show only the fields applicable to the selected training mode."""
-    fields = [*FILE_FIELDS[:3], MODEL_SOURCE]
+    fields = [*FILE_FIELDS[:2], PLAN_SOURCE]
+    if values.get("plan_source") == EXISTING_PLAN:
+        fields.append(FILE_FIELDS[2])
+    fields.append(MODEL_SOURCE)
     if values.get("model_source") == TRAIN_MODE:
         fields.extend((TRAINING_INPUT, *TRAINING_TEXT_FIELDS, DEVICE_FIELD))
     else:
@@ -79,7 +89,12 @@ def validate_settings(values: dict, root: Path) -> list[str]:
     mode = values.get("model_source", EXISTING_MODE)
     if mode not in MODEL_MODES:
         issues.append("Choose how to obtain the CTGAN model.")
-    required_files = (*FILE_FIELDS[:3], FILE_FIELDS[4])
+    required_files = (*FILE_FIELDS[:2], FILE_FIELDS[4])
+    plan_mode = values.get("plan_source", AUTO_PLAN)
+    if plan_mode not in PLAN_MODES:
+        issues.append("Select automatic plan creation or an existing PCAP plan.")
+    if plan_mode == EXISTING_PLAN:
+        required_files += (FILE_FIELDS[2],)
     if mode == EXISTING_MODE:
         required_files += (FILE_FIELDS[3],)
     for key, title, suffixes, _ in required_files:
@@ -93,6 +108,17 @@ def validate_settings(values: dict, root: Path) -> list[str]:
         elif path.suffix.lower() not in suffixes:
             issues.append(f"{title} must be {', '.join(sorted(suffixes))}.")
 
+    if plan_mode == EXISTING_PLAN and values.get("plan"):
+        plan_path = _resolve_file(str(values["plan"]), root)
+        if plan_path.is_file() and plan_path.suffix.lower() == ".json":
+            try:
+                if not reference_bound_metric_ids(_load_plan(plan_path)):
+                    issues.append(
+                        "Selected plan has no reference-comparison metrics. "
+                        "Switch Test plan source to Auto-create comparison plan."
+                    )
+            except (ValueError, OSError) as exc:
+                issues.append(f"Selected test plan is invalid: {exc}")
     base = _resolve_file(str(values["base"]), root) if values.get("base") else None
     comparison = _resolve_file(str(values["comparison"]), root) if values.get("comparison") else None
     if base and comparison and base == comparison:
@@ -143,12 +169,15 @@ def build_command(values: dict, root: Path) -> list[str]:
         sys.executable, str(root / "run_perturbation.py"),
         "--base", str(_resolve_file(str(values["base"]), root)),
         "--comparison", str(_resolve_file(str(values["comparison"]), root)),
-        "--plan", str(_resolve_file(str(values["plan"]), root)),
         "--generator-script", str(_resolve_file(str(values["generator_script"]), root)),
         "--output-dir", str(_resolve_file(str(values["output_dir"]), root)),
         "--percentages", str(values["percentages"]),
         "--seeds", str(values["seeds"]),
     ]
+    if values.get("plan_source", AUTO_PLAN) == AUTO_PLAN:
+        command.append("--auto-plan")
+    else:
+        command.extend(("--plan", str(_resolve_file(str(values["plan"]), root))))
     if values.get("model_source") == TRAIN_MODE:
         for capture in values.get("training_pcaps", []):
             command.extend(("--train-pcap", str(_resolve_file(capture, root))))
@@ -169,7 +198,7 @@ def _setup_curses(stdscr, root: Path) -> dict | None:
     curses.curs_set(0)
     values = initial_settings()
     selected = 0
-    message = "Choose Dataset 1, Dataset 2, then training captures; Enter opens file selectors."
+    message = "Choose Dataset 1, Dataset 2, then training PCAPs; a comparison plan is created automatically."
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
@@ -178,7 +207,7 @@ def _setup_curses(stdscr, root: Path) -> dict | None:
         _safe_addstr(stdscr, 0, 0, "CBR Tests - CTGAN training and perturbation", curses.A_BOLD)
         _safe_addstr(stdscr, 1, 0, "Up/Down move  Enter choose/edit  e type path  Space toggle  r run  q/Esc cancel")
         _safe_addstr(stdscr, 2, 0, "Dataset 1 is fixed; only Dataset 2 is perturbed. Training PCAPs must be separate.")
-        _safe_addstr(stdscr, 3, 0, "Train a model here or select a previously trained checkpoint. No Git uploads of captures.")
+        _safe_addstr(stdscr, 3, 0, "Creates a comparison plan automatically, or choose an existing reference-enabled plan.")
         visible = max(1, height - 8)
         start = min(max(0, selected - visible + 1), max(0, len(fields) - visible))
         for row, field in enumerate(fields[start : start + visible], start=5):
@@ -222,6 +251,12 @@ def _setup_curses(stdscr, root: Path) -> dict | None:
         if name == "prepare_only":
             if key in (10, 13, 32):
                 values[name] = not bool(values[name])
+            continue
+        if name == "plan_source" and key in (10, 13, 32):
+            chosen = _choice_dialog(stdscr, "Test plan source", PLAN_MODES, values[name])
+            if chosen is not None:
+                values[name] = chosen
+                message = f"Test plan: {chosen}"
             continue
         if name == "model_source" and key in (10, 13, 32):
             chosen = _choice_dialog(stdscr, "CTGAN model source", MODEL_MODES, values[name])
@@ -279,6 +314,10 @@ def run_perturbation_tool_action(repo_root: Path) -> int:
     print("\nGAN trailing-suffix experiment")
     print(f"Dataset 1 (fixed reference): {selected['base']}")
     print(f"Dataset 2 (comparison): {selected['comparison']}")
+    if selected["plan_source"] == AUTO_PLAN:
+        print("Test plan: automatically generated from Dataset 1 and Dataset 2.")
+    else:
+        print(f"Existing test plan: {selected['plan']}")
     if selected["model_source"] == TRAIN_MODE:
         print(f"Training from {len(selected['training_pcaps'])} independent PCAPs.")
         print(f"Device: {selected['training_device']}; epochs: {selected['training_epochs']}")
