@@ -188,7 +188,7 @@ def run_experiment(
     base: Path,
     comparison: Path,
     plan: Path,
-    model: Path,
+    model: Path | None,
     generator_script: Path,
     output_dir: Path,
     percentages: tuple[int, ...] = DEFAULT_PERCENTAGES,
@@ -199,8 +199,12 @@ def run_experiment(
     size_tolerance_pct: float = 5.0,
     prepare_only: bool = False,
     experiment_mode: bool = False,
+    training_pcaps: tuple[Path, ...] = (),
+    training_epochs: int = 100,
+    training_batch_size: int = 100,
+    training_device: str = "cpu",
 ) -> dict:
-    """Compare fixed Dataset 1 with Dataset 2 and its generated trailing suffixes."""
+    """Compare fixed Dataset 1 with Dataset 2 using an existing or newly trained CTGAN."""
     base = _file_path(base, "Dataset 1 (base reference)", {".pcap", ".pcapng"})
     comparison = _file_path(comparison, "Dataset 2 (comparison)", {".pcap", ".pcapng"})
     if base == comparison:
@@ -208,7 +212,25 @@ def run_experiment(
     # The GAN replaces packets only from Dataset 2. Dataset 1 never enters the generator.
     source = comparison
     plan = _file_path(plan, "Fixed test plan", {".json"})
-    model = _file_path(model, "CTGAN model")
+    if bool(model) == bool(training_pcaps):
+        raise ValueError("Choose either an existing CTGAN model or independent training captures.")
+    training = tuple(
+        _file_path(candidate, "Training capture", {".pcap", ".pcapng"})
+        for candidate in training_pcaps
+    )
+    training_hashes = [file_sha256(candidate) for candidate in training]
+    if len(set(training)) != len(training) or len(set(training_hashes)) != len(training):
+        raise ValueError("Each selected training capture must be distinct.")
+    if training and (
+        {base, comparison}.intersection(training)
+        or {file_sha256(base), file_sha256(comparison)}.intersection(training_hashes)
+    ):
+        raise ValueError("GAN training PCAPs must be independent of both Dataset 1 and Dataset 2.")
+    if training_epochs < 1 or training_batch_size < 10 or training_batch_size % 10:
+        raise ValueError("Training epochs must be positive and batch size a multiple of ten (>=10).")
+    if training_device not in {"cpu", "cuda"}:
+        raise ValueError("Training device must be cpu or cuda.")
+    model = _file_path(model, "CTGAN model", {".pkl"}) if model is not None else None
     generator_script = _file_path(generator_script, "Trusted GAN generator", {".py"})
     if source.stat().st_size == 0:
         raise ValueError("Source capture must not be empty.")
@@ -246,8 +268,17 @@ def run_experiment(
         "comparison_dataset_sha256": file_sha256(comparison),
         "source_path": str(comparison),
         "source_sha256": file_sha256(comparison),
-        "model_path": str(model),
-        "model_sha256": file_sha256(model),
+        "model_source": "train_from_selected_pcaps" if training else "existing_checkpoint",
+        "training_captures": [
+            {"path": str(path), "sha256": checksum}
+            for path, checksum in zip(training, training_hashes)
+        ],
+        "training_parameters": (
+            {"epochs": training_epochs, "batch_size": training_batch_size,
+             "device": training_device, "seed": seeds[0]} if training else None
+        ),
+        "model_path": str(model) if model is not None else None,
+        "model_sha256": file_sha256(model) if model is not None else None,
         "generator_script": str(generator_script),
         "generator_sha256": file_sha256(generator_script),
         "plan_path": str(plan),
@@ -262,6 +293,24 @@ def run_experiment(
     _write_json(experiment_manifest, metadata)
     all_metric_rows: list[dict] = []
     try:
+        if training:
+            # Import only when requested; ordinary CBR runner never depends on CTGAN.
+            from runner.gan_training import train_from_captures
+            print(
+                f"Training CTGAN on {len(training)} independent capture(s) "
+                f"({training_device}, {training_epochs} epochs).", flush=True
+            )
+            model, training_record = train_from_captures(
+                captures=training, generator_script=generator_script,
+                output_dir=destination / "training",
+                epochs=training_epochs, batch_size=training_batch_size,
+                device=training_device, seed=seeds[0],
+            )
+            metadata["training"] = training_record
+            metadata["model_path"] = str(model)
+            metadata["model_sha256"] = file_sha256(model)
+            _write_json(experiment_manifest, metadata)
+        assert model is not None
         for seed in seeds:
             seed_root = destination / f"seed_{seed}"
             capture_dir = seed_root / "captures"
