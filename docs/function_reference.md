@@ -524,7 +524,7 @@ Python symbols defined by `run_perturbation.py`.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `parse_args(argv: list[str] | None = None) -> argparse.Namespace` (L10) | function | Public | Parses args. |
-| `main(argv: list[str] | None = None) -> int` (L47) | function | Public | Implementation helper for main. |
+| `main(argv: list[str] | None = None) -> int` (L48) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -1463,3 +1463,11 @@ Python symbols defined by `scripts/rerun_and_compare.py`.
 | `_resolved_plan_payload(run_definition: Path) -> tuple[Path, dict]` (L75) | function | Internal | Resolve either a direct plan or a case's referenced plan. |
 | `_reject_legacy_representative_plan(run_definition: Path) -> None` (L94) | function | Internal | Implementation helper for reject legacy representative plan. |
 | `main() -> int` (L131) | function | Public | Implementation helper for main. |
+
+## `traffic_gan.py`
+
+Python symbols defined by `traffic_gan.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `main() -> None` (L30) | function | Public | Execute the CTGAN CLI using the source version committed to Git. |
