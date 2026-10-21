@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **375 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **379 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -748,6 +748,10 @@ Tests and local helpers in this module.
 | `test_training_cli_rejects_checkpoint_and_training_inputs_together()` (L327) | Verifies that training CLI rejects checkpoint and training inputs together. | `parse_args`, `pytest.raises` |
 | `test_training_capture_duplicate_content_rejected_before_output(tmp_path, monkeypatch)` (L341) | Verifies that training capture duplicate content rejected before output. | `paths.items`, `paths['training.pcap'].write_bytes`, `path.write_text`, `paths['base.pcap'].read_bytes`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
 | `test_multiple_training_pcaps_extract_merge_and_train(tmp_path, monkeypatch)` (L359) | Verifies that multiple training pcaps extract merge and train. | `script.write_text`, `monkeypatch.setattr`, `gan_training.train_from_captures`, `model.is_file`, `path.write_bytes`, `events.append`, `type('Completed', (), {'returncode': 0})`, `(tmp_path / 'training' / 'training_flows.csv').open` |
+| `test_auto_plan_default_needs_no_selected_plan(tmp_path)` (L400) | Verifies that auto plan default needs no selected plan. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / name).write_text`, `validate_settings` |
+| `test_existing_plan_preflight_detects_missing_comparison_metrics(tmp_path)` (L416) | Verifies that existing plan preflight detects missing comparison metrics. | `build_plan`, `write_plan`, `initial_settings`, `values.update`, `validate_settings`, `any`, `(tmp_path / name).write_text` |
+| `test_cli_auto_plan_and_explicit_plan_are_mutually_exclusive()` (L438) | Verifies that CLI auto plan and explicit plan are mutually exclusive. | `parse_args`, `pytest.raises` |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference(tmp_path, monkeypatch)` (L449) | Verifies that auto plan uses comparison as candidate and base as reference. | `paths.items`, `monkeypatch.setattr`, `experiment.run_experiment`, `reference_bound_metric_ids`, `(output / 'auto_plan_report.json').is_file`, `path.write_text`, `generator_commands.append`, `type('Completed', (), {'returncode': 0})` |
 
 ### Test helpers
 
@@ -759,6 +763,9 @@ Tests and local helpers in this module.
 | `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_validate(**kwargs)` (L235) | Implementation helper for fake validate. |
 | `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_matrix(**kwargs)` (L245) | Implementation helper for fake matrix. |
 | `test_multiple_training_pcaps_extract_merge_and_train.fake_run(command, **kwargs)` (L369) | Implementation helper for fake run. |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_run(command, **kwargs)` (L462) | Implementation helper for fake run. |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_validate(**kwargs)` (L468) | Implementation helper for fake validate. |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_matrix(**kwargs)` (L478) | Implementation helper for fake matrix. |
 
 ## `tests/test_plan_builder.py`
 
