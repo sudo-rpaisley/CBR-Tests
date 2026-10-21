@@ -16,8 +16,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Dataset 2: original comparison PCAP/PCAPNG; trailing packets are perturbed")
     parser.add_argument("--plan", type=Path, required=True, help="Existing fixed PCAP test plan JSON")
     parser.add_argument("--model", type=Path, required=True, help="Locally trained trusted CTGAN checkpoint")
-    parser.add_argument("--generator-script", type=Path, required=True,
-                        help="Path to traffic_gan.py from the companion CTGAN project")
+    parser.add_argument("--generator-script", type=Path,
+                        default=Path(__file__).resolve().parent / "traffic_gan.py",
+                        help="Optional generator script (defaults to bundled traffic_gan.py)")
     parser.add_argument("--output-dir", type=Path, required=True, help="New empty output directory")
     parser.add_argument("--percentages", default="0,10,20,30,40,50,60,70,80,90,100")
     parser.add_argument("--seeds", default="42", help="Comma-separated random seeds")
