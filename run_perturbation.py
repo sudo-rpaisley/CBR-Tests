@@ -11,7 +11,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate 0-100% CTGAN trailing-suffix PCAPs, validate them and evaluate with CBR-Tests."
     )
-    parser.add_argument("--input", type=Path, required=True, help="Evaluation PCAP/PCAPNG (never overwritten)")
+    parser.add_argument("--base", type=Path, required=True, help="Dataset 1: unmodified reference PCAP/PCAPNG")
+    parser.add_argument("--comparison", "--input", dest="comparison", type=Path, required=True,
+                        help="Dataset 2: original comparison PCAP/PCAPNG; trailing packets are perturbed")
     parser.add_argument("--plan", type=Path, required=True, help="Existing fixed PCAP test plan JSON")
     parser.add_argument("--model", type=Path, required=True, help="Locally trained trusted CTGAN checkpoint")
     parser.add_argument("--generator-script", type=Path, required=True,
@@ -45,7 +47,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     result = run_experiment(
-        source=args.input, plan=args.plan, model=args.model,
+        base=args.base, comparison=args.comparison, plan=args.plan, model=args.model,
         generator_script=args.generator_script, output_dir=args.output_dir,
         percentages=args.percentages, seeds=args.seeds, basis=args.basis,
         workers=args.workers, display=args.display,
