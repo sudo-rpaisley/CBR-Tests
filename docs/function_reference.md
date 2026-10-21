@@ -517,6 +517,15 @@ Python symbols defined by `run_campaign.py`.
 | `parse_args() -> argparse.Namespace` (L181) | function | Public | Parses args. |
 | `main() -> int` (L209) | function | Public | Implementation helper for main. |
 
+## `run_perturbation.py`
+
+Python symbols defined by `run_perturbation.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `parse_args(argv: list[str] | None = None) -> argparse.Namespace` (L10) | function | Public | Parses args. |
+| `main(argv: list[str] | None = None) -> int` (L45) | function | Public | Implementation helper for main. |
+
 ## `run_plan.py`
 
 Top-level command workflow from parsed arguments to the atomic outcome JSON.
@@ -1038,6 +1047,30 @@ Python symbols defined by `runner/pcap_compact.py`.
 | `build_compact_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L22) | function | Public | Decode a PCAP/PCAPNG into the canonical packet view with bounded overhead. This preserves the same full-population packet semantics as ``build_pcap_packet_dataframe`` while avoiding one Python dictionary per decoded packet. Repeated IP strings are shared during decoding and compact numeric/category dtypes are used for the finished dataframe. The function still intentionally materialises the canonical packet view: several metrics depend on the complete ordered packet population. The aim here is to remove avoidable representation overhead, not to introduce an implicit sample that would change the experiment. |
 | `dataframe_memory_bytes(dataframe: pd.DataFrame | None) -> int | None` (L104) | function | Public | Return pandas' deep in-memory estimate for provenance/resource policy. |
 
+## `runner/perturbation_experiment.py`
+
+Python symbols defined by `runner/perturbation_experiment.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `file_sha256(path: Path) -> str` (L29) | function | Public | Implementation helper for file sha256. |
+| `parse_integer_set(raw: str, *, low: int, high: int) -> tuple[int, ...]` (L37) | function | Public | Parses integer set. |
+| `_write_json(path: Path, data: dict) -> None` (L49) | function | Internal | Implementation helper for write JSON. |
+| `_file_path(path: Path, label: str, suffixes: set[str] | None = None) -> Path` (L54) | function | Internal | Implementation helper for file path. |
+| `packet_count(path: Path) -> int` (L63) | function | Public | Independent full-capture count; bounded memory via Scapy's reader. |
+| `validate_generation(*, seed_dir: Path, source_path: Path, model_path: Path, percentages: tuple[int, ...], seed: int, size_tolerance_pct: float, verify_packets: bool = True) -> list[dict]` (L70) | function | Public | Reject malformed/missing outputs before any costly CBR metric jobs start. |
+| `collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[dict]` (L146) | function | Public | Join CBR-Tests' authoritative per-job outcomes with perturbation metadata. |
+| `run_experiment(*, source: Path, plan: Path, model: Path, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False) -> dict` (L183) | function | Public | Prepare one GAN sweep and one existing fixed-plan CBR batch per seed. |
+
+## `runner/perturbation_tui.py`
+
+Python symbols defined by `runner/perturbation_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_ask(prompt: str, default: str = '') -> str` (L9) | function | Internal | Implementation helper for ask. |
+| `run_perturbation_tool_action(repo_root: Path) -> int` (L15) | function | Public | Offer a simple setup dialogue after exiting the curses Toolbox menu. |
+
 ## `runner/plan_builder.py`
 
 Python symbols defined by `runner/plan_builder.py`.
@@ -1328,12 +1361,12 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_menu_items() -> tuple[ToolboxItem, ...]` (L18) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
-| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L45) | function | Internal | Implementation helper for safe addstr. |
-| `_tool_rows() -> list[tuple[int | None, str, str]]` (L58) | function | Internal | Implementation helper for tool rows. |
-| `_choose_mode_curses(stdscr) -> str | None` (L69) | function | Internal | Implementation helper for choose mode curses. |
-| `_pause_after_tool() -> None` (L112) | function | Internal | Implementation helper for pause after tool. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L119) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
+| `_menu_items() -> tuple[ToolboxItem, ...]` (L19) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L51) | function | Internal | Implementation helper for safe addstr. |
+| `_tool_rows() -> list[tuple[int | None, str, str]]` (L64) | function | Internal | Implementation helper for tool rows. |
+| `_choose_mode_curses(stdscr) -> str | None` (L75) | function | Internal | Implementation helper for choose mode curses. |
+| `_pause_after_tool() -> None` (L118) | function | Internal | Implementation helper for pause after tool. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L125) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
 ## `scripts/build_documentation_inventory.py`
 
