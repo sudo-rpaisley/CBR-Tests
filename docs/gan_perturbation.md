@@ -11,21 +11,23 @@ The comparison is **Dataset 1 vs Dataset 2**, then **Dataset 1 vs Dataset 2-10%*
 command and reuses `runner.fixed_plan_matrix.build_fixed_plan_matrix` plus the
 existing `run_batch.py` execution/checkpoint/reporting machinery.
 
-The generator is **not bundled into CBR-Tests**. Install the companion
-`ctgan-pcap-same-count` project separately, train a checkpoint on **different
-captures** from Dataset 1 and Dataset 2, and provide its trusted `traffic_gan.py`
-and `.pkl` checkpoint by path. Never load untrusted pickle checkpoints.
+The CTGAN generator **is bundled into this Git feature branch**. Run
+`python -m pip install -r gan_generator/requirements.txt` and train its model
+using the root `traffic_gan.py` launcher. No Windows transfer or external ZIP
+is needed. The generator source archive and its SHA-256 are documented in
+[the bundled generator guide](../gan_generator/README.md). Train on a **third,
+independent** capture, not Dataset 1 or Dataset 2. Never load an untrusted
+pickle checkpoint.
 
 ### Example
 
 ```bash
-# Install CBR-Tests (Scapy) and the companion generator (CTGAN, PyTorch).
+# Install CBR-Tests and the bundled GAN dependencies first.
 python run_perturbation.py \
   --base /data/dataset1.pcapng \
   --comparison /data/dataset2.pcapng \
   --plan plans/my_frozen_pcap_plan.json \
   --model /data/models/ctgan.pkl \
-  --generator-script /path/to/ctgan-pcap-same-count/traffic_gan.py \
   --output-dir outcomes/gan-pilot \
   --percentages 0,10,20,30,40,50,60,70,80,90,100 \
   --seeds 42,43,44 \
@@ -37,7 +39,7 @@ Or launch `python run_plan.py --tui`, select **GAN perturbation experiment**,
 and use the same **curses file selector** as other CBR-Tests workflows.
 On each file field, press **Enter** to browse directories and select **Dataset 1
 (base/reference PCAP)**, **Dataset 2 (comparison PCAP)**, the fixed JSON plan,
-trained `.pkl` checkpoint or `traffic_gan.py` script. The
+trained `.pkl` checkpoint or the preselected repository-root `traffic_gan.py` script. The
 browser filters by file type and supports **R** (repository), **H** (home),
 **M** (`/media`), **e** (enter a path), Backspace (parent) and **q** (return).
 Use **e** on the setup screen to type a path instead. Choose your percentages,
