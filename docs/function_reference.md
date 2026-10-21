@@ -524,7 +524,7 @@ Python symbols defined by `run_perturbation.py`.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `parse_args(argv: list[str] | None = None) -> argparse.Namespace` (L10) | function | Public | Parses args. |
-| `main(argv: list[str] | None = None) -> int` (L48) | function | Public | Implementation helper for main. |
+| `main(argv: list[str] | None = None) -> int` (L59) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -900,6 +900,14 @@ Python symbols defined by `runner/friendly_tui.py`.
 | `_friendly_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L604) | function | Internal | Implementation helper for friendly batch setup curses. |
 | `launch_friendly_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L732) | function | Public | Implementation helper for launch friendly batch tui. |
 
+## `runner/gan_training.py`
+
+Python symbols defined by `runner/gan_training.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `train_from_captures(*, captures: tuple[Path, ...], generator_script: Path, output_dir: Path, epochs: int = 100, batch_size: int = 100, device: str = 'cpu', seed: int = 42) -> tuple[Path, dict]` (L18) | function | Public | Extract each capture, concatenate flow rows and train one checkpoint. |
+
 ## `runner/human_summary.py`
 
 Python symbols defined by `runner/human_summary.py`.
@@ -1060,7 +1068,7 @@ Python symbols defined by `runner/perturbation_experiment.py`.
 | `packet_count(path: Path) -> int` (L64) | function | Public | Independent full-capture count; bounded memory via Scapy's reader. |
 | `validate_generation(*, seed_dir: Path, source_path: Path, model_path: Path, percentages: tuple[int, ...], seed: int, size_tolerance_pct: float, verify_packets: bool = True) -> list[dict]` (L71) | function | Public | Reject malformed/missing outputs before any costly CBR metric jobs start. |
 | `collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[dict]` (L147) | function | Public | Join CBR-Tests' authoritative per-job outcomes with perturbation metadata. |
-| `run_experiment(*, base: Path, comparison: Path, plan: Path, model: Path, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False) -> dict` (L186) | function | Public | Compare fixed Dataset 1 with Dataset 2 and its generated trailing suffixes. |
+| `run_experiment(*, base: Path, comparison: Path, plan: Path, model: Path | None, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False, training_pcaps: tuple[Path, ...] = (), training_epochs: int = 100, training_batch_size: int = 100, training_device: str = 'cpu') -> dict` (L186) | function | Public | Compare fixed Dataset 1 with Dataset 2 using an existing or newly trained CTGAN. |
 
 ## `runner/perturbation_tui.py`
 
@@ -1068,12 +1076,13 @@ Python symbols defined by `runner/perturbation_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `initial_settings() -> dict[str, str | bool]` (L33) | function | Public | Require both capture roles, a fixed plan, model and generator. |
-| `_resolve_file(value: str, root: Path) -> Path` (L48) | function | Internal | Resolve paths relative to the repository as all CBR CLI tools do. |
-| `validate_settings(values: dict, root: Path) -> list[str]` (L54) | function | Public | Preflight the chosen files and prevent accidental output replacement. |
-| `build_command(values: dict, root: Path) -> list[str]` (L89) | function | Public | Construct the existing CLI invocation from selected setup values. |
-| `_setup_curses(stdscr, root: Path) -> dict | None` (L107) | function | Internal | Display the GAN setup menu; Enter opens a picker on file fields. |
-| `run_perturbation_tool_action(repo_root: Path) -> int` (L192) | function | Public | Select files with the standard browser then run the existing CLI. |
+| `initial_settings() -> dict` (L40) | function | Public | Default to training from separate captures; existing models remain available. |
+| `_resolve_file(value: str, root: Path) -> Path` (L60) | function | Internal | Implementation helper for resolve file. |
+| `visible_fields(values: dict) -> tuple` (L65) | function | Public | Show only the fields applicable to the selected training mode. |
+| `validate_settings(values: dict, root: Path) -> list[str]` (L76) | function | Public | Preflight paths, capture roles, training options, and safe outputs. |
+| `build_command(values: dict, root: Path) -> list[str]` (L140) | function | Public | Pass selected training PCAPs or an existing checkpoint to the same runner. |
+| `_setup_curses(stdscr, root: Path) -> dict | None` (L167) | function | Internal | A compact setup screen with a multi-PCAP training file selector. |
+| `run_perturbation_tool_action(repo_root: Path) -> int` (L271) | function | Public | Launch the guided picker and the existing perturbation CLI. |
 
 ## `runner/plan_builder.py`
 
@@ -1351,13 +1360,13 @@ Python symbols defined by `runner/tui_batch.py`.
 | `build_batch_spec(*, name: str, datasets: list[str], references: list[str] | None = None, run_id: str | None = None, per_dataset_metrics: bool = False, workers: int | None = None, display: str = 'compact', force: bool = False, dataset_summary: bool = True, refresh_dataset_summary: bool = False, fail_fast: bool = False) -> dict[str, Any]` (L81) | function | Public | Validate and normalise the batch settings selected in the TUI. |
 | `_normalise_initial_paths(values: list[str], root: Path) -> tuple[list[str], set[Path]]` (L130) | function | Internal | Implementation helper for normalise initial paths. |
 | `_toggle_selected(path: Path, selected: set[Path], ordered: list[str], root: Path) -> None` (L145) | function | Internal | Implementation helper for toggle selected. |
-| `_browser_entries(current_dir: Path, root: Path)` (L158) | function | Internal | Implementation helper for browser entries. |
-| `_typed_browser_path(value: str, *, current_dir: Path, root: Path) -> Path` (L166) | function | Internal | Implementation helper for typed browser path. |
-| `_multi_file_browser(stdscr, root: Path, initial_values: list[str], *, title: str, allow_empty: bool) -> list[str] | None` (L173) | function | Internal | Implementation helper for multi file browser. |
-| `_format_list(values: list[str]) -> str` (L299) | function | Internal | Implementation helper for format list. |
-| `_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L308) | function | Internal | Implementation helper for batch setup curses. |
-| `launch_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L461) | function | Public | Implementation helper for launch batch tui. |
-| `execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> dict[str, Any]` (L489) | function | Public | Create and execute the batch selected in the TUI using the standard batch pipeline. |
+| `_browser_entries(current_dir: Path, root: Path, allowed_suffixes = None)` (L158) | function | Internal | Implementation helper for browser entries. |
+| `_typed_browser_path(value: str, *, current_dir: Path, root: Path) -> Path` (L167) | function | Internal | Implementation helper for typed browser path. |
+| `_multi_file_browser(stdscr, root: Path, initial_values: list[str], *, title: str, allow_empty: bool, allowed_suffixes = None) -> list[str] | None` (L174) | function | Internal | Browse multiple datasets; optional suffix filter keeps old callers unchanged. |
+| `_format_list(values: list[str]) -> str` (L303) | function | Internal | Implementation helper for format list. |
+| `_batch_setup_curses(stdscr, initial: dict[str, Any], root: Path) -> dict[str, Any] | None` (L312) | function | Internal | Implementation helper for batch setup curses. |
+| `launch_batch_tui(args, repo_root: Path | None = None) -> dict[str, Any]` (L465) | function | Public | Implementation helper for launch batch tui. |
+| `execute_batch_spec(spec: dict[str, Any], repo_root: Path | None = None) -> dict[str, Any]` (L493) | function | Public | Create and execute the batch selected in the TUI using the standard batch pipeline. |
 
 ## `runner/unified_tui.py`
 
