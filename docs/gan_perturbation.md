@@ -27,7 +27,10 @@ python run_perturbation.py \
   --base /data/dataset1.pcapng \
   --comparison /data/dataset2.pcapng \
   --plan plans/my_frozen_pcap_plan.json \
-  --model /data/models/ctgan.pkl \
+  --train-pcap /data/independent-training-a.pcapng \
+  --train-pcap /data/independent-training-b.pcapng \
+  --training-epochs 100 \
+  --training-device cpu \
   --output-dir outcomes/gan-pilot \
   --percentages 0,10,20,30,40,50,60,70,80,90,100 \
   --seeds 42,43,44 \
@@ -37,16 +40,32 @@ python run_perturbation.py \
 
 Or launch `python run_plan.py --tui`, select **GAN perturbation experiment**,
 and use the same **curses file selector** as other CBR-Tests workflows.
-On each file field, press **Enter** to browse directories and select **Dataset 1
-(base/reference PCAP)**, **Dataset 2 (comparison PCAP)**, the fixed JSON plan,
-trained `.pkl` checkpoint or the preselected repository-root `traffic_gan.py` script. The
-browser filters by file type and supports **R** (repository), **H** (home),
+Press **Enter** to browse for Dataset 1, Dataset 2 and the frozen JSON plan.
+The default model source is **Train new CTGAN from PCAPs**. Select **Training
+PCAPs (one or more)** to open the existing multiple-file selector. Press
+**Space** to select independent `.pcap`/`.pcapng` files and **d** when done.
+The runner extracts flow features from each capture, concatenates the features
+and trains one checkpoint for all seeds and perturbation percentages.
+Alternatively, switch the model source to **Use existing CTGAN checkpoint**
+and browse for a trusted `.pkl` model. Configure epochs, batch size and
+CPU/CUDA using the same setup screen. The bundled script defaults to
+`traffic_gan.py`. The browser supports **R** (repository), **H** (home),
 **M** (`/media`), **e** (enter a path), Backspace (parent) and **q** (return).
 Use **e** on the setup screen to type a path instead. Choose your percentages,
 seeds and empty output directory; press **r** to validate and run. Toggle
 **Prepare captures only** to generate validated captures and reusable batch
 manifests without executing the metrics. The file selector retains your choices
 when you return to the setup screen.
+
+## Training safeguards
+
+Training capture paths and SHA-256 hashes are checked against Dataset 1 and
+Dataset 2 to prevent evaluation/training leakage, even when files are renamed.
+Capture hashes, extracted flow counts, merged feature CSV, model hash and
+training parameters are recorded in `experiment.json` and
+`training/training_manifest.json`. No packet captures or pickle models are
+committed to GitHub. Use `--model /path/to/ctgan.pkl` in place of
+`--train-pcap` arguments when reusing a trusted checkpoint.
 
 ## Experimental contract
 
@@ -70,14 +89,19 @@ when you return to the setup screen.
 - **Fail closed** on missing output/provenance, changed source/model hashes,
   mismatched file counts and invalid manifests. Output directory must be new
   or empty; previous experiment outputs will not be overwritten.
-- **No implicit training**: training is separate from evaluating. Store
-  the training dataset's identity and separation evidence alongside the model
-  as part of the experiment record.
+- **Explicit training source selection**: provide one or more independent
+  captures to train once before generating Dataset 2 perturbations, or choose an
+  existing checkpoint. Training inputs and model identities are recorded.
 
 ## Outputs
 
 ```text
 outcomes/gan-pilot/
+  training/                      # when a model is trained during setup
+    ctgan.pkl
+    training_flows.csv
+    training_manifest.json
+    individual_features/
   experiment.json                # base + comparison identities/hashes, plan, GAN and seeds
   perturbation_metrics.csv       # base, comparison, seed, percentage, metric, native value
   seed_42/
