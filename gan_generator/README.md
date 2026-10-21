@@ -60,7 +60,12 @@ then use it for every GAN percentage. Choose CPU or CUDA, epochs and batch size
 in the same screen. Training source hashes and checkpoint identity are recorded.
 
 You can still select **Use existing CTGAN checkpoint** to reuse a trusted
-`ctgan.pkl`. The frozen metric plan must contain reference-comparison metrics.
+`ctgan.pkl`. **Test plan source** defaults to **Auto-create comparison plan**
+from Dataset 1 (fixed reference) and Dataset 2 (comparison candidate), so no
+existing reference-enabled plan is needed. The generated plan and metric
+selection report are saved inside the experiment output directory. Choose
+**Use existing PCAP plan** only when you have an appropriate frozen plan
+containing reference-comparison metrics.
 
 **Run scripts with a single line, or do not leave a blank line between Bash
 lines ending in a backslash.**
