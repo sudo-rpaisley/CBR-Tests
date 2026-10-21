@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **359 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **362 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -723,6 +723,9 @@ Tests and local helpers in this module.
 | `test_manifest_rejects_missing_provenance(tmp_path)` (L97) | Verifies that manifest rejects missing provenance. | `_fixture`, `(out / 'gan_010.packet_labels.csv').unlink`, `pytest.raises`, `_validate` |
 | `test_independent_packet_count_must_match(tmp_path, monkeypatch)` (L104) | Verifies that independent packet count must match. | `_fixture`, `monkeypatch.setattr`, `pytest.raises`, `adapter.validate_generation` |
 | `test_outcome_metric_values_are_joined_to_percentages(tmp_path)` (L116) | Verifies that outcome metric values are joined to percentages. | `_fixture`, `_validate`, `result_path.write_text`, `state.write_text`, `collect_metric_rows` |
+| `test_gan_picker_filters_file_types_without_changing_dataset_picker(tmp_path)` (L134) | Verifies that gan picker filters file types without changing dataset picker. | `(tmp_path / 'nested').mkdir`, `_dataset_browser_entries`, `(tmp_path / filename).write_text`, `frozenset` |
+| `test_gan_setup_validates_selected_files_and_builds_command(tmp_path)` (L149) | Verifies that gan setup validates selected files and builds command. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / filename).write_text`, `validate_settings`, `command.index` |
+| `test_gan_setup_rejects_missing_files_and_existing_output(tmp_path)` (L172) | Verifies that gan setup rejects missing files and existing output. | `initial_settings`, `validate_settings`, `any`, `(tmp_path / 'prior-run').mkdir`, `(tmp_path / 'prior-run' / 'experiment.json').write_text`, `issue.lower` |
 
 ### Test helpers
 
