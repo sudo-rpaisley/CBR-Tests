@@ -27,7 +27,7 @@ from runner.batch_reports import extract_primary_metric_value
 CAPTURE_SUFFIXES = frozenset({".pcap", ".pcapng"})
 EXPORT_FIELDS = (
     "campaign_id", "run_date_utc", "group", "held_out", "held_out_sha256",
-    "training_files", "seed", "perturbation_pct", "actual_packet_pct",
+    "training_files", "attempt", "attempt_status", "seed", "perturbation_pct", "actual_packet_pct",
     "metric_id", "execution_status", "domain_status", "primary_value",
     "outcome_json", "outcome_sha256",
 )
@@ -35,7 +35,7 @@ MEASUREMENT_FIELDS = EXPORT_FIELDS + (
     "json_pointer", "value_type", "value_json", "numeric_value",
 )
 JOB_FIELDS = (
-    "campaign_id", "run_date_utc", "group", "held_out", "seed",
+    "campaign_id", "run_date_utc", "group", "held_out", "attempt", "attempt_status", "seed",
     "perturbation_pct", "dataset_path", "reference_path", "outcome_json",
     "outcome_sha256", "job_status", "metrics_in_outcome",
 )
@@ -173,7 +173,15 @@ def _case_completed(case: dict) -> bool:
     for run in experiment.get("runs", []):
         state = Path(run["batch_output_dir"]) / "batch_state.json"
         try:
-            if _load_json(state).get("status") != "completed":
+            saved = _load_json(state)
+            if saved.get("status") != "completed" or not saved.get("results"):
+                return False
+            if saved.get("requested_job_count") is not None and (
+                len(saved["results"]) != saved["requested_job_count"]
+            ):
+                return False
+            if any(not Path(str(job.get("output_path", ""))).is_file()
+                   for job in saved["results"]):
                 return False
         except (OSError, KeyError, ValueError, json.JSONDecodeError):
             return False
@@ -185,7 +193,7 @@ def _source_index(cases: list[dict]) -> dict[str, dict]:
 
 
 def export_results(campaign: dict, output: Path) -> dict:
-    """Rebuild outputs from COMPLETE raw outcomes, rather than append duplicates.
+    """Rebuild outputs from every readable attempt (including failed/partial jobs).
 
     Every metric execution record and full test_result is written to JSONL.
     Each nested test-result leaf (including arrays) is also written as a row
@@ -210,101 +218,115 @@ def export_results(campaign: dict, output: Path) -> dict:
         jobs_writer.writeheader()
 
         for case in campaign["cases"]:
-            if not _case_completed(case):
-                continue
-            experiment = _load_json(Path(case["output_dir"]) / "experiment.json")
-            for run in experiment["runs"]:
-                state = _load_json(Path(run["batch_output_dir"]) / "batch_state.json")
-                captures = {
-                    str(Path(cap["dataset_path"]).resolve()): cap
-                    for cap in run["captures"]
-                }
-                for job in state.get("results", []):
-                    candidate = str(Path(job.get("dataset_path", "")).resolve())
-                    capture = captures.get(candidate)
-                    if capture is None:
-                        raise ValueError(f"Batch job does not match a generated capture: {candidate}")
-                    outcome_path = Path(str(job.get("output_path", ""))).expanduser().resolve()
-                    if not outcome_path.is_file():
-                        raise FileNotFoundError(f"Missing raw outcome: {outcome_path}")
-                    outcome = _load_json(outcome_path)
-                    digest = file_sha256(outcome_path)
-                    pct = capture["requested_pct"]
-                    seed = run["seed"]
-                    common = {
-                        "campaign_id": campaign["campaign_id"],
-                        "run_date_utc": campaign["started_at"],
-                        "group": case["folder"],
-                        "held_out": case["held_out"],
-                        "held_out_sha256": case["held_out_sha256"],
-                        "training_files": json.dumps([p["path"] for p in case["training"]]),
-                        "seed": seed,
-                        "perturbation_pct": pct,
-                        "actual_packet_pct": capture["actual_packet_pct"],
-                        "outcome_json": str(outcome_path),
-                        "outcome_sha256": digest,
+            attempts = case.get("attempts") or [{
+                "path": case.get("output_dir", ""), "status": case.get("status", "unknown")
+            }]
+            for attempt_index, attempt in enumerate(attempts, start=1):
+                experiment_path = Path(attempt["path"]) / "experiment.json"
+                if not experiment_path.is_file():
+                    continue
+                experiment = _load_json(experiment_path)
+                for run in experiment.get("runs", []):
+                    state_path = Path(run["batch_output_dir"]) / "batch_state.json"
+                    if not state_path.is_file():
+                        continue
+                    state = _load_json(state_path)
+                    captures = {
+                        str(Path(cap["dataset_path"]).resolve()): cap
+                        for cap in run["captures"]
                     }
-                    result_map = {
-                        str(record["metric_id"]): record
-                        for record in outcome.get("metric_results", [])
-                        if isinstance(record, dict) and record.get("metric_id")
-                    }
-                    payloads = outcome.get("test_results", {})
-                    if not isinstance(payloads, dict):
-                        payloads = {}
-                    metric_ids = sorted(set(result_map) | set(payloads))
-                    jobs_writer.writerow({
-                        "campaign_id": common["campaign_id"],
-                        "run_date_utc": common["run_date_utc"],
-                        "group": common["group"],
-                        "held_out": common["held_out"],
-                        "seed": seed,
-                        "perturbation_pct": pct,
-                        "dataset_path": candidate,
-                        "reference_path": case["held_out"],
-                        "outcome_json": str(outcome_path),
-                        "outcome_sha256": digest,
-                        "job_status": job.get("status", ""),
-                        "metrics_in_outcome": len(metric_ids),
-                    })
-                    jobs += 1
-                    for metric_id in metric_ids:
-                        execution = result_map.get(metric_id, {})
-                        payload = payloads.get(metric_id)
-                        primary, _, _ = extract_primary_metric_value(metric_id, payload)
-                        row = dict(common)
-                        row.update({
-                            "metric_id": metric_id,
-                            "execution_status": execution.get("status", ""),
-                            "domain_status": execution.get("result_status", ""),
-                            "primary_value": primary if primary is not None else "",
+                    for job in state.get("results", []):
+                        candidate = str(Path(job.get("dataset_path", "")).resolve())
+                        capture = captures.get(candidate)
+                        if capture is None:
+                            raise ValueError(f"Batch job does not match a generated capture: {candidate}")
+                        outcome_path = Path(str(job.get("output_path", ""))).expanduser().resolve()
+                        if not outcome_path.is_file():
+                            # Failed jobs without a complete outcome still remain
+                            # documented in their raw batch_state.json.
+                            continue
+                        outcome = _load_json(outcome_path)
+                        digest = file_sha256(outcome_path)
+                        pct = capture["requested_pct"]
+                        seed = run["seed"]
+                        common = {
+                            "campaign_id": campaign["campaign_id"],
+                            "run_date_utc": campaign["started_at"],
+                            "group": case["folder"],
+                            "held_out": case["held_out"],
+                            "held_out_sha256": case["held_out_sha256"],
+                            "training_files": json.dumps([p["path"] for p in case["training"]]),
+                            "attempt": attempt_index,
+                            "attempt_status": attempt.get("status", "unknown"),
+                            "seed": seed,
+                            "perturbation_pct": pct,
+                            "actual_packet_pct": capture["actual_packet_pct"],
+                            "outcome_json": str(outcome_path),
+                            "outcome_sha256": digest,
+                        }
+                        result_map = {
+                            str(record["metric_id"]): record
+                            for record in outcome.get("metric_results", [])
+                            if isinstance(record, dict) and record.get("metric_id")
+                        }
+                        payloads = outcome.get("test_results", {})
+                        if not isinstance(payloads, dict):
+                            payloads = {}
+                        metric_ids = sorted(set(result_map) | set(payloads))
+                        jobs_writer.writerow({
+                            "campaign_id": common["campaign_id"],
+                            "run_date_utc": common["run_date_utc"],
+                            "group": common["group"],
+                            "held_out": common["held_out"],
+                            "attempt": attempt_index,
+                            "attempt_status": attempt.get("status", "unknown"),
+                            "seed": seed,
+                            "perturbation_pct": pct,
+                            "dataset_path": candidate,
+                            "reference_path": case["held_out"],
+                            "outcome_json": str(outcome_path),
+                            "outcome_sha256": digest,
+                            "job_status": job.get("status", ""),
+                            "metrics_in_outcome": len(metric_ids),
                         })
-                        compact_writer.writerow(row)
-                        # Lossless: full execution record, raw metric result and
-                        # taxonomy-ready original outcome retained on disk.
-                        jsonl.write(json.dumps({
-                            **common, "metric_id": metric_id,
-                            "execution_record": execution,
-                            "test_result": payload,
-                            "raw_outcome": str(outcome_path),
-                        }, ensure_ascii=False, allow_nan=False) + "\n")
-                        rows += 1
-                        for pointer, value in leaves(payload):
-                            detail = dict(row)
-                            detail.update({
-                                "json_pointer": pointer,
-                                "value_type": (
-                                    "null" if value is None else
-                                    "boolean" if isinstance(value, bool) else
-                                    "number" if isinstance(value, (float, int)) else
-                                    "string" if isinstance(value, str) else
-                                    "object" if isinstance(value, dict) else "array"
-                                ),
-                                "value_json": json.dumps(value, ensure_ascii=False, allow_nan=False),
-                                "numeric_value": value if isinstance(value, (int, float)) and not isinstance(value, bool) else "",
+                        jobs += 1
+                        for metric_id in metric_ids:
+                            execution = result_map.get(metric_id, {})
+                            payload = payloads.get(metric_id)
+                            primary, _, _ = extract_primary_metric_value(metric_id, payload)
+                            row = dict(common)
+                            row.update({
+                                "metric_id": metric_id,
+                                "execution_status": execution.get("status", ""),
+                                "domain_status": execution.get("result_status", ""),
+                                "primary_value": primary if primary is not None else "",
                             })
-                            detail_writer.writerow(detail)
-                            measurements += 1
+                            compact_writer.writerow(row)
+                            # Lossless: full execution record, raw metric result and
+                            # taxonomy-ready original outcome retained on disk.
+                            jsonl.write(json.dumps({
+                                **common, "metric_id": metric_id,
+                                "execution_record": execution,
+                                "test_result": payload,
+                                "raw_outcome": str(outcome_path),
+                            }, ensure_ascii=False, allow_nan=False) + "\n")
+                            rows += 1
+                            for pointer, value in leaves(payload):
+                                detail = dict(row)
+                                detail.update({
+                                    "json_pointer": pointer,
+                                    "value_type": (
+                                        "null" if value is None else
+                                        "boolean" if isinstance(value, bool) else
+                                        "number" if isinstance(value, (float, int)) else
+                                        "string" if isinstance(value, str) else
+                                        "object" if isinstance(value, dict) else "array"
+                                    ),
+                                    "value_json": json.dumps(value, ensure_ascii=False, allow_nan=False),
+                                    "numeric_value": value if isinstance(value, (int, float)) and not isinstance(value, bool) else "",
+                                })
+                                detail_writer.writerow(detail)
+                                measurements += 1
     summary = {
         "complete_cases": sum(_case_completed(x) for x in campaign["cases"]),
         "total_cases": len(campaign["cases"]),
