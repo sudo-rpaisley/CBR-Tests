@@ -362,6 +362,18 @@ def run_corpus(
             "No eligible group found. Each directory must contain at least two "
             "PCAP/PCAPNG files directly inside it. Singletons are skipped."
         )
+    # Preview must remain cheap even for multi-terabyte trees: count paths
+    # without hashing every packet capture or creating directories.
+    if preview_only:
+        return {
+            "eligible_groups": len(groups),
+            "eligible_cases": sum(len(g["captures"]) for g in groups),
+            "skipped_folders": skipped,
+            "groups": [{
+                "folder": group["folder"],
+                "files": [p.name for p in group["captures"]],
+            } for group in groups],
+        }
     cases = inventory(root, groups)
     snapshot = {
         "dataset_root": str(root),
@@ -382,17 +394,6 @@ def run_corpus(
         "prepare_only": prepare_only,
     }
     checksum = _fingerprint(snapshot)
-    if preview_only:
-        return {
-            "eligible_groups": len(groups),
-            "eligible_cases": len(cases),
-            "skipped_folders": skipped,
-            "groups": [{
-                "folder": group["folder"],
-                "files": [p.name for p in group["captures"]],
-            } for group in groups],
-            "fingerprint": checksum,
-        }
     manifest_path = output / "campaign.json"
     if resume:
         campaign = _load_json(manifest_path)
