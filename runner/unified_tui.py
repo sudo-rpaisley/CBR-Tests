@@ -8,6 +8,7 @@ from runner.fixed_plan_matrix_tui import fixed_plan_matrix_toolbox_item, launch_
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
 from runner.perturbation_tui import run_perturbation_tool_action
 from runner.corpus_perturbation_tui import run_corpus_tool_action
+from runner.results_explorer_tui import launch_results_explorer
 from runner.toolbox_tui import ToolboxItem, run_tool_action, toolbox_items
 
 
@@ -36,6 +37,12 @@ def _menu_items() -> tuple[ToolboxItem, ...]:
         "Run experiments",
     ))
 
+    review_index = next((i for i, item in enumerate(items) if item.key == "compare_outcomes"), len(items))
+    items.insert(review_index, ToolboxItem(
+        "gan_results_explorer", "GAN results explorer",
+        "Index archived outcomes into DuckDB/Parquet and browse campaigns, captures, metrics and values.",
+        "Review results",
+    ))
     build_index = next((index for index, item in enumerate(items) if item.key == "build_plan"), len(items) - 1)
     items.insert(build_index + 1, fixed_plan_matrix_toolbox_item())
     items.insert(build_index + 2, campaign_items["campaign_build"])
@@ -154,6 +161,8 @@ def launch_unified_tui(args, repo_root: Path | None = None):
                 run_perturbation_tool_action(root)
             elif mode == "gan_recursive_corpus":
                 run_corpus_tool_action(root)
+            elif mode == "gan_results_explorer":
+                launch_results_explorer(root / "outcomes" / "results-catalogue.duckdb", repo_root=root)
             elif mode in campaign_actions:
                 run_campaign_tool_action(mode, root)
             else:

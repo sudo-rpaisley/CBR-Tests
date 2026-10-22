@@ -1,0 +1,2 @@
+# Optional analytical results catalogue, separate from the core metric runner
+duckdb>=1.2,<3

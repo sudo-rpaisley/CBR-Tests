@@ -481,6 +481,15 @@ Flattens selected outcome fields into CSV tables for graphing.
 | `build_parser() -> argparse.ArgumentParser` (L173) | function | Public | Builds parser. |
 | `main() -> int` (L190) | function | Public | Implementation helper for main. |
 
+## `results_catalogue.py`
+
+Python symbols defined by `results_catalogue.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `arguments(argv: list[str] | None = None) -> argparse.Namespace` (L13) | function | Public | Implementation helper for arguments. |
+| `main(argv: list[str] | None = None) -> int` (L35) | function | Public | Implementation helper for main. |
+
 ## `run_batch.py`
 
 Python symbols defined by `run_batch.py`.
@@ -1209,6 +1218,48 @@ Python symbols defined by `runner/result_semantics.py`.
 | `metric_result_semantics(payload: object) -> dict` (L16) | function | Public | Separate applicability/verdict semantics from execution success. Execution status belongs to ``metric_results`` and only says whether the handler ran. This function inspects the scientific result payload and reports whether the metric was actually runnable/applicable and whether it emitted a decision-policy verdict. |
 | `scientific_status_fragments(payload: object) -> list[str]` (L67) | function | Public | Return concise TUI fragments describing applicability and verdict. |
 
+## `runner/results_catalogue.py`
+
+Python symbols defined by `runner/results_catalogue.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_duckdb()` (L25) | function | Internal | Implementation helper for duckdb. |
+| `_key(*parts: Any) -> str` (L35) | function | Internal | Implementation helper for key. |
+| `_now() -> str` (L41) | function | Internal | Implementation helper for now. |
+| `_read(path: Path) -> dict` (L45) | function | Internal | Implementation helper for read. |
+| `_json(value: Any) -> str` (L52) | function | Internal | Implementation helper for JSON. |
+| `_numeric(value: Any) -> float | None` (L56) | function | Internal | Implementation helper for numeric. |
+| `_value_type(value: Any) -> str` (L63) | function | Internal | Implementation helper for value type. |
+| `_hash_file(path: Path) -> str` (L77) | function | Internal | Implementation helper for hash file. |
+| `open_catalogue(path: Path, *, read_only: bool = False)` (L85) | function | Public | Open DuckDB and initialize the schema when writing. |
+| `_create_schema(conn) -> None` (L98) | function | Internal | Minimal relational keys; no compressed PCAP or original JSON is deleted. |
+| `_source_folders(search_root: Path) -> list[tuple[Path, str]]` (L166) | function | Internal | Discover manifests recursively without double-importing nested experiments. |
+| `_normalise(path: Path, kind: str) -> dict` (L182) | function | Internal | Represent both corpus campaigns and historical individual experiments. |
+| `_iter_attempts(case: dict)` (L211) | function | Internal | Implementation helper for iter attempts. |
+| `_source_signature(source: Path, campaign: dict) -> str` (L219) | function | Internal | Cheap but change-sensitive fingerprint, including raw outcome file stats. |
+| `_insert_batches(conn, table: str, columns: tuple[str, ...], rows: Iterator[tuple], batch_size: int = 500) -> int` (L246) | function | Internal | Insert incrementally; never materialize every measurement in Python RAM. |
+| `_purge_campaign(conn, key: str)` (L264) | function | Internal | Delete only catalogue copies of this campaign, never original files. |
+| `_metric_data(outcome: dict)` (L270) | function | Internal | Implementation helper for metric data. |
+| `index_source(conn, source: Path, kind: str, *, force: bool = False) -> dict` (L283) | function | Public | Import one campaign atomically; repeated indexing never duplicates rows. |
+| `index_roots(conn, roots: list[Path], *, force: bool = False) -> dict` (L395) | function | Public | Index every corpus or single experiment under one or more output roots. |
+| `export_parquet(conn, folder: Path) -> dict` (L421) | function | Public | Produce compressed, replaceable analytical snapshots from indexed tables. |
+| `summary(conn) -> dict` (L446) | function | Public | Implementation helper for summary. |
+| `compare_metric(conn, metric_id: str, *, held_out: str = '', date_from: str = '', date_to: str = '', limit: int = 1000, offset: int = 0) -> list[dict]` (L453) | function | Public | Query a metric across campaigns/dates with repeatable filters. |
+
+## `runner/results_explorer_tui.py`
+
+Python symbols defined by `runner/results_explorer_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_records(conn, query: str, args: list, limit: int, offset: int) -> list[dict]` (L20) | function | Internal | Implementation helper for records. |
+| `_rows(conn, frame: dict, limit: int)` (L26) | function | Internal | Return a single page for one part of the drill-down hierarchy. |
+| `_preview(frame: dict, row: dict) -> str` (L104) | function | Internal | Implementation helper for preview. |
+| `_detail(stdscr, title: str, content: str) -> None` (L126) | function | Internal | Scrollable detail window for long JSON values/measurement provenance. |
+| `_screen(stdscr, conn) -> str | None` (L157) | function | Internal | Read-only UI, returns 'refresh' when re-indexing is requested. |
+| `launch_results_explorer(db_path: Path, *, repo_root: Path | None = None) -> None` (L252) | function | Public | Index historical outcomes and browse without loading full archives at once. |
+
 ## `runner/run_context.py`
 
 Input resolution, validation, ordering, signals, display, and telemetry setup.
@@ -1413,12 +1464,12 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_menu_items() -> tuple[ToolboxItem, ...]` (L20) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
-| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L57) | function | Internal | Implementation helper for safe addstr. |
-| `_tool_rows() -> list[tuple[int | None, str, str]]` (L70) | function | Internal | Implementation helper for tool rows. |
-| `_choose_mode_curses(stdscr) -> str | None` (L81) | function | Internal | Implementation helper for choose mode curses. |
-| `_pause_after_tool() -> None` (L124) | function | Internal | Implementation helper for pause after tool. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L131) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
+| `_menu_items() -> tuple[ToolboxItem, ...]` (L21) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L64) | function | Internal | Implementation helper for safe addstr. |
+| `_tool_rows() -> list[tuple[int | None, str, str]]` (L77) | function | Internal | Implementation helper for tool rows. |
+| `_choose_mode_curses(stdscr) -> str | None` (L88) | function | Internal | Implementation helper for choose mode curses. |
+| `_pause_after_tool() -> None` (L131) | function | Internal | Implementation helper for pause after tool. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L138) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
 ## `scripts/build_documentation_inventory.py`
 

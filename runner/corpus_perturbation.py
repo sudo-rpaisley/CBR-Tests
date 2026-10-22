@@ -493,10 +493,10 @@ def run_corpus(
         case["attempts"][-1]["status"] = case["status"]
         case["attempts"][-1]["finished_at"] = utc_now()
         atomic_json(manifest_path, campaign)
-        # Intermediate exports make long unattended runs useful before completion.
-        if not prepare_only:
-            campaign["exports"] = export_results(campaign, output)
-            atomic_json(manifest_path, campaign)
+        # Keep raw outcomes and batch checkpoints immediately; do not rewrite
+        # every previous metric and CSV after every held-out capture. The
+        # DuckDB catalogue can index these saved outcomes during the run.
+        # Export the complete convenience files once after the campaign.
     successes = sum(x["status"] in {"completed", "prepared"} for x in campaign["cases"])
     failures = sum(x["status"] == "failed" for x in campaign["cases"])
     campaign["status"] = "completed" if not failures else "needs_attention"
