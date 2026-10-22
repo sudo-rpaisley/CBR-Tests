@@ -146,6 +146,13 @@ metric definitions, reference data, GAN parameters and software versions.
 Never interpret two values as directly comparable merely because the
 metric IDs match; use the stored hashes and plans to inspect changes.
 
+**Large-campaign behaviour:** every completed evaluation writes its raw
+outcome and checkpoint immediately. The recursive runner no longer rebuilds
+its entire CSV/JSONL archive after every held-out file, which previously made
+large runs increasingly expensive. It writes the consolidated convenience
+exports at campaign completion. During a run, the DuckDB indexer can still
+import and explore whatever raw outcomes have already been recorded.
+
 **Scaling limitation (first release):** the catalogue refreshes each
 changed campaign atomically rather than indexing individual metric records
 asynchronously during a running evaluation. The Toolbox refreshes on entry
