@@ -43,8 +43,7 @@ def _rows(conn, frame: dict, limit: int):
         sql = """
         SELECT cs.case_key AS id,
             coalesce(nullif(cs.group_path, ''), '(root)') || ' / ' ||
-                split_part(replace(cs.held_out_path, '\\', '/'), '/',
-                array_length(string_split(replace(cs.held_out_path, '\\', '/'), '/'))) AS title,
+                cs.held_out_path AS title,
             cs.status, cs.group_path, cs.held_out_path AS file,
             (SELECT count(*) FROM jobs j WHERE j.case_key = cs.case_key) AS count
         FROM cases cs WHERE cs.campaign_key = ?
