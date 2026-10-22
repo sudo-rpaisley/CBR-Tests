@@ -49,3 +49,10 @@ __pycache__/
 
 venv/
 
+# Large experiment artefacts and embedded analytical databases
+*.duckdb
+*.duckdb.wal
+*.pcapng
+outcomes/gan-corpus/
+outcomes/results-parquet/
+outcomes/results-catalogue.duckdb*
