@@ -204,11 +204,17 @@ def run_experiment(
     training_batch_size: int = 100,
     training_device: str = "cpu",
     auto_plan: bool = False,
+    allow_self_reference: bool = False,
+    plan_template_reference: Path | None = None,
 ) -> dict:
-    """Compare fixed Dataset 1 with Dataset 2 using an existing or newly trained CTGAN."""
+    """Compare a fixed reference against an original and its GAN perturbations.
+
+    The ordinary mode forbids identical input paths; the corpus leave-one-out
+    mode explicitly enables reference=held-out to measure self-baseline drift.
+    """
     base = _file_path(base, "Dataset 1 (base reference)", {".pcap", ".pcapng"})
     comparison = _file_path(comparison, "Dataset 2 (comparison)", {".pcap", ".pcapng"})
-    if base == comparison:
+    if base == comparison and not allow_self_reference:
         raise ValueError("Choose separate Dataset 1 (base) and Dataset 2 (comparison) captures.")
     # The GAN replaces packets only from Dataset 2. Dataset 1 never enters the generator.
     source = comparison
@@ -266,8 +272,20 @@ def run_experiment(
     auto_plan_report_path: Path | None = None
     if auto_plan:
         from runner.plan_builder import build_plan, write_plan
-        # Use the existing scientific builder rather than appending metrics to
-        # an inapplicable plan. It includes only runnable, supported PCAP metrics.
+        # The plan builder requires two different files. In self-reference
+        # experiments, an independent training capture is used ONLY to
+        # establish the metric templates; every matrix plan then binds the
+        # actual held-out capture as its reference. Training capture data
+        # is never used as evaluation reference.
+        template_reference = base
+        if base == comparison:
+            if not allow_self_reference or plan_template_reference is None:
+                raise ValueError("Self-reference requires an independent PCAP for metric-plan templating.")
+            template_reference = _file_path(
+                plan_template_reference, "Independent plan-template reference", {".pcap", ".pcapng"}
+            )
+            if template_reference == comparison or file_sha256(template_reference) == file_sha256(comparison):
+                raise ValueError("Plan-template reference must be independent of the held-out capture.")
         generated, report = build_plan(
             plan_id="gan-reference-comparison",
             name="GAN perturbation: Dataset 1 vs Dataset 2",
@@ -276,7 +294,7 @@ def run_experiment(
                 "is the fixed reference, Dataset 2 is the comparison capture."
             ),
             dataset_path=comparison,
-            reference_dataset_path=base,
+            reference_dataset_path=template_reference,
         )
         if not reference_bound_metric_ids(generated):
             raise ValueError(
@@ -288,6 +306,9 @@ def run_experiment(
             validate_final_experiment_plan(generated)
         plan = write_plan(destination / "auto_comparison_plan.json", generated)
         auto_plan_report_path = destination / "auto_plan_report.json"
+        if base == comparison:
+            report["template_reference_only"] = str(template_reference)
+            report["actual_runtime_reference"] = str(base)
         _write_json(auto_plan_report_path, report)
         source_plan = generated
     assert plan is not None and source_plan is not None
@@ -296,6 +317,11 @@ def run_experiment(
         "name": "ctgan_trailing_suffix",
         "status": "running",
         "started_at": datetime.now(timezone.utc).isoformat(),
+        "self_reference_experiment": bool(base == comparison),
+        "plan_template_reference": (
+            str(plan_template_reference.expanduser().resolve())
+            if plan_template_reference is not None else None
+        ),
         "base_dataset_path": str(base),
         "base_dataset_sha256": file_sha256(base),
         "comparison_dataset_path": str(comparison),
