@@ -231,3 +231,32 @@ def test_metric_leaf_json_pointer_escapes_keys():
     assert list(corpus.leaves(data)) == [
         ("/x~1y~0z/0", 3), ("/x~1y~0z/1/q", True)
     ]
+
+def test_exports_partial_and_retry_attempts_with_distinct_attempt_labels(tmp_path):
+    heldout = _pcap(tmp_path / "heldout.pcap", b"source")
+    first = _fake_one_seed_case(tmp_path / "attempt1", heldout)
+    second = _fake_one_seed_case(tmp_path / "attempt2", heldout)
+    first["status"] = "failed"
+    first["output_dir"] = second["output_dir"]
+    first["attempts"] = [
+        {"path": str(tmp_path / "attempt1"), "status": "failed"},
+        {"path": str(tmp_path / "attempt2"), "status": "completed"},
+    ]
+    campaign = {
+        "campaign_id": "attempt-test",
+        "started_at": "2026-10-22T09:00:00+00:00",
+        "cases": [first],
+    }
+    result = corpus.export_results(campaign, tmp_path / "exports_root")
+    assert result["metrics_exported"] == 4
+    assert result["jobs_exported"] == 2
+    with (tmp_path / "exports_root" / "exports" / "metric_results.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        rows = list(csv.DictReader(handle))
+    assert {row["attempt"] for row in rows} == {"1", "2"}
+    assert {row["attempt_status"] for row in rows} == {"failed", "completed"}
+    assert {row["outcome_json"] for row in rows} == {
+        str(tmp_path / "attempt1" / "seed_42" / "evaluation" / "raw_outcome.json"),
+        str(tmp_path / "attempt2" / "seed_42" / "evaluation" / "raw_outcome.json"),
+    }
