@@ -117,6 +117,11 @@ def run_corpus_tool_action(root: Path) -> int:
     print(f"Held-out training/evaluation cases: {cases}")
     print(f"Singleton directories skipped: {len(skipped)}")
     print(f"Default comparisons: {cases * 11} (0, 10, …, 100%, one seed)")
+    expected = 11 * sum(
+        p.stat().st_size for group in groups for p in group["captures"]
+    )
+    print(f"Estimated generated capture storage: {expected / (1024**3):,.2f} GiB "
+          "(excludes models, metrics and overhead)")
     print("Each held-out file gets a new CTGAN trained on every other PCAP in its own directory.")
     print("Full raw outcome JSON, complete nested metric measurements and provenance are archived.")
     if not cases:
