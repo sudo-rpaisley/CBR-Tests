@@ -224,21 +224,37 @@ def _choice_dialog(stdscr, title: str, choices: tuple[str, ...], current: object
             return choices[selected]
 
 
-def _dataset_browser_entries(directory: Path, root: Path):
+def _dataset_browser_entries(
+    directory: Path, root: Path, allowed_suffixes: frozenset[str] | set[str] | None = None
+):
+    """List directories and files allowed by this picker (datasets by default)."""
+    suffixes = SUPPORTED_DATASET_SUFFIXES if allowed_suffixes is None else allowed_suffixes
     return [
         entry
         for entry in list_file_browser_entries(directory, root)
-        if entry.is_dir or entry.path.suffix.lower() in SUPPORTED_DATASET_SUFFIXES
+        if entry.is_dir or entry.path.suffix.lower() in suffixes
     ]
 
 
-def _friendly_dataset_browser(stdscr, root: Path, initial: str) -> str | None:
+def _friendly_dataset_browser(
+    stdscr,
+    root: Path,
+    initial: str,
+    *,
+    title: str = "Choose dataset",
+    allowed_suffixes: frozenset[str] | set[str] | None = None,
+    start_dir: Path | None = None,
+) -> str | None:
+    """Shared single-file browser for PCAPs, plans, checkpoints and scripts."""
+    suffixes = SUPPORTED_DATASET_SUFFIXES if allowed_suffixes is None else allowed_suffixes
     root = root.expanduser().resolve()
     initial_path = _resolve_from_root(initial, root) if initial else None
     if initial_path and initial_path.is_file():
         current_dir = initial_path.parent
     elif initial_path and initial_path.is_dir():
         current_dir = initial_path
+    elif start_dir is not None and start_dir.expanduser().is_dir():
+        current_dir = start_dir.expanduser().resolve()
     elif (root / "datasets").is_dir():
         current_dir = (root / "datasets").resolve()
     else:
@@ -249,12 +265,12 @@ def _friendly_dataset_browser(stdscr, root: Path, initial: str) -> str | None:
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
-        entries = _dataset_browser_entries(current_dir, root)
+        entries = _dataset_browser_entries(current_dir, root, suffixes)
         selected = min(selected, max(0, len(entries) - 1))
-        _safe_addstr(stdscr, 0, 0, "Choose dataset", curses.A_BOLD)
+        _safe_addstr(stdscr, 0, 0, title, curses.A_BOLD)
         _safe_addstr(stdscr, 1, 0, message)
         _safe_addstr(stdscr, 2, 0, f"Directory: {_display_path(current_dir, root)}")
-        _safe_addstr(stdscr, 3, 0, "Only supported dataset files are shown.")
+        _safe_addstr(stdscr, 3, 0, "Files: " + ", ".join(sorted(suffixes)))
         visible_height = max(1, height - 6)
         start = min(max(0, selected - visible_height + 1), max(0, len(entries) - visible_height))
         for row, entry in enumerate(entries[start : start + visible_height], start=5):
@@ -263,7 +279,7 @@ def _friendly_dataset_browser(stdscr, root: Path, initial: str) -> str | None:
             attr = curses.A_REVERSE if index == selected else curses.A_NORMAL
             _safe_addstr(stdscr, row, 0, f"{marker} {entry.label}", attr)
         if not entries:
-            _safe_addstr(stdscr, 5, 0, "No supported datasets in this directory.")
+            _safe_addstr(stdscr, 5, 0, "No matching files in this directory.")
 
         key = stdscr.getch()
         if key in (ord("q"), ord("Q"), 27):
@@ -293,10 +309,10 @@ def _friendly_dataset_browser(stdscr, root: Path, initial: str) -> str | None:
             if path.is_dir():
                 current_dir = path
                 selected = 0
-            elif path.is_file() and path.suffix.lower() in SUPPORTED_DATASET_SUFFIXES:
+            elif path.is_file() and path.suffix.lower() in suffixes:
                 return _display_path(path, root)
             else:
-                message = "That path is not a supported dataset file or directory."
+                message = "Choose a matching file or directory."
             continue
         if key in (curses.KEY_BACKSPACE, 127, 8):
             if current_dir.parent != current_dir:

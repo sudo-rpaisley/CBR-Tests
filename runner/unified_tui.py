@@ -6,6 +6,8 @@ from pathlib import Path
 from runner.campaign_tui import campaign_toolbox_items, run_campaign_tool_action
 from runner.fixed_plan_matrix_tui import fixed_plan_matrix_toolbox_item, launch_fixed_plan_matrix_builder
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
+from runner.perturbation_tui import run_perturbation_tool_action
+from runner.corpus_perturbation_tui import run_corpus_tool_action
 from runner.toolbox_tui import ToolboxItem, run_tool_action, toolbox_items
 
 
@@ -23,6 +25,16 @@ def _menu_items() -> tuple[ToolboxItem, ...]:
 
     batch_index = next((index for index, item in enumerate(items) if item.key == "batch"), 1)
     items.insert(batch_index + 1, campaign_items["campaign_run"])
+    items.insert(batch_index + 2, ToolboxItem(
+        "gan_perturbation", "GAN perturbation experiment",
+        "Generate trailing-suffix CTGAN PCAPs and evaluate each with one frozen metric plan.",
+        "Run experiments",
+    ))
+    items.insert(batch_index + 3, ToolboxItem(
+        "gan_recursive_corpus", "GAN recursive leave-one-out corpus",
+        "Select one dataset folder; train all-but-one PCAPs per directory and export complete results.",
+        "Run experiments",
+    ))
 
     build_index = next((index for index, item in enumerate(items) if item.key == "build_plan"), len(items) - 1)
     items.insert(build_index + 1, fixed_plan_matrix_toolbox_item())
@@ -138,6 +150,10 @@ def launch_unified_tui(args, repo_root: Path | None = None):
         try:
             if mode == "fixed_pcap_matrix":
                 launch_fixed_plan_matrix_builder(root)
+            elif mode == "gan_perturbation":
+                run_perturbation_tool_action(root)
+            elif mode == "gan_recursive_corpus":
+                run_corpus_tool_action(root)
             elif mode in campaign_actions:
                 run_campaign_tool_action(mode, root)
             else:
