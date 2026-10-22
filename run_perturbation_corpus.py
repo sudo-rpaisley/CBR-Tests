@@ -82,6 +82,8 @@ def main(argv: list[str] | None = None) -> int:
         for group in result["groups"]:
             print(f"  {group['folder']}: {len(group['files'])} PCAPs; leave-one-out {len(group['files'])} times")
         print(f"Planned comparisons: {result['eligible_cases'] * len(args.seeds) * len(args.percentages)}")
+        print(f"Approximate generated PCAP storage: {result['estimated_capture_bytes'] / (1024**3):,.2f} GiB")
+        print("This excludes training checkpoints, extraction data, outcomes and result exports.")
     else:
         print(f"Campaign: {output / 'campaign.json'}")
         print(f"Status: {result['status']}")
