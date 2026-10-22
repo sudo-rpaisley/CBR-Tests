@@ -128,9 +128,13 @@ for the full measurements.
 All exports are indexed with UTC campaign start time, source group,
 held-out path/hash, training paths, seed, GAN fraction and source outcome
 hash. This makes comparisons across research runs and dates auditable.
-Reports are rebuilt from the saved complete outcomes, rather than blindly
-appended, to avoid duplicate rows on restart. Record permanent storage or
-backups for these outputs — they may be large.
+Reports are rebuilt from every available saved outcome, **including
+partial results from interrupted or failed cases**. An `attempt` and
+`attempt_status` column distinguish an earlier failed attempt from a later
+successful retry; this deliberately keeps both records rather than silently
+erasing the earlier experiment. Rebuilding rather than blindly appending avoids
+accidental duplicate exports on restart. Record permanent storage or backups
+for these outputs — they may be large.
 
 ## Reference and scientific caveats
 
