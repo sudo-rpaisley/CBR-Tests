@@ -347,7 +347,7 @@ def index_source(conn, source: Path, kind: str, *, force: bool = False) -> dict:
                         job_key = _key(case_key, attempt, run.get("seed"), pct, dataset, job_index)
                         reference = case.get("reference_path") or case.get("held_out")
                         conn.execute(
-                            "INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             [
                                 job_key, key, case_key, attempt, attempt_meta.get("status", ""),
                                 int(run["seed"]), pct, actual_pct, dataset, str(reference),
