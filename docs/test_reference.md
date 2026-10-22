@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **379 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **387 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -197,6 +197,32 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write_batch(path: Path, batch_id: str, job_count: int) -> Path` (L14) | Implementation helper for write batch. |
+
+## `tests/test_corpus_perturbation.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_recursive_grouping_does_not_mix_directories_and_skips_singletons(tmp_path)` (L19) | Verifies that recursive grouping does not mix directories and skips singletons. | `_pcap`, `(root / 'Alpha' / 'note.txt').write_text`, `corpus.discover_groups`, `corpus.inventory` |
+| `test_skip_entire_corpus_without_any_eligible_pair(tmp_path)` (L41) | Verifies that skip entire corpus without any eligible pair. | `_pcap`, `generator.write_text`, `pytest.raises`, `corpus.run_corpus`, `output.exists` |
+| `test_preview_is_nondestructive_and_does_not_hash_pcaps(tmp_path, monkeypatch)` (L54) | Verifies that preview is nondestructive and does not hash pcaps. | `_pcap`, `generator.write_text`, `monkeypatch.setattr`, `corpus.run_corpus`, `(tmp_path / 'output').exists`, `(_ for _ in ()).throw`, `AssertionError` |
+| `test_full_metric_export_keeps_nested_arrays_and_native_outcome(tmp_path)` (L130) | Verifies that full metric export keeps nested arrays and native outcome. | `_pcap`, `_fake_one_seed_case`, `corpus.export_results`, `any`, `(tmp_path / 'run' / 'seed_42' / 'evaluation' / 'raw_outcome.json').is_file`, `(output / 'exports' / 'measurements_long.csv').open`, `csv.DictReader`, `next` |
+| `test_corpus_executes_all_heldouts_and_resume_skips_verified_completions(tmp_path, monkeypatch)` (L163) | Verifies that corpus executes all heldouts and resume skips verified completions. | `script.write_text`, `monkeypatch.setattr`, `corpus.run_corpus`, `_pcap`, `seen.append`, `_fake_one_seed_case`, `bytes` |
+| `test_resume_refuses_modified_inputs_and_preserves_archive(tmp_path, monkeypatch)` (L203) | Verifies that resume refuses modified inputs and preserves archive. | `_pcap`, `script.write_text`, `monkeypatch.setattr`, `corpus.run_corpus`, `x.write_bytes`, `(output / 'campaign.json').is_file`, `_fake_one_seed_case`, `pytest.raises` |
+| `test_metric_leaf_json_pointer_escapes_keys()` (L229) | Verifies that metric leaf JSON pointer escapes keys. | `corpus.leaves` |
+| `test_exports_partial_and_retry_attempts_with_distinct_attempt_labels(tmp_path)` (L235) | Verifies that exports partial and retry attempts with distinct attempt labels. | `_pcap`, `_fake_one_seed_case`, `corpus.export_results`, `(tmp_path / 'exports_root' / 'exports' / 'metric_results.csv').open`, `csv.DictReader` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_pcap(path: Path, body: bytes = b'pcap') -> Path` (L13) | Implementation helper for PCAP. |
+| `_fake_one_seed_case(output: Path, heldout: Path, group: str = 'Group')` (L72) | Create a representative completed CBR batch, including nested results. |
+| `test_corpus_executes_all_heldouts_and_resume_skips_verified_completions.fake_run(**kwargs)` (L172) | Implementation helper for fake run. |
+| `test_resume_refuses_modified_inputs_and_preserves_archive.stub(**kwargs)` (L211) | Implementation helper for stub. |
 
 ## `tests/test_correctness_reproducibility.py`
 
