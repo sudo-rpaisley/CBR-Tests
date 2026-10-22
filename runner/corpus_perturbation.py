@@ -368,6 +368,10 @@ def run_corpus(
         return {
             "eligible_groups": len(groups),
             "eligible_cases": sum(len(g["captures"]) for g in groups),
+            "estimated_capture_bytes": (
+                len(percentages) * len(seeds)
+                * sum(p.stat().st_size for g in groups for p in g["captures"])
+            ),
             "skipped_folders": skipped,
             "groups": [{
                 "folder": group["folder"],
