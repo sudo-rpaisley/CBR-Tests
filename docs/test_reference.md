@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **387 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **392 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -958,6 +958,27 @@ Tests and local helpers in this module.
 | `test_verdict_is_reported_separately_from_runnable_state()` (L25) | Verifies that verdict is reported separately from runnable state. | `scientific_status_fragments` |
 | `test_not_applicable_verdict_forces_non_runnable_semantics()` (L30) | Verifies that not applicable verdict forces non runnable semantics. | `metric_result_semantics` |
 | `test_metric_without_explicit_applicability_does_not_invent_it()` (L37) | Verifies that metric without explicit applicability does not invent it. | `metric_result_semantics`, `scientific_status_fragments` |
+
+## `tests/test_results_catalogue.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_import_is_lossless_idempotent_and_writes_parquet(tmp_path)` (L93) | Verifies that import is lossless idempotent and writes parquet. | `_archive`, `catalog.open_catalogue`, `catalog.index_roots`, `conn.execute("\n            SELECT metric_id, payload_json, execution_json\n            FROM metrics WHERE metric_id = 'ks_statistic_from_reference'\n        ").fetchall`, `conn.execute("SELECT json_pointer, value_json, numeric_value FROM measurements WHERE json_pointer = '/per_field/ttl/quantiles/2'").fetchone`, `catalog.export_parquet`, `conn.close`, `catalog.summary` |
+| `test_reindex_changed_outcome_replaces_old_measurements(tmp_path)` (L134) | Verifies that reindex changed outcome replaces old measurements. | `_archive`, `catalog.open_catalogue`, `catalog.index_roots`, `_json`, `conn.close`, `raw.read_text`, `conn.execute('SELECT COUNT(*) FROM campaigns').fetchone`, `catalog.summary` |
+| `test_single_older_experiment_imports_without_parent_campaign(tmp_path)` (L153) | Verifies that single older experiment imports without parent campaign. | `_json`, `dataset.parent.mkdir`, `dataset.write_bytes`, `catalog.open_catalogue`, `catalog.index_roots`, `conn.close`, `conn.execute('SELECT source_kind FROM campaigns').fetchone`, `conn.execute('SELECT reference_path FROM jobs').fetchone` |
+| `test_index_two_dates_and_query_filtered_metric(tmp_path)` (L191) | Verifies that index two dates and query filtered metric. | `_archive`, `catalog.open_catalogue`, `catalog.compare_metric`, `conn.close`, `pytest.raises`, `catalog.index_roots` |
+| `test_browser_queries_are_paged_not_full_scans(tmp_path)` (L212) | Verifies that browser queries are paged not full scans. | `_archive`, `catalog.open_catalogue`, `catalog.index_roots`, `explorer._rows`, `conn.close` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_json(path: Path, obj: dict) -> Path` (L16) | Implementation helper for JSON. |
+| `_archive(root: Path, *, name: str = '2026-10-22') -> tuple[Path, Path]` (L22) | Minimal realistic corpus archive with nested metric distributions. |
 
 ## `tests/test_run_plan_field_translation.py`
 
