@@ -55,6 +55,9 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
         f"  Finished job outcomes available for exploration: {camp['available_result_jobs']}",
         "",
     ]
+    if progress.get("abort_reason"):
+        lines.append("CAMPAIGN HALTED: " + progress["abort_reason"])
+        lines.append("")
     if group:
         lines.extend([
             f"GROUP {group.get('index', '?')}/{group.get('total_groups', '?')}: {group['name']}",
