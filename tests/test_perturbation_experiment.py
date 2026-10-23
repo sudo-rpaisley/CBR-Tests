@@ -234,7 +234,7 @@ def test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_referenc
 
     def fake_validate(**kwargs):
         assert kwargs["source_path"] == comparison.resolve()
-        assert kwargs["percentages"] == (0, 10)
+        assert kwargs["percentages"] in ((0,), (10,))
         return [{
             "seed": kwargs["seed"],
             "requested_pct": pct,
@@ -244,7 +244,7 @@ def test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_referenc
 
     def fake_matrix(**kwargs):
         reference_paths.extend(kwargs["reference_paths"])
-        assert len(kwargs["candidate_paths"]) == 2
+        assert len(kwargs["candidate_paths"]) == 1
         assert all(str(p).endswith(".pcap") for p in kwargs["candidate_paths"])
         kwargs["output_path"].write_text("{}", encoding="utf-8")
         return kwargs["output_path"]
@@ -258,12 +258,15 @@ def test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_referenc
         percentages=(0, 10), seeds=(7,), prepare_only=True,
     )
     assert result["status"] == "prepared"
-    assert reference_paths == [base.resolve()]
+    assert reference_paths == [base.resolve(), base.resolve()]
     assert generated_command[0][generated_command[0].index("--input") + 1] == str(comparison.resolve())
     assert str(base.resolve()) not in generated_command[0]
     assert result["base_dataset_path"] == str(base.resolve())
     assert result["comparison_dataset_path"] == str(comparison.resolve())
-    assert [x["requested_pct"] for x in result["runs"][0]["captures"]] == [0, 10]
+    assert [x["percentage"] for x in result["runs"]] == [0, 10]
+    assert [x["captures"][0]["requested_pct"] for x in result["runs"]] == [0, 10]
+    assert len(generated_command) == 2
+    assert all("--sweep-percentages" in command for command in generated_command)
 
 
 def test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_path, monkeypatch):
