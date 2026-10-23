@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **410 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **415 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -574,6 +574,29 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_args(**overrides)` (L16) | Implementation helper for args. |
+
+## `tests/test_gan_evaluation_performance.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_fused_scanners_match_independent_metrics_and_keep_non_ip_frames(tmp_path, monkeypatch)` (L18) | Verifies that fused scanners match independent metrics and keep non IP frames. | `wrpcap`, `build_compact_pcap_packet_dataframe`, `monkeypatch.setattr`, `build_metric_handlers`, `metrics.items`, `run_pcap_handshake_plausibility_metric`, `run_timestamp_coherence_metric`, `AssertionError` |
+| `test_unfused_scanner_behaviour_unchanged(tmp_path)` (L56) | Verifies that unfused scanner behaviour unchanged. | `wrpcap`, `run_pcap_handshake_plausibility_metric`, `run_timestamp_coherence_metric`, `IP`, `TCP` |
+| `test_vectorised_hour_bins_match_historical_timestamp_loop()` (L71) | Verifies that vectorised hour bins match historical timestamp loop. | `_continuous_hourly_counts`, `compute_periodicity_preservation_score`, `series.tolist`, `ts.timestamp` |
+| `test_reference_packet_cache_reuses_exact_features_and_invalidates_changes(tmp_path, monkeypatch)` (L93) | Verifies that reference packet cache reuses exact features and invalidates changes. | `source.write_bytes`, `monkeypatch.setenv`, `load_reference_pcap_with_cache`, `calls.append`, `original.copy`, `AssertionError`, `(tmp_path / 'features').glob`, `__import__('numpy').load` |
+| `test_reference_packet_cache_corruption_falls_back_to_full_decode(tmp_path, monkeypatch)` (L130) | Verifies that reference packet cache corruption falls back to full decode. | `source.write_bytes`, `monkeypatch.setenv`, `load_reference_pcap_with_cache`, `next`, `archive.write_bytes`, `calls.append`, `expected.copy`, `(tmp_path / 'features').glob` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `test_fused_scanners_match_independent_metrics_and_keep_non_ip_frames.refuse_reread(*_args, **_kwargs)` (L46) | Implementation helper for refuse reread. |
+| `test_reference_packet_cache_reuses_exact_features_and_invalidates_changes.decode(path)` (L107) | Implementation helper for decode. |
+| `test_reference_packet_cache_reuses_exact_features_and_invalidates_changes.forbidden(path)` (L114) | Implementation helper for forbidden. |
+| `test_reference_packet_cache_corruption_falls_back_to_full_decode.decode(_)` (L136) | Implementation helper for decode. |
 
 ## `tests/test_human_summary.py`
 

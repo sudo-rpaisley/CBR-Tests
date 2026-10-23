@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from math import sqrt
 
+import numpy as np
 import pandas as pd
 
 
@@ -388,8 +389,24 @@ def compute_diurnal_pattern_similarity_score(df: pd.DataFrame, metric: dict) -> 
 
 
 def _continuous_hourly_counts(
-    timestamps: list[pd.Timestamp],
+    timestamps: pd.Series | list[pd.Timestamp],
 ) -> tuple[list[int], pd.Timestamp | None, pd.Timestamp | None]:
+    """Count full UTC hours without allocating a Python Timestamp per packet.
+
+    Preserve the historical inclusive zero-filled bins and sorted-time semantics.
+    The list input remains supported for backwards compatibility.
+    """
+    if isinstance(timestamps, pd.Series):
+        if timestamps.empty:
+            return [], None, None
+        first_hour = timestamps.iloc[0].floor("h")
+        last_hour = timestamps.iloc[-1].floor("h")
+        hour_ns = 3_600_000_000_000
+        first_ns = first_hour.value
+        indices = (timestamps.to_numpy(dtype="datetime64[ns]").view("int64") - first_ns) // hour_ns
+        bin_count = int((last_hour.value - first_ns) // hour_ns) + 1
+        counts = np.bincount(indices, minlength=bin_count)
+        return counts.tolist(), first_hour, last_hour
     if not timestamps:
         return [], None, None
     first_hour = timestamps[0].floor("h")
@@ -433,7 +450,6 @@ def compute_periodicity_preservation_score(df: pd.DataFrame, metric: dict) -> di
         _parse_timestamp_series(df, _timestamp_field(metric), _timestamp_unit(metric))
         .dropna()
         .sort_values()
-        .tolist()
     )
     parameters = metric.get("calculation", {}).get("parameters", {})
     raw_lags = parameters.get("lags", [24])

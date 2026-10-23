@@ -5,7 +5,7 @@ from pathlib import Path
 from scapy.utils import PcapReader
 
 
-def run_timestamp_coherence_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
+def _timestamp_packet_coroutine(metric: dict):
     """Scan a PCAP and assess whether packet timestamps are coherent."""
     parameters = metric.get("calculation", {}).get("parameters", {})
     large_gap_threshold_seconds = float(
@@ -24,27 +24,29 @@ def run_timestamp_coherence_metric(dataset_path: Path, metric: dict) -> tuple[bo
     max_gap_seconds = 0.0
 
     try:
-        with PcapReader(str(dataset_path)) as reader:
-            for packet in reader:
-                timestamp = float(packet.time)
-                packet_count += 1
-                if first_timestamp is None:
-                    first_timestamp = timestamp
-                last_timestamp = timestamp
+        while True:
+            packet = yield
+            if packet is None:
+                break
+            timestamp = float(packet.time)
+            packet_count += 1
+            if first_timestamp is None:
+                first_timestamp = timestamp
+            last_timestamp = timestamp
 
-                if previous_timestamp is not None:
-                    delta = timestamp - previous_timestamp
-                    if delta < 0:
-                        backwards_jump_count += 1
-                    else:
-                        gap_count += 1
-                        total_gap_seconds += delta
-                        if delta == 0:
-                            zero_delta_count += 1
-                        if delta > large_gap_threshold_seconds:
-                            large_gap_count += 1
-                        max_gap_seconds = max(max_gap_seconds, delta)
-                previous_timestamp = timestamp
+            if previous_timestamp is not None:
+                delta = timestamp - previous_timestamp
+                if delta < 0:
+                    backwards_jump_count += 1
+                else:
+                    gap_count += 1
+                    total_gap_seconds += delta
+                    if delta == 0:
+                        zero_delta_count += 1
+                    if delta > large_gap_threshold_seconds:
+                        large_gap_count += 1
+                    max_gap_seconds = max(max_gap_seconds, delta)
+            previous_timestamp = timestamp
     except Exception as exc:  # noqa: BLE001
         return False, {"error": f"Failed to scan PCAP timestamps: {exc}"}
 
@@ -75,3 +77,23 @@ def run_timestamp_coherence_metric(dataset_path: Path, metric: dict) -> tuple[bo
             }
         }
     }
+
+
+def run_timestamp_coherence_metric(dataset_path: Path, metric: dict) -> tuple[bool, dict]:
+    """Standalone metric; shared decoding may evaluate the same scanner inline."""
+    scanner = _timestamp_packet_coroutine(metric)
+    next(scanner)
+    try:
+        with PcapReader(str(dataset_path)) as reader:
+            for packet in reader:
+                try:
+                    scanner.send(packet)
+                except StopIteration as stopped:
+                    return stopped.value
+        try:
+            scanner.send(None)
+        except StopIteration as stopped:
+            return stopped.value
+    except Exception as exc:
+        return False, {"error": f"Failed to scan PCAP timestamps: {exc}"}
+    raise RuntimeError("Timestamp scanner did not finalise")

@@ -23,6 +23,7 @@ from cbr_tests.metrics.temporal import (
 )
 from runner.pcap_adapter import is_packet_capture
 from runner.pcap_compact import build_compact_pcap_packet_dataframe
+from runner.pcap_reference_cache import load_reference_pcap_with_cache
 
 
 def _reference_path(metric: dict) -> str | None:
@@ -78,7 +79,7 @@ def _load_reference_df(metric: dict) -> pd.DataFrame:
             return _apply_reference_field_map(cached, metric)
         suffix = path.suffix.lower()
         if is_packet_capture(path):
-            dataframe = build_compact_pcap_packet_dataframe(path)
+            dataframe = load_reference_pcap_with_cache(path, build_compact_pcap_packet_dataframe)
         elif suffix in {".csv", ".tsv"}:
             dataframe = pd.read_csv(
                 path,
