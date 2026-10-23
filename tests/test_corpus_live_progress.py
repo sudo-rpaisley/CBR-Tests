@@ -82,6 +82,7 @@ def test_progress_shows_actual_campaign_group_case_and_job_with_observed_eta(tmp
     output, campaign = _source(tmp_path)
     status = corpus_progress.build_snapshot(campaign, output_dir=output, now=NOW)
     assert status["campaign"]["total_groups"] == 2
+    assert status["campaign"]["completed_groups"] == 0
     assert status["campaign"]["total_cases"] == 3
     assert status["campaign"]["total_jobs"] == 9
     assert status["campaign"]["evaluated_jobs"] == 4
@@ -90,6 +91,9 @@ def test_progress_shows_actual_campaign_group_case_and_job_with_observed_eta(tmp
     assert status["campaign"]["eta_seconds"] == 2400
     assert status["campaign"]["eta_sample_count"] == 1
     assert status["group"]["name"] == "Group"
+    assert status["group"]["index"] == 1
+    assert status["case"]["group_position"] == 2
+    assert status["case"]["campaign_position"] == 2
     assert status["group"]["total_cases"] == 2
     assert status["group"]["evaluated_jobs"] == 4
     assert status["group"]["eta_seconds"] == 1200
@@ -104,7 +108,7 @@ def test_progress_shows_actual_campaign_group_case_and_job_with_observed_eta(tmp
     assert status["job"]["observed_job_samples"] == 1
     lines = monitor_lines(status)
     assert any("CAMPAIGN:" in line and "4/9" in line for line in lines)
-    assert any("GROUP:" in line and "Group" in line for line in lines)
+    assert any("GROUP " in line and "Group" in line for line in lines)
     assert any("HELD-OUT PCAP" in line for line in lines)
     assert any("CURRENT JOB:" in line for line in lines)
     assert any("Finished job outcomes available" in line for line in lines)
