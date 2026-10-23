@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **410 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **413 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -574,6 +574,24 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_args(**overrides)` (L16) | Implementation helper for args. |
+
+## `tests/test_gan_evaluation_performance.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_fused_scanners_match_independent_metrics_and_keep_non_ip_frames(tmp_path, monkeypatch)` (L16) | Verifies that fused scanners match independent metrics and keep non IP frames. | `wrpcap`, `build_compact_pcap_packet_dataframe`, `monkeypatch.setattr`, `build_metric_handlers`, `metrics.items`, `run_pcap_handshake_plausibility_metric`, `run_timestamp_coherence_metric`, `AssertionError` |
+| `test_unfused_scanner_behaviour_unchanged(tmp_path)` (L54) | Verifies that unfused scanner behaviour unchanged. | `wrpcap`, `run_pcap_handshake_plausibility_metric`, `run_timestamp_coherence_metric`, `IP`, `TCP` |
+| `test_vectorised_hour_bins_match_historical_timestamp_loop()` (L69) | Verifies that vectorised hour bins match historical timestamp loop. | `_continuous_hourly_counts`, `compute_periodicity_preservation_score`, `series.tolist`, `series.astype` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `test_fused_scanners_match_independent_metrics_and_keep_non_ip_frames.refuse_reread(*_args, **_kwargs)` (L44) | Implementation helper for refuse reread. |
 
 ## `tests/test_human_summary.py`
 
