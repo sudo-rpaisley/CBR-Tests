@@ -585,7 +585,7 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_fused_scanners_match_independent_metrics_and_keep_non_ip_frames(tmp_path, monkeypatch)` (L16) | Verifies that fused scanners match independent metrics and keep non IP frames. | `wrpcap`, `build_compact_pcap_packet_dataframe`, `monkeypatch.setattr`, `build_metric_handlers`, `metrics.items`, `run_pcap_handshake_plausibility_metric`, `run_timestamp_coherence_metric`, `AssertionError` |
 | `test_unfused_scanner_behaviour_unchanged(tmp_path)` (L54) | Verifies that unfused scanner behaviour unchanged. | `wrpcap`, `run_pcap_handshake_plausibility_metric`, `run_timestamp_coherence_metric`, `IP`, `TCP` |
-| `test_vectorised_hour_bins_match_historical_timestamp_loop()` (L69) | Verifies that vectorised hour bins match historical timestamp loop. | `_continuous_hourly_counts`, `compute_periodicity_preservation_score`, `series.tolist`, `series.astype` |
+| `test_vectorised_hour_bins_match_historical_timestamp_loop()` (L69) | Verifies that vectorised hour bins match historical timestamp loop. | `_continuous_hourly_counts`, `compute_periodicity_preservation_score`, `series.tolist`, `ts.timestamp` |
 
 ### Test helpers
 
