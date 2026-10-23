@@ -143,3 +143,15 @@ def test_terminal_progress_has_no_running_case_or_stale_eta(tmp_path):
     assert snapshot["job"] is None
     assert snapshot["campaign"]["failed_cases"] == 1
     assert snapshot["campaign"]["eta_seconds"] == 0
+
+def test_monitor_reports_final_export_and_stale_worker_heartbeat(tmp_path):
+    output, campaign = _source(tmp_path)
+    campaign["phase"] = "exporting"
+    for case in campaign["cases"]:
+        case["status"] = "completed"
+    snapshot = corpus_progress.build_snapshot(campaign, output_dir=output, now=NOW)
+    assert snapshot["phase"] == "exporting"
+    snapshot["updated_at"] = "2000-01-01T00:00:00+00:00"
+    messages = "\n".join(monitor_lines(snapshot))
+    assert "Finalising full CSV/JSONL exports" in messages
+    assert "heartbeat" in messages
