@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from typing import Callable
 
 from runner.fixed_plan_matrix import _load_plan, build_fixed_plan_matrix
 from runner.reference_binding import reference_bound_metric_ids
@@ -206,6 +207,7 @@ def run_experiment(
     auto_plan: bool = False,
     allow_self_reference: bool = False,
     plan_template_reference: Path | None = None,
+    progress_callback: Callable[[str, dict], None] | None = None,
 ) -> dict:
     """Compare a fixed reference against an original and its GAN perturbations.
 
@@ -355,14 +357,20 @@ def run_experiment(
     experiment_manifest = destination / "experiment.json"
     _write_json(experiment_manifest, metadata)
     all_metric_rows: list[dict] = []
+    def notify(stage: str, **details) -> None:
+        if progress_callback is not None:
+            progress_callback(stage, details)
+
     try:
         if training:
+            notify("extracting", capture_count=len(training))
             # Import only when requested; ordinary CBR runner never depends on CTGAN.
             from runner.gan_training import train_from_captures
             print(
                 f"Training CTGAN on {len(training)} independent capture(s) "
                 f"({training_device}, {training_epochs} epochs).", flush=True
             )
+            notify("training", epochs=training_epochs, training_files=len(training))
             model, training_record = train_from_captures(
                 captures=training, generator_script=generator_script,
                 output_dir=destination / "training",
@@ -374,6 +382,7 @@ def run_experiment(
             metadata["model_sha256"] = file_sha256(model)
             _write_json(experiment_manifest, metadata)
         assert model is not None
+        notify("generating", seed=seeds[0])
         for seed in seeds:
             seed_root = destination / f"seed_{seed}"
             capture_dir = seed_root / "captures"
@@ -383,8 +392,10 @@ def run_experiment(
                 "--output", str(capture_dir), "--percentages",
                 ",".join(map(str, percentages)), "--basis", basis, "--seed", str(seed),
             ]
+            notify("generating", seed=seed, count=len(percentages))
             print(f"Generating trailing-suffix captures for seed {seed}", flush=True)
             subprocess.run(command, cwd=root, check=True)
+            notify("validating", seed=seed)
             captures = validate_generation(
                 seed_dir=capture_dir, source_path=source, model_path=model,
                 percentages=percentages, seed=seed,
@@ -426,6 +437,7 @@ def run_experiment(
                 batch_command.extend(["--workers", str(workers)])
             if experiment_mode:
                 batch_command.append("--experiment-mode")
+            notify("evaluating", seed=seed, count=len(captures))
             completed = subprocess.run(batch_command, cwd=root, check=False)
             state_path = seed_root / "evaluation" / "batch_state.json"
             all_metric_rows.extend(collect_metric_rows(state_path, captures))
@@ -442,11 +454,13 @@ def run_experiment(
             writer = csv.DictWriter(handle, fieldnames=RESULT_COLUMNS, extrasaction="ignore")
             writer.writeheader()
             writer.writerows(all_metric_rows)
+        notify("finished", prepared_only=prepare_only)
         metadata["status"] = "prepared" if prepare_only else "completed"
         metadata["finished_at"] = datetime.now(timezone.utc).isoformat()
         metadata["metrics_csv"] = str(results_csv)
         _write_json(experiment_manifest, metadata)
     except Exception as exc:
+        notify("failed", error=f"{type(exc).__name__}: {exc}")
         metadata["status"] = "needs_attention"
         metadata["error"] = str(exc)
         _write_json(experiment_manifest, metadata)
