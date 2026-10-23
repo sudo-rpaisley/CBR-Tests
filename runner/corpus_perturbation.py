@@ -448,6 +448,7 @@ def run_corpus(
         _case_batch_progress, monitor_progress_file, publish_snapshot,
     )
     campaign["status"] = "running"
+    campaign["phase"] = "evaluating"
     atomic_json(manifest_path, campaign)
     publish_snapshot(output)
     for index, case in enumerate(campaign["cases"], start=1):
@@ -530,12 +531,16 @@ def run_corpus(
         # Export the complete convenience files once after the campaign.
     successes = sum(x["status"] in {"completed", "prepared"} for x in campaign["cases"])
     failures = sum(x["status"] == "failed" for x in campaign["cases"])
+    campaign["phase"] = "exporting"
+    atomic_json(manifest_path, campaign)
+    publish_snapshot(output)
     campaign["status"] = "completed" if not failures else "needs_attention"
     campaign["finished_at"] = utc_now()
     campaign["completed_cases"] = successes
     campaign["failed_cases"] = failures
     if not prepare_only:
         campaign["exports"] = export_results(campaign, output)
+    campaign["phase"] = "finished"
     atomic_json(manifest_path, campaign)
     publish_snapshot(output)
     return campaign
