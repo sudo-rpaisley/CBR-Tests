@@ -42,17 +42,26 @@ python -m pip install -r gan_generator/requirements.txt
 python run_plan.py --tui
 ```
 
-Choose **GAN recursive leave-one-out corpus**. The directory browser starts
-at `datasets/` if it exists. Navigate with Enter; **d** selects the current
-directory, not just the highlighted child. **R**, **H**, **M**, **e**, Backspace
-and arrow keys work as in other CBR-Tests file selectors.
+Choose **GAN recursive leave-one-out corpus**. First browse to the **input
+dataset root** (the PCAPs stay in place). Then choose the **output storage
+folder** — this can be a different local disk, external drive or mounted
+network share. A separate new UTC timestamped run directory is created *inside*
+the selected output folder. Navigate with Enter, **d** selects the displayed
+directory, **R** the repository root, **H** home, **M** `/media`, **N** `/mnt`,
+**e** an absolute path, or Backspace to go up.
 
-Once a dataset directory is selected, the Toolbox displays how many groups,
-hold-outs, single-file folders and planned comparisons it found. Confirm by
-typing `RUN`; everything else cancels. Training defaults to 100 epochs on
-CPU, a batch size of 100, seed 42 and 0–100% by increments of 10. The output
-is automatically stored in a **new, UTC timestamped directory** under
-`outcomes/gan-corpus/`. You only need to select the source folder.
+The Toolbox shows group and comparison totals plus the estimated capture
+storage, followed by **free space on the selected output filesystem**.
+If the destination appears too small (including a 10% planning reserve),
+you must explicitly type `RUN ANYWAY` rather than the normal `RUN`. These
+estimates are approximate and **do not include all metric outputs, extracted
+features, CTGAN models, or filesystem overhead**.
+
+The output must be outside the selected source dataset tree. Choosing a
+different destination only relocates generated captures — it does not yet
+reduce their number. The default generates/retains 11 full captures per
+held-out file, even at 0%. Training defaults to 100 epochs on CPU, batch
+size 100, seed 42 and perturbations 0–100% in 10% steps.
 
 ## CLI and pilot settings
 
@@ -64,8 +73,9 @@ python run_perturbation_corpus.py --dataset-root datasets/IEEEDataset --preview
 python run_perturbation_corpus.py --dataset-root datasets/IEEEDataset \
   --percentages 0,10,20 --epochs 50 --device cpu
 
-# Complete experiment
+# Complete experiment, storing ALL outputs directly on another drive
 python run_perturbation_corpus.py --dataset-root datasets/IEEEDataset \
+  --output-dir /mnt/large-drive/research/gan-corpus/run-001 \
   --percentages 0,10,20,30,40,50,60,70,80,90,100 \
   --seeds 42,43,44 --epochs 100
 
@@ -87,7 +97,7 @@ seed/percentage.
 ## What is archived — no metric data thrown away
 
 ```text
-outcomes/gan-corpus/<UTC-run-id>/
+<chosen-output-folder>/<UTC-run-id>/
   campaign.json              # complete inventory, SHA hashes, cases and statuses
   cases/
     <group-id>/<holdout-id>/
