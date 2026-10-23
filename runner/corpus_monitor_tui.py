@@ -71,7 +71,7 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
         lines.extend([
             f"HELD-OUT PCAP: {case['name']}",
             "  " + progress_line(case["evaluated_jobs"], case["total_jobs"]),
-            f"  Stage: {stage} | Seed: {case.get('seed') or '-'}",
+            f"  Stage: {stage} | Seed: {case.get('seed') if case.get('seed') is not None else '-'}",
             f"  Elapsed: {format_duration(case['elapsed_seconds'])} "
             f"| Approx ETA: {format_duration(case['eta_seconds'])}",
             f"  Available: {case['available_result_jobs']} jobs "
