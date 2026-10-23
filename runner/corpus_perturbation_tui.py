@@ -9,6 +9,7 @@ import sys
 
 from runner.friendly_tui import _safe_addstr
 from runner.tui import _display_path, _edit_text
+from runner.corpus_storage import gib, storage_estimate
 
 
 def _directories(path: Path) -> list[Path]:
@@ -22,22 +23,26 @@ def _directories(path: Path) -> list[Path]:
         return []
 
 
-def _select_directory(stdscr, root: Path, start_dir: Path | None = None) -> Path | None:
-    """Choose any folder using the usual navigation plus d=current directory."""
+def _select_directory(
+    stdscr, root: Path, start_dir: Path | None = None, *,
+    title: str = "Recursive leave-one-out GAN campaign",
+    description: str = "All descendants are scanned. Each folder with >=2 PCAPs is a separate group.",
+) -> Path | None:
+    """Choose any existing folder; d selects the currently displayed directory."""
     curses.curs_set(0)
     current = start_dir or (root / "datasets" if (root / "datasets").is_dir() else root)
     current = current.resolve()
     selected = 0
-    message = "Enter opens folder  d selects CURRENT folder  Backspace up  R repo  H home  e path  q cancel"
+    message = "Enter opens folder  d selects CURRENT folder  Backspace up  R repo  H home  M media  N /mnt  e path  q cancel"
     while True:
         stdscr.erase()
         height, width = stdscr.getmaxyx()
         entries = _directories(current)
         selected = min(selected, max(0, len(entries) - 1))
-        _safe_addstr(stdscr, 0, 0, "Recursive leave-one-out GAN campaign", curses.A_BOLD)
+        _safe_addstr(stdscr, 0, 0, title, curses.A_BOLD)
         _safe_addstr(stdscr, 1, 0, message)
         _safe_addstr(stdscr, 2, 0, f"Current folder: {_display_path(current, root)}")
-        _safe_addstr(stdscr, 3, 0, "All descendants are scanned. Each folder with >=2 PCAPs is a separate group.")
+        _safe_addstr(stdscr, 3, 0, description)
         visible = max(1, height - 6)
         start = min(max(0, selected - visible + 1), max(0, len(entries) - visible))
         for row, entry in enumerate(entries[start : start + visible], start=5):
@@ -58,12 +63,13 @@ def _select_directory(stdscr, root: Path, start_dir: Path | None = None) -> Path
             current = Path.home().resolve()
             selected = 0
             continue
-        if key == ord("M"):
-            if Path("/media").is_dir():
-                current = Path("/media").resolve()
+        if key in (ord("M"), ord("N")):
+            mount = Path("/media" if key == ord("M") else "/mnt")
+            if mount.is_dir():
+                current = mount.resolve()
                 selected = 0
             else:
-                message = "/media is unavailable."
+                message = f"{mount} is unavailable."
             continue
         if key == ord("e"):
             typed = _edit_text(
@@ -127,15 +133,48 @@ def run_corpus_tool_action(root: Path) -> int:
     if not cases:
         print("No eligible groups (a folder needs at least two PCAP/PCAPNG files).")
         return 1
+    # Browse an existing directory on the destination filesystem. A distinct,
+    # timestamped run folder is created INSIDE it, avoiding accidental writes
+    # to the source dataset tree and allowing external/mounted storage.
+    default_storage = root / "outcomes" / "gan-corpus"
+    default_start = default_storage if default_storage.is_dir() else root
+    print("\nChoose the OUTPUT STORAGE folder next (e.g. a mounted large drive).")
+    print("The source PCAPs stay in the selected dataset folder.")
+    output_parent = curses.wrapper(
+        _select_directory, root, start_dir=default_start,
+        title="Choose where to SAVE GAN experiment outputs",
+        description="This folder will receive a NEW timestamped run directory; do not choose the input dataset tree.",
+    )
+    if output_parent is None:
+        print("Campaign cancelled; no files generated.")
+        return 0
     try:
-        confirmation = input("Type RUN to begin the campaign (anything else cancels): ").strip()
+        space = storage_estimate(output_parent, chosen, expected)
+    except (OSError, ValueError) as exc:
+        print(f"Invalid output storage location: {exc}")
+        return 1
+    print(f"\nOutput storage: {output_parent}")
+    print(f"Available on destination filesystem: {gib(space['available_bytes'])}")
+    print(f"Generated capture estimate: {gib(space['estimated_capture_bytes'])}")
+    print(f"Suggested capacity (10% reserve): {gib(space['estimated_minimum_with_reserve_bytes'])}")
+    print("Estimated capture size excludes checkpoints, models, raw results, and filesystem overhead.")
+    if not space["appears_sufficient"]:
+        print("WARNING: Available space is below the estimated requirement.")
+        print("This mode retains ALL generated captures. A full run may exhaust the destination.")
+        prompt = "Type RUN ANYWAY to explicitly override the storage warning: "
+        expected_confirmation = "RUN ANYWAY"
+    else:
+        prompt = "Type RUN to begin the campaign (anything else cancels): "
+        expected_confirmation = "RUN"
+    try:
+        confirmation = input(prompt).strip()
     except (EOFError, KeyboardInterrupt):
         return 0
-    if confirmation != "RUN":
+    if confirmation != expected_confirmation:
         print("Campaign cancelled; no files generated.")
         return 0
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    output = root / "outcomes" / "gan-corpus" / run_id
+    output = output_parent / run_id
     command = [
         sys.executable, str(root / "run_perturbation_corpus.py"),
         "--dataset-root", str(chosen),
