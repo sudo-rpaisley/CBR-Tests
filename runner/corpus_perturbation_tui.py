@@ -22,10 +22,10 @@ def _directories(path: Path) -> list[Path]:
         return []
 
 
-def _select_directory(stdscr, root: Path) -> Path | None:
+def _select_directory(stdscr, root: Path, start_dir: Path | None = None) -> Path | None:
     """Choose any folder using the usual navigation plus d=current directory."""
     curses.curs_set(0)
-    current = root / "datasets" if (root / "datasets").is_dir() else root
+    current = start_dir or (root / "datasets" if (root / "datasets").is_dir() else root)
     current = current.resolve()
     selected = 0
     message = "Enter opens folder  d selects CURRENT folder  Backspace up  R repo  H home  e path  q cancel"
@@ -134,13 +134,28 @@ def run_corpus_tool_action(root: Path) -> int:
     if confirmation != "RUN":
         print("Campaign cancelled; no files generated.")
         return 0
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     output = root / "outcomes" / "gan-corpus" / run_id
     command = [
         sys.executable, str(root / "run_perturbation_corpus.py"),
         "--dataset-root", str(chosen),
         "--output-dir", str(output),
     ]
+    from runner.corpus_monitor_tui import launch_corpus_monitor
+
+    log_path = output.with_suffix(".log")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("ab") as logfile:
+        proc = subprocess.Popen(
+            command, cwd=root, stdout=logfile, stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
     print(f"\nArchive: {output}")
-    print("For interrupted cases, repeat with --resume and this output directory.\n")
-    return subprocess.run(command, cwd=root, check=False).returncode
+    print(f"Runner log: {log_path}")
+    print("The job runs independently. Press q in the monitor to detach; it keeps running.")
+    launch_corpus_monitor(output, repo_root=root, process=proc)
+    if proc.poll() is None:
+        print(f"Campaign still running. Reattach: python monitor_gan_corpus.py {output}")
+        return 0
+    print(f"Campaign finished (exit {proc.returncode}). Log: {log_path}")
+    return proc.returncode
