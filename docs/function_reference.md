@@ -676,14 +676,14 @@ Python symbols defined by `runner/corpus_monitor_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `read_progress(output_dir: Path) -> dict` (L14) | function | Public | Implementation helper for read progress. |
-| `_log_path(output_dir: Path) -> Path` (L22) | function | Internal | Implementation helper for log path. |
-| `_tail(path: Path, limit: int = 18000) -> str` (L26) | function | Internal | Implementation helper for tail. |
-| `monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[str]` (L35) | function | Public | Pure renderer, available to tests without an interactive terminal. |
-| `_open_results(stdscr, output_dir: Path, repo_root: Path) -> str` (L97) | function | Internal | Index already-written outcomes without stopping the experiment. |
-| `_monitor_screen(stdscr, output_dir: Path, repo_root: Path, process) -> None` (L120) | function | Internal | Implementation helper for monitor screen. |
-| `launch_corpus_monitor(output_dir: Path, *, repo_root: Path | None = None, process = None) -> None` (L152) | function | Public | Attach or reattach to a running campaign; 'q' never kills the runner. |
-| `run_monitor_tool_action(repo_root: Path) -> None` (L163) | function | Public | Select an existing run's folder from the Toolbox, then attach to it. |
+| `read_progress(output_dir: Path) -> dict` (L15) | function | Public | Implementation helper for read progress. |
+| `_log_path(output_dir: Path) -> Path` (L23) | function | Internal | Implementation helper for log path. |
+| `_tail(path: Path, limit: int = 18000) -> str` (L27) | function | Internal | Implementation helper for tail. |
+| `monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[str]` (L36) | function | Public | Pure renderer, available to tests without an interactive terminal. |
+| `_open_results(stdscr, output_dir: Path, repo_root: Path) -> str` (L109) | function | Internal | Index already-written outcomes without stopping the experiment. |
+| `_monitor_screen(stdscr, output_dir: Path, repo_root: Path, process) -> None` (L132) | function | Internal | Implementation helper for monitor screen. |
+| `launch_corpus_monitor(output_dir: Path, *, repo_root: Path | None = None, process = None) -> None` (L164) | function | Public | Attach or reattach to a running campaign; 'q' never kills the runner. |
+| `run_monitor_tool_action(repo_root: Path) -> None` (L175) | function | Public | Select an existing run's folder from the Toolbox, then attach to it. |
 
 ## `runner/corpus_perturbation.py`
 
@@ -729,10 +729,10 @@ Python symbols defined by `runner/corpus_progress.py`.
 | `_case_duration(case: dict) -> float | None` (L64) | function | Internal | Implementation helper for case duration. |
 | `_case_batch_progress(case: dict) -> dict` (L77) | function | Internal | Read only the active case's small experiment and batch-state files. |
 | `build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = None) -> dict` (L113) | function | Public | Calculate campaign, group, held-out and comparison-job progress/ETAs. |
-| `publish_snapshot(output_dir: Path) -> dict` (L236) | function | Public | Implementation helper for publish snapshot. |
-| `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L246) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
-| `format_duration(seconds: float | None) -> str` (L262) | function | Public | Formats duration for human-readable output. |
-| `progress_line(done: int, total: int, width: int = 26) -> str` (L273) | function | Public | Implementation helper for progress line. |
+| `publish_snapshot(output_dir: Path) -> dict` (L237) | function | Public | Implementation helper for publish snapshot. |
+| `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L247) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
+| `format_duration(seconds: float | None) -> str` (L263) | function | Public | Formats duration for human-readable output. |
+| `progress_line(done: int, total: int, width: int = 26) -> str` (L274) | function | Public | Implementation helper for progress line. |
 
 ## `runner/dataset_loading.py`
 
