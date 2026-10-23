@@ -240,3 +240,64 @@ def test_browser_queries_are_paged_not_full_scans(tmp_path):
         assert len(leaves) == 3
     finally:
         conn.close()
+
+def test_running_campaign_indexes_available_jobs_and_refreshes_as_new_jobs_finish(tmp_path):
+    """Users can inspect genuine partial outcomes without waiting for full sweep."""
+    root = tmp_path / "outcomes"
+    manifest, _ = _archive(root)
+    campaign = json.loads(manifest.read_text(encoding="utf-8"))
+    campaign["status"] = "running"
+    campaign["cases"][0]["status"] = "running"
+    campaign["cases"][0]["attempts"][0]["status"] = "running"
+    _json(manifest, campaign)
+
+    output = Path(campaign["cases"][0]["output_dir"])
+    experiment_path = output / "experiment.json"
+    experiment = json.loads(experiment_path.read_text(encoding="utf-8"))
+    eval_dir = Path(experiment["runs"][0]["batch_output_dir"])
+    state_path = eval_dir / "batch_state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["status"] = "running"
+    state["current_job"] = {"job_id": "pending", "job_index": 2}
+    _json(state_path, state)
+
+    conn = catalog.open_catalogue(tmp_path / "catalogue.duckdb")
+    try:
+        initial = catalog.index_roots(conn, [root])
+        assert initial["indexed"] == 1 and initial["failed"] == 0
+        assert catalog.summary(conn)["jobs"] == 1
+        assert catalog.summary(conn)["metrics"] == 2
+        assert len(catalog.compare_metric(conn, "ks_statistic_from_reference")) == 1
+
+        capture = output / "seed_42" / "captures" / "gan_020.pcap"
+        capture.parent.mkdir(parents=True, exist_ok=True)
+        capture.write_bytes(b"second-perturbation")
+        outcome = _json(eval_dir / "outcomes" / "run2.json", {
+            "metric_results": [{
+                "metric_id": "ks_statistic_from_reference",
+                "status": "success", "result_status": "pass",
+            }],
+            "test_results": {"ks_statistic_from_reference": {
+                "summary": {"mean_ks_statistic_from_reference": 0.34},
+                "nested": {"lengths": [1, 2, 3]},
+            }},
+        })
+        experiment["runs"][0]["captures"].append({
+            "dataset_path": str(capture), "requested_pct": 20,
+            "actual_packet_pct": 20.0,
+        })
+        _json(experiment_path, experiment)
+        state["results"].append({
+            "job_id": "job2", "dataset_path": str(capture),
+            "output_path": str(outcome), "status": "completed",
+        })
+        _json(state_path, state)
+        refreshed = catalog.index_roots(conn, [root])
+        assert refreshed["indexed"] == 1
+        assert catalog.summary(conn)["jobs"] == 2
+        assert catalog.summary(conn)["metrics"] == 3
+        values = catalog.compare_metric(conn, "ks_statistic_from_reference")
+        assert {r["perturbation_pct"] for r in values} == {10, 20}
+        assert catalog.index_roots(conn, [root])["unchanged"] == 1
+    finally:
+        conn.close()
