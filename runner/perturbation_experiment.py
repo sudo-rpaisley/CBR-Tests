@@ -370,12 +370,12 @@ def run_experiment(
                 f"Training CTGAN on {len(training)} independent capture(s) "
                 f"({training_device}, {training_epochs} epochs).", flush=True
             )
-            notify("training", epochs=training_epochs, training_files=len(training))
             model, training_record = train_from_captures(
                 captures=training, generator_script=generator_script,
                 output_dir=destination / "training",
                 epochs=training_epochs, batch_size=training_batch_size,
                 device=training_device, seed=seeds[0],
+                progress_callback=lambda stage, details: notify(stage, **details),
             )
             metadata["training"] = training_record
             metadata["model_path"] = str(model)
