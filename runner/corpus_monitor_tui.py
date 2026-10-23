@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import curses
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import subprocess
@@ -45,7 +46,8 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
     job = progress.get("job")
     groups = camp["total_groups"]
     lines = [
-        f"Status: {progress['status']} | Groups: {camp.get('completed_groups', 0)}/{groups} | "
+        f"Status: {progress['status']} ({progress.get('phase', 'evaluating')}) | "
+        f"Groups: {camp.get('completed_groups', 0)}/{groups} | "
         f"Elapsed: {format_duration(progress.get('elapsed_seconds'))}",
         "CAMPAIGN: " + progress_line(camp["evaluated_jobs"], camp["total_jobs"]),
         f"  Held-outs: {camp['completed_cases']}/{camp['total_cases']} completed "
@@ -89,6 +91,16 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
         ])
     else:
         lines.append("CURRENT JOB: Not evaluating (may be training/generating/validating).")
+    if progress.get("phase") == "exporting":
+        lines.append("Finalising full CSV/JSONL exports; completed outcomes can already be browsed.")
+    if progress.get("status") == "running":
+        try:
+            stamp = datetime.fromisoformat(progress["updated_at"].replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - stamp).total_seconds()
+            if age > 15:
+                lines.append(f"WARNING: progress heartbeat is {int(age)}s old. Inspect log/worker.")
+        except (KeyError, ValueError, TypeError):
+            pass
     if process_exit is not None:
         lines.append(f"Runner exited with code {process_exit}. Existing results remain available.")
     return lines
