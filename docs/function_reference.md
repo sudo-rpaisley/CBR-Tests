@@ -481,6 +481,14 @@ Flattens selected outcome fields into CSV tables for graphing.
 | `build_parser() -> argparse.ArgumentParser` (L173) | function | Public | Builds parser. |
 | `main() -> int` (L190) | function | Public | Implementation helper for main. |
 
+## `monitor_gan_corpus.py`
+
+Python symbols defined by `monitor_gan_corpus.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `main(argv: list[str] | None = None) -> int` (L10) | function | Public | Implementation helper for main. |
+
 ## `results_catalogue.py`
 
 Python symbols defined by `results_catalogue.py`.
@@ -662,25 +670,40 @@ Python symbols defined by `runner/contract.py`.
 | `collect_reference_paths(plan: dict, *, base_dir: Path | None = None) -> list[Path]` (L62) | function | Public | Collect configured reference dataset paths for safety/provenance checks. |
 | `validate_output_path_safety(output_path: Path, *, protected_paths: list[Path], allow_overwrite: bool = False) -> None` (L82) | function | Public | Prevent results from overwriting experiment inputs or existing output accidentally. |
 
+## `runner/corpus_monitor_tui.py`
+
+Python symbols defined by `runner/corpus_monitor_tui.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `read_progress(output_dir: Path) -> dict` (L14) | function | Public | Implementation helper for read progress. |
+| `_log_path(output_dir: Path) -> Path` (L22) | function | Internal | Implementation helper for log path. |
+| `_tail(path: Path, limit: int = 18000) -> str` (L26) | function | Internal | Implementation helper for tail. |
+| `monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[str]` (L35) | function | Public | Pure renderer, available to tests without an interactive terminal. |
+| `_open_results(stdscr, output_dir: Path, repo_root: Path) -> str` (L97) | function | Internal | Index already-written outcomes without stopping the experiment. |
+| `_monitor_screen(stdscr, output_dir: Path, repo_root: Path, process) -> None` (L120) | function | Internal | Implementation helper for monitor screen. |
+| `launch_corpus_monitor(output_dir: Path, *, repo_root: Path | None = None, process = None) -> None` (L152) | function | Public | Attach or reattach to a running campaign; 'q' never kills the runner. |
+| `run_monitor_tool_action(repo_root: Path) -> None` (L163) | function | Public | Select an existing run's folder from the Toolbox, then attach to it. |
+
 ## `runner/corpus_perturbation.py`
 
 Python symbols defined by `runner/corpus_perturbation.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `utc_now() -> str` (L44) | function | Public | Implementation helper for utc now. |
-| `atomic_json(path: Path, value: Any) -> None` (L48) | function | Public | Replace a checkpoint atomically, rather than truncating one on crash. |
-| `_slug(value: str) -> str` (L64) | function | Internal | Implementation helper for slug. |
-| `discover_groups(root: Path) -> tuple[list[dict], list[dict]]` (L68) | function | Public | Find per-directory cohorts recursively; skip solitary PCAP directories. |
-| `inventory(root: Path, groups: list[dict]) -> list[dict]` (L103) | function | Public | Freeze identities before experiments so a resumed run is reproducible. |
-| `_fingerprint(config: dict) -> str` (L134) | function | Internal | Implementation helper for fingerprint. |
-| `_pointer_segment(s: str) -> str` (L140) | function | Internal | Implementation helper for pointer segment. |
-| `leaves(value: Any, path: str = '')` (L144) | function | Public | Yield every scalar leaf, including entries in arrays and empty containers. |
-| `_load_json(path: Path) -> dict` (L156) | function | Internal | Implementation helper for load JSON. |
-| `_case_completed(case: dict) -> bool` (L163) | function | Internal | Implementation helper for case completed. |
-| `_source_index(cases: list[dict]) -> dict[str, dict]` (L191) | function | Internal | Implementation helper for source index. |
-| `export_results(campaign: dict, output: Path) -> dict` (L195) | function | Public | Rebuild outputs from every readable attempt (including failed/partial jobs). Every metric execution record and full test_result is written to JSONL. Each nested test-result leaf (including arrays) is also written as a row with its JSON pointer to support querying and date-to-date comparison. |
-| `run_corpus(*, dataset_root: Path, output_dir: Path, generator_script: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), epochs: int = 100, batch_size: int = 100, device: str = 'cpu', workers: int | None = None, size_tolerance_pct: float = 5.0, prepare_only: bool = False, resume: bool = False, preview_only: bool = False) -> dict` (L345) | function | Public | Execute every held-out file in every recursive PCAP directory. Errors are checkpointed per held-out capture. If a case fails, subsequent cases continue; --resume skips verified completed cases and retains failed attempts rather than overwriting results. |
+| `utc_now() -> str` (L45) | function | Public | Implementation helper for utc now. |
+| `atomic_json(path: Path, value: Any) -> None` (L49) | function | Public | Replace a checkpoint atomically, rather than truncating one on crash. |
+| `_slug(value: str) -> str` (L65) | function | Internal | Implementation helper for slug. |
+| `discover_groups(root: Path) -> tuple[list[dict], list[dict]]` (L69) | function | Public | Find per-directory cohorts recursively; skip solitary PCAP directories. |
+| `inventory(root: Path, groups: list[dict]) -> list[dict]` (L104) | function | Public | Freeze identities before experiments so a resumed run is reproducible. |
+| `_fingerprint(config: dict) -> str` (L135) | function | Internal | Implementation helper for fingerprint. |
+| `_pointer_segment(s: str) -> str` (L141) | function | Internal | Implementation helper for pointer segment. |
+| `leaves(value: Any, path: str = '')` (L145) | function | Public | Yield every scalar leaf, including entries in arrays and empty containers. |
+| `_load_json(path: Path) -> dict` (L157) | function | Internal | Implementation helper for load JSON. |
+| `_case_completed(case: dict) -> bool` (L164) | function | Internal | Implementation helper for case completed. |
+| `_source_index(cases: list[dict]) -> dict[str, dict]` (L192) | function | Internal | Implementation helper for source index. |
+| `export_results(campaign: dict, output: Path) -> dict` (L196) | function | Public | Rebuild outputs from every readable attempt (including failed/partial jobs). Every metric execution record and full test_result is written to JSONL. Each nested test-result leaf (including arrays) is also written as a row with its JSON pointer to support querying and date-to-date comparison. |
+| `run_corpus(*, dataset_root: Path, output_dir: Path, generator_script: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), epochs: int = 100, batch_size: int = 100, device: str = 'cpu', workers: int | None = None, size_tolerance_pct: float = 5.0, prepare_only: bool = False, resume: bool = False, preview_only: bool = False) -> dict` (L346) | function | Public | Execute every held-out file in every recursive PCAP directory. Errors are checkpointed per held-out capture. If a case fails, subsequent cases continue; --resume skips verified completed cases and retains failed attempts rather than overwriting results. |
 
 ## `runner/corpus_perturbation_tui.py`
 
@@ -689,8 +712,27 @@ Python symbols defined by `runner/corpus_perturbation_tui.py`.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `_directories(path: Path) -> list[Path]` (L14) | function | Internal | List directories only; never show PCAP file paths in the root selector. |
-| `_select_directory(stdscr, root: Path) -> Path | None` (L25) | function | Internal | Choose any folder using the usual navigation plus d=current directory. |
+| `_select_directory(stdscr, root: Path, start_dir: Path | None = None) -> Path | None` (L25) | function | Internal | Choose any folder using the usual navigation plus d=current directory. |
 | `run_corpus_tool_action(root: Path) -> int` (L104) | function | Public | Select one folder, preview all leave-one-out cases, then confirm once. |
+
+## `runner/corpus_progress.py`
+
+Python symbols defined by `runner/corpus_progress.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `_utc() -> datetime` (L32) | function | Internal | Implementation helper for utc. |
+| `_parse(value: str | None) -> datetime | None` (L36) | function | Internal | Implementation helper for parse. |
+| `_read(path: Path) -> dict` (L46) | function | Internal | Implementation helper for read. |
+| `_seconds(start: str | None, end: str | None) -> float | None` (L54) | function | Internal | Implementation helper for seconds. |
+| `_average(values: list[float]) -> float | None` (L59) | function | Internal | Implementation helper for average. |
+| `_case_duration(case: dict) -> float | None` (L64) | function | Internal | Implementation helper for case duration. |
+| `_case_batch_progress(case: dict) -> dict` (L77) | function | Internal | Read only the active case's small experiment and batch-state files. |
+| `build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = None) -> dict` (L113) | function | Public | Calculate campaign, group, held-out and comparison-job progress/ETAs. |
+| `publish_snapshot(output_dir: Path) -> dict` (L236) | function | Public | Implementation helper for publish snapshot. |
+| `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L246) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
+| `format_duration(seconds: float | None) -> str` (L262) | function | Public | Formats duration for human-readable output. |
+| `progress_line(done: int, total: int, width: int = 26) -> str` (L273) | function | Public | Implementation helper for progress line. |
 
 ## `runner/dataset_loading.py`
 
@@ -954,7 +996,7 @@ Python symbols defined by `runner/gan_training.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `train_from_captures(*, captures: tuple[Path, ...], generator_script: Path, output_dir: Path, epochs: int = 100, batch_size: int = 100, device: str = 'cpu', seed: int = 42) -> tuple[Path, dict]` (L18) | function | Public | Extract each capture, concatenate flow rows and train one checkpoint. |
+| `train_from_captures(*, captures: tuple[Path, ...], generator_script: Path, output_dir: Path, epochs: int = 100, batch_size: int = 100, device: str = 'cpu', seed: int = 42, progress_callback: Callable[[str, dict], None] | None = None) -> tuple[Path, dict]` (L19) | function | Public | Extract each capture, concatenate flow rows and train one checkpoint. |
 
 ## `runner/human_summary.py`
 
@@ -1109,14 +1151,15 @@ Python symbols defined by `runner/perturbation_experiment.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `file_sha256(path: Path) -> str` (L30) | function | Public | Implementation helper for file sha256. |
-| `parse_integer_set(raw: str, *, low: int, high: int) -> tuple[int, ...]` (L38) | function | Public | Parses integer set. |
-| `_write_json(path: Path, data: dict) -> None` (L50) | function | Internal | Implementation helper for write JSON. |
-| `_file_path(path: Path, label: str, suffixes: set[str] | None = None) -> Path` (L55) | function | Internal | Implementation helper for file path. |
-| `packet_count(path: Path) -> int` (L64) | function | Public | Independent full-capture count; bounded memory via Scapy's reader. |
-| `validate_generation(*, seed_dir: Path, source_path: Path, model_path: Path, percentages: tuple[int, ...], seed: int, size_tolerance_pct: float, verify_packets: bool = True) -> list[dict]` (L71) | function | Public | Reject malformed/missing outputs before any costly CBR metric jobs start. |
-| `collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[dict]` (L147) | function | Public | Join CBR-Tests' authoritative per-job outcomes with perturbation metadata. |
-| `run_experiment(*, base: Path, comparison: Path, plan: Path | None, model: Path | None, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False, training_pcaps: tuple[Path, ...] = (), training_epochs: int = 100, training_batch_size: int = 100, training_device: str = 'cpu', auto_plan: bool = False, allow_self_reference: bool = False, plan_template_reference: Path | None = None) -> dict` (L186) | function | Public | Compare a fixed reference against an original and its GAN perturbations. The ordinary mode forbids identical input paths; the corpus leave-one-out mode explicitly enables reference=held-out to measure self-baseline drift. |
+| `file_sha256(path: Path) -> str` (L33) | function | Public | Implementation helper for file sha256. |
+| `parse_integer_set(raw: str, *, low: int, high: int) -> tuple[int, ...]` (L41) | function | Public | Parses integer set. |
+| `_write_json(path: Path, data: dict) -> None` (L53) | function | Internal | Publish manifests atomically so mid-run results browsers see valid JSON. |
+| `_file_path(path: Path, label: str, suffixes: set[str] | None = None) -> Path` (L70) | function | Internal | Implementation helper for file path. |
+| `packet_count(path: Path) -> int` (L79) | function | Public | Independent full-capture count; bounded memory via Scapy's reader. |
+| `validate_generation(*, seed_dir: Path, source_path: Path, model_path: Path, percentages: tuple[int, ...], seed: int, size_tolerance_pct: float, verify_packets: bool = True) -> list[dict]` (L86) | function | Public | Reject malformed/missing outputs before any costly CBR metric jobs start. |
+| `collect_metric_rows(batch_state_path: Path, captures: list[dict]) -> list[dict]` (L162) | function | Public | Join CBR-Tests' authoritative per-job outcomes with perturbation metadata. |
+| `run_experiment(*, base: Path, comparison: Path, plan: Path | None, model: Path | None, generator_script: Path, output_dir: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), basis: str = 'packets', workers: int | None = None, display: str = 'quiet', size_tolerance_pct: float = 5.0, prepare_only: bool = False, experiment_mode: bool = False, training_pcaps: tuple[Path, ...] = (), training_epochs: int = 100, training_batch_size: int = 100, training_device: str = 'cpu', auto_plan: bool = False, allow_self_reference: bool = False, plan_template_reference: Path | None = None, progress_callback: Callable[[str, dict], None] | None = None) -> dict` (L201) | function | Public | Compare a fixed reference against an original and its GAN perturbations. The ordinary mode forbids identical input paths; the corpus leave-one-out mode explicitly enables reference=held-out to measure self-baseline drift. |
+| `run_experiment.notify(stage: str, **details) -> None` (L374) | nested function | Internal | Implementation helper for notify. |
 
 ## `runner/perturbation_tui.py`
 
@@ -1464,12 +1507,12 @@ Python symbols defined by `runner/unified_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_menu_items() -> tuple[ToolboxItem, ...]` (L21) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
-| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L64) | function | Internal | Implementation helper for safe addstr. |
-| `_tool_rows() -> list[tuple[int | None, str, str]]` (L77) | function | Internal | Implementation helper for tool rows. |
-| `_choose_mode_curses(stdscr) -> str | None` (L88) | function | Internal | Implementation helper for choose mode curses. |
-| `_pause_after_tool() -> None` (L131) | function | Internal | Implementation helper for pause after tool. |
-| `launch_unified_tui(args, repo_root: Path | None = None)` (L138) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
+| `_menu_items() -> tuple[ToolboxItem, ...]` (L22) | function | Internal | Return user-facing toolbox entries, including guided workflow shortcuts. |
+| `_safe_addstr(stdscr, y: int, x: int, text: str, attr: int = 0) -> None` (L70) | function | Internal | Implementation helper for safe addstr. |
+| `_tool_rows() -> list[tuple[int | None, str, str]]` (L83) | function | Internal | Implementation helper for tool rows. |
+| `_choose_mode_curses(stdscr) -> str | None` (L94) | function | Internal | Implementation helper for choose mode curses. |
+| `_pause_after_tool() -> None` (L137) | function | Internal | Implementation helper for pause after tool. |
+| `launch_unified_tui(args, repo_root: Path | None = None)` (L144) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
 ## `scripts/build_documentation_inventory.py`
 
