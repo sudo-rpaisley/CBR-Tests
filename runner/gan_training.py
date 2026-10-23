@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from typing import Callable
 
 from runner.perturbation_experiment import file_sha256
 
@@ -24,6 +25,7 @@ def train_from_captures(
     batch_size: int = 100,
     device: str = "cpu",
     seed: int = 42,
+    progress_callback: Callable[[str, dict], None] | None = None,
 ) -> tuple[Path, dict]:
     """Extract each capture, concatenate flow rows and train one checkpoint."""
     if not captures:
@@ -45,6 +47,11 @@ def train_from_captures(
     with combined.open("w", newline="", encoding="utf-8") as output:
         writer = None
         for index, candidate in enumerate(captures, start=1):
+            if progress_callback:
+                progress_callback("extracting", {
+                    "capture_index": index, "capture_total": len(captures),
+                    "capture_name": candidate.name,
+                })
             path = candidate.expanduser().resolve()
             if not path.is_file() or path.suffix.lower() not in {".pcap", ".pcapng"}:
                 raise ValueError(f"Invalid training capture: {path}")
@@ -85,6 +92,8 @@ def train_from_captures(
             "CTGAN requires at least 50 (preferably thousands)."
         )
     model = directory / "ctgan.pkl"
+    if progress_callback:
+        progress_callback("training", {"epochs": epochs, "flows": total_flows})
     command = [
         sys.executable, str(generator_script), "train",
         "--features", str(combined), "--model", str(model),

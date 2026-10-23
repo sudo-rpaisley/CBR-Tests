@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+import threading
 from typing import Any
 
 from runner.perturbation_experiment import (
@@ -367,6 +368,8 @@ def run_corpus(
     root = dataset_root.expanduser().resolve()
     generator_script = generator_script.expanduser().resolve()
     output = output_dir.expanduser().resolve()
+    from runner.corpus_storage import check_campaign_output_path
+    check_campaign_output_path(output, root)
     if not generator_script.is_file():
         raise FileNotFoundError(f"GAN generator script not found: {generator_script}")
     if not percentages or 0 not in percentages or any(p < 0 or p > 100 for p in percentages):
@@ -443,9 +446,17 @@ def run_corpus(
         }
         atomic_json(manifest_path, campaign)
 
+    from runner.corpus_progress import (
+        _case_batch_progress, monitor_progress_file, publish_snapshot,
+    )
+    campaign["status"] = "running"
+    campaign["phase"] = "evaluating"
+    atomic_json(manifest_path, campaign)
+    publish_snapshot(output)
     for index, case in enumerate(campaign["cases"], start=1):
         if _case_completed(case):
             print(f"[{index}/{len(campaign['cases'])}] Completed, skipping: {case['case_id']}", flush=True)
+            publish_snapshot(output)
             continue
         n = len(case.get("attempts", [])) + 1
         attempt_dir = output / "cases" / case["case_id"] / f"attempt_{n:03d}"
@@ -458,6 +469,19 @@ def run_corpus(
             "path": str(attempt_dir), "started_at": utc_now(), "status": "running"
         })
         atomic_json(manifest_path, campaign)
+        publish_snapshot(output)
+
+        def notify(stage: str, details: dict) -> None:
+            atomic_json(attempt_dir / "stage.json", {
+                "stage": stage, "details": details, "updated_at": utc_now(),
+            })
+
+        stop_monitor = threading.Event()
+        watcher = threading.Thread(
+            target=monitor_progress_file, args=(output, stop_monitor),
+            daemon=True, name="gan-campaign-progress",
+        )
+        watcher.start()
         try:
             run_experiment(
                 base=Path(case["held_out"]),
@@ -478,6 +502,7 @@ def run_corpus(
                 workers=workers,
                 size_tolerance_pct=size_tolerance_pct,
                 prepare_only=prepare_only,
+                progress_callback=notify,
             )
             case["status"] = "prepared" if prepare_only else "completed"
         except KeyboardInterrupt:
@@ -490,20 +515,51 @@ def run_corpus(
             case["status"] = "failed"
             case["error"] = f"{type(exc).__name__}: {exc}"
             print(f"  Failed: {case['error']}", flush=True)
+        finally:
+            stop_monitor.set()
+            watcher.join(timeout=5)
+        # Count saved evaluation jobs even for partially failed/interrupted cases
+        # so campaign-level totals remain grounded in checkpointed outcomes.
+        case_batch = _case_batch_progress(case)
+        case["finished_job_count"] = case_batch["completed"]
+        case["finished_results_count"] = case_batch["with_results"]
         case["attempts"][-1]["status"] = case["status"]
         case["attempts"][-1]["finished_at"] = utc_now()
         atomic_json(manifest_path, campaign)
+        publish_snapshot(output)
         # Keep raw outcomes and batch checkpoints immediately; do not rewrite
         # every previous metric and CSV after every held-out capture. The
         # DuckDB catalogue can index these saved outcomes during the run.
         # Export the complete convenience files once after the campaign.
     successes = sum(x["status"] in {"completed", "prepared"} for x in campaign["cases"])
     failures = sum(x["status"] == "failed" for x in campaign["cases"])
-    campaign["status"] = "completed" if not failures else "needs_attention"
-    campaign["finished_at"] = utc_now()
+    campaign["phase"] = "exporting"
     campaign["completed_cases"] = successes
     campaign["failed_cases"] = failures
-    if not prepare_only:
-        campaign["exports"] = export_results(campaign, output)
     atomic_json(manifest_path, campaign)
+    publish_snapshot(output)
+    final_stop = threading.Event()
+    final_watcher = threading.Thread(
+        target=monitor_progress_file, args=(output, final_stop),
+        daemon=True, name="gan-campaign-export-progress",
+    )
+    final_watcher.start()
+    try:
+        if not prepare_only:
+            campaign["exports"] = export_results(campaign, output)
+    except Exception as exc:
+        campaign["status"] = "needs_attention"
+        campaign["phase"] = "export_failed"
+        campaign["export_error"] = f"{type(exc).__name__}: {exc}"
+        atomic_json(manifest_path, campaign)
+        publish_snapshot(output)
+        raise
+    finally:
+        final_stop.set()
+        final_watcher.join(timeout=5)
+    campaign["status"] = "completed" if not failures else "needs_attention"
+    campaign["finished_at"] = utc_now()
+    campaign["phase"] = "finished"
+    atomic_json(manifest_path, campaign)
+    publish_snapshot(output)
     return campaign

@@ -9,6 +9,7 @@ CBR Tests is a plan-driven runner for assessing dataset quality, statistical str
 - [GAN trailing-suffix perturbation experiments](gan_perturbation.md)
 - [Recursive leave-one-out GAN corpus experiments](gan_recursive_corpus.md) — run all-but-one training and perturbation sweeps from a single nested dataset folder.
 - [Research results catalogue and explorer](results_catalogue.md) — index complete outcome JSONs into DuckDB and Parquet; browse metric details and compare run dates.
+- [Live GAN campaign progress and ETA](gan_live_progress.md) — monitor full campaign, group, held-out PCAP and job; inspect completed measurements while the run continues.
 - [Fixed PCAP plan matrices](fixed_pcap_plan_matrices.md) — reuse one validated PCAP plan while mapping different candidate/reference capture sets onto it.
 - [Queued comparison campaigns](comparison_campaigns.md) — run several independent candidate/reference matrices one after another with campaign-level checkpointing and resume/retry.
 - [Metric reference](metric_reference.md) — all metric IDs currently supported by the dispatcher, their inputs, outputs, interpretation, and limitations.
