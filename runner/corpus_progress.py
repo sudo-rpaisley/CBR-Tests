@@ -204,7 +204,7 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
             "available_result_jobs": batch["with_results"],
             "failed_jobs": batch["failed"],
             "total_jobs": per_case,
-            "seed": batch["seed"] or stage_data.get("details", {}).get("seed"),
+            "seed": batch["seed"] if batch["seed"] is not None else stage_data.get("details", {}).get("seed"),
         } if active else None,
         "job": {
             "name": Path(current_job.get("dataset_path", "")).name,
@@ -217,7 +217,7 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
             "eta_seconds": job_eta,
             "observed_job_samples": len(batch["job_samples_seconds"]),
         } if current_job else None,
-        "log_path": str(output_dir / "run.log"),
+        "log_path": str(output_dir.with_suffix(".log")),
         "archive_path": str(output_dir),
     }
 
