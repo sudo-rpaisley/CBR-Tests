@@ -278,7 +278,16 @@ def run_once(args):
         metric["metric_id"] in PCAP_PACKET_BACKED_METRICS for metric in metrics
     ):
         print_phase_status("PCAP", "Building compact canonical packet view")
-        shared_tabular_df = build_compact_pcap_packet_dataframe(dataset_path)
+        shared_tabular_df = build_compact_pcap_packet_dataframe(
+            dataset_path,
+            precompute_metrics={
+                metric["metric_id"]: metric for metric in metrics
+                if metric["metric_id"] in {
+                    "handshake_plausibility_profile",
+                    "timestamp_coherence_profile",
+                }
+            },
+        )
     phase_timings["dataset_loading"] = round(time.perf_counter() - dataset_load_start, 6)
 
     dataset_summary_start = time.perf_counter()
