@@ -178,11 +178,13 @@ def run_monitor_tool_action(repo_root: Path) -> None:
 
     root = repo_root.expanduser().resolve()
     target = root / "outcomes" / "gan-corpus"
-    if not target.is_dir():
-        print(f"No GAN campaigns found in {target}")
-        return
+    start = target if target.is_dir() else root
+    print("Browse to an experiment directory containing campaign.json.")
+    print("External drives are supported: N opens /mnt, M opens /media, e enters an absolute path.")
     chosen = curses.wrapper(
-        _select_directory, root, start_dir=target
+        _select_directory, root, start_dir=start,
+        title="Attach to a GAN campaign (any storage drive)",
+        description="Select the run folder that contains campaign.json; d chooses the current directory.",
     )
     if chosen is None:
         return
