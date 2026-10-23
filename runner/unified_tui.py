@@ -8,6 +8,7 @@ from runner.fixed_plan_matrix_tui import fixed_plan_matrix_toolbox_item, launch_
 from runner.friendly_tui import launch_friendly_batch_tui, launch_single_tui
 from runner.perturbation_tui import run_perturbation_tool_action
 from runner.corpus_perturbation_tui import run_corpus_tool_action
+from runner.corpus_monitor_tui import run_monitor_tool_action
 from runner.results_explorer_tui import launch_results_explorer
 from runner.toolbox_tui import ToolboxItem, run_tool_action, toolbox_items
 
@@ -34,6 +35,11 @@ def _menu_items() -> tuple[ToolboxItem, ...]:
     items.insert(batch_index + 3, ToolboxItem(
         "gan_recursive_corpus", "GAN recursive leave-one-out corpus",
         "Select one dataset folder; train all-but-one PCAPs per directory and export complete results.",
+        "Run experiments",
+    ))
+    items.insert(batch_index + 4, ToolboxItem(
+        "gan_live_monitor", "Monitor running GAN campaign",
+        "Reattach to live campaign, group, PCAP and job progress; browse completed results while it runs.",
         "Run experiments",
     ))
 
@@ -161,6 +167,8 @@ def launch_unified_tui(args, repo_root: Path | None = None):
                 run_perturbation_tool_action(root)
             elif mode == "gan_recursive_corpus":
                 run_corpus_tool_action(root)
+            elif mode == "gan_live_monitor":
+                run_monitor_tool_action(root)
             elif mode == "gan_results_explorer":
                 launch_results_explorer(root / "outcomes" / "results-catalogue.duckdb", repo_root=root)
             elif mode in campaign_actions:
