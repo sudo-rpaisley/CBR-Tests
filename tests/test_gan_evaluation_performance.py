@@ -78,7 +78,7 @@ def test_vectorised_hour_bins_match_historical_timestamp_loop():
     historical = _continuous_hourly_counts(series.tolist())
     vectorised = _continuous_hourly_counts(series)
     assert vectorised == historical
-    frame = pd.DataFrame({"Timestamp": series.astype("int64") / 1_000_000_000})
+    frame = pd.DataFrame({"Timestamp": [ts.timestamp() for ts in series]})
     metric = {
         "input_requirements": {"timestamp_field": "Timestamp"},
         "calculation": {"parameters": {"timestamp_unit": "s", "lags": [1, 24], "minimum_lag_pairs": 1}},
