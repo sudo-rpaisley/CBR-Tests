@@ -124,6 +124,12 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
     active = next((case for case in cases if case.get("status") == "running"), None)
     group_name = str(active.get("folder")) if active else ""
     group = [case for case in cases if str(case.get("folder")) == group_name] if active else []
+    group_names = list(dict.fromkeys(str(c.get("folder")) for c in cases))
+    completed_groups = sum(
+        all(c.get("status") in TERMINAL for c in cases if str(c.get("folder")) == name)
+        for name in group_names
+    )
+    group_index = (group_names.index(group_name) + 1) if active else None
     stage_data = (
         _read(Path(active["output_dir"]) / "stage.json")
         if active and active.get("output_dir") else {}
@@ -169,7 +175,8 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
         "status": status,
         "elapsed_seconds": _seconds(campaign.get("started_at"), now.isoformat()),
         "campaign": {
-            "total_groups": len({str(c.get("folder")) for c in cases}),
+            "total_groups": len(group_names),
+            "completed_groups": completed_groups,
             "total_cases": len(cases),
             "completed_cases": len(completed),
             "failed_cases": len(failed),
@@ -181,6 +188,8 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
         },
         "group": {
             "name": group_name,
+            "index": group_index,
+            "total_groups": len(group_names),
             "total_cases": len(group),
             "completed_cases": group_complete,
             "failed_cases": sum(c.get("status") == "failed" for c in group),
@@ -195,6 +204,8 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
             "name": active.get("held_out_name"),
             "folder": group_name,
             "case_id": active.get("case_id"),
+            "group_position": group.index(active) + 1,
+            "campaign_position": cases.index(active) + 1,
             "stage": stage_data.get("stage", "preparing"),
             "stage_details": stage_data.get("details", {}),
             "started_at": case_start,
