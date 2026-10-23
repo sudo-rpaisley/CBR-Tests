@@ -55,6 +55,9 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
         f"  Finished job outcomes available for exploration: {camp['available_result_jobs']}",
         "",
     ]
+    if progress.get("abort_reason"):
+        lines.append("CAMPAIGN HALTED: " + progress["abort_reason"])
+        lines.append("")
     if group:
         lines.extend([
             f"GROUP {group.get('index', '?')}/{group.get('total_groups', '?')}: {group['name']}",
@@ -70,6 +73,11 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
             stage += f" {details.get('capture_index', '?')}/{details.get('capture_total', '?')}"
         if case["stage"] == "training":
             stage += f" ({details.get('epochs', '?')} planned epochs)"
+        if case["stage"] == "generating":
+            stage += (f" {details.get('percentage', '?')}%"
+                      f" [{details.get('stage', 'starting')}: "
+                      f"{details.get('packets_done', 0):,}/"
+                      f"{details.get('total_packets') or '?'} packets]")
         lines.extend([
             f"HELD-OUT PCAP {case.get('group_position', '?')}/{group['total_cases']}: {case['name']}",
             "  " + progress_line(case["evaluated_jobs"], case["total_jobs"]),

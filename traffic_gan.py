@@ -43,7 +43,13 @@ def main() -> None:
                     raise RuntimeError(f"Generator source missing: {name}")
                 (source / name).write_bytes(stream.read())
         sys.path.insert(0, str(source))
-        runpy.run_path(str(source / "traffic_gan.py"), run_name="__main__")
+        # Keep the archived CTGAN training implementation unchanged, but
+        # stream capture extraction and suffix rewriting in bounded memory.
+        if len(sys.argv) > 1 and sys.argv[1] in ("extract", "sweep"):
+            runpy.run_path(str(Path(__file__).resolve().parent /
+                              "gan_generator" / "streaming_sweep.py"), run_name="__main__")
+        else:
+            runpy.run_path(str(source / "traffic_gan.py"), run_name="__main__")
 
 
 if __name__ == "__main__":

@@ -30,6 +30,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--workers", type=int, default=None)
     parser.add_argument("--size-tolerance-pct", type=float, default=5.0)
+    parser.add_argument("--max-consecutive-failures", type=int, default=3,
+                        help="Halt after this many consecutive failed held-outs (default: 3)")
     parser.add_argument("--preview", action="store_true", help="List groups/jobs without training or writing outputs")
     parser.add_argument("--resume", action="store_true",
                         help="Resume previously started campaign in --output-dir")
@@ -47,6 +49,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             parser.error("--workers must be positive.")
         if args.size_tolerance_pct < 0:
             parser.error("--size-tolerance-pct must be nonnegative.")
+        if args.max_consecutive_failures < 1:
+            parser.error("--max-consecutive-failures must be positive.")
         if args.resume and args.output_dir is None:
             parser.error("--resume requires the existing --output-dir.")
     except ValueError as exc:
@@ -72,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         device=args.device,
         workers=args.workers,
         size_tolerance_pct=args.size_tolerance_pct,
+        max_consecutive_failures=args.max_consecutive_failures,
         prepare_only=args.prepare_only,
         resume=args.resume,
         preview_only=args.preview,

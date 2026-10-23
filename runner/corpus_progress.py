@@ -134,6 +134,22 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
         _read(Path(active["output_dir"]) / "stage.json")
         if active and active.get("output_dir") else {}
     )
+    # Read actual packet-level progress from the streaming generator,
+    # independently of the elapsed training / comparison-job counters.
+    if active and stage_data.get("stage") == "generating":
+        details = stage_data.setdefault("details", {})
+        seed = details.get("seed")
+        if seed is not None:
+            progress_file = (
+                Path(active["output_dir"]) / f"seed_{seed}" /
+                "captures" / "generation_progress.json"
+            )
+            generator_status = _read(progress_file)
+            # Do not show stale packet counters from the previous level.
+            if generator_status and (
+                generator_status.get("percentage") in (None, details.get("percentage"))
+            ):
+                details.update(generator_status)
     batch = _case_batch_progress(active) if active else {
         "completed": 0, "with_results": 0, "failed": 0,
         "active_job": None, "seed": None, "current_percentage": None,
@@ -174,6 +190,7 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
         "updated_at": now.isoformat(),
         "status": status,
         "phase": campaign.get("phase", "evaluating"),
+        "abort_reason": campaign.get("abort_reason"),
         "elapsed_seconds": _seconds(campaign.get("started_at"), now.isoformat()),
         "campaign": {
             "total_groups": len(group_names),

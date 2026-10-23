@@ -260,3 +260,33 @@ def test_exports_partial_and_retry_attempts_with_distinct_attempt_labels(tmp_pat
         str(tmp_path / "attempt1" / "seed_42" / "evaluation" / "raw_outcome.json"),
         str(tmp_path / "attempt2" / "seed_42" / "evaluation" / "raw_outcome.json"),
     }
+
+
+def test_campaign_halts_after_three_consecutive_failed_cases(tmp_path, monkeypatch):
+    folder = tmp_path / "dataset" / "group"
+    for number in range(5):
+        _pcap(folder / f"case_{number}.pcap", bytes([number + 1]))
+    script = tmp_path / "traffic_gan.py"
+    script.write_text("placeholder")
+    attempts = []
+
+    def failing_case(**kwargs):
+        attempts.append(kwargs["base"].name)
+        raise RuntimeError("reproducible failure")
+
+    monkeypatch.setattr(corpus, "run_experiment", failing_case)
+    output = tmp_path / "results"
+    campaign = corpus.run_corpus(
+        dataset_root=folder.parent, output_dir=output,
+        generator_script=script, percentages=(0, 10), seeds=(42,),
+        max_consecutive_failures=3,
+    )
+    assert len(attempts) == 3
+    assert [c["status"] for c in campaign["cases"]] == [
+        "failed", "failed", "failed", "pending", "pending"
+    ]
+    assert campaign["status"] == "needs_attention"
+    assert "three" not in campaign["abort_reason"]
+    assert "3 consecutive" in campaign["abort_reason"]
+    saved = json.loads((output / "campaign.json").read_text())
+    assert saved["abort_reason"] == campaign["abort_reason"]

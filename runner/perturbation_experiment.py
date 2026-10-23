@@ -396,73 +396,99 @@ def run_experiment(
             metadata["model_sha256"] = file_sha256(model)
             _write_json(experiment_manifest, metadata)
         assert model is not None
-        notify("generating", seed=seeds[0])
+        # Each percentage is generated, validated, evaluated, then checkpointed.
+        # This avoids waiting for all 11 full-size captures to be generated
+        # before the first CBR measurement becomes available.
         for seed in seeds:
             seed_root = destination / f"seed_{seed}"
             capture_dir = seed_root / "captures"
-            command = [
-                sys.executable, str(generator_script), "sweep",
-                "--input", str(source), "--model", str(model),
-                "--output", str(capture_dir), "--percentages",
-                ",".join(map(str, percentages)), "--basis", basis, "--seed", str(seed),
-            ]
-            notify("generating", seed=seed, count=len(percentages))
-            print(f"Generating trailing-suffix captures for seed {seed}", flush=True)
-            subprocess.run(command, cwd=root, check=True)
-            notify("validating", seed=seed)
-            captures = validate_generation(
-                seed_dir=capture_dir, source_path=source, model_path=model,
-                percentages=percentages, seed=seed,
-                size_tolerance_pct=size_tolerance_pct,
-            )
-            for capture in captures:
-                capture["base_dataset_path"] = str(base)
-                capture["comparison_dataset_path"] = str(comparison)
-            matrix_path = seed_root / "fixed_plan_batch.json"
-            build_fixed_plan_matrix(
-                name=f"gan-trailing-suffix-seed-{seed}",
-                plan_path=plan,
-                candidate_paths=[Path(row["dataset_path"]) for row in captures],
-                reference_paths=[base],
-                output_path=matrix_path,
-                overwrite=False,
-                repo_root=root,
-            )
-            run = {
-                "seed": seed,
-                "base_dataset_path": str(base),
-                "comparison_dataset_path": str(comparison),
-                "matrix": str(matrix_path),
-                "captures": captures,
-                "batch_output_dir": str(seed_root / "evaluation"),
-                "status": "prepared",
-            }
-            metadata["runs"].append(run)
-            _write_json(experiment_manifest, metadata)
-            if prepare_only:
-                continue
-            batch_command = [
-                sys.executable, str(root / "run_batch.py"),
-                "--batch", str(matrix_path),
-                "--output-dir", str(seed_root / "evaluation"),
-                "--display", display, "--no-update-field-translation", "--fail-fast",
-            ]
-            if workers is not None:
-                batch_command.extend(["--workers", str(workers)])
-            if experiment_mode:
-                batch_command.append("--experiment-mode")
-            notify("evaluating", seed=seed, count=len(captures))
-            completed = subprocess.run(batch_command, cwd=root, check=False)
-            state_path = seed_root / "evaluation" / "batch_state.json"
-            all_metric_rows.extend(collect_metric_rows(state_path, captures))
-            run["return_code"] = completed.returncode
-            run["status"] = (
-                json.loads(state_path.read_text(encoding="utf-8")).get("status", "unknown")
-                if state_path.exists() else "not_written"
-            )
-            _write_json(experiment_manifest, metadata)
-            if completed.returncode != 0 or run["status"] != "completed":
-                raise RuntimeError(f"CBR batch for seed {seed} needs attention; see {state_path}.")
+            for percentage in percentages:
+                command = [
+                    sys.executable, str(generator_script), "sweep",
+                    "--input", str(source), "--model", str(model),
+                    "--output", str(capture_dir),
+                    "--percentages", str(percentage),
+                    "--sweep-percentages", ",".join(map(str, percentages)),
+                    "--basis", basis, "--seed", str(seed),
+                ]
+                notify("generating", seed=seed, percentage=percentage,
+                       levels_total=len(percentages))
+                print(f"Generating suffix {percentage}% for seed {seed}", flush=True)
+                subprocess.run(command, cwd=root, check=True)
+                notify("validating", seed=seed, percentage=percentage)
+                captures = validate_generation(
+                    seed_dir=capture_dir, source_path=source, model_path=model,
+                    percentages=(percentage,), seed=seed,
+                    size_tolerance_pct=size_tolerance_pct,
+                )
+                for capture in captures:
+                    capture["base_dataset_path"] = str(base)
+                    capture["comparison_dataset_path"] = str(comparison)
+                # The generator writes a one-level manifest. Restore the
+                # cumulative manifest from per-level provenance after
+                # successful validation; keeps partial results discoverable.
+                available = []
+                for prior in percentages:
+                    item = capture_dir / f"gan_{prior:03d}.json"
+                    if item.is_file():
+                        available.append(json.loads(item.read_text(encoding="utf-8")))
+                if available:
+                    manifest_path = capture_dir / "manifest.csv"
+                    temp_manifest = manifest_path.with_name(".manifest.csv.tmp")
+                    with temp_manifest.open("w", newline="", encoding="utf-8") as handle:
+                        writer = csv.DictWriter(handle, fieldnames=list(available[0]))
+                        writer.writeheader()
+                        writer.writerows(available)
+                    os.replace(temp_manifest, manifest_path)
+
+                matrix_path = seed_root / f"fixed_plan_batch_{percentage:03d}.json"
+                build_fixed_plan_matrix(
+                    name=f"gan-trailing-suffix-seed-{seed}-pct-{percentage:03d}",
+                    plan_path=plan,
+                    candidate_paths=[Path(row["dataset_path"]) for row in captures],
+                    reference_paths=[base],
+                    output_path=matrix_path,
+                    overwrite=False,
+                    repo_root=root,
+                )
+                run = {
+                    "seed": seed,
+                    "percentage": percentage,
+                    "base_dataset_path": str(base),
+                    "comparison_dataset_path": str(comparison),
+                    "matrix": str(matrix_path),
+                    "captures": captures,
+                    "batch_output_dir": str(seed_root / f"evaluation_{percentage:03d}"),
+                    "status": "prepared",
+                }
+                metadata["runs"].append(run)
+                _write_json(experiment_manifest, metadata)
+                if prepare_only:
+                    continue
+                batch_command = [
+                    sys.executable, str(root / "run_batch.py"),
+                    "--batch", str(matrix_path),
+                    "--output-dir", str(seed_root / f"evaluation_{percentage:03d}"),
+                    "--display", display, "--no-update-field-translation", "--fail-fast",
+                ]
+                if workers is not None:
+                    batch_command.extend(["--workers", str(workers)])
+                if experiment_mode:
+                    batch_command.append("--experiment-mode")
+                notify("evaluating", seed=seed, percentage=percentage, count=1)
+                completed = subprocess.run(batch_command, cwd=root, check=False)
+                state_path = Path(run["batch_output_dir"]) / "batch_state.json"
+                all_metric_rows.extend(collect_metric_rows(state_path, captures))
+                run["return_code"] = completed.returncode
+                run["status"] = (
+                    json.loads(state_path.read_text(encoding="utf-8")).get("status", "unknown")
+                    if state_path.exists() else "not_written"
+                )
+                _write_json(experiment_manifest, metadata)
+                if completed.returncode != 0 or run["status"] != "completed":
+                    raise RuntimeError(
+                        f"CBR comparison for seed {seed}, {percentage}% needs attention; see {state_path}."
+                    )
         results_csv = destination / "perturbation_metrics.csv"
         with results_csv.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=RESULT_COLUMNS, extrasaction="ignore")

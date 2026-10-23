@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **404 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **410 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -234,6 +234,7 @@ Tests and local helpers in this module.
 | `test_resume_refuses_modified_inputs_and_preserves_archive(tmp_path, monkeypatch)` (L203) | Verifies that resume refuses modified inputs and preserves archive. | `_pcap`, `script.write_text`, `monkeypatch.setattr`, `corpus.run_corpus`, `x.write_bytes`, `(output / 'campaign.json').is_file`, `_fake_one_seed_case`, `pytest.raises` |
 | `test_metric_leaf_json_pointer_escapes_keys()` (L229) | Verifies that metric leaf JSON pointer escapes keys. | `corpus.leaves` |
 | `test_exports_partial_and_retry_attempts_with_distinct_attempt_labels(tmp_path)` (L235) | Verifies that exports partial and retry attempts with distinct attempt labels. | `_pcap`, `_fake_one_seed_case`, `corpus.export_results`, `(tmp_path / 'exports_root' / 'exports' / 'metric_results.csv').open`, `csv.DictReader` |
+| `test_campaign_halts_after_three_consecutive_failed_cases(tmp_path, monkeypatch)` (L265) | Verifies that campaign halts after three consecutive failed cases. | `script.write_text`, `monkeypatch.setattr`, `corpus.run_corpus`, `_pcap`, `attempts.append`, `RuntimeError`, `(output / 'campaign.json').read_text`, `bytes` |
 
 ### Test helpers
 
@@ -243,6 +244,7 @@ Tests and local helpers in this module.
 | `_fake_one_seed_case(output: Path, heldout: Path, group: str = 'Group')` (L72) | Create a representative completed CBR batch, including nested results. |
 | `test_corpus_executes_all_heldouts_and_resume_skips_verified_completions.fake_run(**kwargs)` (L172) | Implementation helper for fake run. |
 | `test_resume_refuses_modified_inputs_and_preserves_archive.stub(**kwargs)` (L211) | Implementation helper for stub. |
+| `test_campaign_halts_after_three_consecutive_failed_cases.failing_case(**kwargs)` (L273) | Implementation helper for failing case. |
 
 ## `tests/test_corpus_storage_tui.py`
 
@@ -810,18 +812,18 @@ Tests and local helpers in this module.
 | `test_gan_setup_rejects_missing_files_and_existing_output(tmp_path)` (L174) | Verifies that gan setup rejects missing files and existing output. | `initial_settings`, `validate_settings`, `any`, `(tmp_path / 'prior-run').mkdir`, `(tmp_path / 'prior-run' / 'experiment.json').write_text`, `issue.lower` |
 | `test_gan_setup_prevents_using_same_capture_twice(tmp_path)` (L186) | Verifies that gan setup prevents using same capture twice. | `(tmp_path / 'shared.pcap').write_bytes`, `initial_settings`, `values.update`, `any`, `validate_settings` |
 | `test_cli_requires_both_datasets()` (L194) | Verifies that CLI requires both datasets. | `parse_args`, `pytest.raises` |
-| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference(tmp_path, monkeypatch)` (L210) | Verifies that experiment uses dataset2 for generation and dataset1 for every reference. | `monkeypatch.setattr`, `experiment.run_experiment`, `filename.write_bytes`, `generated_command.append`, `type('Completed', (), {'returncode': 0})`, `reference_paths.extend`, `all`, `kwargs['output_path'].write_text` |
-| `test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_path, monkeypatch)` (L269) | Verifies that experiment rejects plan with no comparison metrics before output. | `monkeypatch.setattr`, `(tmp_path / name).write_text`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
-| `test_training_picker_selects_many_pcaps_without_exposing_tabular_data(tmp_path)` (L284) | Verifies that training picker selects many pcaps without exposing tabular data. | `(tmp_path / name).write_text`, `_browser_entries`, `frozenset` |
-| `test_training_mode_builds_multiple_pcap_arguments(tmp_path)` (L294) | Verifies that training mode builds multiple PCAP arguments. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / name).write_text`, `validate_settings`, `command.count`, `command.index` |
-| `test_training_mode_rejects_selected_evaluation_capture(tmp_path)` (L314) | Verifies that training mode rejects selected evaluation capture. | `initial_settings`, `values.update`, `any`, `(tmp_path / name).write_text`, `validate_settings` |
-| `test_training_cli_rejects_checkpoint_and_training_inputs_together()` (L327) | Verifies that training CLI rejects checkpoint and training inputs together. | `parse_args`, `pytest.raises` |
-| `test_training_capture_duplicate_content_rejected_before_output(tmp_path, monkeypatch)` (L341) | Verifies that training capture duplicate content rejected before output. | `paths.items`, `paths['training.pcap'].write_bytes`, `path.write_text`, `paths['base.pcap'].read_bytes`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
-| `test_multiple_training_pcaps_extract_merge_and_train(tmp_path, monkeypatch)` (L359) | Verifies that multiple training pcaps extract merge and train. | `script.write_text`, `monkeypatch.setattr`, `gan_training.train_from_captures`, `model.is_file`, `path.write_bytes`, `events.append`, `type('Completed', (), {'returncode': 0})`, `(tmp_path / 'training' / 'training_flows.csv').open` |
-| `test_auto_plan_default_needs_no_selected_plan(tmp_path)` (L400) | Verifies that auto plan default needs no selected plan. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / name).write_text`, `validate_settings` |
-| `test_existing_plan_preflight_detects_missing_comparison_metrics(tmp_path)` (L416) | Verifies that existing plan preflight detects missing comparison metrics. | `build_plan`, `write_plan`, `initial_settings`, `values.update`, `validate_settings`, `any`, `(tmp_path / name).write_text` |
-| `test_cli_auto_plan_and_explicit_plan_are_mutually_exclusive()` (L438) | Verifies that CLI auto plan and explicit plan are mutually exclusive. | `parse_args`, `pytest.raises` |
-| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference(tmp_path, monkeypatch)` (L449) | Verifies that auto plan uses comparison as candidate and base as reference. | `paths.items`, `monkeypatch.setattr`, `experiment.run_experiment`, `reference_bound_metric_ids`, `(output / 'auto_plan_report.json').is_file`, `path.write_text`, `generator_commands.append`, `type('Completed', (), {'returncode': 0})` |
+| `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference(tmp_path, monkeypatch)` (L210) | Verifies that experiment uses dataset2 for generation and dataset1 for every reference. | `monkeypatch.setattr`, `experiment.run_experiment`, `all`, `filename.write_bytes`, `generated_command.append`, `type('Completed', (), {'returncode': 0})`, `reference_paths.extend`, `kwargs['output_path'].write_text` |
+| `test_experiment_rejects_plan_with_no_comparison_metrics_before_output(tmp_path, monkeypatch)` (L272) | Verifies that experiment rejects plan with no comparison metrics before output. | `monkeypatch.setattr`, `(tmp_path / name).write_text`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
+| `test_training_picker_selects_many_pcaps_without_exposing_tabular_data(tmp_path)` (L287) | Verifies that training picker selects many pcaps without exposing tabular data. | `(tmp_path / name).write_text`, `_browser_entries`, `frozenset` |
+| `test_training_mode_builds_multiple_pcap_arguments(tmp_path)` (L297) | Verifies that training mode builds multiple PCAP arguments. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / name).write_text`, `validate_settings`, `command.count`, `command.index` |
+| `test_training_mode_rejects_selected_evaluation_capture(tmp_path)` (L317) | Verifies that training mode rejects selected evaluation capture. | `initial_settings`, `values.update`, `any`, `(tmp_path / name).write_text`, `validate_settings` |
+| `test_training_cli_rejects_checkpoint_and_training_inputs_together()` (L330) | Verifies that training CLI rejects checkpoint and training inputs together. | `parse_args`, `pytest.raises` |
+| `test_training_capture_duplicate_content_rejected_before_output(tmp_path, monkeypatch)` (L344) | Verifies that training capture duplicate content rejected before output. | `paths.items`, `paths['training.pcap'].write_bytes`, `path.write_text`, `paths['base.pcap'].read_bytes`, `pytest.raises`, `experiment.run_experiment`, `output.exists` |
+| `test_multiple_training_pcaps_extract_merge_and_train(tmp_path, monkeypatch)` (L362) | Verifies that multiple training pcaps extract merge and train. | `script.write_text`, `monkeypatch.setattr`, `gan_training.train_from_captures`, `model.is_file`, `path.write_bytes`, `events.append`, `type('Completed', (), {'returncode': 0})`, `(tmp_path / 'training' / 'training_flows.csv').open` |
+| `test_auto_plan_default_needs_no_selected_plan(tmp_path)` (L403) | Verifies that auto plan default needs no selected plan. | `initial_settings`, `values.update`, `build_command`, `(tmp_path / name).write_text`, `validate_settings` |
+| `test_existing_plan_preflight_detects_missing_comparison_metrics(tmp_path)` (L419) | Verifies that existing plan preflight detects missing comparison metrics. | `build_plan`, `write_plan`, `initial_settings`, `values.update`, `validate_settings`, `any`, `(tmp_path / name).write_text` |
+| `test_cli_auto_plan_and_explicit_plan_are_mutually_exclusive()` (L441) | Verifies that CLI auto plan and explicit plan are mutually exclusive. | `parse_args`, `pytest.raises` |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference(tmp_path, monkeypatch)` (L452) | Verifies that auto plan uses comparison as candidate and base as reference. | `paths.items`, `monkeypatch.setattr`, `experiment.run_experiment`, `reference_bound_metric_ids`, `(output / 'auto_plan_report.json').is_file`, `path.write_text`, `generator_commands.append`, `type('Completed', (), {'returncode': 0})` |
 
 ### Test helpers
 
@@ -832,10 +834,10 @@ Tests and local helpers in this module.
 | `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_run(command, **kwargs)` (L230) | Implementation helper for fake run. |
 | `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_validate(**kwargs)` (L235) | Implementation helper for fake validate. |
 | `test_experiment_uses_dataset2_for_generation_and_dataset1_for_every_reference.fake_matrix(**kwargs)` (L245) | Implementation helper for fake matrix. |
-| `test_multiple_training_pcaps_extract_merge_and_train.fake_run(command, **kwargs)` (L369) | Implementation helper for fake run. |
-| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_run(command, **kwargs)` (L462) | Implementation helper for fake run. |
-| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_validate(**kwargs)` (L468) | Implementation helper for fake validate. |
-| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_matrix(**kwargs)` (L478) | Implementation helper for fake matrix. |
+| `test_multiple_training_pcaps_extract_merge_and_train.fake_run(command, **kwargs)` (L372) | Implementation helper for fake run. |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_run(command, **kwargs)` (L465) | Implementation helper for fake run. |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_validate(**kwargs)` (L471) | Implementation helper for fake validate. |
+| `test_auto_plan_uses_comparison_as_candidate_and_base_as_reference.fake_matrix(**kwargs)` (L481) | Implementation helper for fake matrix. |
 
 ## `tests/test_plan_builder.py`
 
@@ -1193,6 +1195,33 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_metric(*fields)` (L14) | Implementation helper for metric. |
+
+## `tests/test_streaming_gan.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_streaming_preserves_counts_size_checksums_nestedness_and_baseline(tmp_path, tools, fmt)` (L93) | Verifies that streaming preserves counts size checksums nestedness and baseline. | `pytest.mark.parametrize`, `capture`, `inp.write_bytes`, `gan.scan_capture`, `gan.extract_capture`, `gan.stream_sweep`, `legacy.locate_packet_slots`, `(output_dir / f'gan_010.{fmt}').read_bytes` |
+| `test_protected_packet_rejected_before_writing_output(tmp_path, tools)` (L145) | Verifies that protected packet rejected before writing output. | `bytearray`, `inp.write_bytes`, `capture`, `legacy.locate_packet_slots`, `model.open`, `pickle.dump`, `pytest.raises`, `gan.stream_sweep` |
+| `test_packet_plan_closes_memmap_before_deleting_scratch(tmp_path, tools, monkeypatch)` (L159) | Verifies that packet plan closes memmap before deleting scratch. | `monkeypatch.setattr`, `monkeypatch.setenv`, `original`, `mappings.append`, `gan._packet_plan`, `all`, `tmp_path.glob` |
+| `test_invalid_capture_reports_packet_number_offset_and_lengths(tmp_path, tools)` (L179) | Verifies that invalid capture reports packet number offset and lengths. | `bytearray`, `bad.write_bytes`, `capture`, `pytest.raises`, `gan.scan_capture`, `packet` |
+| `test_zero_length_pcap_record_is_preserved_and_unsupported(tmp_path, tools)` (L189) | Verifies that zero length PCAP record is preserved and unsupported. | `capture`, `file.write_bytes`, `gan.scan_capture`, `packet` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `FakeGAN` (L16) | Pickleable generator with a consistent per-protocol feature distribution. |
+| `FakeGAN.sample(self, n, condition_column = None, condition_value = None)` (L18) | Implementation helper for sample. |
+| `tools(tmp_path, monkeypatch)` (L28) | Implementation helper for tools. |
+| `checksum(buf)` (L49) | Implementation helper for checksum. |
+| `packet(idx, udp = False)` (L57) | Implementation helper for packet. |
+| `_block(kind, body)` (L74) | Implementation helper for block. |
+| `capture(packets, fmt)` (L80) | Implementation helper for capture. |
+| `test_packet_plan_closes_memmap_before_deleting_scratch.tracking_memmap(*args, **kwargs)` (L165) | Implementation helper for tracking memmap. |
 
 ## `tests/test_task_based_validation_profile.py`
 
