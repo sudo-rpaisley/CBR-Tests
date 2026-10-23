@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **392 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **397 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -197,6 +197,25 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write_batch(path: Path, batch_id: str, job_count: int) -> Path` (L14) | Implementation helper for write batch. |
+
+## `tests/test_corpus_live_progress.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_progress_shows_actual_campaign_group_case_and_job_with_observed_eta(tmp_path)` (L81) | Verifies that progress shows actual campaign group case and job with observed eta. | `_source`, `corpus_progress.build_snapshot`, `monitor_lines`, `any` |
+| `test_eta_is_unknown_until_completed_samples_exist(tmp_path)` (L117) | Verifies that eta is unknown until completed samples exist. | `_source`, `corpus_progress.build_snapshot`, `corpus_progress.format_duration`, `'\n'.join`, `monitor_lines` |
+| `test_persisted_progress_can_be_read_without_running_experiment(tmp_path)` (L128) | Verifies that persisted progress can be read without running experiment. | `_source`, `corpus_progress.publish_snapshot`, `corpus_progress.progress_line`, `read_progress` |
+| `test_terminal_progress_has_no_running_case_or_stale_eta(tmp_path)` (L136) | Verifies that terminal progress has no running case or stale eta. | `_source`, `corpus_progress.build_snapshot` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_source(tmp_path: Path)` (L16) | Implementation helper for source. |
 
 ## `tests/test_corpus_perturbation.py`
 
@@ -972,6 +991,7 @@ Tests and local helpers in this module.
 | `test_single_older_experiment_imports_without_parent_campaign(tmp_path)` (L153) | Verifies that single older experiment imports without parent campaign. | `_json`, `dataset.parent.mkdir`, `dataset.write_bytes`, `catalog.open_catalogue`, `catalog.index_roots`, `conn.close`, `conn.execute('SELECT source_kind FROM campaigns').fetchone`, `conn.execute('SELECT reference_path FROM jobs').fetchone` |
 | `test_index_two_dates_and_query_filtered_metric(tmp_path)` (L191) | Verifies that index two dates and query filtered metric. | `_archive`, `catalog.open_catalogue`, `catalog.compare_metric`, `conn.close`, `pytest.raises`, `catalog.index_roots` |
 | `test_browser_queries_are_paged_not_full_scans(tmp_path)` (L212) | Verifies that browser queries are paged not full scans. | `_archive`, `catalog.open_catalogue`, `catalog.index_roots`, `explorer._rows`, `conn.close` |
+| `test_running_campaign_indexes_available_jobs_and_refreshes_as_new_jobs_finish(tmp_path)` (L244) | Users can inspect genuine partial outcomes without waiting for full sweep. | `_archive`, `_json`, `catalog.open_catalogue`, `manifest.read_text`, `experiment_path.read_text`, `state_path.read_text`, `catalog.index_roots`, `capture.parent.mkdir` |
 
 ### Test helpers
 
