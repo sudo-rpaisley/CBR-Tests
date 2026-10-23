@@ -18,15 +18,17 @@ confirm `RUN`. The Toolbox starts a separately managed process, writes its
 stdout/stderr to a dated `.log` alongside the campaign folder, and opens the
 live monitor. **q** closes only the monitor, **not** the experiment.
 
-The experiment outputs are timestamped under `outcomes/gan-corpus/`. In
-another SSH session, reattach with:
+The experiment outputs are timestamped inside your **selected output storage
+folder** (which may be on another disk or mounted filesystem). In another SSH
+session, reattach with the actual campaign path:
 
 ```bash
-python monitor_gan_corpus.py outcomes/gan-corpus/YOUR-RUN-ID
+python monitor_gan_corpus.py /mnt/large-drive/research/gan-corpus/YOUR-RUN-ID
 ```
 
 You can also choose **Monitor running GAN campaign** from the Toolbox
-and browse to the existing run directory.
+and browse to the existing run directory, including external mounts (`N`
+for `/mnt`, `M` for `/media`, or `e` for an absolute path).
 
 ## Four levels of progress
 
@@ -65,7 +67,7 @@ While the campaign is running, you may also index or query from a second
 terminal without starting the TUI:
 
 ```bash
-python results_catalogue.py index --search-root outcomes/gan-corpus
+python results_catalogue.py index --search-root /mnt/large-drive/research/gan-corpus
 python results_catalogue.py metric --name ACTUAL_METRIC_ID --limit 100
 ```
 
@@ -77,12 +79,12 @@ rewrites; DuckDB works on saved partial outcomes in the meantime.
 ## Inspect without the TUI
 
 A small, atomically rewritten
-`outcomes/gan-corpus/YOUR-RUN-ID/progress.json` contains:
+`<chosen-output-folder>/YOUR-RUN-ID/progress.json` contains:
 campaign totals, group/current-heldout/job counts, current stage, elapsed
 times, approximate ETAs, and how many actual saved job results are available.
 
 ```bash
-watch -n 5 'jq "{status, campaign, group, case, job}" outcomes/gan-corpus/YOUR-RUN-ID/progress.json'
+watch -n 5 'jq "{status, campaign, group, case, job}" /mnt/large-drive/research/gan-corpus/YOUR-RUN-ID/progress.json'
 ```
 
 The adjacent `campaign.json` and the original per-job `batch_state.json`
