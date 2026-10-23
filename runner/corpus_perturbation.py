@@ -532,14 +532,31 @@ def run_corpus(
     successes = sum(x["status"] in {"completed", "prepared"} for x in campaign["cases"])
     failures = sum(x["status"] == "failed" for x in campaign["cases"])
     campaign["phase"] = "exporting"
-    atomic_json(manifest_path, campaign)
-    publish_snapshot(output)
-    campaign["status"] = "completed" if not failures else "needs_attention"
-    campaign["finished_at"] = utc_now()
     campaign["completed_cases"] = successes
     campaign["failed_cases"] = failures
-    if not prepare_only:
-        campaign["exports"] = export_results(campaign, output)
+    atomic_json(manifest_path, campaign)
+    publish_snapshot(output)
+    final_stop = threading.Event()
+    final_watcher = threading.Thread(
+        target=monitor_progress_file, args=(output, final_stop),
+        daemon=True, name="gan-campaign-export-progress",
+    )
+    final_watcher.start()
+    try:
+        if not prepare_only:
+            campaign["exports"] = export_results(campaign, output)
+    except Exception as exc:
+        campaign["status"] = "needs_attention"
+        campaign["phase"] = "export_failed"
+        campaign["export_error"] = f"{type(exc).__name__}: {exc}"
+        atomic_json(manifest_path, campaign)
+        publish_snapshot(output)
+        raise
+    finally:
+        final_stop.set()
+        final_watcher.join(timeout=5)
+    campaign["status"] = "completed" if not failures else "needs_attention"
+    campaign["finished_at"] = utc_now()
     campaign["phase"] = "finished"
     atomic_json(manifest_path, campaign)
     publish_snapshot(output)
