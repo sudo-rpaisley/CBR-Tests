@@ -45,7 +45,7 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
     job = progress.get("job")
     groups = camp["total_groups"]
     lines = [
-        f"Status: {progress['status']} | Groups: {groups} | "
+        f"Status: {progress['status']} | Groups: {camp.get('completed_groups', 0)}/{groups} | "
         f"Elapsed: {format_duration(progress.get('elapsed_seconds'))}",
         "CAMPAIGN: " + progress_line(camp["evaluated_jobs"], camp["total_jobs"]),
         f"  Held-outs: {camp['completed_cases']}/{camp['total_cases']} completed "
@@ -55,7 +55,7 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
     ]
     if group:
         lines.extend([
-            f"GROUP: {group['name']}",
+            f"GROUP {group.get('index', '?')}/{group.get('total_groups', '?')}: {group['name']}",
             "  " + progress_line(group["evaluated_jobs"], group["total_jobs"]),
             f"  Held-outs: {group['completed_cases']}/{group['total_cases']} "
             f"| failed: {group['failed_cases']} | Approx ETA: {format_duration(group['eta_seconds'])}",
@@ -69,7 +69,7 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
         if case["stage"] == "training":
             stage += f" ({details.get('epochs', '?')} planned epochs)"
         lines.extend([
-            f"HELD-OUT PCAP: {case['name']}",
+            f"HELD-OUT PCAP {case.get('group_position', '?')}/{group['total_cases']}: {case['name']}",
             "  " + progress_line(case["evaluated_jobs"], case["total_jobs"]),
             f"  Stage: {stage} | Seed: {case.get('seed') if case.get('seed') is not None else '-'}",
             f"  Elapsed: {format_duration(case['elapsed_seconds'])} "
