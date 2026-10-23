@@ -9,6 +9,8 @@ import csv
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
+import tempfile
 from pathlib import Path
 import subprocess
 import sys
@@ -49,8 +51,20 @@ def parse_integer_set(raw: str, *, low: int, high: int) -> tuple[int, ...]:
 
 
 def _write_json(path: Path, data: dict) -> None:
+    """Publish manifests atomically so mid-run results browsers see valid JSON."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    fd, temporary = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent, text=True
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(data, stream, indent=2, sort_keys=True, allow_nan=False)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
 
 
 def _file_path(path: Path, label: str, suffixes: set[str] | None = None) -> Path:
