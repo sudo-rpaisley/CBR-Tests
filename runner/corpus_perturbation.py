@@ -368,6 +368,8 @@ def run_corpus(
     root = dataset_root.expanduser().resolve()
     generator_script = generator_script.expanduser().resolve()
     output = output_dir.expanduser().resolve()
+    from runner.corpus_storage import check_campaign_output_path
+    check_campaign_output_path(output, root)
     if not generator_script.is_file():
         raise FileNotFoundError(f"GAN generator script not found: {generator_script}")
     if not percentages or 0 not in percentages or any(p < 0 or p > 100 for p in percentages):
