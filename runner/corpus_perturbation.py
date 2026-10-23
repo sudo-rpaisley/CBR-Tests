@@ -358,6 +358,7 @@ def run_corpus(
     prepare_only: bool = False,
     resume: bool = False,
     preview_only: bool = False,
+    max_consecutive_failures: int = 3,
 ) -> dict:
     """Execute every held-out file in every recursive PCAP directory.
 
@@ -380,6 +381,8 @@ def run_corpus(
         raise ValueError("Invalid CTGAN training parameters.")
     if workers is not None and workers < 1:
         raise ValueError("Worker count must be positive.")
+    if max_consecutive_failures < 1:
+        raise ValueError("Maximum consecutive case failures must be positive.")
 
     groups, skipped = discover_groups(root)
     if not groups:
@@ -421,6 +424,7 @@ def run_corpus(
         "workers": workers,
         "size_tolerance_pct": size_tolerance_pct,
         "prepare_only": prepare_only,
+        "max_consecutive_failures": max_consecutive_failures,
     }
     checksum = _fingerprint(snapshot)
     manifest_path = output / "campaign.json"
@@ -453,6 +457,7 @@ def run_corpus(
     campaign["phase"] = "evaluating"
     atomic_json(manifest_path, campaign)
     publish_snapshot(output)
+    consecutive_failures = 0
     for index, case in enumerate(campaign["cases"], start=1):
         if _case_completed(case):
             print(f"[{index}/{len(campaign['cases'])}] Completed, skipping: {case['case_id']}", flush=True)
@@ -527,6 +532,18 @@ def run_corpus(
         case["attempts"][-1]["finished_at"] = utc_now()
         atomic_json(manifest_path, campaign)
         publish_snapshot(output)
+        consecutive_failures = (consecutive_failures + 1 if case["status"] == "failed" else 0)
+        if consecutive_failures >= max_consecutive_failures:
+            campaign["status"] = "needs_attention"
+            campaign["abort_reason"] = (
+                f"Stopped after {consecutive_failures} consecutive held-out failures; "
+                "remaining cases were not attempted. Inspect the preceding errors "
+                "and fix the inputs or generator before starting a new campaign."
+            )
+            print(f"  Campaign halted: {campaign['abort_reason']}", flush=True)
+            atomic_json(manifest_path, campaign)
+            publish_snapshot(output)
+            break
         # Keep raw outcomes and batch checkpoints immediately; do not rewrite
         # every previous metric and CSV after every held-out capture. The
         # DuckDB catalogue can index these saved outcomes during the run.
