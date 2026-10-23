@@ -38,6 +38,25 @@ length/replacement plan (approximately 24 bytes per packet), instead of keeping
 a full capture and Scapy packet objects in RAM. Training still uses the bundled
 CTGAN model format; original dataset files are never changed.
 
+The packet-length scratch plan is now stored in a local temporary directory
+by default, not on the mounted results filesystem. It is closed before
+cleanup, avoiding `OSError: [Errno 39] Directory not empty` on some mounts.
+Allow at least 24 bytes per input packet plus a reserve on the scratch
+filesystem. Set `CBR_GAN_SCRATCH_DIR` to a writable local disk directory if
+the system temporary directory lacks capacity.
+
+On CPU training runs, the worker hides CUDA devices from the training
+subprocess so a busy GPU cannot cause an accelerator-initialisation failure.
+This does not change the requested CTGAN training device.
+
+The campaign stops after three consecutive failed held-out captures by
+default, instead of wasting hours processing a broken group. It records an
+`abort_reason` in `campaign.json` and shows the reason in the monitor.
+The CLI accepts `--max-consecutive-failures N` to change this threshold.
+Malformed PCAP records report their packet index, byte offset and lengths;
+they are **not** silently excluded or repaired, to protect the study's
+provenance and denominators.
+
 The recursive GAN runner now generates, validates and runs CBR metrics **one
 perturbation percentage at a time**. This means the first 0% (self-reference)
 and 10% metrics are saved and can be viewed in Results Explorer while later
