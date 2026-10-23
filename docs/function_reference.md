@@ -481,6 +481,33 @@ Flattens selected outcome fields into CSV tables for graphing.
 | `build_parser() -> argparse.ArgumentParser` (L173) | function | Public | Builds parser. |
 | `main() -> int` (L190) | function | Public | Implementation helper for main. |
 
+## `gan_generator/streaming_sweep.py`
+
+Python symbols defined by `gan_generator/streaming_sweep.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `sha256(path: Path) -> str` (L37) | function | Public | Implementation helper for sha256. |
+| `_u32(raw, pos, endian)` (L45) | function | Internal | Implementation helper for u32. |
+| `_section_options(block, start, stop, endian)` (L49) | function | Internal | Implementation helper for section options. |
+| `Record` (L65) | class | Public | Data model for Record. |
+| `Record.rewrite(self, updated: bytes) -> bytes` (L75) | method | Public | Implementation helper for rewrite. |
+| `iter_records(path: Path)` (L94) | function | Public | Bounded per-record parser; retain byte-identical non-selected records. PCAPNG timestamp resolution / offset are handled per interface and section. Hash-bearing packet options must be rejected to avoid stale hash metadata. |
+| `FlowSummary` (L197) | class | Public | Data model for FlowSummary. |
+| `FlowSummary.features(self)` (L210) | method | Public | Implementation helper for features. |
+| `FlowTracker` (L223) | class | Public | Data model for FlowTracker. |
+| `FlowTracker.__init__(self, idle_timeout = 60.0)` (L224) | method | Internal | Implementation helper for init. |
+| `FlowTracker.visit(self, record: Record)` (L229) | method | Public | Implementation helper for visit. |
+| `_write_json(path: Path, data)` (L269) | function | Internal | Implementation helper for write JSON. |
+| `scan_capture(path: Path, idle_timeout: float, *, progress = None)` (L278) | function | Public | Implementation helper for scan capture. |
+| `extract_capture(input_path, feature_path, *, idle_timeout = 60.0, max_packets = None)` (L297) | function | Public | Extract flow features in O(number of flows) RAM, never store packets. |
+| `_level_starts(levels, total, basis, sizes)` (L315) | function | Internal | Implementation helper for level starts. |
+| `_sum_clip(mm, start, end, offset, *, chunk = 65536)` (L336) | function | Internal | Implementation helper for sum clip. |
+| `_balance_band(mm, first, end)` (L345) | function | Internal | Constant-RAM, disk-backed version of the original additive byte balancing. |
+| `stream_sweep(input_path, model_path, output_dir, percentages, *, sweep_percentages = None, seed = 42, idle_timeout = 60.0, basis = 'packets', max_ip_length = 1500, max_packets = None)` (L392) | function | Public | Reproducible bounded-memory suffix sweep, returns list of result records. sweep_percentages anchors incremental byte-balancing bands even when only one requested output is generated/evaluated per subprocess invocation. |
+| `stream_sweep.update(stage, done = 0, total = None, pct = None)` (L414) | nested function | Internal | Implementation helper for update. |
+| `cli(argv = None)` (L567) | function | Public | Compatible extract/sweep CLI for the existing traffic_gan.py wrapper. |
+
 ## `monitor_gan_corpus.py`
 
 Python symbols defined by `monitor_gan_corpus.py`.
@@ -680,10 +707,10 @@ Python symbols defined by `runner/corpus_monitor_tui.py`.
 | `_log_path(output_dir: Path) -> Path` (L23) | function | Internal | Implementation helper for log path. |
 | `_tail(path: Path, limit: int = 18000) -> str` (L27) | function | Internal | Implementation helper for tail. |
 | `monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[str]` (L36) | function | Public | Pure renderer, available to tests without an interactive terminal. |
-| `_open_results(stdscr, output_dir: Path, repo_root: Path) -> str` (L109) | function | Internal | Index already-written outcomes without stopping the experiment. |
-| `_monitor_screen(stdscr, output_dir: Path, repo_root: Path, process) -> None` (L132) | function | Internal | Implementation helper for monitor screen. |
-| `launch_corpus_monitor(output_dir: Path, *, repo_root: Path | None = None, process = None) -> None` (L164) | function | Public | Attach or reattach to a running campaign; 'q' never kills the runner. |
-| `run_monitor_tool_action(repo_root: Path) -> None` (L175) | function | Public | Select an existing run's folder from the Toolbox, then attach to it. |
+| `_open_results(stdscr, output_dir: Path, repo_root: Path) -> str` (L114) | function | Internal | Index already-written outcomes without stopping the experiment. |
+| `_monitor_screen(stdscr, output_dir: Path, repo_root: Path, process) -> None` (L137) | function | Internal | Implementation helper for monitor screen. |
+| `launch_corpus_monitor(output_dir: Path, *, repo_root: Path | None = None, process = None) -> None` (L169) | function | Public | Attach or reattach to a running campaign; 'q' never kills the runner. |
+| `run_monitor_tool_action(repo_root: Path) -> None` (L180) | function | Public | Select an existing run's folder from the Toolbox, then attach to it. |
 
 ## `runner/corpus_perturbation.py`
 
@@ -729,10 +756,10 @@ Python symbols defined by `runner/corpus_progress.py`.
 | `_case_duration(case: dict) -> float | None` (L64) | function | Internal | Implementation helper for case duration. |
 | `_case_batch_progress(case: dict) -> dict` (L77) | function | Internal | Read only the active case's small experiment and batch-state files. |
 | `build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = None) -> dict` (L113) | function | Public | Calculate campaign, group, held-out and comparison-job progress/ETAs. |
-| `publish_snapshot(output_dir: Path) -> dict` (L237) | function | Public | Implementation helper for publish snapshot. |
-| `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L247) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
-| `format_duration(seconds: float | None) -> str` (L263) | function | Public | Formats duration for human-readable output. |
-| `progress_line(done: int, total: int, width: int = 26) -> str` (L274) | function | Public | Implementation helper for progress line. |
+| `publish_snapshot(output_dir: Path) -> dict` (L253) | function | Public | Implementation helper for publish snapshot. |
+| `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L263) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
+| `format_duration(seconds: float | None) -> str` (L279) | function | Public | Formats duration for human-readable output. |
+| `progress_line(done: int, total: int, width: int = 26) -> str` (L290) | function | Public | Implementation helper for progress line. |
 
 ## `runner/corpus_storage.py`
 
