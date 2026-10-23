@@ -154,3 +154,47 @@ def test_protected_packet_rejected_before_writing_output(tmp_path,tools):
     with pytest.raises(ValueError,match='cannot be replaced'):
         gan.stream_sweep(inp,model,target,[100],sweep_percentages=[0,100])
     assert not list(target.glob('gan_*.pcap'))
+
+
+def test_packet_plan_closes_memmap_before_deleting_scratch(tmp_path, tools, monkeypatch):
+    import numpy as np
+    gan, _ = tools
+    mappings = []
+    original = np.memmap
+
+    def tracking_memmap(*args, **kwargs):
+        mapping = original(*args, **kwargs)
+        mappings.append(mapping)
+        return mapping
+
+    monkeypatch.setattr(np, 'memmap', tracking_memmap)
+    monkeypatch.setenv('CBR_GAN_SCRATCH_DIR', str(tmp_path))
+    with gan._packet_plan(100) as mm:
+        mm[:, 0] = 17
+        assert mm._mmap.closed is False
+    assert mappings and all(m._mmap.closed for m in mappings)
+    assert not list(tmp_path.glob('gan-length-plan-*'))
+
+
+def test_invalid_capture_reports_packet_number_offset_and_lengths(tmp_path, tools):
+    gan, _ = tools
+    source = bytearray(capture([packet(0), packet(1)], 'pcap'))
+    struct.pack_into('<II', source, 24 + 8, 400, 20)
+    bad = tmp_path / 'bad.pcap'
+    bad.write_bytes(source)
+    with pytest.raises(gan.CaptureError, match=r'record 0.*offset 24.*captured_length=400.*original_length=20'):
+        gan.scan_capture(bad, 60)
+
+
+def test_zero_length_pcap_record_is_preserved_and_unsupported(tmp_path, tools):
+    gan, _ = tools
+    source = capture([packet(0), packet(1)], 'pcap')
+    first_end = 24 + 16 + len(packet(0))
+    modified = source[:first_end] + struct.pack('<IIII', 100001, 0, 0, 0) + source[first_end:]
+    file = tmp_path / 'zero.pcap'
+    file.write_bytes(modified)
+    flows, total, unsupported, last = gan.scan_capture(file, 60)
+    assert total == 3
+    assert unsupported == 1
+    assert last == 1
+    assert sum(f.packet_count for f in flows) == 2
