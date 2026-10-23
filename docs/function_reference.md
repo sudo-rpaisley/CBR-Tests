@@ -487,26 +487,27 @@ Python symbols defined by `gan_generator/streaming_sweep.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `sha256(path: Path) -> str` (L37) | function | Public | Implementation helper for sha256. |
-| `_u32(raw, pos, endian)` (L45) | function | Internal | Implementation helper for u32. |
-| `_section_options(block, start, stop, endian)` (L49) | function | Internal | Implementation helper for section options. |
-| `Record` (L65) | class | Public | Data model for Record. |
-| `Record.rewrite(self, updated: bytes) -> bytes` (L75) | method | Public | Implementation helper for rewrite. |
-| `iter_records(path: Path)` (L94) | function | Public | Bounded per-record parser; retain byte-identical non-selected records. PCAPNG timestamp resolution / offset are handled per interface and section. Hash-bearing packet options must be rejected to avoid stale hash metadata. |
-| `FlowSummary` (L197) | class | Public | Data model for FlowSummary. |
-| `FlowSummary.features(self)` (L210) | method | Public | Implementation helper for features. |
-| `FlowTracker` (L223) | class | Public | Data model for FlowTracker. |
-| `FlowTracker.__init__(self, idle_timeout = 60.0)` (L224) | method | Internal | Implementation helper for init. |
-| `FlowTracker.visit(self, record: Record)` (L229) | method | Public | Implementation helper for visit. |
-| `_write_json(path: Path, data)` (L269) | function | Internal | Implementation helper for write JSON. |
-| `scan_capture(path: Path, idle_timeout: float, *, progress = None)` (L278) | function | Public | Implementation helper for scan capture. |
-| `extract_capture(input_path, feature_path, *, idle_timeout = 60.0, max_packets = None)` (L297) | function | Public | Extract flow features in O(number of flows) RAM, never store packets. |
-| `_level_starts(levels, total, basis, sizes)` (L315) | function | Internal | Implementation helper for level starts. |
-| `_sum_clip(mm, start, end, offset, *, chunk = 65536)` (L336) | function | Internal | Implementation helper for sum clip. |
-| `_balance_band(mm, first, end)` (L345) | function | Internal | Constant-RAM, disk-backed version of the original additive byte balancing. |
-| `stream_sweep(input_path, model_path, output_dir, percentages, *, sweep_percentages = None, seed = 42, idle_timeout = 60.0, basis = 'packets', max_ip_length = 1500, max_packets = None)` (L392) | function | Public | Reproducible bounded-memory suffix sweep, returns list of result records. sweep_percentages anchors incremental byte-balancing bands even when only one requested output is generated/evaluated per subprocess invocation. |
-| `stream_sweep.update(stage, done = 0, total = None, pct = None)` (L414) | nested function | Internal | Implementation helper for update. |
-| `cli(argv = None)` (L567) | function | Public | Compatible extract/sweep CLI for the existing traffic_gan.py wrapper. |
+| `sha256(path: Path) -> str` (L38) | function | Public | Implementation helper for sha256. |
+| `_u32(raw, pos, endian)` (L46) | function | Internal | Implementation helper for u32. |
+| `_section_options(block, start, stop, endian)` (L50) | function | Internal | Implementation helper for section options. |
+| `Record` (L66) | class | Public | Data model for Record. |
+| `Record.rewrite(self, updated: bytes) -> bytes` (L76) | method | Public | Implementation helper for rewrite. |
+| `iter_records(path: Path)` (L95) | function | Public | Bounded per-record parser; retain byte-identical non-selected records. PCAPNG timestamp resolution / offset are handled per interface and section. Hash-bearing packet options must be rejected to avoid stale hash metadata. |
+| `FlowSummary` (L207) | class | Public | Data model for FlowSummary. |
+| `FlowSummary.features(self)` (L220) | method | Public | Implementation helper for features. |
+| `FlowTracker` (L233) | class | Public | Data model for FlowTracker. |
+| `FlowTracker.__init__(self, idle_timeout = 60.0)` (L234) | method | Internal | Implementation helper for init. |
+| `FlowTracker.visit(self, record: Record)` (L239) | method | Public | Implementation helper for visit. |
+| `_write_json(path: Path, data)` (L279) | function | Internal | Implementation helper for write JSON. |
+| `scan_capture(path: Path, idle_timeout: float, *, progress = None)` (L288) | function | Public | Implementation helper for scan capture. |
+| `extract_capture(input_path, feature_path, *, idle_timeout = 60.0, max_packets = None)` (L307) | function | Public | Extract flow features in O(number of flows) RAM, never store packets. |
+| `_level_starts(levels, total, basis, sizes)` (L325) | function | Internal | Implementation helper for level starts. |
+| `_sum_clip(mm, start, end, offset, *, chunk = 65536)` (L346) | function | Internal | Implementation helper for sum clip. |
+| `_balance_band(mm, first, end)` (L355) | function | Internal | Constant-RAM, disk-backed version of the original additive byte balancing. |
+| `_packet_plan(total: int)` (L403) | function | Internal | Use local scratch rather than the results mount, closing mmap before cleanup. Remote filesystems may fail to remove an open memory-mapped plan with ENOTEMPTY. The scratch directory can be overridden with CBR_GAN_SCRATCH_DIR (e.g. a large local NVMe mount). |
+| `stream_sweep(input_path, model_path, output_dir, percentages, *, sweep_percentages = None, seed = 42, idle_timeout = 60.0, basis = 'packets', max_ip_length = 1500, max_packets = None)` (L432) | function | Public | Reproducible bounded-memory suffix sweep, returns list of result records. sweep_percentages anchors incremental byte-balancing bands even when only one requested output is generated/evaluated per subprocess invocation. |
+| `stream_sweep.update(stage, done = 0, total = None, pct = None)` (L454) | nested function | Internal | Implementation helper for update. |
+| `cli(argv = None)` (L606) | function | Public | Compatible extract/sweep CLI for the existing traffic_gan.py wrapper. |
 
 ## `monitor_gan_corpus.py`
 
@@ -577,7 +578,7 @@ Python symbols defined by `run_perturbation_corpus.py`.
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `parse_args(argv: list[str] | None = None) -> argparse.Namespace` (L12) | function | Public | Parses args. |
-| `main(argv: list[str] | None = None) -> int` (L57) | function | Public | Implementation helper for main. |
+| `main(argv: list[str] | None = None) -> int` (L61) | function | Public | Implementation helper for main. |
 
 ## `run_plan.py`
 
@@ -730,7 +731,7 @@ Python symbols defined by `runner/corpus_perturbation.py`.
 | `_case_completed(case: dict) -> bool` (L164) | function | Internal | Implementation helper for case completed. |
 | `_source_index(cases: list[dict]) -> dict[str, dict]` (L192) | function | Internal | Implementation helper for source index. |
 | `export_results(campaign: dict, output: Path) -> dict` (L196) | function | Public | Rebuild outputs from every readable attempt (including failed/partial jobs). Every metric execution record and full test_result is written to JSONL. Each nested test-result leaf (including arrays) is also written as a row with its JSON pointer to support querying and date-to-date comparison. |
-| `run_corpus(*, dataset_root: Path, output_dir: Path, generator_script: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), epochs: int = 100, batch_size: int = 100, device: str = 'cpu', workers: int | None = None, size_tolerance_pct: float = 5.0, prepare_only: bool = False, resume: bool = False, preview_only: bool = False) -> dict` (L346) | function | Public | Execute every held-out file in every recursive PCAP directory. Errors are checkpointed per held-out capture. If a case fails, subsequent cases continue; --resume skips verified completed cases and retains failed attempts rather than overwriting results. |
+| `run_corpus(*, dataset_root: Path, output_dir: Path, generator_script: Path, percentages: tuple[int, ...] = DEFAULT_PERCENTAGES, seeds: tuple[int, ...] = (42,), epochs: int = 100, batch_size: int = 100, device: str = 'cpu', workers: int | None = None, size_tolerance_pct: float = 5.0, prepare_only: bool = False, resume: bool = False, preview_only: bool = False, max_consecutive_failures: int = 3) -> dict` (L346) | function | Public | Execute every held-out file in every recursive PCAP directory. Errors are checkpointed per held-out capture. If a case fails, subsequent cases continue; --resume skips verified completed cases and retains failed attempts rather than overwriting results. |
 
 ## `runner/corpus_perturbation_tui.py`
 
@@ -1034,7 +1035,7 @@ Python symbols defined by `runner/gan_training.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `train_from_captures(*, captures: tuple[Path, ...], generator_script: Path, output_dir: Path, epochs: int = 100, batch_size: int = 100, device: str = 'cpu', seed: int = 42, progress_callback: Callable[[str, dict], None] | None = None) -> tuple[Path, dict]` (L19) | function | Public | Extract each capture, concatenate flow rows and train one checkpoint. |
+| `train_from_captures(*, captures: tuple[Path, ...], generator_script: Path, output_dir: Path, epochs: int = 100, batch_size: int = 100, device: str = 'cpu', seed: int = 42, progress_callback: Callable[[str, dict], None] | None = None) -> tuple[Path, dict]` (L20) | function | Public | Extract each capture, concatenate flow rows and train one checkpoint. |
 
 ## `runner/human_summary.py`
 
