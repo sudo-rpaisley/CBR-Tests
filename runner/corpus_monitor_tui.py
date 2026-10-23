@@ -70,6 +70,11 @@ def monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[st
             stage += f" {details.get('capture_index', '?')}/{details.get('capture_total', '?')}"
         if case["stage"] == "training":
             stage += f" ({details.get('epochs', '?')} planned epochs)"
+        if case["stage"] == "generating":
+            stage += (f" {details.get('percentage', '?')}%"
+                      f" [{details.get('stage', 'starting')}: "
+                      f"{details.get('packets_done', 0):,}/"
+                      f"{details.get('total_packets') or '?'} packets]")
         lines.extend([
             f"HELD-OUT PCAP {case.get('group_position', '?')}/{group['total_cases']}: {case['name']}",
             "  " + progress_line(case["evaluated_jobs"], case["total_jobs"]),
