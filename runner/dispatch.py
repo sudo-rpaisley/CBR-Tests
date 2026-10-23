@@ -309,6 +309,11 @@ def run_column_quality_metric(
 
 @register_metric("timestamp_coherence_profile")
 def _timestamp_metric(dataset_path: Path, metric: dict):
+    shared = metric.get("_shared_df")
+    if is_packet_capture(dataset_path) and isinstance(shared, pd.DataFrame):
+        result = shared.attrs.get("_precomputed_packet_metrics", {}).get("timestamp_coherence_profile")
+        if result is not None:
+            return result
     return run_timestamp_coherence_metric(dataset_path, metric)
 
 
@@ -340,6 +345,11 @@ def _tcp_flag_metric(dataset_path: Path, metric: dict):
 @register_metric("handshake_plausibility_profile")
 def _handshake_metric(dataset_path: Path, metric: dict):
     if is_packet_capture(dataset_path):
+        shared = metric.get("_shared_df")
+        if isinstance(shared, pd.DataFrame):
+            result = shared.attrs.get("_precomputed_packet_metrics", {}).get("handshake_plausibility_profile")
+            if result is not None:
+                return result
         return run_pcap_handshake_plausibility_metric(dataset_path, metric)
     return run_handshake_plausibility_metric(dataset_path, metric)
 
