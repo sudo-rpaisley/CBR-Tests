@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **398 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **404 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -243,6 +243,30 @@ Tests and local helpers in this module.
 | `_fake_one_seed_case(output: Path, heldout: Path, group: str = 'Group')` (L72) | Create a representative completed CBR batch, including nested results. |
 | `test_corpus_executes_all_heldouts_and_resume_skips_verified_completions.fake_run(**kwargs)` (L172) | Implementation helper for fake run. |
 | `test_resume_refuses_modified_inputs_and_preserves_archive.stub(**kwargs)` (L211) | Implementation helper for stub. |
+
+## `tests/test_corpus_storage_tui.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_external_storage_uses_destination_disk_not_dataset_disk(tmp_path, monkeypatch)` (L26) | Verifies that external storage uses destination disk not dataset disk. | `_inputs`, `monkeypatch.setattr`, `storage_estimate`, `gib`, `external.resolve`, `queried.append`, `SimpleNamespace` |
+| `test_storage_preflight_warns_when_available_space_is_too_small(tmp_path, monkeypatch)` (L41) | Verifies that storage preflight warns when available space is too small. | `_inputs`, `monkeypatch.setattr`, `storage_estimate`, `SimpleNamespace` |
+| `test_refuse_outputs_inside_dataset_tree_but_allow_sibling_storage(tmp_path)` (L50) | Verifies that refuse outputs inside dataset tree but allow sibling storage. | `_inputs`, `child.mkdir`, `check_campaign_output_path`, `alias.symlink_to`, `pytest.raises`, `validate_storage_parent`, `external.resolve` |
+| `test_toolbox_writes_to_chosen_external_parent_and_shows_space(tmp_path, monkeypatch, capsys)` (L69) | Verifies that toolbox writes to chosen external parent and shows space. | `_inputs`, `monkeypatch.setattr`, `tui.run_corpus_tool_action`, `(external / (output.name + '.log')).exists`, `calls.append`, `capsys.readouterr`, `watched.append`, `launched.append` |
+| `test_undersized_storage_requires_explicit_override_before_launch(tmp_path, monkeypatch)` (L114) | Verifies that undersized storage requires explicit override before launch. | `_inputs`, `iter`, `monkeypatch.setattr`, `tui.run_corpus_tool_action`, `next`, `pytest.fail`, `external.iterdir`, `prompt_text.append` |
+| `test_cancelling_output_location_does_not_start_experiment(tmp_path, monkeypatch)` (L135) | Verifies that cancelling output location does not start experiment. | `_inputs`, `iter`, `monkeypatch.setattr`, `tui.run_corpus_tool_action`, `next`, `pytest.fail` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `_inputs(tmp_path: Path) -> tuple[Path, Path, Path]` (L15) | Implementation helper for inputs. |
+| `test_toolbox_writes_to_chosen_external_parent_and_shows_space.fake_picker(fn, *args, **kwargs)` (L72) | Implementation helper for fake picker. |
+| `test_toolbox_writes_to_chosen_external_parent_and_shows_space.FakeProcess` (L84) | Data model for FakeProcess. |
+| `test_toolbox_writes_to_chosen_external_parent_and_shows_space.FakeProcess.poll(self)` (L86) | Implementation helper for poll. |
 
 ## `tests/test_correctness_reproducibility.py`
 
