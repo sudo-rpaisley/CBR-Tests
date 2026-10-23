@@ -190,6 +190,7 @@ def build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = N
         "updated_at": now.isoformat(),
         "status": status,
         "phase": campaign.get("phase", "evaluating"),
+        "abort_reason": campaign.get("abort_reason"),
         "elapsed_seconds": _seconds(campaign.get("started_at"), now.isoformat()),
         "campaign": {
             "total_groups": len(group_names),
