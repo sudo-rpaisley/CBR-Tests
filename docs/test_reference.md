@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **406 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **410 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -234,6 +234,7 @@ Tests and local helpers in this module.
 | `test_resume_refuses_modified_inputs_and_preserves_archive(tmp_path, monkeypatch)` (L203) | Verifies that resume refuses modified inputs and preserves archive. | `_pcap`, `script.write_text`, `monkeypatch.setattr`, `corpus.run_corpus`, `x.write_bytes`, `(output / 'campaign.json').is_file`, `_fake_one_seed_case`, `pytest.raises` |
 | `test_metric_leaf_json_pointer_escapes_keys()` (L229) | Verifies that metric leaf JSON pointer escapes keys. | `corpus.leaves` |
 | `test_exports_partial_and_retry_attempts_with_distinct_attempt_labels(tmp_path)` (L235) | Verifies that exports partial and retry attempts with distinct attempt labels. | `_pcap`, `_fake_one_seed_case`, `corpus.export_results`, `(tmp_path / 'exports_root' / 'exports' / 'metric_results.csv').open`, `csv.DictReader` |
+| `test_campaign_halts_after_three_consecutive_failed_cases(tmp_path, monkeypatch)` (L265) | Verifies that campaign halts after three consecutive failed cases. | `script.write_text`, `monkeypatch.setattr`, `corpus.run_corpus`, `_pcap`, `attempts.append`, `RuntimeError`, `(output / 'campaign.json').read_text`, `bytes` |
 
 ### Test helpers
 
@@ -243,6 +244,7 @@ Tests and local helpers in this module.
 | `_fake_one_seed_case(output: Path, heldout: Path, group: str = 'Group')` (L72) | Create a representative completed CBR batch, including nested results. |
 | `test_corpus_executes_all_heldouts_and_resume_skips_verified_completions.fake_run(**kwargs)` (L172) | Implementation helper for fake run. |
 | `test_resume_refuses_modified_inputs_and_preserves_archive.stub(**kwargs)` (L211) | Implementation helper for stub. |
+| `test_campaign_halts_after_three_consecutive_failed_cases.failing_case(**kwargs)` (L273) | Implementation helper for failing case. |
 
 ## `tests/test_corpus_storage_tui.py`
 
@@ -1204,6 +1206,9 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_streaming_preserves_counts_size_checksums_nestedness_and_baseline(tmp_path, tools, fmt)` (L93) | Verifies that streaming preserves counts size checksums nestedness and baseline. | `pytest.mark.parametrize`, `capture`, `inp.write_bytes`, `gan.scan_capture`, `gan.extract_capture`, `gan.stream_sweep`, `legacy.locate_packet_slots`, `(output_dir / f'gan_010.{fmt}').read_bytes` |
 | `test_protected_packet_rejected_before_writing_output(tmp_path, tools)` (L145) | Verifies that protected packet rejected before writing output. | `bytearray`, `inp.write_bytes`, `capture`, `legacy.locate_packet_slots`, `model.open`, `pickle.dump`, `pytest.raises`, `gan.stream_sweep` |
+| `test_packet_plan_closes_memmap_before_deleting_scratch(tmp_path, tools, monkeypatch)` (L159) | Verifies that packet plan closes memmap before deleting scratch. | `monkeypatch.setattr`, `monkeypatch.setenv`, `original`, `mappings.append`, `gan._packet_plan`, `all`, `tmp_path.glob` |
+| `test_invalid_capture_reports_packet_number_offset_and_lengths(tmp_path, tools)` (L179) | Verifies that invalid capture reports packet number offset and lengths. | `bytearray`, `bad.write_bytes`, `capture`, `pytest.raises`, `gan.scan_capture`, `packet` |
+| `test_zero_length_pcap_record_is_preserved_and_unsupported(tmp_path, tools)` (L189) | Verifies that zero length PCAP record is preserved and unsupported. | `capture`, `file.write_bytes`, `gan.scan_capture`, `packet` |
 
 ### Test helpers
 
@@ -1216,6 +1221,7 @@ Tests and local helpers in this module.
 | `packet(idx, udp = False)` (L57) | Implementation helper for packet. |
 | `_block(kind, body)` (L74) | Implementation helper for block. |
 | `capture(packets, fmt)` (L80) | Implementation helper for capture. |
+| `test_packet_plan_closes_memmap_before_deleting_scratch.tracking_memmap(*args, **kwargs)` (L165) | Implementation helper for tracking memmap. |
 
 ## `tests/test_task_based_validation_profile.py`
 
