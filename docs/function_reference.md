@@ -708,10 +708,10 @@ Python symbols defined by `runner/corpus_monitor_tui.py`.
 | `_log_path(output_dir: Path) -> Path` (L23) | function | Internal | Implementation helper for log path. |
 | `_tail(path: Path, limit: int = 18000) -> str` (L27) | function | Internal | Implementation helper for tail. |
 | `monitor_lines(progress: dict, *, process_exit: int | None = None) -> list[str]` (L36) | function | Public | Pure renderer, available to tests without an interactive terminal. |
-| `_open_results(stdscr, output_dir: Path, repo_root: Path) -> str` (L114) | function | Internal | Index already-written outcomes without stopping the experiment. |
-| `_monitor_screen(stdscr, output_dir: Path, repo_root: Path, process) -> None` (L137) | function | Internal | Implementation helper for monitor screen. |
-| `launch_corpus_monitor(output_dir: Path, *, repo_root: Path | None = None, process = None) -> None` (L169) | function | Public | Attach or reattach to a running campaign; 'q' never kills the runner. |
-| `run_monitor_tool_action(repo_root: Path) -> None` (L180) | function | Public | Select an existing run's folder from the Toolbox, then attach to it. |
+| `_open_results(stdscr, output_dir: Path, repo_root: Path) -> str` (L117) | function | Internal | Index already-written outcomes without stopping the experiment. |
+| `_monitor_screen(stdscr, output_dir: Path, repo_root: Path, process) -> None` (L140) | function | Internal | Implementation helper for monitor screen. |
+| `launch_corpus_monitor(output_dir: Path, *, repo_root: Path | None = None, process = None) -> None` (L172) | function | Public | Attach or reattach to a running campaign; 'q' never kills the runner. |
+| `run_monitor_tool_action(repo_root: Path) -> None` (L183) | function | Public | Select an existing run's folder from the Toolbox, then attach to it. |
 
 ## `runner/corpus_perturbation.py`
 
@@ -757,10 +757,10 @@ Python symbols defined by `runner/corpus_progress.py`.
 | `_case_duration(case: dict) -> float | None` (L64) | function | Internal | Implementation helper for case duration. |
 | `_case_batch_progress(case: dict) -> dict` (L77) | function | Internal | Read only the active case's small experiment and batch-state files. |
 | `build_snapshot(campaign: dict, *, output_dir: Path, now: datetime | None = None) -> dict` (L113) | function | Public | Calculate campaign, group, held-out and comparison-job progress/ETAs. |
-| `publish_snapshot(output_dir: Path) -> dict` (L253) | function | Public | Implementation helper for publish snapshot. |
-| `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L263) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
-| `format_duration(seconds: float | None) -> str` (L279) | function | Public | Formats duration for human-readable output. |
-| `progress_line(done: int, total: int, width: int = 26) -> str` (L290) | function | Public | Implementation helper for progress line. |
+| `publish_snapshot(output_dir: Path) -> dict` (L254) | function | Public | Implementation helper for publish snapshot. |
+| `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L264) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
+| `format_duration(seconds: float | None) -> str` (L280) | function | Public | Formats duration for human-readable output. |
+| `progress_line(done: int, total: int, width: int = 26) -> str` (L291) | function | Public | Implementation helper for progress line. |
 
 ## `runner/corpus_storage.py`
 
