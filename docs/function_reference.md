@@ -711,9 +711,9 @@ Python symbols defined by `runner/corpus_perturbation_tui.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `_directories(path: Path) -> list[Path]` (L14) | function | Internal | List directories only; never show PCAP file paths in the root selector. |
-| `_select_directory(stdscr, root: Path, start_dir: Path | None = None) -> Path | None` (L25) | function | Internal | Choose any folder using the usual navigation plus d=current directory. |
-| `run_corpus_tool_action(root: Path) -> int` (L104) | function | Public | Select one folder, preview all leave-one-out cases, then confirm once. |
+| `_directories(path: Path) -> list[Path]` (L15) | function | Internal | List directories only; never show PCAP file paths in the root selector. |
+| `_select_directory(stdscr, root: Path, start_dir: Path | None = None, *, title: str = 'Recursive leave-one-out GAN campaign', description: str = 'All descendants are scanned. Each folder with >=2 PCAPs is a separate group.') -> Path | None` (L26) | function | Internal | Choose any existing folder; d selects the currently displayed directory. |
+| `run_corpus_tool_action(root: Path) -> int` (L110) | function | Public | Select one folder, preview all leave-one-out cases, then confirm once. |
 
 ## `runner/corpus_progress.py`
 
@@ -733,6 +733,17 @@ Python symbols defined by `runner/corpus_progress.py`.
 | `monitor_progress_file(output_dir: Path, stop: threading.Event, *, interval: float = 1.5) -> None` (L247) | function | Public | Periodically copy authoritative job checkpoints to a tiny status JSON. |
 | `format_duration(seconds: float | None) -> str` (L263) | function | Public | Formats duration for human-readable output. |
 | `progress_line(done: int, total: int, width: int = 26) -> str` (L274) | function | Public | Implementation helper for progress line. |
+
+## `runner/corpus_storage.py`
+
+Python symbols defined by `runner/corpus_storage.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `validate_storage_parent(parent: Path, dataset_root: Path) -> Path` (L14) | function | Public | Ensure the destination is an accessible directory outside source PCAPs. |
+| `check_campaign_output_path(output: Path, dataset_root: Path) -> None` (L30) | function | Public | Protect CLI users from writing generated traffic into the source tree. |
+| `storage_estimate(parent: Path, dataset_root: Path, generated_bytes: int, *, reserve_fraction: float = 0.1) -> dict` (L41) | function | Public | Report logical PCAP estimate and actual free bytes at selected output FS. This is an estimate, not a quota guarantee: files can differ in size by the allowed tolerance, and metrics/checkpoints/models add further usage. |
+| `gib(amount: int) -> str` (L65) | function | Public | Implementation helper for gib. |
 
 ## `runner/dataset_loading.py`
 
