@@ -30,6 +30,42 @@ You can also choose **Monitor running GAN campaign** from the Toolbox
 and browse to the existing run directory, including external mounts (`N`
 for `/mnt`, `M` for `/media`, or `e` for an absolute path).
 
+## Large-PCAP streaming generator (October 2026)
+
+The CTGAN **extract** and **sweep** commands use the bounded-memory streaming
+engine. It scans one packet record at a time and writes a disk-backed packet
+length/replacement plan (approximately 24 bytes per packet), instead of keeping
+a full capture and Scapy packet objects in RAM. Training still uses the bundled
+CTGAN model format; original dataset files are never changed.
+
+The recursive GAN runner now generates, validates and runs CBR metrics **one
+perturbation percentage at a time**. This means the first 0% (self-reference)
+and 10% metrics are saved and can be viewed in Results Explorer while later
+percentages and held-out cases continue. The packet-progress sub-stage
+(scanning/planning/balancing/writing) is reported separately; the overall
+comparison-job counter only advances after validation and metric evaluation.
+
+**Run a small pilot before the full study**, with a separate folder containing
+two small independent captures:
+
+```bash
+python run_perturbation_corpus.py \
+  --dataset-root /path/to/two-small-pcaps \
+  --output-dir /media/media/GAN_results/streaming-pilot-001 \
+  --percentages 0,10 --epochs 10 --device cpu
+```
+
+Choose a **new output directory**. Do not resume the earlier memory-exhausted
+campaign with the changed generator. Its CTGAN/model and experiment manifest
+belong to the previous code version and are preserved for audit.
+
+This fix reduces **peak RAM use**; it does *not* automatically delete generated
+captures. The earlier total logical disk-space estimate still applies for
+full-capture retention. Performance and metric execution still need validation
+on a representative multi-million-packet Spark capture. The generator is
+feature-conditioned synthetic packet-template rewriting, **not** complete
+end-to-end conversation synthesis.
+
 ## Four levels of progress
 
 | Level | Reported | ETA basis |
