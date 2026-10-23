@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -100,7 +101,14 @@ def train_from_captures(
         "--epochs", str(epochs), "--batch-size", str(batch_size),
         "--device", device, "--seed", str(seed),
     ]
-    subprocess.run(command, check=True)
+    training_env = os.environ.copy()
+    if device == "cpu":
+        # On CUDA-enabled Spark hosts, some PyTorch optimiser versions query
+        # the accelerator even when CTGAN tensors use CPU. An exhausted GPU
+        # context then fails an otherwise CPU-only training run.
+        training_env["CUDA_VISIBLE_DEVICES"] = "-1"
+        training_env["HIP_VISIBLE_DEVICES"] = "-1"
+    subprocess.run(command, check=True, env=training_env)
     if not model.is_file() or model.stat().st_size == 0:
         raise ValueError(f"Training did not produce a checkpoint: {model}")
     record = {
