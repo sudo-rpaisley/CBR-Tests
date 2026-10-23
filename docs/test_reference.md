@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **397 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **398 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -210,6 +210,7 @@ Tests and local helpers in this module.
 | `test_eta_is_unknown_until_completed_samples_exist(tmp_path)` (L117) | Verifies that eta is unknown until completed samples exist. | `_source`, `corpus_progress.build_snapshot`, `corpus_progress.format_duration`, `'\n'.join`, `monitor_lines` |
 | `test_persisted_progress_can_be_read_without_running_experiment(tmp_path)` (L128) | Verifies that persisted progress can be read without running experiment. | `_source`, `corpus_progress.publish_snapshot`, `corpus_progress.progress_line`, `read_progress` |
 | `test_terminal_progress_has_no_running_case_or_stale_eta(tmp_path)` (L136) | Verifies that terminal progress has no running case or stale eta. | `_source`, `corpus_progress.build_snapshot` |
+| `test_monitor_reports_final_export_and_stale_worker_heartbeat(tmp_path)` (L147) | Verifies that monitor reports final export and stale worker heartbeat. | `_source`, `corpus_progress.build_snapshot`, `'\n'.join`, `monitor_lines` |
 
 ### Test helpers
 
