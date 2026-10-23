@@ -20,6 +20,7 @@ import struct
 import tempfile
 import time
 from dataclasses import dataclass
+from contextlib import contextmanager
 from pathlib import Path
 
 from tail_replacement import CaptureError, ipv4_offset
@@ -106,6 +107,7 @@ def iter_records(path: Path):
             header = handle.read(24)
             if len(header) < 24:
                 raise CaptureError('Truncated PCAP global header')
+            snaplen = _u32(header, 16, endian)
             linktype = _u32(header, 20, endian) & 0xffff
             nano = magic in {b'\x4d\x3c\xb2\xa1', b'\xa1\xb2\x3c\x4d'}
             yield Record(raw=header, kind='header', endian=endian)
@@ -116,8 +118,16 @@ def iter_records(path: Path):
                 if len(head) != 16:
                     raise CaptureError('Truncated PCAP record header')
                 sec, frac, caplen, origlen = struct.unpack(endian + 'IIII', head)
-                if not caplen or caplen > origlen or caplen > 100_000_000:
-                    raise CaptureError('Invalid PCAP captured packet length')
+                if caplen > origlen or caplen > 100_000_000:
+                    offset = handle.tell() - len(head)
+                    raise CaptureError(
+                        f'Invalid PCAP record {index} at byte offset {offset} '
+                        f'(captured_length={caplen}, original_length={origlen}, '
+                        f'global_snaplen={snaplen}, file={path}). '
+                        'The capture must be inspected or repaired before inclusion.'
+                    )
+                # Zero-length PCAP records are representable and can be kept
+                # intact; they are unsupported for synthetic replacement.
                 packet = handle.read(caplen)
                 if len(packet) != caplen:
                     raise CaptureError('Truncated PCAP packet')
@@ -389,6 +399,36 @@ def _balance_band(mm, first, end):
     mm.flush()
 
 
+@contextmanager
+def _packet_plan(total: int):
+    """Use local scratch rather than the results mount, closing mmap before cleanup.
+
+    Remote filesystems may fail to remove an open memory-mapped plan with
+    ENOTEMPTY. The scratch directory can be overridden with
+    CBR_GAN_SCRATCH_DIR (e.g. a large local NVMe mount).
+    """
+    import numpy as np
+    scratch = os.environ.get('CBR_GAN_SCRATCH_DIR') or None
+    with tempfile.TemporaryDirectory(prefix='gan-length-plan-', dir=scratch) as planning:
+        free = shutil.disk_usage(planning).free
+        needed = total * 6 * 4
+        if free < needed + max(64 * 1024 * 1024, needed // 20):
+            raise OSError(f'Insufficient GAN scratch disk space: need ~{needed:,} bytes '
+                          f'plus reserve, have {free:,} bytes in {planning}. '
+                          'Set CBR_GAN_SCRATCH_DIR to a large local scratch directory.')
+        mm = np.memmap(Path(planning) / 'plan.dat', mode='w+',
+                       dtype='int32', shape=(total, 6))
+        try:
+            yield mm
+        finally:
+            # Critical on CIFS/NFS mounts: unlink cannot safely clean up a
+            # mapped file while its mapping/OS handle remains open.
+            try:
+                mm.flush()
+            finally:
+                mm._mmap.close()
+
+
 def stream_sweep(input_path, model_path, output_dir, percentages, *,
                  sweep_percentages=None, seed=42, idle_timeout=60.0,
                  basis='packets', max_ip_length=1500, max_packets=None):
@@ -436,8 +476,7 @@ def stream_sweep(input_path, model_path, output_dir, percentages, *,
             features[flow.uid] = row.to_dict()
     # A disk-backed packet plan takes ~24 bytes per source packet rather than
     # retaining input packets, source capture bytes, and 11 rebuilt captures.
-    with tempfile.TemporaryDirectory(prefix='gan-length-plan-',dir=output_dir) as planning:
-        mm = np.memmap(Path(planning)/'plan.dat',mode='w+',dtype='int32',shape=(total,6))
+    with _packet_plan(total) as mm:
         tracker = FlowTracker(idle_timeout)
         packet_index = 0
         update('planning',0,total)
