@@ -432,15 +432,14 @@ def run_experiment(
                     item = capture_dir / f"gan_{prior:03d}.json"
                     if item.is_file():
                         available.append(json.loads(item.read_text(encoding="utf-8")))
-                if not available:
-                    raise RuntimeError("No validated generator provenance found.")
-                manifest_path = capture_dir / "manifest.csv"
-                temp_manifest = manifest_path.with_name(".manifest.csv.tmp")
-                with temp_manifest.open("w", newline="", encoding="utf-8") as handle:
-                    writer = csv.DictWriter(handle, fieldnames=list(available[0]))
-                    writer.writeheader()
-                    writer.writerows(available)
-                os.replace(temp_manifest, manifest_path)
+                if available:
+                    manifest_path = capture_dir / "manifest.csv"
+                    temp_manifest = manifest_path.with_name(".manifest.csv.tmp")
+                    with temp_manifest.open("w", newline="", encoding="utf-8") as handle:
+                        writer = csv.DictWriter(handle, fieldnames=list(available[0]))
+                        writer.writeheader()
+                        writer.writerows(available)
+                    os.replace(temp_manifest, manifest_path)
 
                 matrix_path = seed_root / f"fixed_plan_batch_{percentage:03d}.json"
                 build_fixed_plan_matrix(
