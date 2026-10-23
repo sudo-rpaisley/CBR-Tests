@@ -8,6 +8,8 @@ import pandas as pd
 from scapy.utils import PcapReader
 
 from runner.pcap_adapter import PCAP_PACKET_COLUMNS, _packet_fields, is_packet_capture
+from cbr_tests.metrics.pcap_handshake import _handshake_packet_coroutine
+from cbr_tests.metrics.timestamp_coherence import _timestamp_packet_coroutine
 
 
 def _intern(value: str, cache: dict[str, str]) -> str:
@@ -19,7 +21,9 @@ def _intern(value: str, cache: dict[str, str]) -> str:
     return value
 
 
-def build_compact_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame:
+def build_compact_pcap_packet_dataframe(
+    dataset_path: Path, *, precompute_metrics: dict[str, dict] | None = None
+) -> pd.DataFrame:
     """Decode a PCAP/PCAPNG into the canonical packet view with bounded overhead.
 
     This preserves the same full-population packet semantics as
@@ -51,8 +55,35 @@ def build_compact_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame:
     ip_cache: dict[str, str] = {}
     previous_timestamp: float | None = None
 
+    # Feed packet-backed diagnostics during the existing Scapy decode, including
+    # non-IP frames. This avoids two further full-capture parsing passes and
+    # keeps packet order and all original metric semantics unchanged.
+    available_scanners = {
+        "handshake_plausibility_profile": _handshake_packet_coroutine,
+        "timestamp_coherence_profile": _timestamp_packet_coroutine,
+    }
+    scanners = {}
+    metric_results = {}
+    for metric_id, metric in (precompute_metrics or {}).items():
+        constructor = available_scanners.get(metric_id)
+        if constructor is None:
+            continue
+        scanner = constructor(metric)
+        try:
+            next(scanner)
+        except StopIteration as completed:
+            metric_results[metric_id] = completed.value
+        else:
+            scanners[metric_id] = scanner
+
     with PcapReader(str(path)) as reader:
         for packet_index, packet in enumerate(reader):
+            for metric_id, scanner in tuple(scanners.items()):
+                try:
+                    scanner.send(packet)
+                except StopIteration as completed:
+                    metric_results[metric_id] = completed.value
+                    del scanners[metric_id]
             fields: dict[str, Any] | None = _packet_fields(packet)
             if fields is None:
                 continue
@@ -72,6 +103,14 @@ def build_compact_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame:
                 np.nan if previous_timestamp is None else timestamp - previous_timestamp
             )
             previous_timestamp = timestamp
+
+    for metric_id, scanner in scanners.items():
+        try:
+            scanner.send(None)
+        except StopIteration as completed:
+            metric_results[metric_id] = completed.value
+        else:
+            raise RuntimeError(f"Packet metric {metric_id} did not finalise")
 
     # Construct compact arrays one field at a time.  The port/flag columns remain
     # float64 so missing transport values retain the historical NaN behaviour
@@ -98,7 +137,10 @@ def build_compact_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame:
         ),
         "Inter Arrival Time": np.asarray(inter_arrival_times, dtype=np.float64),
     }
-    return pd.DataFrame(data, columns=sorted(PCAP_PACKET_COLUMNS))
+    dataframe = pd.DataFrame(data, columns=sorted(PCAP_PACKET_COLUMNS))
+    if metric_results:
+        dataframe.attrs["_precomputed_packet_metrics"] = metric_results
+    return dataframe
 
 
 def dataframe_memory_bytes(dataframe: pd.DataFrame | None) -> int | None:
