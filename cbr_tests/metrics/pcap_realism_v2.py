@@ -31,7 +31,8 @@ def _ordered_gaps(df: pd.DataFrame) -> np.ndarray:
     if len(ts) < 2:
         return np.empty(0, dtype=np.float64)
     # Preserve capture order, including backwards/zero gaps. Do not sort!
-    return np.diff(ts)
+    # Avoid spurious KS differences from IEEE-754 subtraction after a global time shift.
+    return np.round(np.diff(ts), 9)
 
 
 def _sample(a: np.ndarray, n: int = 4000) -> np.ndarray:
