@@ -232,9 +232,15 @@ def run_duplicate_row_metric(
     shared_df: pd.DataFrame | None = None,
 ):
     df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
-    return True, {
-        "test_results": {"duplicate_row_ratio": compute_duplicate_row_ratio(df, metric)}
-    }
+    result = compute_duplicate_row_ratio(df, metric)
+    if result.get("summary", {}).get("runnable") is False:
+        result["status"] = "not_applicable"
+        result["diagnostic"] = {
+            "reason_code": result["summary"].get("reason", "insufficient_evidence"),
+            "summary": "Configured duplicate signature fields are missing or no rows are available.",
+            "evidence": {"missing_signature_fields": result["summary"].get("missing_signature_fields", [])},
+        }
+    return True, {"test_results": {"duplicate_row_ratio": result}}
 
 
 def run_tabular_metric(
@@ -249,7 +255,17 @@ def run_tabular_metric(
     # Avoid copying the complete dataset for each metric; functions that coerce
     # or mutate columns must take their own narrow working copy.
     df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
-    return True, {"test_results": {metric_id: compute_fn(df, metric)}}
+    result = compute_fn(df, metric)
+    # A completed computation may still have insufficient evidence.
+    # Preserve execution success while reporting scientific applicability.
+    if isinstance(result, dict) and result.get("summary", {}).get("runnable") is False:
+        result["status"] = "not_applicable"
+        reason = result["summary"].get("reason_code", "insufficient_evidence")
+        result["diagnostic"] = {
+            "reason_code": reason,
+            "summary": "Metric ran but did not have sufficient applicable observations.",
+        }
+    return True, {"test_results": {metric_id: result}}
 
 
 def run_distance_correlation_metric(
