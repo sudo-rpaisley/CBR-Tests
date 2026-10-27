@@ -139,17 +139,24 @@ def _numeric_matrix(
 
 
 def _multivariate_rbf_mmd(
-    current: np.ndarray, reference: np.ndarray
+    current: np.ndarray, reference: np.ndarray, *, calibration_mode: str = "pooled"
 ) -> tuple[float | None, float | None]:
+    """RBF MMD². Legacy pooled mode is unchanged for historical comparability.
+
+    reference_fixed computes the standardisation and bandwidth *solely* from
+    the immutable reference, avoiding severity-dependent kernel calibration.
+    """
     if current.size == 0 or reference.size == 0 or current.shape[1] != reference.shape[1]:
         return None, None
-    pooled = np.vstack([current, reference])
-    scale = pooled.std(axis=0)
+    if calibration_mode not in {"pooled", "reference_fixed"}:
+        raise ValueError("calibration_mode must be pooled or reference_fixed")
+    population = np.vstack([current, reference]) if calibration_mode == "pooled" else reference
+    scale = population.std(axis=0)
     scale = np.where(scale > 0, scale, 1.0)
-    centre = pooled.mean(axis=0)
+    centre = population.mean(axis=0)
     current_z = (current - centre) / scale
     reference_z = (reference - centre) / scale
-    pooled_z = np.vstack([current_z, reference_z])
+    kernel_population = np.vstack([current_z, reference_z]) if calibration_mode == "pooled" else reference_z
 
     def squared_distances(left, right):
         values = (
@@ -159,9 +166,9 @@ def _multivariate_rbf_mmd(
         )
         return np.maximum(values, 0.0)
 
-    pooled_distances = squared_distances(pooled_z, pooled_z)
-    upper = pooled_distances[np.triu_indices(len(pooled_z), 1)]
-    positive = upper[upper > 0]
+    distances = squared_distances(kernel_population, kernel_population)
+    positive = distances[np.triu_indices(len(kernel_population), 1)]
+    positive = positive[positive > 0]
     median_squared_distance = float(np.median(positive)) if positive.size else 1.0
     gamma = 1.0 / (2.0 * median_squared_distance) if median_squared_distance > 0 else 1.0
     k_xx = np.exp(-gamma * squared_distances(current_z, current_z))
@@ -242,14 +249,16 @@ def compute_feature_set_mmd_score_from_reference(df: pd.DataFrame, metric: dict)
     common_fields = [
         field for field in fields if field in current_fields and field in reference_fields
     ]
-    score, bandwidth = _multivariate_rbf_mmd(current_matrix, reference_matrix)
+    calibration_mode = metric.get("calculation", {}).get("parameters", {}).get("calibration_mode", "pooled")
+    score, bandwidth = _multivariate_rbf_mmd(current_matrix, reference_matrix, calibration_mode=calibration_mode)
     return {
         "summary": {
             "reference_dataset_path": _reference_path(metric),
             "fields": common_fields,
             "current_row_count": int(current_matrix.shape[0]),
             "reference_row_count": int(reference_matrix.shape[0]),
-            "standardization": "pooled_mean_and_standard_deviation",
+            "standardization": ("pooled_mean_and_standard_deviation" if calibration_mode == "pooled" else "reference_mean_and_standard_deviation"),
+            "calibration_mode": calibration_mode,
             "rbf_bandwidth": round(bandwidth, 6) if bandwidth is not None else None,
             "estimator": "biased_empirical_mmd_squared",
             "feature_set_mmd_score_from_reference": round(score, 6) if score is not None else None,
