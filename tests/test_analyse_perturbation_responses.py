@@ -40,6 +40,7 @@ def test_duplicate_attempts_fail_closed(tmp_path):
 def test_non_numeric_and_failed_rows_removed(tmp_path):
     data=fixture_rows()
     data.loc[0,"execution_status"]="failed"
+    data["primary_value"] = data["primary_value"].astype(object)
     data.loc[1,"primary_value"]="not-applicable"
     path=tmp_path/"metrics.csv"
     data.to_csv(path,index=False)
