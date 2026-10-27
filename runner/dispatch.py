@@ -102,6 +102,16 @@ from cbr_tests.metrics.protocol_network.slice_metadata_integrity.slice_identifie
 from cbr_tests.metrics.protocol_network.slice_metadata_integrity.valid_slice_identifier_profile import (
     run_valid_slice_identifier_metric,
 )
+from cbr_tests.metrics.pcap_realism_v2 import (
+    compute_capture_order_inter_arrival_divergence_from_reference,
+    compute_per_flow_inter_arrival_divergence_from_reference,
+    compute_multiscale_activity_divergence_from_reference,
+    compute_burst_structure_divergence_from_reference,
+    compute_temporal_autocorrelation_deviation_from_reference,
+    compute_flow_population_deviation_from_reference,
+    compute_bidirectional_flow_balance_deviation_from_reference,
+    compute_port_class_divergence_from_reference,
+)
 from cbr_tests.metrics.reference_comparison import (
     compute_burstiness_deviation_from_reference,
     compute_distance_correlation_matrix_deviation_from_reference,
@@ -423,6 +433,15 @@ TABULAR_COMPUTE_METRICS = {
     "pre_post_attack_label_bleed_ratio": compute_pre_post_attack_label_bleed_ratio,
     "train_test_duplicate_overlap_ratio": compute_train_test_duplicate_overlap_ratio,
     "train_test_identifier_contamination_ratio": compute_train_test_identifier_contamination_ratio,
+    # Opt-in PCAP realism v2 metrics; legacy metric IDs retain their semantics.
+    "capture_order_inter_arrival_divergence_from_reference": compute_capture_order_inter_arrival_divergence_from_reference,
+    "per_flow_inter_arrival_divergence_from_reference": compute_per_flow_inter_arrival_divergence_from_reference,
+    "multiscale_activity_divergence_from_reference": compute_multiscale_activity_divergence_from_reference,
+    "burst_structure_divergence_from_reference": compute_burst_structure_divergence_from_reference,
+    "temporal_autocorrelation_deviation_from_reference": compute_temporal_autocorrelation_deviation_from_reference,
+    "flow_population_deviation_from_reference": compute_flow_population_deviation_from_reference,
+    "bidirectional_flow_balance_deviation_from_reference": compute_bidirectional_flow_balance_deviation_from_reference,
+    "port_class_divergence_from_reference": compute_port_class_divergence_from_reference,
     "feature_wise_wasserstein_distance_from_reference": compute_feature_wise_wasserstein_distance_from_reference,
     "feature_wise_ks_statistic_from_reference": compute_feature_wise_ks_statistic_from_reference,
     "feature_wise_energy_distance_from_reference": compute_feature_wise_energy_distance_from_reference,
