@@ -61,6 +61,44 @@ I/O costs. For packet-integrity tests, NIC checksum offload and truncated
 captures require explicit evidence and should never trigger automatic realism
 failure.
 
+### Explicit v2 comparison plan
+
+Create a plan with the exact new metric IDs you intend to validate. The
+historical automatic PCAP plan deliberately does **not** include these
+potentially expensive v2 metrics.
+
+```python
+from pathlib import Path
+from runner.plan_builder import build_plan, write_plan
+
+plan, report = build_plan(
+    plan_id="pcap-v2-timing-pilot",
+    name="Opt-in PCAP temporal realism v2",
+    dataset_path=Path("/data/held_out_real.pcap"),
+    reference_dataset_path=Path("/data/independent_real.pcap"),
+    include_metric_ids=[
+        "capture_order_inter_arrival_divergence_from_reference",
+        "per_flow_inter_arrival_divergence_from_reference",
+        "multiscale_activity_divergence_from_reference",
+        "burst_structure_divergence_from_reference",
+        "temporal_autocorrelation_deviation_from_reference",
+        "flow_population_deviation_from_reference",
+        "bidirectional_flow_balance_deviation_from_reference",
+        "port_class_divergence_from_reference",
+        "exact_packet_duplicate_ratio",
+        "packet_integrity_profile",
+        "tcp_sequence_continuity_profile",
+    ],
+)
+assert all(v["status"] == "ready" for v in report["metrics"].values())
+write_plan(Path("/data/plans/pcap-v2-timing-pilot.json"), plan)
+```
+
+Use the original held-out capture as the reference for each of its own
+perturbations. The independent real capture shown above is an example
+preflight reference; update the frozen evaluation plan to the actual
+held-out source where required by the experimental protocol.
+
 ## Time-aware generative model (independent of CTGAN)
 
 `gan_generator.temporal_gan` is a small sequential conditional
