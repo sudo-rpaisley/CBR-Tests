@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **432 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **435 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -20,6 +20,24 @@ Tests and local helpers in this module.
 | `test_valid_ip_address_ratio_uses_non_missing_checked_values_as_denominator()` (L9) | Verifies that valid IP address ratio uses non missing checked values as denominator. | `compute_valid_ip_address_ratio` |
 | `test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations()` (L33) | Verifies that reserved address misuse ratio counts only explicit policy violations. | `compute_reserved_address_misuse_ratio` |
 | `test_reserved_address_profile_without_policy_does_not_claim_zero_misuse()` (L67) | Verifies that reserved address profile without policy does not claim zero misuse. | `compute_reserved_address_misuse_ratio` |
+
+## `tests/test_analyse_perturbation_responses.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_response_slopes_and_clustered_summaries()` (L18) | Verifies that response slopes and clustered summaries. | `fixture_rows`, `curves`, `responses['monotonic_non_decreasing'].all`, `(responses['delta_final_from_zero'] == 1).all`, `(responses['complete_11_level_series'] == False).all`, `pytest.approx` |
+| `test_duplicate_attempts_fail_closed(tmp_path)` (L31) | Verifies that duplicate attempts fail closed. | `fixture_rows`, `data.to_csv`, `pytest.raises`, `load_rows` |
+| `test_non_numeric_and_failed_rows_removed(tmp_path)` (L40) | Verifies that non numeric and failed rows removed. | `fixture_rows`, `data.to_csv`, `load_rows` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `fixture_rows()` (L7) | Implementation helper for fixture rows. |
 
 ## `tests/test_batch_plan.py`
 
