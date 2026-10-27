@@ -1238,26 +1238,26 @@ Python symbols defined by `runner/pcap_adapter.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `is_packet_capture(path: Path) -> bool` (L212) | function | Public | Implementation helper for is packet capture. |
-| `_packet_fields(packet) -> dict[str, Any] | None` (L216) | function | Internal | Implementation helper for packet fields. |
-| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L263) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. |
-| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L292) | function | Internal | Implementation helper for endpoint key. |
-| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L296) | function | Internal | Implementation helper for flow key. |
-| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L309) | function | Internal | Implementation helper for safe std variance. |
-| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L317) | function | Internal | Implementation helper for series stats. |
-| `_DirectionStats` (L328) | class | Internal | Data model for DirectionStats. |
-| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L337) | method | Public | Implementation helper for add. |
-| `_DirectionStats.min_length(self) -> float` (L347) | method | Public | Implementation helper for min length. |
-| `_DirectionStats.max_length(self) -> float` (L350) | method | Public | Implementation helper for max length. |
-| `_DirectionStats.mean_length(self) -> float` (L353) | method | Public | Implementation helper for mean length. |
-| `_FlowState` (L358) | class | Internal | Data model for FlowState. |
-| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L386) | method | Public | Implementation helper for is forward. |
-| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L400) | method | Public | Implementation helper for add packet. |
-| `_FlowState.as_row(self) -> dict[str, Any]` (L438) | method | Public | Implementation helper for as row. |
-| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L483) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. |
-| `pcap_metric_template(metric_id: str) -> dict | None` (L533) | function | Public | Return a deterministic template for a metric safe on decoded packet evidence. Canonical intrinsic diagnostic IDs reuse the established packet-view configuration. Historical IDs continue to resolve for replaying old plans. |
-| `pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict` (L812) | function | Public | Build a service-port metric only for an explicitly single-service capture. |
-| `pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None` (L842) | function | Public | Return a same-representation packet-level reference metric template. |
+| `is_packet_capture(path: Path) -> bool` (L218) | function | Public | Implementation helper for is packet capture. |
+| `_packet_fields(packet) -> dict[str, Any] | None` (L222) | function | Internal | Implementation helper for packet fields. |
+| `build_pcap_packet_dataframe(dataset_path: Path) -> pd.DataFrame` (L269) | function | Public | Return one canonical row per decoded IPv4/IPv6 packet. |
+| `_endpoint_key(ip: str, port: int | None) -> tuple[str, int]` (L298) | function | Internal | Implementation helper for endpoint key. |
+| `_flow_key(protocol: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> tuple[Any, ...]` (L302) | function | Internal | Implementation helper for flow key. |
+| `_safe_std_variance(values_sum: float, values_sumsq: float, count: int) -> tuple[float, float]` (L315) | function | Internal | Implementation helper for safe std variance. |
+| `_series_stats(values: list[float]) -> tuple[float, float, float, float]` (L323) | function | Internal | Implementation helper for series stats. |
+| `_DirectionStats` (L334) | class | Internal | Data model for DirectionStats. |
+| `_DirectionStats.add(self, timestamp: float, packet_length: int) -> None` (L343) | method | Public | Implementation helper for add. |
+| `_DirectionStats.min_length(self) -> float` (L353) | method | Public | Implementation helper for min length. |
+| `_DirectionStats.max_length(self) -> float` (L356) | method | Public | Implementation helper for max length. |
+| `_DirectionStats.mean_length(self) -> float` (L359) | method | Public | Implementation helper for mean length. |
+| `_FlowState` (L364) | class | Internal | Data model for FlowState. |
+| `_FlowState.is_forward(self, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None) -> bool` (L392) | method | Public | Implementation helper for is forward. |
+| `_FlowState.add_packet(self, *, timestamp: float, packet_length: int, src_ip: str, dst_ip: str, src_port: int | None, dst_port: int | None, tcp_flags: int | None) -> None` (L406) | method | Public | Implementation helper for add packet. |
+| `_FlowState.as_row(self) -> dict[str, Any]` (L444) | method | Public | Implementation helper for as row. |
+| `build_pcap_flow_dataframe(dataset_path: Path) -> pd.DataFrame` (L489) | function | Public | Stream a PCAP/PCAPNG into a canonical bidirectional 5-tuple view. |
+| `pcap_metric_template(metric_id: str) -> dict | None` (L539) | function | Public | Return a deterministic template for a metric safe on decoded packet evidence. Canonical intrinsic diagnostic IDs reuse the established packet-view configuration. Historical IDs continue to resolve for replaying old plans. |
+| `pcap_service_port_template(service_name: str, expected_ports: list[int]) -> dict` (L818) | function | Public | Build a service-port metric only for an explicitly single-service capture. |
+| `pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path) -> dict | None` (L848) | function | Public | Return a same-representation packet-level reference metric template. |
 
 ## `runner/pcap_compact.py`
 
