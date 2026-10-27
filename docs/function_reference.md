@@ -1651,6 +1651,19 @@ Python symbols defined by `runner/unified_tui.py`.
 | `_pause_after_tool() -> None` (L137) | function | Internal | Implementation helper for pause after tool. |
 | `launch_unified_tui(args, repo_root: Path | None = None)` (L144) | function | Public | Launch the CBR-Tests toolbox and return only when a run workflow is selected. |
 
+## `scripts/analyse_perturbation_responses.py`
+
+Python symbols defined by `scripts/analyse_perturbation_responses.py`.
+
+| Symbol | Kind | Visibility | Purpose |
+| --- | --- | --- | --- |
+| `load_rows(input_path: Path) -> pd.DataFrame` (L22) | function | Public | Loads rows. |
+| `_spearman(x: np.ndarray, y: np.ndarray) -> float | None` (L40) | function | Internal | Implementation helper for spearman. |
+| `curves(df: pd.DataFrame) -> pd.DataFrame` (L50) | function | Public | Implementation helper for curves. |
+| `_bootstrap_median(values: np.ndarray, group_labels: np.ndarray, seed: int = 42, iterations: int = 2000) -> tuple[float, float]` (L78) | function | Internal | Cluster bootstrap by held-out capture, respecting seed reuse within capture. |
+| `summaries(curve_df: pd.DataFrame) -> pd.DataFrame` (L98) | function | Public | Implementation helper for summaries. |
+| `main(argv = None)` (L123) | function | Public | Implementation helper for main. |
+
 ## `scripts/build_documentation_inventory.py`
 
 Repository inventory generator used for documentation audits.

@@ -827,7 +827,7 @@ Tests and local helpers in this module.
 | `test_duplicate_same_bytes_and_timestamp_detected(tmp_path)` (L31) | Verifies that duplicate same bytes and timestamp detected. | `run_exact_packet_duplicate_ratio`, `Raw`, `PcapWriter`, `writer.write`, `UDP`, `Ether`, `IP` |
 | `test_ipv4_length_mismatch_reported_without_claiming_failure(tmp_path)` (L43) | Verifies that ipv4 length mismatch reported without claiming failure. | `run_packet_integrity_profile`, `Raw`, `PcapWriter`, `writer.write`, `UDP`, `Ether`, `IP` |
 | `test_tcp_sequence_gaps_are_evidence_not_realism_verdict(tmp_path)` (L56) | Verifies that TCP sequence gaps are evidence not realism verdict. | `run_tcp_sequence_continuity_profile`, `PcapWriter`, `writer.write`, `Raw`, `TCP`, `Ether`, `IP` |
-| `test_temporal_gan_small_end_to_end(tmp_path)` (L71) | Verifies that temporal gan small end to end. | `pytest.importorskip`, `make_trace`, `train`, `model.exists`, `generate`, `generated.is_file`, `all`, `file_hash` |
+| `test_temporal_gan_small_end_to_end(tmp_path)` (L70) | Verifies that temporal gan small end to end. | `pytest.importorskip`, `make_trace`, `train`, `model.exists`, `generate`, `generated.is_file`, `all`, `file_hash` |
 
 ### Test helpers
 
