@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import math
+import shutil
 from pathlib import Path
 import random
 
@@ -244,6 +245,28 @@ def generate(input_path: Path, model: Path, output: Path, percentage: int,
         raise ValueError("Refusing to overwrite input")
     if output.exists():
         raise FileExistsError(output)
+    if percentage == 0:
+        # True null control: avoid lossy timestamp serialisation or a needless
+        # model inference pass when no gap is being replaced.
+        meta = json.loads(model.with_suffix(model.suffix+".json").read_text())
+        if file_hash(input_path) in meta.get("training_pcap_sha256", {}).values():
+            raise ValueError("Training leakage: evaluation capture occurs in training inputs")
+        import shutil
+        output.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(input_path, output)
+        provenance = {
+            "experiment_type": "timing_only_sequential_gan",
+            "input": str(input_path.resolve()), "input_sha256": file_hash(input_path),
+            "model": str(model.resolve()), "model_sha256": file_hash(model),
+            "output": str(output.resolve()), "output_sha256": file_hash(output),
+            "seed": seed, "requested_replacement_pct": 0,
+            "actual_gap_replacement_pct": 0.0,
+            "replaced_gap_count": 0, "pattern": pattern,
+            "duration_policy": duration_policy, "byte_identical_zero_control": True,
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        output.with_suffix(output.suffix+".json").write_text(json.dumps(provenance, indent=2)+"\n")
+        return provenance
     _, _ = _deps()
     generated = _generated_gaps(input_path, model, seed, device)
     # Read original gaps separately and stream second pass to writer.
