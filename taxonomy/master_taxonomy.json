@@ -51,6 +51,18 @@
             "derived_rate_consistency_profile"
           ],
           "_review_status": "post-expert-review addition pending second expert review"
+        },
+        "packet_integrity_profile": {
+          "_metrics": [
+            "packet_integrity_profile"
+          ],
+          "_role": "opt-in contextual raw packet diagnostic"
+        },
+        "tcp_sequence_continuity_profile": {
+          "_metrics": [
+            "tcp_sequence_continuity_profile"
+          ],
+          "_role": "opt-in contextual raw TCP diagnostic"
         }
       },
       "slice_metadata_integrity": {
@@ -268,6 +280,12 @@
             "column_quality_profile"
           ],
           "_role": "supporting diagnostic; not one of the original 61 leaves"
+        },
+        "exact_packet_duplicate_ratio": {
+          "_metrics": [
+            "exact_packet_duplicate_ratio"
+          ],
+          "_role": "opt-in raw PCAP diagnostic"
         }
       }
     }
