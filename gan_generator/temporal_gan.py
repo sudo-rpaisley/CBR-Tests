@@ -267,7 +267,6 @@ def generate(input_path: Path, model: Path, output: Path, percentage: int,
         }
         output.with_suffix(output.suffix+".json").write_text(json.dumps(provenance, indent=2)+"\n")
         return provenance
-    _, _ = _deps()
     generated = _generated_gaps(input_path, model, seed, device)
     # Read original gaps separately and stream second pass to writer.
     timestamps = []
