@@ -31,7 +31,7 @@ Tests and local helpers in this module.
 | --- | --- | --- |
 | `test_response_slopes_and_clustered_summaries()` (L18) | Verifies that response slopes and clustered summaries. | `fixture_rows`, `curves`, `responses['monotonic_non_decreasing'].all`, `(responses['delta_final_from_zero'] == 1).all`, `(responses['complete_11_level_series'] == False).all`, `pytest.approx` |
 | `test_duplicate_attempts_fail_closed(tmp_path)` (L31) | Verifies that duplicate attempts fail closed. | `fixture_rows`, `data.to_csv`, `pytest.raises`, `load_rows` |
-| `test_non_numeric_and_failed_rows_removed(tmp_path)` (L40) | Verifies that non numeric and failed rows removed. | `fixture_rows`, `data.to_csv`, `load_rows` |
+| `test_non_numeric_and_failed_rows_removed(tmp_path)` (L40) | Verifies that non numeric and failed rows removed. | `fixture_rows`, `data['primary_value'].astype`, `data.to_csv`, `load_rows` |
 
 ### Test helpers
 
