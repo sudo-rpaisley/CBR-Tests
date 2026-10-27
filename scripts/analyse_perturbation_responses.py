@@ -68,7 +68,7 @@ def curves(df: pd.DataFrame) -> pd.DataFrame:
             "monotonic_non_decreasing":bool(np.all(np.diff(y)>=-1e-8)) if len(y)>=2 else None,
             "spearman_rho":corr,
             "slope_per_percent":float(np.polyfit(x,y,1)[0]) if len(x)>=2 else None,
-            "trapezoidal_auc":float(np.trapz(y,x)/(x[-1]-x[0])) if len(x)>=2 and x[-1]>x[0] else None,
+            "trapezoidal_auc":float(np.trapezoid(y,x)/(x[-1]-x[0])) if len(x)>=2 and x[-1]>x[0] else None,
             "maximum_value":float(max(y)) if len(y) else None,
             "level_at_maximum":float(x[np.argmax(y)]) if len(y) else None,
         })
