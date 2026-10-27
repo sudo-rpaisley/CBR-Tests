@@ -1,0 +1,39 @@
+name: Refresh PCAP realism v2 reference documentation
+
+on:
+  push:
+    branches:
+      - feature/pcap-realism-metrics-temporal-gan-20261027
+    paths:
+      - "cbr_tests/**/*.py"
+      - "runner/**/*.py"
+      - "gan_generator/**/*.py"
+      - "tests/**/*.py"
+      - "scripts/**/*.py"
+      - ".github/workflows/pcap-realism-v2-docs.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate-reference:
+    runs-on: ubuntu-latest
+    if: github.repository == 'sudo-rpaisley/CBR-Tests'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Regenerate exhaustive AST references
+        run: python scripts/build_reference_documentation.py
+      - name: Commit regenerated references on this branch only
+        run: |
+          if ! git diff --quiet -- docs/function_reference.md docs/test_reference.md; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/function_reference.md docs/test_reference.md
+            git commit -m "docs: regenerate metric and test function references"
+            git push origin HEAD:feature/pcap-realism-metrics-temporal-gan-20261027
+          fi

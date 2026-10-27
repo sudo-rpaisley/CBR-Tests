@@ -16,13 +16,16 @@ def test_compute_missing_value_ratio_uses_candidate_fields():
 
     assert result["summary"] == {
         "row_count": 3,
-        "field_count": 2,
-        "total_cells": 6,
-        "missing_cells": 3,
-        "missing_value_ratio": 0.5,
+        "field_count": 3,
+        "missing_column_count": 1,
+        "missing_columns": ["missing"],
+        "total_cells": 9,
+        "missing_cells": 6,
+        "missing_value_ratio": 0.666667,
         "runnable": True,
     }
-    assert [field["field"] for field in result["fields"]] == ["a", "b"]
+    assert [field["field"] for field in result["fields"]] == ["a", "b", "missing"]
+    assert result["fields"][-1]["missing_column"] is True
 
 
 def test_compute_duplicate_row_ratio_counts_repeated_rows_after_first():

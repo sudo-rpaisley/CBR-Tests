@@ -1,0 +1,29 @@
+name: Temporal GAN CPU smoke test
+
+on:
+  pull_request:
+    branches:
+      - feature/gan-evaluation-performance-20261023
+  push:
+    branches:
+      - feature/pcap-realism-metrics-temporal-gan-20261027
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install lightweight metric dependencies
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.2,<3'
+      - name: Train, generate, and check independent PCAPs
+        run: |
+          python -m pytest -q tests/test_pcap_protocol_temporal_gan_v2.py -k temporal_gan_small_end_to_end

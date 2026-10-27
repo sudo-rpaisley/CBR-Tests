@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **415 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **436 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -20,6 +20,24 @@ Tests and local helpers in this module.
 | `test_valid_ip_address_ratio_uses_non_missing_checked_values_as_denominator()` (L9) | Verifies that valid IP address ratio uses non missing checked values as denominator. | `compute_valid_ip_address_ratio` |
 | `test_reserved_address_misuse_ratio_counts_only_explicit_policy_violations()` (L33) | Verifies that reserved address misuse ratio counts only explicit policy violations. | `compute_reserved_address_misuse_ratio` |
 | `test_reserved_address_profile_without_policy_does_not_claim_zero_misuse()` (L67) | Verifies that reserved address profile without policy does not claim zero misuse. | `compute_reserved_address_misuse_ratio` |
+
+## `tests/test_analyse_perturbation_responses.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_response_slopes_and_clustered_summaries()` (L18) | Verifies that response slopes and clustered summaries. | `fixture_rows`, `curves`, `responses['monotonic_non_decreasing'].all`, `(responses['delta_final_from_zero'] == 1).all`, `(responses['complete_11_level_series'] == False).all`, `pytest.approx` |
+| `test_duplicate_attempts_fail_closed(tmp_path)` (L31) | Verifies that duplicate attempts fail closed. | `fixture_rows`, `data.to_csv`, `pytest.raises`, `load_rows` |
+| `test_non_numeric_and_failed_rows_removed(tmp_path)` (L40) | Verifies that non numeric and failed rows removed. | `fixture_rows`, `data['primary_value'].astype`, `data.to_csv`, `load_rows` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `fixture_rows()` (L7) | Implementation helper for fixture rows. |
 
 ## `tests/test_batch_plan.py`
 
@@ -325,9 +343,9 @@ Tests and local helpers in this module.
 | Test | What it verifies | Primary code exercised |
 | --- | --- | --- |
 | `test_compute_missing_value_ratio_uses_candidate_fields()` (L7) | Verifies that compute missing value ratio uses candidate fields. | `compute_missing_value_ratio` |
-| `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L28) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
-| `test_compute_spearman_profile_reports_rank_correlation()` (L44) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
-| `test_data_quality_zero_denominators_are_not_numeric_scores()` (L63) | Verifies that data quality zero denominators are not numeric scores. | `compute_missing_value_ratio`, `compute_duplicate_row_ratio` |
+| `test_compute_duplicate_row_ratio_counts_repeated_rows_after_first()` (L31) | Verifies that compute duplicate row ratio counts repeated rows after first. | `compute_duplicate_row_ratio` |
+| `test_compute_spearman_profile_reports_rank_correlation()` (L47) | Verifies that compute spearman profile reports rank correlation. | `validate_spearman_candidate_fields`, `compute_spearman_profile` |
+| `test_data_quality_zero_denominators_are_not_numeric_scores()` (L66) | Verifies that data quality zero denominators are not numeric scores. | `compute_missing_value_ratio`, `compute_duplicate_row_ratio` |
 
 ## `tests/test_data_quality_semantics.py`
 
@@ -814,6 +832,65 @@ Tests and local helpers in this module.
 | Helper | Purpose |
 | --- | --- |
 | `_write(path: Path, packets)` (L9) | Implementation helper for write. |
+
+## `tests/test_pcap_protocol_temporal_gan_v2.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_exact_duplicates_are_not_field_signature_repetition(tmp_path)` (L23) | Verifies that exact duplicates are not field signature repetition. | `make_trace`, `run_exact_packet_duplicate_ratio` |
+| `test_duplicate_same_bytes_and_timestamp_detected(tmp_path)` (L31) | Verifies that duplicate same bytes and timestamp detected. | `run_exact_packet_duplicate_ratio`, `Raw`, `PcapWriter`, `writer.write`, `UDP`, `Ether`, `IP` |
+| `test_ipv4_length_mismatch_reported_without_claiming_failure(tmp_path)` (L43) | Verifies that ipv4 length mismatch reported without claiming failure. | `run_packet_integrity_profile`, `Raw`, `PcapWriter`, `writer.write`, `UDP`, `Ether`, `IP` |
+| `test_tcp_sequence_gaps_are_evidence_not_realism_verdict(tmp_path)` (L56) | Verifies that TCP sequence gaps are evidence not realism verdict. | `run_tcp_sequence_continuity_profile`, `PcapWriter`, `writer.write`, `Raw`, `TCP`, `Ether`, `IP` |
+| `test_temporal_gan_small_end_to_end(tmp_path)` (L70) | Verifies that temporal gan small end to end. | `pytest.importorskip`, `make_trace`, `train`, `model.exists`, `generate`, `generated.is_file`, `all`, `file_hash` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `make_trace(path: Path, count: int = 10, start: float = 100.0)` (L15) | Implementation helper for make trace. |
+
+## `tests/test_pcap_realism_v2.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_missing_requested_field_counts_as_missing()` (L39) | Verifies that missing requested field counts as missing. | `compute_missing_value_ratio` |
+| `test_duplicate_signature_missing_column_is_unrunnable()` (L48) | Verifies that duplicate signature missing column is unrunnable. | `compute_duplicate_row_ratio` |
+| `test_duplicate_signature_still_reports_repeated_signatures()` (L56) | Verifies that duplicate signature still reports repeated signatures. | `compute_duplicate_row_ratio`, `pytest.approx` |
+| `test_capture_order_perturbation_detected_when_sorted_timestamps_would_hide_it(monkeypatch)` (L63) | Verifies that capture order perturbation detected when sorted timestamps would hide it. | `packets`, `monkeypatch.setattr`, `v2.compute_capture_order_inter_arrival_divergence_from_reference`, `reference_metric` |
+| `test_global_time_shift_is_null_for_capture_order_gaps(monkeypatch)` (L74) | Verifies that global time shift is null for capture order gaps. | `packets`, `monkeypatch.setattr`, `v2.compute_capture_order_inter_arrival_divergence_from_reference`, `pytest.approx`, `reference_metric` |
+| `test_multiscale_elapsed_time_shift_control(monkeypatch)` (L83) | Verifies that multiscale elapsed time shift control. | `packets`, `monkeypatch.setattr`, `v2.compute_multiscale_activity_divergence_from_reference`, `reference_metric`, `pytest.approx` |
+| `test_inter_arrival_per_flow_changes_without_affecting_global_packet_count(monkeypatch)` (L93) | Verifies that inter arrival per flow changes without affecting global packet count. | `packets`, `monkeypatch.setattr`, `v2.compute_per_flow_inter_arrival_divergence_from_reference`, `reference_metric` |
+| `test_burst_structure_reacts_to_bursts(monkeypatch)` (L103) | Verifies that burst structure reacts to bursts. | `packets`, `monkeypatch.setattr`, `v2.compute_burst_structure_divergence_from_reference`, `reference_metric` |
+| `test_temporal_autocorrelation_requires_evidence(monkeypatch)` (L113) | Verifies that temporal autocorrelation requires evidence. | `packets`, `monkeypatch.setattr`, `v2.compute_temporal_autocorrelation_deviation_from_reference`, `reference_metric` |
+| `test_port_class_ignores_ephemeral_port_renumbering(monkeypatch)` (L122) | Verifies that port class ignores ephemeral port renumbering. | `packets`, `monkeypatch.setattr`, `v2.compute_port_class_divergence_from_reference`, `pytest.approx`, `reference_metric` |
+| `test_reference_calibrated_mmd_symmetry_and_zero()` (L131) | Verifies that reference calibrated MMD symmetry and zero. | `np.array`, `_multivariate_rbf_mmd`, `pytest.approx`, `pytest.raises` |
+| `test_temporal_gan_selection_seed_and_boundaries()` (L142) | Verifies that temporal gan selection seed and boundaries. | `_selection(100, 20, 42, 'trailing')[-20:].all`, `np.array_equal`, `_selection(100, 0, 42, 'trailing').sum`, `_selection(100, 100, 42, 'trailing').sum`, `_selection`, `_selection(100, 25, 43, 'blocks').sum`, `pytest.raises` |
+
+### Test helpers
+
+| Helper | Purpose |
+| --- | --- |
+| `metric(**parameters)` (L13) | Implementation helper for metric. |
+| `reference_metric(**parameters)` (L17) | Implementation helper for reference metric. |
+| `packets(times, lengths = None, ports = None)` (L22) | Implementation helper for packets. |
+
+## `tests/test_pcap_v2_plan_builder.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_v2_reference_metrics_require_explicit_selection(tmp_path)` (L7) | Verifies that v2 reference metrics require explicit selection. | `candidate.write_bytes`, `reference.write_bytes`, `build_plan`, `all` |
 
 ## `tests/test_perturbation_experiment.py`
 

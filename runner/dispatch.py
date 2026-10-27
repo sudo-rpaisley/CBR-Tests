@@ -55,6 +55,11 @@ from cbr_tests.metrics.temporal import (
     compute_start_end_timestamp_consistency_ratio,
     compute_timestamp_parse_success_ratio,
 )
+from cbr_tests.metrics.pcap_integrity_v2 import (
+    run_exact_packet_duplicate_ratio,
+    run_packet_integrity_profile,
+    run_tcp_sequence_continuity_profile,
+)
 from cbr_tests.metrics.timestamp_coherence import run_timestamp_coherence_metric
 from cbr_tests.metrics.pcap_handshake import run_pcap_handshake_plausibility_metric
 from runner.field_translation import translate_metric_fields
@@ -101,6 +106,16 @@ from cbr_tests.metrics.protocol_network.slice_metadata_integrity.slice_identifie
 )
 from cbr_tests.metrics.protocol_network.slice_metadata_integrity.valid_slice_identifier_profile import (
     run_valid_slice_identifier_metric,
+)
+from cbr_tests.metrics.pcap_realism_v2 import (
+    compute_capture_order_inter_arrival_divergence_from_reference,
+    compute_per_flow_inter_arrival_divergence_from_reference,
+    compute_multiscale_activity_divergence_from_reference,
+    compute_burst_structure_divergence_from_reference,
+    compute_temporal_autocorrelation_deviation_from_reference,
+    compute_flow_population_deviation_from_reference,
+    compute_bidirectional_flow_balance_deviation_from_reference,
+    compute_port_class_divergence_from_reference,
 )
 from cbr_tests.metrics.reference_comparison import (
     compute_burstiness_deviation_from_reference,
@@ -217,9 +232,15 @@ def run_duplicate_row_metric(
     shared_df: pd.DataFrame | None = None,
 ):
     df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
-    return True, {
-        "test_results": {"duplicate_row_ratio": compute_duplicate_row_ratio(df, metric)}
-    }
+    result = compute_duplicate_row_ratio(df, metric)
+    if result.get("summary", {}).get("runnable") is False:
+        result["status"] = "not_applicable"
+        result["diagnostic"] = {
+            "reason_code": result["summary"].get("reason", "insufficient_evidence"),
+            "summary": "Configured duplicate signature fields are missing or no rows are available.",
+            "evidence": {"missing_signature_fields": result["summary"].get("missing_signature_fields", [])},
+        }
+    return True, {"test_results": {"duplicate_row_ratio": result}}
 
 
 def run_tabular_metric(
@@ -234,7 +255,17 @@ def run_tabular_metric(
     # Avoid copying the complete dataset for each metric; functions that coerce
     # or mutate columns must take their own narrow working copy.
     df = shared_df if shared_df is not None else load_tabular_dataset(dataset_path)
-    return True, {"test_results": {metric_id: compute_fn(df, metric)}}
+    result = compute_fn(df, metric)
+    # A completed computation may still have insufficient evidence.
+    # Preserve execution success while reporting scientific applicability.
+    if isinstance(result, dict) and result.get("summary", {}).get("runnable") is False:
+        result["status"] = "not_applicable"
+        reason = result["summary"].get("reason_code", "insufficient_evidence")
+        result["diagnostic"] = {
+            "reason_code": reason,
+            "summary": "Metric ran but did not have sufficient applicable observations.",
+        }
+    return True, {"test_results": {metric_id: result}}
 
 
 def run_distance_correlation_metric(
@@ -315,6 +346,27 @@ def _timestamp_metric(dataset_path: Path, metric: dict):
         if result is not None:
             return result
     return run_timestamp_coherence_metric(dataset_path, metric)
+
+
+@register_metric("exact_packet_duplicate_ratio")
+def _exact_packet_duplicate_metric(dataset_path: Path, metric: dict):
+    if not is_packet_capture(dataset_path):
+        return False, {"error": "PCAP input required", "reason_code": "unsupported_dataset_format"}
+    return run_exact_packet_duplicate_ratio(dataset_path, metric)
+
+
+@register_metric("packet_integrity_profile")
+def _packet_integrity_metric(dataset_path: Path, metric: dict):
+    if not is_packet_capture(dataset_path):
+        return False, {"error": "PCAP input required", "reason_code": "unsupported_dataset_format"}
+    return run_packet_integrity_profile(dataset_path, metric)
+
+
+@register_metric("tcp_sequence_continuity_profile")
+def _tcp_sequence_metric(dataset_path: Path, metric: dict):
+    if not is_packet_capture(dataset_path):
+        return False, {"error": "PCAP input required", "reason_code": "unsupported_dataset_format"}
+    return run_tcp_sequence_continuity_profile(dataset_path, metric)
 
 
 @register_metric("protocol_validity_profile")
@@ -423,6 +475,15 @@ TABULAR_COMPUTE_METRICS = {
     "pre_post_attack_label_bleed_ratio": compute_pre_post_attack_label_bleed_ratio,
     "train_test_duplicate_overlap_ratio": compute_train_test_duplicate_overlap_ratio,
     "train_test_identifier_contamination_ratio": compute_train_test_identifier_contamination_ratio,
+    # Opt-in PCAP realism v2 metrics; legacy metric IDs retain their semantics.
+    "capture_order_inter_arrival_divergence_from_reference": compute_capture_order_inter_arrival_divergence_from_reference,
+    "per_flow_inter_arrival_divergence_from_reference": compute_per_flow_inter_arrival_divergence_from_reference,
+    "multiscale_activity_divergence_from_reference": compute_multiscale_activity_divergence_from_reference,
+    "burst_structure_divergence_from_reference": compute_burst_structure_divergence_from_reference,
+    "temporal_autocorrelation_deviation_from_reference": compute_temporal_autocorrelation_deviation_from_reference,
+    "flow_population_deviation_from_reference": compute_flow_population_deviation_from_reference,
+    "bidirectional_flow_balance_deviation_from_reference": compute_bidirectional_flow_balance_deviation_from_reference,
+    "port_class_divergence_from_reference": compute_port_class_divergence_from_reference,
     "feature_wise_wasserstein_distance_from_reference": compute_feature_wise_wasserstein_distance_from_reference,
     "feature_wise_ks_statistic_from_reference": compute_feature_wise_ks_statistic_from_reference,
     "feature_wise_energy_distance_from_reference": compute_feature_wise_energy_distance_from_reference,

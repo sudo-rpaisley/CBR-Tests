@@ -113,6 +113,20 @@ PCAP_REFERENCE_METRICS = {
     "hourly_activity_divergence_from_reference",
     "protocol_mix_divergence_from_reference",
     "port_use_divergence_from_reference",
+
+}
+
+# New v2 diagnostics must be deliberately selected in a frozen experiment plan.
+# They are deliberately not injected into the historical automatic plan set.
+PCAP_V2_REFERENCE_METRICS = {
+    "capture_order_inter_arrival_divergence_from_reference",
+    "per_flow_inter_arrival_divergence_from_reference",
+    "multiscale_activity_divergence_from_reference",
+    "burst_structure_divergence_from_reference",
+    "temporal_autocorrelation_deviation_from_reference",
+    "flow_population_deviation_from_reference",
+    "bidirectional_flow_balance_deviation_from_reference",
+    "port_class_divergence_from_reference",
 }
 
 PCAP_REFERENCE_UNSUPPORTED_REASONS = {
@@ -127,9 +141,12 @@ PCAP_REFERENCE_UNSUPPORTED_REASONS = {
 PCAP_EXPLICIT_PACKET_METRICS = {
     "service_port_consistency_profile",
     "reserved_address_misuse_ratio",
+    "exact_packet_duplicate_ratio",
+    "packet_integrity_profile",
+    "tcp_sequence_continuity_profile",
 }
 PCAP_PACKET_BACKED_METRICS = (
-    PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
+    PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_V2_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
 )
 PCAP_SUPPORTED_METRICS = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
 
@@ -578,6 +595,27 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                 },
             },
         },
+        "exact_packet_duplicate_ratio": {
+            "metric_id": "exact_packet_duplicate_ratio",
+            "label": "Exact Packet Duplicate Ratio",
+            "input_requirements": {},
+            "calculation": {"method": "raw_pcap_frame_bytes_and_timestamp_hash",
+                            "parameters": {"max_packets": 500000}},
+        },
+        "packet_integrity_profile": {
+            "metric_id": "packet_integrity_profile",
+            "label": "Observable Packet Header Integrity Profile",
+            "input_requirements": {},
+            "calculation": {"method": "raw_pcap_ipv4_and_udp_length_checksum_contextual",
+                            "parameters": {"max_packets": 500000, "max_examples": 10}},
+        },
+        "tcp_sequence_continuity_profile": {
+            "metric_id": "tcp_sequence_continuity_profile",
+            "label": "TCP Sequence Continuity (Contextual)",
+            "input_requirements": {},
+            "calculation": {"method": "raw_pcap_tcp_directional_sequence_gap_profile",
+                            "parameters": {"max_packets": 500000, "max_examples": 10}},
+        },
         "column_quality_profile": {
             "metric_id": "column_quality_profile",
             "label": "Canonical Packet Numeric Field Profile",
@@ -886,5 +924,26 @@ def pcap_reference_metric_template(metric_id: str, reference_dataset_path: Path)
             "calculation": {"method": "packet_reference_port_use", "parameters": {}},
         },
     }
+    # Explicit second-generation metrics are separate from published legacy IDs.
+    v2 = {
+        "capture_order_inter_arrival_divergence_from_reference": {"max_sample_size": 4000},
+        "per_flow_inter_arrival_divergence_from_reference": {"max_packets": 2000000},
+        "multiscale_activity_divergence_from_reference": {"window_seconds": [0.001, 0.01, 0.1, 1.0, 10.0]},
+        "burst_structure_divergence_from_reference": {"burst_gap_seconds": 0.01},
+        "temporal_autocorrelation_deviation_from_reference": {"lags": [1, 2, 4, 8, 16, 32]},
+        "flow_population_deviation_from_reference": {"max_packets": 2000000},
+        "bidirectional_flow_balance_deviation_from_reference": {"max_packets": 2000000},
+        "port_class_divergence_from_reference": {},
+    }
+    for name, parameters in v2.items():
+        templates[name] = {
+            "metric_id": name,
+            "label": name.replace("_", " ").title(),
+            "input_requirements": {"reference_dataset_path": reference_path},
+            "calculation": {
+                "method": "pcap_realism_v2_contextual_reference_comparison",
+                "parameters": parameters,
+            },
+        }
     template = templates.get(metric_id)
     return None if template is None else deepcopy(template)

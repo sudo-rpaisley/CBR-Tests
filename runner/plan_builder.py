@@ -24,6 +24,7 @@ from runner.pcap_adapter import (
     PCAP_PACKET_COLUMNS,
     PCAP_PACKET_METRICS,
     PCAP_REFERENCE_METRICS,
+    PCAP_V2_REFERENCE_METRICS,
     PCAP_REFERENCE_UNSUPPORTED_REASONS,
     PCAP_SELF_DERIVED_METRICS,
     pcap_metric_template,
@@ -291,7 +292,7 @@ def _configuration_state(
     fmt = dataset.get("format")
     is_pcap = fmt in {"pcap", "pcapng"}
 
-    if is_pcap and metric_id in PCAP_REFERENCE_METRICS:
+    if is_pcap and metric_id in (PCAP_REFERENCE_METRICS | PCAP_V2_REFERENCE_METRICS):
         if reference_dataset is None:
             return "needs_configuration", "reference_dataset_required", []
         if reference_dataset.get("format") not in {"pcap", "pcapng"}:
@@ -313,6 +314,12 @@ def _configuration_state(
         if reference_dataset is None:
             return "needs_configuration", "reference_dataset_required", []
         return "needs_configuration", PCAP_REFERENCE_UNSUPPORTED_REASONS[metric_id], []
+
+    if is_pcap and metric_id in {
+        "exact_packet_duplicate_ratio", "packet_integrity_profile",
+        "tcp_sequence_continuity_profile",
+    }:
+        return ("ready", None, []) if template is not None else ("needs_configuration", "pcap_adapter_template_missing", [])
 
     if is_pcap and metric_id == "service_port_consistency_profile":
         if template is None:
@@ -432,7 +439,12 @@ def build_plan(
     catalogue = build_metric_catalog(available_fields=dataset["available_fields"] or None)
     available_ids = {entry["metric_id"] for entry in catalogue}
 
-    include = set(include_metric_ids or available_ids)
+    include = set(include_metric_ids) if include_metric_ids is not None else set(available_ids)
+    # Do not silently add the new (potentially expensive) diagnostics to
+    # historical automatic plans; require an explicit metric selection.
+    if include_metric_ids is None:
+        include -= PCAP_V2_REFERENCE_METRICS
+        include -= {"exact_packet_duplicate_ratio", "packet_integrity_profile", "tcp_sequence_continuity_profile"}
     exclude = set(exclude_metric_ids or [])
     unknown = sorted((include | exclude) - available_ids)
     if unknown:
@@ -454,7 +466,13 @@ def build_plan(
             if metric_id in PCAP_PACKET_METRICS:
                 spec = dict(spec)
                 spec["template"] = pcap_metric_template(metric_id)
-            elif metric_id in PCAP_REFERENCE_METRICS and reference_dataset is not None:
+            elif metric_id in {
+                "exact_packet_duplicate_ratio", "packet_integrity_profile",
+                "tcp_sequence_continuity_profile",
+            }:
+                spec = dict(spec)
+                spec["template"] = pcap_metric_template(metric_id)
+            elif metric_id in (PCAP_REFERENCE_METRICS | PCAP_V2_REFERENCE_METRICS) and reference_dataset is not None:
                 spec = dict(spec)
                 spec["template"] = pcap_reference_metric_template(metric_id, reference_dataset["path"])
             elif metric_id == "service_port_consistency_profile":
