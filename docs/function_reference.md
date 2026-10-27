@@ -573,23 +573,23 @@ Python symbols defined by `gan_generator/temporal_gan.py`.
 
 | Symbol | Kind | Visibility | Purpose |
 | --- | --- | --- | --- |
-| `file_hash(path: Path) -> str` (L26) | function | Public | Implementation helper for file hash. |
-| `_deps()` (L34) | function | Internal | Implementation helper for deps. |
-| `_seed_all(seed: int)` (L40) | function | Internal | Implementation helper for seed all. |
-| `_observe(path: Path, max_packets: int | None = 300000) -> tuple[np.ndarray, np.ndarray]` (L49) | function | Internal | Packet gaps and log packet length conditions in capture order. |
-| `_windows(targets: np.ndarray, conditions: np.ndarray, sequence_length: int, max_windows: int = 30000) -> np.ndarray` (L71) | function | Internal | Implementation helper for windows. |
-| `build_models(sequence_length: int, hidden_size: int = 64)` (L83) | function | Public | Builds models. |
-| `build_models.TimingGenerator` (L87) | class | Public | Data model for TimingGenerator. |
-| `build_models.TimingGenerator.__init__(self)` (L88) | method | Internal | Implementation helper for init. |
-| `build_models.TimingGenerator.forward(self, noise, condition)` (L93) | method | Public | Implementation helper for forward. |
-| `build_models.TimingDiscriminator` (L98) | class | Public | Data model for TimingDiscriminator. |
-| `build_models.TimingDiscriminator.__init__(self)` (L99) | method | Internal | Implementation helper for init. |
-| `build_models.TimingDiscriminator.forward(self, gaps, condition)` (L103) | method | Public | Implementation helper for forward. |
-| `train(inputs: list[Path], model: Path, epochs: int = 20, seed: int = 42, sequence_length: int = 32, device: str = 'cpu', max_packets: int = 300000, batch_size: int = 64) -> dict` (L110) | function | Public | Implementation helper for train. |
-| `_generated_gaps(input_path: Path, model_path: Path, seed: int, device: str) -> np.ndarray` (L183) | function | Internal | Implementation helper for generated gaps. |
-| `_selection(n: int, fraction: int, seed: int, pattern: str) -> np.ndarray` (L214) | function | Internal | Implementation helper for selection. |
-| `generate(input_path: Path, model: Path, output: Path, percentage: int, seed: int = 42, pattern: str = 'trailing', duration_policy: str = 'match_original', device: str = 'cpu') -> dict` (L237) | function | Public | Implementation helper for generate. |
-| `main(argv: list[str] | None = None) -> int` (L294) | function | Public | Implementation helper for main. |
+| `file_hash(path: Path) -> str` (L27) | function | Public | Implementation helper for file hash. |
+| `_deps()` (L35) | function | Internal | Implementation helper for deps. |
+| `_seed_all(seed: int)` (L41) | function | Internal | Implementation helper for seed all. |
+| `_observe(path: Path, max_packets: int | None = 300000) -> tuple[np.ndarray, np.ndarray]` (L50) | function | Internal | Packet gaps and log packet length conditions in capture order. |
+| `_windows(targets: np.ndarray, conditions: np.ndarray, sequence_length: int, max_windows: int = 30000) -> np.ndarray` (L72) | function | Internal | Implementation helper for windows. |
+| `build_models(sequence_length: int, hidden_size: int = 64)` (L84) | function | Public | Builds models. |
+| `build_models.TimingGenerator` (L88) | class | Public | Data model for TimingGenerator. |
+| `build_models.TimingGenerator.__init__(self)` (L89) | method | Internal | Implementation helper for init. |
+| `build_models.TimingGenerator.forward(self, noise, condition)` (L94) | method | Public | Implementation helper for forward. |
+| `build_models.TimingDiscriminator` (L99) | class | Public | Data model for TimingDiscriminator. |
+| `build_models.TimingDiscriminator.__init__(self)` (L100) | method | Internal | Implementation helper for init. |
+| `build_models.TimingDiscriminator.forward(self, gaps, condition)` (L104) | method | Public | Implementation helper for forward. |
+| `train(inputs: list[Path], model: Path, epochs: int = 20, seed: int = 42, sequence_length: int = 32, device: str = 'cpu', max_packets: int = 300000, batch_size: int = 64) -> dict` (L111) | function | Public | Implementation helper for train. |
+| `_generated_gaps(input_path: Path, model_path: Path, seed: int, device: str) -> np.ndarray` (L184) | function | Internal | Implementation helper for generated gaps. |
+| `_selection(n: int, fraction: int, seed: int, pattern: str) -> np.ndarray` (L215) | function | Internal | Implementation helper for selection. |
+| `generate(input_path: Path, model: Path, output: Path, percentage: int, seed: int = 42, pattern: str = 'trailing', duration_policy: str = 'match_original', device: str = 'cpu') -> dict` (L238) | function | Public | Implementation helper for generate. |
+| `main(argv: list[str] | None = None) -> int` (L317) | function | Public | Implementation helper for main. |
 
 ## `monitor_gan_corpus.py`
 
