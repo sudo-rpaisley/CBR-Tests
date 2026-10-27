@@ -67,7 +67,6 @@ def test_tcp_sequence_gaps_are_evidence_not_realism_verdict(tmp_path):
     assert v["status"] == "informational"
 
 
-@pytest.mark.slow
 def test_temporal_gan_small_end_to_end(tmp_path):
     torch = pytest.importorskip("torch")
     from gan_generator.temporal_gan import train, generate, file_hash
