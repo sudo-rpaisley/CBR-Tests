@@ -55,6 +55,11 @@ from cbr_tests.metrics.temporal import (
     compute_start_end_timestamp_consistency_ratio,
     compute_timestamp_parse_success_ratio,
 )
+from cbr_tests.metrics.pcap_integrity_v2 import (
+    run_exact_packet_duplicate_ratio,
+    run_packet_integrity_profile,
+    run_tcp_sequence_continuity_profile,
+)
 from cbr_tests.metrics.timestamp_coherence import run_timestamp_coherence_metric
 from cbr_tests.metrics.pcap_handshake import run_pcap_handshake_plausibility_metric
 from runner.field_translation import translate_metric_fields
@@ -325,6 +330,27 @@ def _timestamp_metric(dataset_path: Path, metric: dict):
         if result is not None:
             return result
     return run_timestamp_coherence_metric(dataset_path, metric)
+
+
+@register_metric("exact_packet_duplicate_ratio")
+def _exact_packet_duplicate_metric(dataset_path: Path, metric: dict):
+    if not is_packet_capture(dataset_path):
+        return False, {"error": "PCAP input required", "reason_code": "unsupported_dataset_format"}
+    return run_exact_packet_duplicate_ratio(dataset_path, metric)
+
+
+@register_metric("packet_integrity_profile")
+def _packet_integrity_metric(dataset_path: Path, metric: dict):
+    if not is_packet_capture(dataset_path):
+        return False, {"error": "PCAP input required", "reason_code": "unsupported_dataset_format"}
+    return run_packet_integrity_profile(dataset_path, metric)
+
+
+@register_metric("tcp_sequence_continuity_profile")
+def _tcp_sequence_metric(dataset_path: Path, metric: dict):
+    if not is_packet_capture(dataset_path):
+        return False, {"error": "PCAP input required", "reason_code": "unsupported_dataset_format"}
+    return run_tcp_sequence_continuity_profile(dataset_path, metric)
 
 
 @register_metric("protocol_validity_profile")
