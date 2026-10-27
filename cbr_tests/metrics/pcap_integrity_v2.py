@@ -77,6 +77,7 @@ def run_packet_integrity_profile(path: Path, metric: dict) -> tuple[bool, dict]:
     if max_packets < 2:
         return False, {"error": "max_packets must be >= 2", "reason_code": "invalid_metric_configuration"}
     inspected = total = len_mismatch = checksum_mismatch = checksum_checked = truncated = 0
+    transport_checked = transport_mismatched = 0
     counts: dict[str, int] = {}
     max_examples = int(_params(metric).get("max_examples", 10))
     examples = []
@@ -111,17 +112,35 @@ def run_packet_integrity_profile(path: Path, metric: dict) -> tuple[bool, dict]:
                     examples.append({"packet_index": total-1, "reasons": ["ipv4_header_checksum_mismatch"]})
         except (ValueError, TypeError, AttributeError):
             truncated += 1
+        transport_layer = TCP if TCP in packet else UDP if UDP in packet else None
+        if transport_layer is not None and packet[transport_layer].chksum is not None:
+            try:
+                original_transport_checksum = int(packet[transport_layer].chksum)
+                reconstructed = ip.copy()
+                del reconstructed[transport_layer].chksum
+                recomputed = IP(raw(reconstructed))[transport_layer].chksum
+                transport_checked += 1
+                if int(recomputed) != original_transport_checksum:
+                    transport_mismatched += 1
+                    if len(examples) < max_examples:
+                        examples.append({"packet_index": total-1, "reasons": ["transport_checksum_mismatch"]})
+            except (ValueError, TypeError, AttributeError, IndexError):
+                truncated += 1
     return True, {"test_results": {"packet_integrity_profile": {
         "checked_packet_count": inspected, "total_packet_count": total,
         "length_inconsistency_count": len_mismatch,
         "length_issue_counts": counts,
         "ipv4_header_checksum_checked_count": checksum_checked,
         "ipv4_header_checksum_mismatch_count": checksum_mismatch,
+        "transport_checksum_checked_count": transport_checked,
+        "transport_checksum_mismatch_count": transport_mismatched,
+        "transport_checksum_mismatch_ratio": (
+            round(transport_mismatched/transport_checked, 8) if transport_checked else None),
         "ipv4_header_checksum_mismatch_ratio": (
             round(checksum_mismatch/checksum_checked, 8) if checksum_checked else None),
         "undecodable_checksum_count": truncated, "sample_truncated": total > inspected,
         "examples": examples, "status": "informational" if inspected else "not_applicable",
-        "interpretation": "Offloading, truncation and virtual interfaces can affect checksum evidence; this diagnostic does not validate application payload or transport checksums.",
+        "interpretation": "Offloading, truncation and virtual interfaces can affect checksum evidence; this diagnostic does not validate application payload behaviour; transport checksum evidence is subject to offloading.",
     }}}
 
 
