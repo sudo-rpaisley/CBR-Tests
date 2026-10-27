@@ -115,12 +115,18 @@ def replace_real_with_real(target: Path, donor: Path, output: Path, percentage: 
         frames=kept+substitutions
         frames.sort(key=lambda p:float(p.time))
     output.parent.mkdir(parents=True,exist_ok=True)
-    try:
-        with PcapWriter(str(output),sync=True) as writer:
-            for p in frames:writer.write(p)
-    except Exception:
-        output.unlink(missing_ok=True)
-        raise
+    if percentage == 0:
+        # True null control: preserve original bytes, metadata, ordering and
+        # file format rather than rewriting/sorting a nominal 0% capture.
+        shutil.copyfile(target, output)
+        frames = target_packets
+    else:
+        try:
+            with PcapWriter(str(output),sync=True) as writer:
+                for p in frames:writer.write(p)
+        except Exception:
+            output.unlink(missing_ok=True)
+            raise
     manifest={
         "control_type":"real_for_real",
         "mode":mode,"placement":placement,"seed":seed,
