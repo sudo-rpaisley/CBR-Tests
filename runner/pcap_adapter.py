@@ -135,6 +135,9 @@ PCAP_REFERENCE_UNSUPPORTED_REASONS = {
 PCAP_EXPLICIT_PACKET_METRICS = {
     "service_port_consistency_profile",
     "reserved_address_misuse_ratio",
+    "exact_packet_duplicate_ratio",
+    "packet_integrity_profile",
+    "tcp_sequence_continuity_profile",
 }
 PCAP_PACKET_BACKED_METRICS = (
     PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
@@ -585,6 +588,27 @@ def pcap_metric_template(metric_id: str) -> dict | None:
                     "invalid_ratio_fail_threshold": 0.01,
                 },
             },
+        },
+        "exact_packet_duplicate_ratio": {
+            "metric_id": "exact_packet_duplicate_ratio",
+            "label": "Exact Packet Duplicate Ratio",
+            "input_requirements": {},
+            "calculation": {"method": "raw_pcap_frame_bytes_and_timestamp_hash",
+                            "parameters": {"max_packets": 500000}},
+        },
+        "packet_integrity_profile": {
+            "metric_id": "packet_integrity_profile",
+            "label": "Observable Packet Header Integrity Profile",
+            "input_requirements": {},
+            "calculation": {"method": "raw_pcap_ipv4_and_udp_length_checksum_contextual",
+                            "parameters": {"max_packets": 500000, "max_examples": 10}},
+        },
+        "tcp_sequence_continuity_profile": {
+            "metric_id": "tcp_sequence_continuity_profile",
+            "label": "TCP Sequence Continuity (Contextual)",
+            "input_requirements": {},
+            "calculation": {"method": "raw_pcap_tcp_directional_sequence_gap_profile",
+                            "parameters": {"max_packets": 500000, "max_examples": 10}},
         },
         "column_quality_profile": {
             "metric_id": "column_quality_profile",
