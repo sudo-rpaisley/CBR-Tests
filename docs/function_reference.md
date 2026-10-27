@@ -120,7 +120,7 @@ Python symbols defined by `cbr_tests/metrics/pcap_integrity_v2.py`.
 | `run_exact_packet_duplicate_ratio(path: Path, metric: dict) -> tuple[bool, dict]` (L26) | function | Public | Byte-for-byte + timestamp repeated frames, distinct from field signatures. |
 | `_ip_structural_issues(packet) -> list[str]` (L55) | function | Internal | Implementation helper for IP structural issues. |
 | `run_packet_integrity_profile(path: Path, metric: dict) -> tuple[bool, dict]` (L73) | function | Public | Check observable lengths/checksums; do not call offload artefacts 'invalid'. |
-| `run_tcp_sequence_continuity_profile(path: Path, metric: dict) -> tuple[bool, dict]` (L128) | function | Public | TCP byte-sequence gap hints; retransmissions and missing starts are contextual. |
+| `run_tcp_sequence_continuity_profile(path: Path, metric: dict) -> tuple[bool, dict]` (L147) | function | Public | TCP byte-sequence gap hints; retransmissions and missing starts are contextual. |
 
 ## `cbr_tests/metrics/pcap_realism_v2.py`
 
