@@ -1,6 +1,6 @@
 # Test suite reference
 
-The suite contains **435 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
+The suite contains **436 pytest test functions**. Every test and helper in `tests/test_*.py` is listed below.
 
 ```bash
 python -m pip install -r requirements-dev.txt
@@ -881,6 +881,16 @@ Tests and local helpers in this module.
 | `metric(**parameters)` (L13) | Implementation helper for metric. |
 | `reference_metric(**parameters)` (L17) | Implementation helper for reference metric. |
 | `packets(times, lengths = None, ports = None)` (L22) | Implementation helper for packets. |
+
+## `tests/test_pcap_v2_plan_builder.py`
+
+Tests and local helpers in this module.
+
+### Pytest cases
+
+| Test | What it verifies | Primary code exercised |
+| --- | --- | --- |
+| `test_v2_reference_metrics_require_explicit_selection(tmp_path)` (L7) | Verifies that v2 reference metrics require explicit selection. | `candidate.write_bytes`, `reference.write_bytes`, `build_plan`, `all` |
 
 ## `tests/test_perturbation_experiment.py`
 
