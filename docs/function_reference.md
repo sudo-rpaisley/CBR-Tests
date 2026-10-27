@@ -589,7 +589,7 @@ Python symbols defined by `gan_generator/temporal_gan.py`.
 | `_generated_gaps(input_path: Path, model_path: Path, seed: int, device: str) -> np.ndarray` (L184) | function | Internal | Implementation helper for generated gaps. |
 | `_selection(n: int, fraction: int, seed: int, pattern: str) -> np.ndarray` (L215) | function | Internal | Implementation helper for selection. |
 | `generate(input_path: Path, model: Path, output: Path, percentage: int, seed: int = 42, pattern: str = 'trailing', duration_policy: str = 'match_original', device: str = 'cpu') -> dict` (L238) | function | Public | Implementation helper for generate. |
-| `main(argv: list[str] | None = None) -> int` (L317) | function | Public | Implementation helper for main. |
+| `main(argv: list[str] | None = None) -> int` (L316) | function | Public | Implementation helper for main. |
 
 ## `monitor_gan_corpus.py`
 
