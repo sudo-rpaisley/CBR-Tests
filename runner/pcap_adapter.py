@@ -113,6 +113,12 @@ PCAP_REFERENCE_METRICS = {
     "hourly_activity_divergence_from_reference",
     "protocol_mix_divergence_from_reference",
     "port_use_divergence_from_reference",
+
+}
+
+# New v2 diagnostics must be deliberately selected in a frozen experiment plan.
+# They are deliberately not injected into the historical automatic plan set.
+PCAP_V2_REFERENCE_METRICS = {
     "capture_order_inter_arrival_divergence_from_reference",
     "per_flow_inter_arrival_divergence_from_reference",
     "multiscale_activity_divergence_from_reference",
@@ -140,7 +146,7 @@ PCAP_EXPLICIT_PACKET_METRICS = {
     "tcp_sequence_continuity_profile",
 }
 PCAP_PACKET_BACKED_METRICS = (
-    PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
+    PCAP_PACKET_METRICS | PCAP_REFERENCE_METRICS | PCAP_V2_REFERENCE_METRICS | PCAP_EXPLICIT_PACKET_METRICS
 )
 PCAP_SUPPORTED_METRICS = PCAP_DIRECT_METRICS | PCAP_PACKET_METRICS
 
